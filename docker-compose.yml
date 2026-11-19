@@ -1,0 +1,14 @@
+services:
+  mailia:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - mailia-data:/data
+
+volumes:
+  mailia-data:
