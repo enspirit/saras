@@ -130,6 +130,7 @@ export async function startStack({ dbPath = ':memory:', messages = INBOX, env = 
     OPENROUTER_API_KEY: 'sk-or-test',
     OPENROUTER_BASE_URL: `http://127.0.0.1:${openrouterPort}`,
     OPENROUTER_MODEL: 'test/model',
+    ALLOW_SIGNUP: 'true',
     ...env,
   });
   const db = openDb(dbPath);

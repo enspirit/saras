@@ -12,6 +12,8 @@ Rien n'est envoyé sans validation explicite.
 ## Rôles
 
 - Le **premier compte créé** est administrateur. Il peut en nommer d'autres dans **Utilisateurs** ; il en reste toujours au moins un.
+- Les autres comptes arrivent **sur invitation** : l'administrateur saisit une adresse et obtient un lien à usage unique, valable `INVITATION_DAYS` jours (7 par défaut), qu'il transmet lui-même — mailia n'a pas de boîte d'envoi propre. L'invité n'a qu'à choisir son mot de passe. Seule l'empreinte du lien est stockée ; réinviter la même adresse invalide le lien précédent. `ALLOW_SIGNUP=true` rouvre l'inscription libre.
+- Un administrateur peut **supprimer un compte** : ses boîtes connectées et les emails enregistrés sont effacés de mailia, les prompts qu'il a créés sont conservés.
 - Les **prompts sont communs** à tous les utilisateurs. Seuls les administrateurs les créent et les modifient ; les utilisateurs en voient le nom et la description, pas les instructions.
 - Les **corrections** d'un utilisateur n'influencent que ses propres propositions. Les administrateurs voient les raisons données par tous, prompt par prompt, pour faire évoluer les instructions. Ils n'ont pas accès aux emails des autres.
 
@@ -50,7 +52,7 @@ cp .env.example .env
 npm start
 ```
 
-Ouvrez http://localhost:3000, créez votre compte, puis connectez une boîte dans **Comptes mail**. Une fois votre compte créé, passez `ALLOW_SIGNUP=false` pour fermer les inscriptions.
+Ouvrez http://localhost:3000 et créez le premier compte : il devient administrateur, puis l'inscription se ferme. Connectez ensuite une boîte dans **Comptes mail** et invitez vos collègues depuis **Utilisateurs**.
 
 Avec Docker :
 
@@ -124,5 +126,5 @@ Les tests de bout en bout démarrent un vrai serveur IMAP et un vrai serveur SMT
 - Réponses en texte brut ; les pièces jointes reçues ne sont ni affichées ni transmises au LLM.
 - Seule la boîte de réception est relevée (les `SYNC_MAX_EMAILS` plus récents sur `SYNC_DAYS` jours).
 - « Déjà répondu ailleurs » n'est détecté qu'en IMAP (drapeau `\Answered`).
-- Pas de réinitialisation de mot de passe ni de double authentification pour le compte mailia ; un administrateur ne peut pas encore créer ou supprimer un compte.
+- Pas de réinitialisation de mot de passe ni de double authentification pour le compte mailia.
 - Une boîte Google connectée avant l'ajout des brouillons doit être reconnectée (nouveau scope).

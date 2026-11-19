@@ -15,7 +15,9 @@ export function loadConfig(env = process.env) {
     secureCookies: baseUrl.startsWith('https://'),
     appSecret: secret,
     dataDir: env.DATA_DIR || './data',
-    allowSignup: (env.ALLOW_SIGNUP ?? 'true') !== 'false',
+    // Closed by default: beyond the first account, people join through an administrator's invitation.
+    allowSignup: env.ALLOW_SIGNUP === 'true',
+    invitationDays: int(env.INVITATION_DAYS, 7),
     syncIntervalMinutes: int(env.SYNC_INTERVAL_MINUTES, 10),
     syncDays: int(env.SYNC_DAYS, 7),
     syncMaxEmails: int(env.SYNC_MAX_EMAILS, 50),

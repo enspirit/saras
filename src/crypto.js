@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 /** Secret box bound to APP_SECRET: AES-256-GCM, used for every credential stored in the database. */
 export function createVault(appSecret) {
@@ -33,5 +33,8 @@ export function verifyPassword(password, stored) {
   const actual = scryptSync(password, Buffer.from(salt, 'base64'), expected.length);
   return timingSafeEqual(actual, expected);
 }
+
+/** One-way fingerprint of a high-entropy token, so the token itself is never stored. */
+export const tokenHash = (token) => createHash('sha256').update(String(token)).digest('hex');
 
 export const randomToken = (bytes = 32) => randomBytes(bytes).toString('base64url');

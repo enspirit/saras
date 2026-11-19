@@ -1,6 +1,6 @@
 import express from 'express';
 import { fileURLToPath } from 'node:url';
-import { hashPassword, randomToken, verifyPassword } from './crypto.js';
+import { hashPassword, randomToken, tokenHash, verifyPassword } from './crypto.js';
 import { seedDefaultPrompts } from './db.js';
 import { LlmError, PRIVACY } from './llm/openrouter.js';
 import { buildDraftMessages } from './llm/prompts.js';
@@ -77,43 +77,78 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   const adminOnly = (req, res, next) => next(req.user.role === 'admin' ? undefined : new HttpError(403, 'Réservé aux administrateurs.'));
 
-  const attempts = new Map();
-  function throttle(req) {
+  // Brute-force brake on passwords and invitation tokens: ten wrong guesses per address
+  // lock that address out for fifteen minutes. Successful requests do not count.
+  const failures = new Map();
+  const guarded = (handler) => (req, res) => {
     const now = Date.now();
-    const entry = attempts.get(req.ip);
-    if (!entry || entry.reset < now) return void attempts.set(req.ip, { count: 1, reset: now + 15 * 60_000 });
-    if (++entry.count > 10) throw new HttpError(429, 'Trop de tentatives, réessayez dans quelques minutes.');
-  }
+    const entry = failures.get(req.ip);
+    if (entry && entry.reset > now && entry.count >= 10) throw new HttpError(429, 'Trop de tentatives, réessayez dans quelques minutes.');
+    try {
+      return handler(req, res);
+    } catch (e) {
+      if (e.status === 401 || e.status === 404) {
+        if (!entry || entry.reset <= now) failures.set(req.ip, { count: 1, reset: now + 15 * 60_000 });
+        else entry.count += 1;
+      }
+      throw e;
+    }
+  };
 
-  const publicInfo = () => ({ allowSignup: config.allowSignup });
+  // An empty installation always accepts its first account, which becomes its administrator.
+  const isEmpty = () => !db.prepare('SELECT 1 FROM users').get();
+  const publicInfo = () => ({ allowSignup: config.allowSignup || isEmpty(), firstAccount: isEmpty() });
+
+  function createUser(email, password, role) {
+    if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
+    if (typeof password !== 'string' || password.length < 10) throw new HttpError(400, 'Mot de passe : 10 caractères minimum.');
+    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
+    const { lastInsertRowid } = db.prepare('INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)').run(email, hashPassword(password), role);
+    if (!db.prepare('SELECT 1 FROM prompts').get()) seedDefaultPrompts(db, lastInsertRowid);
+    return lastInsertRowid;
+  }
 
   app.get('/api/public', (req, res) => res.json(publicInfo()));
 
-  app.post('/api/auth/signup', (req, res) => {
-    if (!config.allowSignup) throw new HttpError(403, 'Les inscriptions sont fermées.');
-    throttle(req);
-    const email = str(req.body.email, 320).toLowerCase();
-    const password = typeof req.body.password === 'string' ? req.body.password : '';
-    if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
-    if (password.length < 10) throw new HttpError(400, 'Mot de passe : 10 caractères minimum.');
-    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
-    // The first account of an installation administers it.
-    const role = db.prepare('SELECT 1 FROM users').get() ? 'user' : 'admin';
-    const { lastInsertRowid } = db.prepare('INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)').run(email, hashPassword(password), role);
-    if (!db.prepare('SELECT 1 FROM prompts').get()) seedDefaultPrompts(db, lastInsertRowid);
-    openSession(res, lastInsertRowid);
+  app.post('/api/auth/signup', guarded((req, res) => {
+    if (!publicInfo().allowSignup) throw new HttpError(403, 'Les inscriptions sont fermées : demandez une invitation à un administrateur.');
+    const id = createUser(str(req.body.email, 320).toLowerCase(), req.body.password, isEmpty() ? 'admin' : 'user');
+    openSession(res, id);
     res.status(201).json({ ok: true });
-  });
+  }));
 
-  app.post('/api/auth/login', (req, res) => {
-    throttle(req);
+  // ---- invitations ------------------------------------------------------------------------
+  // The link carries a random token in the URL fragment; only its hash is stored. Mailia has no
+  // mailbox of its own, so the administrator passes the link on.
+  const pendingInvitation = (token) =>
+    db.prepare(`SELECT * FROM invitations WHERE token_hash = ? AND expires_at > datetime('now')`).get(tokenHash(token || ''));
+
+  app.post('/api/invitations/check', guarded((req, res) => {
+    const invitation = pendingInvitation(req.body.token);
+    if (!invitation) throw new HttpError(404, 'Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur.');
+    res.json({ email: invitation.email });
+  }));
+
+  app.post('/api/invitations/accept', guarded((req, res) => {
+    const invitation = pendingInvitation(req.body.token);
+    if (!invitation) throw new HttpError(404, 'Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur.');
+    const id = db.transaction(() => {
+      const userId = createUser(invitation.email, req.body.password, invitation.role);
+      db.prepare('DELETE FROM invitations WHERE id = ?').run(invitation.id);
+      return userId;
+    })();
+    openSession(res, id);
+    res.status(201).json({ ok: true });
+  }));
+
+  app.post('/api/auth/login', guarded((req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(str(req.body.email, 320).toLowerCase());
     if (!user || !verifyPassword(String(req.body.password || ''), user.password_hash)) {
       throw new HttpError(401, 'Email ou mot de passe incorrect.');
     }
     openSession(res, user.id);
     res.json({ ok: true });
-  });
+  }));
 
   app.post('/api/auth/logout', auth, (req, res) => {
     db.prepare('DELETE FROM sessions WHERE id = ?').run(req.user.sid);
@@ -326,6 +361,50 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
         )
         .all(),
     );
+  });
+
+  app.get('/api/invitations', auth, adminOnly, (req, res) => {
+    res.json(
+      db
+        .prepare(`SELECT id, email, role, expires_at AS expiresAt, expires_at <= datetime('now') AS expired FROM invitations ORDER BY id DESC`)
+        .all()
+        .map((i) => ({ ...i, expired: Boolean(i.expired) })),
+    );
+  });
+
+  app.post('/api/invitations', auth, adminOnly, (req, res) => {
+    const email = str(req.body.email, 320).toLowerCase();
+    const role = req.body.role === 'admin' ? 'admin' : 'user';
+    if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
+    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
+    const token = randomToken();
+    // Inviting the same address again replaces the earlier link.
+    const { id } = db
+      .prepare(
+        `INSERT INTO invitations (email, role, token_hash, created_by, expires_at) VALUES (?, ?, ?, ?, datetime('now', ?))
+         ON CONFLICT (email) DO UPDATE SET role = excluded.role, token_hash = excluded.token_hash, created_by = excluded.created_by, expires_at = excluded.expires_at
+         RETURNING id`,
+      )
+      .get(email, role, tokenHash(token), req.user.id, `+${config.invitationDays} days`);
+    // The only time the link exists in clear: it cannot be shown again.
+    res.status(201).json({ id, email, link: `${config.baseUrl}/#/invitation/${token}`, validDays: config.invitationDays });
+  });
+
+  app.delete('/api/invitations/:id', auth, adminOnly, (req, res) => {
+    db.prepare('DELETE FROM invitations WHERE id = ?').run(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  app.delete('/api/users/:id', auth, adminOnly, (req, res) => {
+    const target = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id));
+    if (!target) throw new HttpError(404, 'Utilisateur introuvable');
+    if (target.id === req.user.id) throw new HttpError(409, 'Vous ne pouvez pas supprimer votre propre compte.');
+    db.transaction(() => {
+      // Shared prompts outlive their author.
+      db.prepare('UPDATE prompts SET user_id = ? WHERE user_id = ?').run(req.user.id, target.id);
+      db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
+    })();
+    res.json({ ok: true });
   });
 
   app.put('/api/users/:id', auth, adminOnly, (req, res) => {

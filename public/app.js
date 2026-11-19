@@ -101,7 +101,10 @@ function route() {
   return { page: page || 'a-traiter', id: id ? Number(id) : null, query: new URLSearchParams(query) };
 }
 
+const invitationToken = () => location.hash.match(/^#\/invitation\/([\w-]+)$/)?.[1] || null;
+
 async function boot() {
+  if (invitationToken()) return renderInvitation(invitationToken());
   try {
     state.me = await api('GET', '/me');
   } catch (e) {
@@ -112,7 +115,7 @@ async function boot() {
   render();
 }
 
-window.addEventListener('hashchange', () => state.me && render());
+window.addEventListener('hashchange', () => (invitationToken() ? boot() : state.me && render()));
 
 // ---- auth -------------------------------------------------------------------------------
 async function renderAuth(mode = 'login', typedEmail = '') {
@@ -135,7 +138,9 @@ async function renderAuth(mode = 'login', typedEmail = '') {
       h('div', { class: 'auth-card' },
         h('h1', {}, 'mailia'),
         h('p', { class: 'muted' }, 'Vos réponses aux emails, proposées par l’IA, validées par vous.'),
+        info.firstAccount && h('p', { class: 'notice field' }, 'Aucun compte n’existe encore : le premier créé sera l’administrateur.'),
         form,
+        !info.allowSignup && h('p', { class: 'small muted' }, 'Pas de compte ? Demandez une invitation à votre administrateur.'),
         info.allowSignup &&
           h('p', { class: 'small muted' },
             signup ? 'Déjà un compte ? ' : 'Pas encore de compte ? ',
@@ -145,6 +150,36 @@ async function renderAuth(mode = 'login', typedEmail = '') {
     ),
   );
   email.focus();
+}
+
+/** Landing page of an invitation link: the invited person only chooses a password. */
+async function renderInvitation(token) {
+  const card = (...children) => root.replaceChildren(h('div', { class: 'auth' }, h('div', { class: 'auth-card' }, h('h1', {}, 'mailia'), ...children)));
+  const leave = () => {
+    // Drop the token from the address bar and the history.
+    history.replaceState(null, '', '/');
+    return boot();
+  };
+  let invitation;
+  try {
+    invitation = await api('POST', '/invitations/check', { token });
+  } catch (e) {
+    return card(h('p', { class: 'notice danger field' }, e.message), h('button', { class: 'btn', type: 'button', onclick: leave }, 'Aller à la connexion'));
+  }
+  const password = h('input', { type: 'password', required: true, minLength: 10, autocomplete: 'new-password' });
+  const submit = h('button', { class: 'btn primary', type: 'submit' }, 'Créer mon compte');
+  const form = h('form', {},
+    field('Email', h('input', { type: 'email', value: invitation.email, disabled: true, autocomplete: 'username' })),
+    field('Choisissez un mot de passe', password, '10 caractères minimum.'),
+    submit,
+  );
+  form.addEventListener('submit', busy(submit, '…', async () => {
+    await api('POST', '/invitations/accept', { token, password: password.value });
+    history.replaceState(null, '', '/#/comptes');
+    await boot();
+  }));
+  card(h('p', { class: 'muted' }, 'Vous avez été invité à rejoindre mailia.'), form);
+  password.focus();
 }
 
 // ---- shell ------------------------------------------------------------------------------
@@ -434,28 +469,85 @@ const renderPrompts = guard(async () => {
 });
 
 // ---- users (administrators) -------------------------------------------------------------
-const renderUsers = guard(async () => {
-  const users = await api('GET', '/users');
+const renderUsers = guard(async (freshInvitation) => {
+  const [users, invitations] = await Promise.all([api('GET', '/users'), api('GET', '/invitations')]);
+
+  const email = h('input', { type: 'email', required: true, placeholder: 'prenom.nom@exemple.com' });
+  const role = h('select', {}, h('option', { value: 'user' }, 'Utilisateur'), h('option', { value: 'admin' }, 'Administrateur'));
+  const invite = h('button', { class: 'btn primary', type: 'submit' }, 'Créer le lien d’invitation');
+  const inviteForm = h('form', {}, h('div', { class: 'row' }, field('Adresse email', email), h('div', { class: 'field narrow' }, h('label', {}, 'Rôle', role)), h('div', { class: 'field' }, invite)));
+  inviteForm.addEventListener('submit', busy(invite, '…', async () => {
+    renderUsers(await api('POST', '/invitations', { email: email.value, role: role.value }));
+  }));
+
+  let linkBox = null;
+  if (freshInvitation?.link) {
+    const link = h('input', { type: 'text', readOnly: true, value: freshInvitation.link, onfocus: (e) => e.target.select() });
+    const copy = h('button', { class: 'btn', type: 'button' }, 'Copier');
+    copy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(freshInvitation.link);
+        toast('Lien copié.');
+      } catch {
+        link.focus();
+        toast('Copie impossible : sélectionnez le lien et copiez-le.', true);
+      }
+    });
+    linkBox = h('div', { class: 'notice ok field' },
+      h('p', { class: 'field' }, h('strong', {}, `Lien d’invitation pour ${freshInvitation.email}`), ` — valable ${freshInvitation.validDays} jours, utilisable une seule fois. Transmettez-le vous-même : il ne sera plus affiché.`),
+      h('div', { class: 'row' }, h('div', { class: 'field' }, link), h('div', { class: 'field narrow' }, copy)),
+    );
+  }
+
   shell(
     h('div', { class: 'page' },
       h('h1', {}, 'Utilisateurs'),
-      h('p', { class: 'muted field' }, 'Les administrateurs gèrent les prompts et les rôles. Ils n’ont pas accès aux emails des autres utilisateurs.'),
+      h('p', { class: 'muted field' }, 'Les administrateurs gèrent les prompts, les invitations et les rôles. Ils n’ont pas accès aux emails des autres utilisateurs.'),
+      h('div', { class: 'card' },
+        h('h2', {}, 'Inviter quelqu’un'),
+        linkBox,
+        inviteForm,
+        invitations.length > 0 && h('div', {},
+          h('h3', {}, 'Invitations en attente'),
+          ...invitations.map((i) => {
+            const revoke = h('button', { class: 'btn link', type: 'button' }, 'Révoquer');
+            revoke.addEventListener('click', busy(revoke, '…', async () => {
+              await api('DELETE', `/invitations/${i.id}`);
+              renderUsers();
+            }));
+            return h('div', { class: 'actions' },
+              h('span', {}, i.email),
+              h('span', { class: 'badge plain' }, i.role === 'admin' ? 'Administrateur' : 'Utilisateur'),
+              h('span', { class: `small ${i.expired ? '' : 'muted'}` }, i.expired ? 'Expirée' : `expire le ${fmtFull(i.expiresAt)}`),
+              h('span', { class: 'spacer' }),
+              revoke,
+            );
+          }),
+        ),
+      ),
       ...users.map((u) => {
         const admin = u.role === 'admin';
+        const self = u.email === state.me.email;
         const toggle = h('button', { class: 'btn', type: 'button' }, admin ? 'Retirer le rôle administrateur' : 'Nommer administrateur');
         toggle.addEventListener('click', busy(toggle, '…', async () => {
           await api('PUT', `/users/${u.id}`, { role: admin ? 'user' : 'admin' });
-          if (u.email === state.me.email) return boot();
+          if (self) return boot();
+          renderUsers();
+        }));
+        const del = h('button', { class: 'btn danger', type: 'button' }, 'Supprimer le compte');
+        del.addEventListener('click', busy(del, '…', async () => {
+          if (!confirm(`Supprimer le compte ${u.email} ? Ses boîtes connectées, emails et réponses enregistrés ici seront effacés. Sa messagerie n’est pas touchée.`)) return;
+          await api('DELETE', `/users/${u.id}`);
           renderUsers();
         }));
         return h('div', { class: 'card' },
           h('div', { class: 'card-head' },
             h('h2', {}, u.email),
             h('span', { class: `badge ${admin ? '' : 'plain'}` }, admin ? 'Administrateur' : 'Utilisateur'),
-            u.email === state.me.email && h('span', { class: 'badge plain' }, 'Vous'),
+            self && h('span', { class: 'badge plain' }, 'Vous'),
           ),
           h('p', { class: 'muted small field' }, `Inscrit le ${fmtFull(u.createdAt)} · ${u.accounts} boîte(s) connectée(s)`),
-          h('div', { class: 'actions' }, toggle),
+          h('div', { class: 'actions' }, toggle, !self && del),
         );
       }),
     ),

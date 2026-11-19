@@ -18,6 +18,15 @@ CREATE TABLE IF NOT EXISTS sessions (
   oauth_state TEXT,
   expires_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS invitations (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  role TEXT NOT NULL DEFAULT 'user',
+  token_hash TEXT NOT NULL UNIQUE,
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS accounts (
   id INTEGER PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
