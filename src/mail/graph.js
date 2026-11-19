@@ -69,8 +69,8 @@ export function createGraphProvider(account, { getAccessToken, fetchImpl = fetch
       return (page.value || []).filter((m) => !known.has(m.id)).map(graphToEmail);
     },
 
-    async send({ email, to, cc, text }) {
-      // createReply gives a draft already threaded and quoting the original; we only add our text.
+    /** createReply gives a draft already threaded and quoting the original; we only add our text. */
+    async saveDraft({ email, to, cc, text }) {
       const draft = await api(`/me/messages/${email.providerId}/createReply`, { method: 'POST', body: '{}' });
       await api(`/me/messages/${draft.id}`, {
         method: 'PATCH',
@@ -80,7 +80,12 @@ export function createGraphProvider(account, { getAccessToken, fetchImpl = fetch
           body: { contentType: 'HTML', content: injectReplyHtml(draft.body?.content, text) },
         }),
       });
-      await api(`/me/messages/${draft.id}/send`, { method: 'POST', body: '{}' });
+      return draft.id;
+    },
+
+    async send(reply) {
+      const draftId = await this.saveDraft(reply);
+      await api(`/me/messages/${draftId}/send`, { method: 'POST', body: '{}' });
     },
   };
 }

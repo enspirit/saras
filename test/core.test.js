@@ -187,7 +187,7 @@ test('OAuth authorization URLs', () => {
   const g = new URL(authorizationUrl(config, 'google', 'st'));
   assert.equal(g.searchParams.get('redirect_uri'), 'https://mail.example/api/oauth/google/callback');
   assert.equal(g.searchParams.get('access_type'), 'offline');
-  assert.match(g.searchParams.get('scope'), /gmail\.readonly.*gmail\.send/);
+  assert.match(g.searchParams.get('scope'), /gmail\.readonly.*gmail\.compose/);
   const m = new URL(authorizationUrl(config, 'microsoft', 'st'));
   assert.equal(m.pathname, '/common/oauth2/v2.0/authorize');
   assert.match(m.searchParams.get('scope'), /offline_access.*Mail\.Send/);

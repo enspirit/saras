@@ -8,6 +8,7 @@ import { refreshTokens } from './oauth.js';
  *   verify()                         -> throws when the credentials do not work
  *   listNew({ since, limit, known }) -> emails of the inbox not yet in `known`
  *   send({ email, to, cc, text })    -> sends the reply to `email` from the account
+ *   saveDraft({ email, to, cc, text }) -> files the reply in the mailbox's drafts instead of sending it
  */
 export function createMailService({ db, vault, config, fetchImpl = fetch }) {
   function accessTokenGetter(account) {

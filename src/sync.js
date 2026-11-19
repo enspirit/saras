@@ -82,7 +82,7 @@ export function createSync({ db, mail, llm, config, vault }) {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(account.user_id);
     const { apiKey, model } = llmSettings(user, { config, vault });
     if (!apiKey) return { triaged: 0, error: 'Aucune clé OpenRouter : tri automatique désactivé.' };
-    const prompts = db.prepare('SELECT id, name, description FROM prompts WHERE user_id = ? ORDER BY id').all(user.id);
+    const prompts = db.prepare('SELECT id, name, description FROM prompts ORDER BY id').all();
     const pending = db.prepare(`SELECT * FROM emails WHERE account_id = ? AND status = 'pending' ORDER BY date DESC`).all(account.id);
     let triaged = 0;
     for (const row of pending) {

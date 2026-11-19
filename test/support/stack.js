@@ -101,7 +101,7 @@ export async function startStack({ dbPath = ':memory:', messages = INBOX, env = 
     plugins: ['ID', 'UIDPLUS', 'SPECIAL-USE', 'LITERALPLUS'],
     storage: {
       INBOX: { messages: structuredClone(messages) },
-      '': { separator: '/', folders: { Sent: { 'special-use': '\\Sent' } } },
+      '': { separator: '/', folders: { Sent: { 'special-use': '\\Sent' }, Drafts: { 'special-use': '\\Drafts' } } },
     },
   });
   const imapPort = await listen(imap.server);
@@ -146,6 +146,7 @@ export async function startStack({ dbPath = ':memory:', messages = INBOX, env = 
     outbox,
     llmRequests: openrouter.requests,
     sentFolder: () => imap.getMailbox('Sent').messages,
+    draftsFolder: () => imap.getMailbox('Drafts').messages,
     inboxFlags: () => imap.getMailbox('INBOX').messages.map((m) => m.flags),
     imapAccount: {
       email: 'me@corp.example',

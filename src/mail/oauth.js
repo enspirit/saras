@@ -4,7 +4,8 @@ const PROVIDERS = {
   google: {
     authUrl: () => 'https://accounts.google.com/o/oauth2/v2/auth',
     tokenUrl: () => 'https://oauth2.googleapis.com/token',
-    scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
+    // gmail.compose covers both creating drafts and sending.
+    scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose',
     extra: { access_type: 'offline', prompt: 'consent' },
   },
   microsoft: {

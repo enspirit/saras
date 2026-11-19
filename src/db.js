@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user',
   model TEXT,
   signature TEXT NOT NULL DEFAULT '',
   openrouter_key_enc TEXT,
@@ -78,6 +79,7 @@ CREATE TABLE IF NOT EXISTS replies (
   final_text TEXT NOT NULL,
   was_edited INTEGER NOT NULL DEFAULT 0,
   change_reason TEXT NOT NULL DEFAULT '',
+  mode TEXT NOT NULL DEFAULT 'sent',
   to_json TEXT NOT NULL DEFAULT '[]',
   cc_json TEXT NOT NULL DEFAULT '[]',
   sent_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -89,9 +91,24 @@ export function openDb(path) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
+  migrate(db);
   return db;
 }
 
+/** Bring a database created by an earlier version up to the current schema. */
+function migrate(db) {
+  const ensureColumn = (table, column, definition) => {
+    if (!db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  };
+  ensureColumn('users', 'role', "TEXT NOT NULL DEFAULT 'user'");
+  ensureColumn('replies', 'mode', "TEXT NOT NULL DEFAULT 'sent'");
+  // There must always be an administrator: the oldest account, when none is.
+  db.exec(`UPDATE users SET role = 'admin' WHERE id = (SELECT min(id) FROM users) AND NOT EXISTS (SELECT 1 FROM users WHERE role = 'admin')`);
+}
+
+/** Prompts are shared by all users; prompts.user_id records who created them. */
 export function seedDefaultPrompts(db, userId) {
   const insert = db.prepare('INSERT INTO prompts (user_id, name, description, system_prompt) VALUES (?, ?, ?, ?)');
   for (const p of DEFAULT_PROMPTS) insert.run(userId, p.name, p.description, p.systemPrompt);

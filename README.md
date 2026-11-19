@@ -4,10 +4,20 @@ Outil web auto-hébergé pour répondre à ses emails avec l'aide de l'IA, sans 
 
 1. **Connecter** une ou plusieurs boîtes mail : IMAP/SMTP, Gmail / Google Workspace (OAuth), Outlook / Microsoft 365 (OAuth).
 2. **Identifier** les emails qui attendent une réponse. Des règles locales écartent newsletters et notifications ; l'IA trie le reste et suggère le prompt le plus adapté.
-3. **Proposer** une réponse à partir d'un *system prompt* préconçu, choisi email par email (celui suggéré, ou un autre), avec des consignes ponctuelles si besoin.
-4. **Envoyer** en votre nom, après relecture. Si vous modifiez la proposition, vous pouvez dire pourquoi : cette raison est réinjectée dans les prochaines propositions faites avec le même prompt.
+3. **Proposer** une réponse à partir d'un *system prompt* préparé par un administrateur, choisi email par email (celui suggéré, ou un autre), avec des consignes ponctuelles si besoin.
+4. **Envoyer** en votre nom après relecture, ou **déposer en brouillon** dans votre messagerie pour finir là-bas. Si vous modifiez la proposition, vous pouvez dire pourquoi : cette raison est réinjectée dans vos prochaines propositions faites avec le même prompt.
 
 Rien n'est envoyé sans validation explicite.
+
+## Rôles
+
+- Le **premier compte créé** est administrateur. Il peut en nommer d'autres dans **Utilisateurs** ; il en reste toujours au moins un.
+- Les **prompts sont communs** à tous les utilisateurs. Seuls les administrateurs les créent et les modifient ; les utilisateurs en voient le nom et la description, pas les instructions.
+- Les **corrections** d'un utilisateur n'influencent que ses propres propositions. Les administrateurs voient les raisons données par tous, prompt par prompt, pour faire évoluer les instructions. Ils n'ont pas accès aux emails des autres.
+
+## Brouillons
+
+« Enregistrer en brouillon » dépose la réponse, rattachée au fil d'origine, dans le dossier Brouillons de la boîte : en IMAP (dossier marqué `\Drafts`, ou nommé Drafts / Brouillons), via l'API Gmail, ou via Microsoft Graph. Rien n'est envoyé. Ce que vous modifiez ensuite dans votre messagerie n'est pas connu de mailia.
 
 ## Confidentialité
 
@@ -61,7 +71,7 @@ Fonctionne avec toute boîte standard (OVH, Infomaniak, Fastmail, Proton Bridge,
 2. URI de redirection autorisée : `{BASE_URL}/api/oauth/google/callback`.
 3. Renseigner `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET`.
 
-Scopes demandés : `gmail.readonly` et `gmail.send`. `gmail.readonly` est un scope « restreint » chez Google : pour un usage interne (Workspace, type « Interne ») ou en mode test avec quelques comptes déclarés, aucune validation n'est requise ; une diffusion publique exige l'audit de sécurité de Google.
+Scopes demandés : `gmail.readonly` et `gmail.compose` (brouillons et envoi). `gmail.readonly` est un scope « restreint » chez Google : pour un usage interne (Workspace, type « Interne ») ou en mode test avec quelques comptes déclarés, aucune validation n'est requise ; une diffusion publique exige l'audit de sécurité de Google.
 
 ### Connexion Microsoft
 
@@ -114,4 +124,5 @@ Les tests de bout en bout démarrent un vrai serveur IMAP et un vrai serveur SMT
 - Réponses en texte brut ; les pièces jointes reçues ne sont ni affichées ni transmises au LLM.
 - Seule la boîte de réception est relevée (les `SYNC_MAX_EMAILS` plus récents sur `SYNC_DAYS` jours).
 - « Déjà répondu ailleurs » n'est détecté qu'en IMAP (drapeau `\Answered`).
-- Pas de réinitialisation de mot de passe ni de double authentification pour le compte mailia.
+- Pas de réinitialisation de mot de passe ni de double authentification pour le compte mailia ; un administrateur ne peut pas encore créer ou supprimer un compte.
+- Une boîte Google connectée avant l'ajout des brouillons doit être reconnectée (nouveau scope).

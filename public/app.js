@@ -82,14 +82,16 @@ const field = (label, control, hint) => h('div', { class: 'field' }, h('label', 
 const BOXES = [
   { id: 'todo', path: 'a-traiter', label: 'À traiter', empty: 'Rien à traiter. Lancez une synchronisation depuis Comptes.' },
   { id: 'none', path: 'sans-reponse', label: 'Sans réponse requise', empty: 'Aucun email écarté par le tri.' },
-  { id: 'sent', path: 'envoyes', label: 'Réponses envoyées', empty: 'Aucune réponse envoyée pour l’instant.' },
+  { id: 'sent', path: 'repondus', label: 'Répondus', empty: 'Aucune réponse envoyée ni mise en brouillon pour l’instant.' },
   { id: 'ignored', path: 'ignores', label: 'Ignorés', empty: 'Aucun email ignoré.' },
 ];
 const PAGES = [
-  { path: 'prompts', label: 'Prompts' },
   { path: 'comptes', label: 'Comptes mail' },
   { path: 'reglages', label: 'Réglages' },
+  { path: 'prompts', label: 'Prompts', admin: true },
+  { path: 'utilisateurs', label: 'Utilisateurs', admin: true },
 ];
+const isAdmin = () => state.me?.role === 'admin';
 
 const state = { me: null, counts: {} };
 
@@ -113,10 +115,10 @@ async function boot() {
 window.addEventListener('hashchange', () => state.me && render());
 
 // ---- auth -------------------------------------------------------------------------------
-async function renderAuth(mode = 'login') {
+async function renderAuth(mode = 'login', typedEmail = '') {
   const info = await api('GET', '/public').catch(() => ({ allowSignup: false }));
   const signup = mode === 'signup' && info.allowSignup;
-  const email = h('input', { type: 'email', required: true, autocomplete: 'username' });
+  const email = h('input', { type: 'email', required: true, autocomplete: 'username', value: typedEmail });
   const password = h('input', { type: 'password', required: true, minLength: signup ? 10 : 1, autocomplete: signup ? 'new-password' : 'current-password' });
   const submit = h('button', { class: 'btn primary', type: 'submit' }, signup ? 'Créer mon compte' : 'Se connecter');
   const form = h('form', {}, field('Email', email), field('Mot de passe', password, signup && '10 caractères minimum.'), submit);
@@ -137,7 +139,7 @@ async function renderAuth(mode = 'login') {
         info.allowSignup &&
           h('p', { class: 'small muted' },
             signup ? 'Déjà un compte ? ' : 'Pas encore de compte ? ',
-            h('button', { class: 'btn link', type: 'button', onclick: () => renderAuth(signup ? 'login' : 'signup') }, signup ? 'Se connecter' : 'Créer un compte'),
+            h('button', { class: 'btn link', type: 'button', onclick: () => renderAuth(signup ? 'login' : 'signup', email.value) }, signup ? 'Se connecter' : 'Créer un compte'),
           ),
       ),
     ),
@@ -165,7 +167,7 @@ function shell(content) {
         h('div', { class: 'nav-title' }, 'Emails'),
         BOXES.map((b) => navLink(b.path, b.label, state.counts[b.id])),
         h('div', { class: 'nav-title' }, 'Configuration'),
-        PAGES.map((p) => navLink(p.path, p.label)),
+        PAGES.filter((p) => !p.admin || isAdmin()).map((p) => navLink(p.path, p.label)),
         h('div', { class: 'nav-foot' },
           h('div', { class: 'shield', title: 'Chaque appel à l’IA impose zdr=true et data_collection=deny chez OpenRouter.' }, 'IA sans conservation de données (ZDR) : imposé à chaque requête'),
           h('div', { class: 'small muted' }, state.me.email),
@@ -181,7 +183,8 @@ function render() {
   const r = route();
   const box = BOXES.find((b) => b.path === r.page);
   if (box) return renderMailbox(box, r.id);
-  if (r.page === 'prompts') return renderPrompts();
+  if (r.page === 'prompts' && isAdmin()) return renderPrompts();
+  if (r.page === 'utilisateurs' && isAdmin()) return renderUsers();
   if (r.page === 'comptes') return renderAccounts(r.query.get('erreur'));
   if (r.page === 'reglages') return renderSettings();
   location.hash = '#/a-traiter';
@@ -227,7 +230,8 @@ const renderMailbox = guard(async (box, selectedId) => {
             h('div', { class: 'item-snippet' }, e.snippet),
             h('div', { class: 'item-tags' },
               e.status === 'pending' && h('span', { class: 'badge warn' }, 'Non trié'),
-              e.priority === 'high' && h('span', { class: 'badge danger' }, 'Prioritaire'),
+              e.priority === 'high' && e.status !== 'sent' && h('span', { class: 'badge danger' }, 'Prioritaire'),
+              e.replyMode === 'draft' && h('span', { class: 'badge plain' }, 'Brouillon'),
             ),
           ),
         )
@@ -269,11 +273,12 @@ function renderDetail(detail, email, prompts, box) {
     detail.append(
       h('div', { class: 'card' },
         h('div', { class: 'card-head' },
-          h('h2', {}, 'Réponse envoyée'),
-          h('span', { class: `badge ${r.wasEdited ? 'warn' : 'ok'}` }, r.wasEdited ? 'Modifiée avant envoi' : 'Envoyée telle quelle'),
+          h('h2', {}, r.mode === 'draft' ? 'Brouillon déposé dans votre boîte' : 'Réponse envoyée'),
+          h('span', { class: `badge ${r.wasEdited ? 'warn' : 'ok'}` }, r.wasEdited ? 'Proposition modifiée' : 'Proposition gardée telle quelle'),
         ),
         h('p', { class: 'meta' }, `${fmtFull(r.sentAt)} · À ${r.to.join(', ')}`, r.cc.length ? ` · Cc ${r.cc.join(', ')}` : ''),
         r.changeReason && h('p', { class: 'triage' }, h('strong', {}, 'Raison de la modification : '), r.changeReason),
+        r.mode === 'draft' && h('p', { class: 'notice field' }, 'Ce message n’est pas parti : il attend dans le dossier Brouillons de votre messagerie, où vous pouvez le compléter et l’envoyer.'),
         h('pre', { class: 'mail-body' }, r.finalText || '(texte effacé)'),
       ),
     );
@@ -313,18 +318,25 @@ function renderDetail(detail, email, prompts, box) {
     syncReason();
   }));
 
+  const replyPayload = () => ({
+    draftId: draft?.id,
+    text: text.value,
+    to: splitAddresses(to.value),
+    cc: splitAddresses(cc.value),
+    changeReason: reasonField.hidden ? '' : reason.value,
+  });
   const send = h('button', { class: 'btn primary', type: 'button' }, 'Envoyer');
   send.addEventListener('click', busy(send, 'Envoi…', async () => {
-    const recipients = splitAddresses(to.value);
-    if (!confirm(`Envoyer cette réponse depuis ${email.account} à ${recipients.join(', ')} ?`)) return;
-    await api('POST', `/emails/${email.id}/send`, {
-      draftId: draft?.id,
-      text: text.value,
-      to: recipients,
-      cc: splitAddresses(cc.value),
-      changeReason: reasonField.hidden ? '' : reason.value,
-    });
+    const payload = replyPayload();
+    if (!confirm(`Envoyer cette réponse depuis ${email.account} à ${payload.to.join(', ')} ?`)) return;
+    await api('POST', `/emails/${email.id}/send`, payload);
     toast('Réponse envoyée.');
+    location.hash = `#/${box.path}`;
+  }));
+  const saveDraft = h('button', { class: 'btn', type: 'button', title: 'Dépose la réponse dans le dossier Brouillons de votre messagerie, sans l’envoyer' }, 'Enregistrer en brouillon');
+  saveDraft.addEventListener('click', busy(saveDraft, 'Enregistrement…', async () => {
+    await api('POST', `/emails/${email.id}/save-draft`, replyPayload());
+    toast(`Brouillon déposé dans la boîte ${email.account}.`);
     location.hash = `#/${box.path}`;
   }));
 
@@ -340,7 +352,7 @@ function renderDetail(detail, email, prompts, box) {
     h('div', { class: 'card composer' },
       h('h2', {}, 'Votre réponse'),
       !state.me.hasKey && h('p', { class: 'notice warn field' }, 'Aucune clé OpenRouter configurée : ajoutez-la dans ', h('a', { href: '#/reglages' }, 'Réglages'), ' pour obtenir des propositions.'),
-      !prompts.length && h('p', { class: 'notice warn field' }, 'Aucun prompt : créez-en un dans ', h('a', { href: '#/prompts' }, 'Prompts'), '.'),
+      !prompts.length && h('p', { class: 'notice warn field' }, isAdmin() ? ['Aucun prompt : créez-en un dans ', h('a', { href: '#/prompts' }, 'Prompts'), '.'] : 'Aucun prompt disponible : demandez à un administrateur d’en créer.'),
       h('div', { class: 'row' },
         field('Prompt', promptSelect),
         field('Consignes (optionnel)', instructions),
@@ -350,7 +362,7 @@ function renderDetail(detail, email, prompts, box) {
       hasOthers && h('div', { class: 'field' }, h('label', { class: 'check' }, replyAll, 'Répondre à tous')),
       h('div', { class: 'field' }, h('label', {}, 'Texte', text), modelInfo),
       reasonField,
-      h('div', { class: 'actions' }, send, h('span', { class: 'spacer' }), inTodo ? [noReply, ignore] : restore),
+      h('div', { class: 'actions' }, send, saveDraft, h('span', { class: 'spacer' }), inTodo ? [noReply, ignore] : restore),
     ),
   );
 }
@@ -382,12 +394,13 @@ const renderPrompts = guard(async () => {
       renderPrompts();
     }));
     if (prompt) {
-      api('GET', `/prompts/${prompt.id}/lessons`).then((items) => {
+      api('GET', `/prompts/${prompt.id}/corrections`).then((items) => {
         if (!items.length) return;
         lessons.append(
           h('div', { class: 'field' },
-            h('label', {}, 'Vos corrections récentes, transmises à l’IA avec ce prompt'),
-            h('ul', { class: 'small muted' }, items.map((l) => h('li', {}, l))),
+            h('label', {}, 'Corrections apportées par les utilisateurs aux propositions de ce prompt'),
+            h('p', { class: 'muted small' }, 'Chacune ne s’applique qu’aux propositions de son auteur. Intégrez ici celles qui valent pour tous.'),
+            h('ul', { class: 'small' }, items.map((c) => h('li', {}, c.reason, h('span', { class: 'muted' }, ` — ${c.user}, ${fmtDate(c.at)}`)))),
           ),
         );
       }).catch(() => {});
@@ -398,7 +411,7 @@ const renderPrompts = guard(async () => {
 
   page.append(
     h('div', { class: 'page-head' }, h('h1', {}, 'Prompts'), h('span', { class: 'spacer' }), h('button', { class: 'btn primary', type: 'button', onclick: () => editor(null) }, 'Nouveau prompt')),
-    h('p', { class: 'muted field' }, 'Chaque prompt décrit une façon de répondre. Au tri, l’IA suggère le plus adapté ; vous restez libre d’en choisir un autre pour chaque email.'),
+    h('p', { class: 'muted field' }, 'Chaque prompt décrit une façon de répondre. Ils sont communs à tous les utilisateurs : au tri, l’IA suggère le plus adapté, et chacun reste libre d’en choisir un autre pour chaque email. Les utilisateurs voient le nom et la description, pas les instructions.'),
     ...prompts.map((p) => {
       const del = h('button', { class: 'btn danger', type: 'button' }, 'Supprimer');
       del.addEventListener('click', busy(del, '…', async () => {
@@ -418,6 +431,35 @@ const renderPrompts = guard(async () => {
     }),
   );
   shell(page);
+});
+
+// ---- users (administrators) -------------------------------------------------------------
+const renderUsers = guard(async () => {
+  const users = await api('GET', '/users');
+  shell(
+    h('div', { class: 'page' },
+      h('h1', {}, 'Utilisateurs'),
+      h('p', { class: 'muted field' }, 'Les administrateurs gèrent les prompts et les rôles. Ils n’ont pas accès aux emails des autres utilisateurs.'),
+      ...users.map((u) => {
+        const admin = u.role === 'admin';
+        const toggle = h('button', { class: 'btn', type: 'button' }, admin ? 'Retirer le rôle administrateur' : 'Nommer administrateur');
+        toggle.addEventListener('click', busy(toggle, '…', async () => {
+          await api('PUT', `/users/${u.id}`, { role: admin ? 'user' : 'admin' });
+          if (u.email === state.me.email) return boot();
+          renderUsers();
+        }));
+        return h('div', { class: 'card' },
+          h('div', { class: 'card-head' },
+            h('h2', {}, u.email),
+            h('span', { class: `badge ${admin ? '' : 'plain'}` }, admin ? 'Administrateur' : 'Utilisateur'),
+            u.email === state.me.email && h('span', { class: 'badge plain' }, 'Vous'),
+          ),
+          h('p', { class: 'muted small field' }, `Inscrit le ${fmtFull(u.createdAt)} · ${u.accounts} boîte(s) connectée(s)`),
+          h('div', { class: 'actions' }, toggle),
+        );
+      }),
+    ),
+  );
 });
 
 // ---- accounts ---------------------------------------------------------------------------
@@ -550,6 +592,7 @@ const renderSettings = guard(async () => {
           h('li', {}, me.retentionDays ? `Le contenu des emails est effacé de cette application après ${me.retentionDays} jours.` : 'Le contenu des emails est conservé sans limite dans cette application.'),
           h('li', {}, 'Mots de passe, tokens OAuth et clés API sont chiffrés en base (AES-256-GCM).'),
           h('li', {}, 'Aucun email n’est envoyé sans votre validation explicite.'),
+          h('li', {}, 'Les raisons que vous donnez en modifiant une proposition sont visibles des administrateurs, qui s’en servent pour améliorer les prompts. Vos emails ne le sont pas.'),
         ),
       ),
     ),

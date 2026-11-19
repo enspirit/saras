@@ -50,7 +50,7 @@ export function gmailToEmail(msg) {
   };
 }
 
-/** Gmail through its REST API (scopes gmail.readonly + gmail.send). */
+/** Gmail through its REST API (scopes gmail.readonly + gmail.compose). */
 export function createGmailProvider(account, { getAccessToken, fetchImpl = fetch }) {
   async function api(path, init = {}) {
     const res = await fetchImpl(`${API}${path}`, {
@@ -81,6 +81,14 @@ export function createGmailProvider(account, { getAccessToken, fetchImpl = fetch
       await api('/messages/send', {
         method: 'POST',
         body: JSON.stringify({ raw: raw.toString('base64url'), threadId: email.threadId || undefined }),
+      });
+    },
+
+    async saveDraft({ email, to, cc, text }) {
+      const raw = await buildRawReply({ account, email, to, cc, text });
+      await api('/drafts', {
+        method: 'POST',
+        body: JSON.stringify({ message: { raw: raw.toString('base64url'), threadId: email.threadId || undefined } }),
       });
     },
   };

@@ -14,5 +14,7 @@ export async function buildRawReply({ account, email, to, cc, text }) {
     inReplyTo: email.messageId || undefined,
     references: references.length ? references : undefined,
   });
-  return composer.compile().build();
+  const raw = await composer.compile().build();
+  // The composer keeps the line breaks of the text as typed; mail servers expect CRLF throughout.
+  return Buffer.from(raw.toString('latin1').replace(/\r?\n/g, '\r\n'), 'latin1');
 }

@@ -120,6 +120,21 @@ export function createImapProvider(account, cfg) {
       await this.fileSentCopy(raw, email).catch(() => {});
     },
 
+    /** Leave the reply in the mailbox's Drafts folder, for the user to finish in their mail client. */
+    async saveDraft({ email, to, cc, text }) {
+      const raw = await buildRawReply({ account, email, to, cc, text });
+      const client = await connected();
+      try {
+        const boxes = await client.list();
+        const drafts =
+          boxes.find((box) => box.specialUse === '\\Drafts') || boxes.find((box) => /^(drafts?|brouillons?)$/i.test(box.name));
+        if (!drafts) throw new Error('aucun dossier Brouillons dans cette boîte');
+        await client.append(drafts.path, raw, ['\\Draft', '\\Seen']);
+      } finally {
+        await client.logout().catch(() => {});
+      }
+    },
+
     /** Copy the reply to the Sent folder and flag the original as answered. */
     async fileSentCopy(raw, email) {
       const client = await connected();
