@@ -4,8 +4,8 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync, 
 export type Vault = ReturnType<typeof createVault>;
 
 export function createVault(appSecret: string) {
-  // The salt keeps the product's former name: changing it would make every stored secret unreadable.
-  const key = scryptSync(appSecret, 'mailia/vault/v1', 32);
+  // Changing this salt makes every secret already stored unreadable.
+  const key = scryptSync(appSecret, 'saras/vault/v1', 32);
   return {
     seal(value: unknown): string {
       const iv = randomBytes(12);

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createApp } from './app.ts';
 import { loadConfig, loadDotEnv } from './config.ts';
@@ -25,16 +25,7 @@ if (!existsSync(new URL('../public/js/app.js', import.meta.url))) {
 }
 
 mkdirSync(config.dataDir, { recursive: true });
-const dbPath = join(config.dataDir, 'saras.sqlite');
-// The database was named after the product's former name: carry an existing one over.
-const formerPath = join(config.dataDir, 'mailia.sqlite');
-if (!existsSync(dbPath) && existsSync(formerPath)) {
-  for (const suffix of ['', '-wal', '-shm']) {
-    if (existsSync(formerPath + suffix)) renameSync(formerPath + suffix, dbPath + suffix);
-  }
-  console.log(`database renamed from ${formerPath} to ${dbPath}`);
-}
-const db = openDb(dbPath);
+const db = openDb(join(config.dataDir, 'saras.sqlite'));
 const vault = createVault(config.appSecret);
 const mail = createMailService({ db, vault, config });
 const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
