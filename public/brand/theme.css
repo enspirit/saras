@@ -1,0 +1,45 @@
+/*
+ * BRAND THEME — the file to change to put the tool in a company's colours.
+ *
+ * Do not edit it here for a deployment: copy the `public/brand` folder elsewhere, change
+ * the copy, and point the BRAND_DIR environment variable at it (see README, « Marque »).
+ *
+ * Everything below is optional. A line left out keeps the default of design/tokens.css.
+ * The complete result can be checked on /styleguide.html.
+ */
+
+:root {
+  /* Accent: buttons, links, selection — and the text colour placed on it. */
+  --brand-accent: #1f5fbf;
+  --brand-on-accent: #ffffff;
+
+  /* Page background and text. Surfaces, borders and muted text are derived from them. */
+  --brand-canvas: #f6f5f1;
+  --brand-ink: #1d1f24;
+
+  /* The same four for dark mode. */
+  --brand-accent-dark: #7fb0ff;
+  --brand-on-accent-dark: #0d1b33;
+  --brand-canvas-dark: #15171b;
+  --brand-ink-dark: #e8e9ec;
+
+  /* Typography. To use a web font, put its files in this folder and declare it with
+     @font-face above this block (url("MaPolice.woff2")). */
+  --brand-font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --brand-font-heading: var(--brand-font-body);
+
+  /* Corner rounding of cards, buttons and fields. 0 for square corners. */
+  --brand-radius: 8px;
+
+  /* "light dark" follows each visitor's system; "light" or "dark" forces one. */
+  --brand-color-scheme: light dark;
+
+  /* Height of the logo in the navigation. */
+  --logo-height: 28px;
+}
+
+/*
+ * Finer adjustments: any token of design/tokens.css can be overridden the same way, e.g.
+ *
+ *   :root { --color-ok: #0a7d55; --nav-width: 260px; --text-md: 16px; }
+ */

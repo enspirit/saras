@@ -1,0 +1,80 @@
+/*
+ * ORGANISMS — the large regions of a screen, made of molecules: application shell, sign-in
+ * panel, page, mailbox (list + reading pane). Built by public/ui/organisms.js.
+ */
+
+/* ---- Auth panel ---- */
+.auth { min-height: 100%; display: grid; place-items: center; padding: var(--space-6) var(--space-4); }
+.auth__panel {
+  width: 100%; max-width: var(--auth-width);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.auth__tagline { margin: var(--space-1) 0 var(--space-5); color: var(--color-text-muted); }
+.auth__foot { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* ---- Application shell ---- */
+.shell { display: grid; grid-template-columns: var(--nav-width) 1fr; height: 100vh; }
+.shell__nav {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--space-4) var(--space-3);
+  border-right: var(--border-width) solid var(--color-border);
+  overflow-y: auto;
+}
+.shell__brand { padding: 0 var(--space-3) var(--space-3); }
+.shell__section {
+  padding: var(--space-4) var(--space-3) var(--space-1);
+  font-size: 11px; font-weight: var(--weight-heading);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+.shell__foot { display: grid; gap: var(--space-2); margin-top: auto; padding: var(--space-3) var(--space-3) 0; }
+.shell__user { font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.shell__main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* ---- Page: a scrolling column of cards ---- */
+.page { width: 100%; max-width: var(--content-width); padding: var(--space-6); overflow-y: auto; }
+.page > h1 { margin-bottom: var(--space-4); }
+.page > h2 { margin: var(--space-6) 0 var(--space-3); }
+
+/* ---- Mailbox: list and reading pane ---- */
+.mailbox { display: grid; grid-template-columns: minmax(280px, var(--list-width)) 1fr; flex: 1; min-height: 0; }
+.mailbox__list { overflow-y: auto; background: var(--color-surface); border-right: var(--border-width) solid var(--color-border); }
+.mailbox__list-head {
+  position: sticky; top: 0; z-index: var(--z-sticky);
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+.mailbox__list-head h2 { flex: 1; }
+.mailbox__detail { min-width: 0; overflow-y: auto; padding: var(--space-5) var(--space-6) var(--space-8); }
+.mailbox__back { display: none; margin-bottom: var(--space-3); }
+
+/* ---- Reading header: subject, who and when, triage verdict ---- */
+.reading-head { margin-bottom: var(--space-4); }
+.reading-head h1 { margin-bottom: var(--space-2); overflow-wrap: anywhere; }
+.reading-head__meta { font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.reading-head__triage { margin-top: var(--space-3); font-size: var(--text-sm); }
+
+/* ---- Small screens: navigation becomes a top bar, list and detail alternate ---- */
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .shell__nav {
+    flex-direction: row; align-items: center;
+    padding: var(--space-2);
+    border-right: 0; border-bottom: var(--border-width) solid var(--color-border);
+    overflow-x: auto;
+  }
+  .shell__brand { padding: 0 var(--space-2); }
+  .shell__section, .shell__foot .assurance, .shell__user { display: none; }
+  .shell__nav .nav-item { white-space: nowrap; }
+  .shell__foot { margin: 0 0 0 auto; padding: 0; }
+  .mailbox { grid-template-columns: 1fr; }
+  .mailbox--reading .mailbox__list { display: none; }
+  .mailbox:not(.mailbox--reading) .mailbox__detail { display: none; }
+  .mailbox__back { display: inline-flex; }
+  .page, .mailbox__detail { padding: var(--space-4); }
+}

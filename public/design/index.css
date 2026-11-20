@@ -1,0 +1,14 @@
+/*
+ * Design system entry point. Cascade layers make the hierarchy explicit: a later layer
+ * always wins over an earlier one, whatever the selectors.
+ *
+ * brand/theme.css is loaded after this file, outside any layer, so a brand override
+ * always wins without !important.
+ */
+@layer tokens, base, atoms, molecules, organisms;
+
+@import url("tokens.css") layer(tokens);
+@import url("base.css") layer(base);
+@import url("atoms.css") layer(atoms);
+@import url("molecules.css") layer(molecules);
+@import url("organisms.css") layer(organisms);

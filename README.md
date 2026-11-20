@@ -21,6 +21,50 @@ Rien n'est envoyé sans validation explicite.
 
 « Enregistrer en brouillon » dépose la réponse, rattachée au fil d'origine, dans le dossier Brouillons de la boîte : en IMAP (dossier marqué `\Drafts`, ou nommé Drafts / Brouillons), via l'API Gmail, ou via Microsoft Graph. Rien n'est envoyé. Ce que vous modifiez ensuite dans votre messagerie n'est pas connu de mailia.
 
+## Marque
+
+L'apparence se change **sans toucher au code**, avec un dossier de marque :
+
+```sh
+cp -r public/brand ma-marque      # partir de la marque par défaut
+BRAND_DIR=./ma-marque npm start   # ou BRAND_DIR dans .env ; avec Docker, monter le dossier
+```
+
+| Fichier | Rôle |
+| --- | --- |
+| `theme.css` | Une dizaine de variables : couleur d'accent, fond, texte (clair et sombre), polices, arrondi, mode clair/sombre. Tout le reste en est dérivé. |
+| `brand.json` | `name` (titre, onglet, textes), `tagline`, `logo` et `logoDark` (noms de fichiers du dossier, optionnels). |
+| `favicon.svg`, logos, polices | Servis depuis le dossier. Une police web se déclare par `@font-face` dans `theme.css`. |
+
+Un fichier absent du dossier retombe sur celui de la marque par défaut. `brands/exemple/` est une marque fictive complète : `BRAND_DIR=./brands/exemple npm start`.
+
+**`/styleguide.html`** affiche tous les tokens et composants avec la marque en place : c'est la page à regarder pendant qu'on règle `theme.css`.
+
+## Design system
+
+L'interface suit la hiérarchie tokens → atomes → molécules → organismes → pages, une couche par fichier, en CSS comme en JavaScript :
+
+| Niveau | Styles (`public/design/`) | Composants (`public/ui/`) | Contenu |
+| --- | --- | --- | --- |
+| Tokens | `tokens.css` | — | Entrées de marque `--brand-*`, puis tokens sémantiques `--color-*`, `--font-*`, `--space-*`, `--radius-*`… |
+| Base | `base.css` | `dom.js` | Défauts des éléments HTML ; l'unique fonction de création d'éléments. |
+| Atomes | `atoms.css` | `atoms.js` | `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Text`, `BrandMark`… |
+| Molécules | `molecules.css` | `molecules.js` | `Field`, `FormRow`, `Actions`, `Card`, `NavItem`, `EmailListItem`, `Message`, toast… |
+| Organismes | `organisms.css` | `organisms.js` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `ReadingHeader`. |
+| Pages | — | `app.js`, `styleguide.js` | Comportement et textes uniquement, assemblés à partir des composants. |
+
+Règles, vérifiées par `test/design-system.test.js` :
+
+- une couleur ou une police n'est écrite en dur que dans `tokens.css` ;
+- les composants n'utilisent que les tokens sémantiques, jamais `--brand-*` ;
+- les pages n'écrivent ni nom de classe ni élément HTML : elles appellent des composants ;
+- les dépendances ne vont que vers le bas (un atome n'importe pas une molécule) ;
+- un thème de marque ne peut définir que des tokens existants.
+
+Les couches CSS (`@layer`) rendent la hiérarchie effective : une molécule l'emporte toujours sur un atome, et `theme.css`, chargé hors couche, l'emporte sur tout sans `!important`.
+
+Pour ajouter un composant : la fonction dans `ui/<niveau>.js`, son style dans `design/<niveau>.css`, un exemple dans `styleguide.js`.
+
 ## Confidentialité
 
 C'est la contrainte de conception principale.
@@ -107,7 +151,7 @@ boîte mail ──► relève (IMAP / Gmail API / Graph)
 - `src/triage.js`, `src/reply.js`, `src/llm/prompts.js` : décisions pures (tri, mise en forme de la réponse, construction des prompts).
 - `src/llm/openrouter.js` : client OpenRouter, politique de confidentialité imposée.
 - `src/mail/` : un fournisseur par type de boîte, même interface (`verify`, `listNew`, `send`).
-- `src/sync.js` : relève et tri ; `src/app.js` : API HTTP ; `public/` : interface (sans étape de build).
+- `src/sync.js` : relève et tri ; `src/app.js` : API HTTP ; `public/` : interface (sans étape de build, voir « Design system »).
 - Données : SQLite dans `DATA_DIR`.
 
 Le contenu d'un email reçu est traité comme une donnée non fiable : il est délimité dans les prompts et le modèle a pour consigne de ne pas suivre les instructions qu'il contiendrait. La relecture humaine avant envoi reste la vraie protection.

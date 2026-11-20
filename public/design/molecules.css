@@ -1,0 +1,121 @@
+/*
+ * MOLECULES — a few atoms assembled for one job: a labelled field, a card, a row of actions,
+ * a line of the email list, a navigation entry. Built by public/ui/molecules.js.
+ */
+
+/* ---- Field: label + control + hint ---- */
+.field { margin-bottom: var(--space-3); }
+.field__label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+.field__hint { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--color-text-muted); }
+.field--check .field__label {
+  display: flex; align-items: center; gap: var(--space-2);
+  margin: 0;
+  font-weight: var(--weight-regular);
+}
+
+/* ---- Stack item: gives any block the vertical rhythm of a field ---- */
+.block { margin-bottom: var(--space-3); }
+
+/* ---- Form row: fields side by side, wrapping on small screens ---- */
+.form-row { display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; }
+.form-row > .field { flex: 1 1 160px; }
+.form-row > .field--narrow { flex: 0 0 110px; }
+.form-row > .field--fit { flex: 0 0 auto; }
+
+/* ---- Actions: a row of buttons and inline items ---- */
+.actions { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+
+/* ---- Card ---- */
+.card {
+  --card-bg: var(--color-surface);
+  --card-padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--card-padding);
+  background: var(--card-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.card__head { display: flex; gap: var(--space-3); align-items: baseline; flex-wrap: wrap; margin-bottom: var(--space-3); }
+.card__section { margin-top: var(--space-4); }
+.card__section > h3 { margin-bottom: var(--space-2); }
+
+/* ---- Page header: title and its actions ---- */
+.page-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+
+/* ---- Empty state ---- */
+.empty { padding: var(--space-8) var(--space-5); text-align: center; color: var(--color-text-muted); }
+
+/* ---- Navigation item ---- */
+.nav-item {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--color-hover); }
+.nav-item[aria-current="page"] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: var(--weight-strong);
+}
+.nav-item__count { font-size: var(--text-xs); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+
+/* ---- Assurance: a standing guarantee shown in the navigation ---- */
+.assurance {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-ok-soft);
+  color: var(--color-ok);
+  font-size: var(--text-xs);
+}
+
+/* ---- Email list item ---- */
+.email-item {
+  display: block; width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.email-item:hover { background: var(--color-hover); }
+.email-item[aria-current="true"] { background: var(--color-accent-soft); }
+.email-item__top { display: flex; justify-content: space-between; gap: var(--space-2); }
+.email-item__from, .email-item__subject, .email-item__snippet { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-item__from { font-weight: var(--weight-strong); }
+.email-item__date { font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+.email-item__snippet { font-size: var(--text-sm); color: var(--color-text-muted); }
+.email-item__badges { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-1); }
+.email-item__badges:empty { display: none; }
+
+/* ---- Message: the body of an email, scrollable when long ---- */
+.message { max-height: 420px; overflow-y: auto; }
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed; left: 50%; bottom: var(--space-6); transform: translateX(-50%);
+  z-index: var(--z-overlay);
+  max-width: min(560px, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-overlay-bg);
+  color: var(--color-overlay-text);
+  box-shadow: var(--shadow-overlay);
+}
+.toast--error { background: var(--color-danger); color: var(--color-on-danger); }
+
+/* ---- Swatch (style guide only) ---- */
+.swatch { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); font-size: var(--text-sm); }
+.swatch__chip {
+  flex: 0 0 auto; width: 44px; height: 28px;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.swatch__name { font-family: var(--font-mono); }

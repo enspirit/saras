@@ -9,6 +9,8 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - mailia-data:/data
+      # Votre marque : décommentez, et ajoutez BRAND_DIR=/brand dans .env
+      # - ./brands/exemple:/brand:ro
 
 volumes:
   mailia-data:

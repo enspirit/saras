@@ -15,6 +15,8 @@ export function loadConfig(env = process.env) {
     secureCookies: baseUrl.startsWith('https://'),
     appSecret: secret,
     dataDir: env.DATA_DIR || './data',
+    // Folder holding a company's theme.css, brand.json, logo and favicon; empty for the default brand.
+    brandDir: env.BRAND_DIR || '',
     // Closed by default: beyond the first account, people join through an administrator's invitation.
     allowSignup: env.ALLOW_SIGNUP === 'true',
     invitationDays: int(env.INVITATION_DAYS, 7),

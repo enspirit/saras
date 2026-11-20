@@ -1,0 +1,20 @@
+/*
+ * Example brand: a fictitious firm, « Dupont & Associés ». It shows how little is needed
+ * to change the whole look. Try it with:  BRAND_DIR=./brands/exemple npm start
+ */
+
+:root {
+  --brand-accent: #0b6b53;
+  --brand-on-accent: #ffffff;
+  --brand-canvas: #f4f1ea;
+  --brand-ink: #22201c;
+
+  --brand-accent-dark: #63d1ad;
+  --brand-on-accent-dark: #062a20;
+  --brand-canvas-dark: #171613;
+  --brand-ink-dark: #ece8df;
+
+  --brand-font-heading: Georgia, "Times New Roman", serif;
+  --brand-radius: 2px;
+  --logo-height: 30px;
+}

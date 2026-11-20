@@ -1,4 +1,5 @@
 import express from 'express';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hashPassword, randomToken, tokenHash, verifyPassword } from './crypto.js';
 import { seedDefaultPrompts } from './db.js';
@@ -43,6 +44,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     });
     next();
   });
+  // A company's brand folder takes precedence, file by file: what it lacks falls back to the default brand.
+  if (config.brandDir) app.use('/brand', express.static(resolve(config.brandDir)));
   app.use(express.static(PUBLIC_DIR));
   app.use('/api', (req, res, next) => {
     res.set('cache-control', 'no-store');
