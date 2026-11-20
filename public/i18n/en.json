@@ -188,7 +188,6 @@
     "connectGoogle": "Connect Gmail / Google Workspace",
     "connectMicrosoft": "Connect Outlook / Microsoft 365",
     "oauthUnavailable": "Not configured on this server ({prefix}_CLIENT_ID / _SECRET variables)",
-    "oauthFailed": "Connection failed: {error}",
     "imapTitle": "Connect with IMAP / SMTP",
     "email": "Email address",
     "name": "Name",
@@ -324,6 +323,91 @@
       "subject3": "Thank you for yesterday",
       "body": "Hello,\n\nBody of a message in plain text, as it was received.\n\nKind regards",
       "triage": "A reply is expected."
+    }
+  },
+  "server": {
+    "request": {
+      "jsonRequired": "Content-Type application/json is required.",
+      "unknownRoute": "Unknown route.",
+      "tooManyAttempts": "Too many attempts, try again in a few minutes."
+    },
+    "error": {
+      "internal": "Internal server error."
+    },
+    "auth": {
+      "signedOut": "Not signed in.",
+      "adminOnly": "Reserved for administrators.",
+      "invalidCredentials": "Wrong email or password.",
+      "invalidEmail": "Invalid email address.",
+      "passwordTooShort": "Password: 10 characters minimum.",
+      "emailTaken": "An account already exists with this address.",
+      "signupClosed": "Sign-up is closed: ask an administrator for an invitation."
+    },
+    "invitation": {
+      "invalid": "Invalid or expired invitation. Ask your administrator for a new one."
+    },
+    "users": {
+      "notFound": "User not found.",
+      "cannotDeleteSelf": "You cannot delete your own account.",
+      "invalidRole": "Invalid role.",
+      "lastAdmin": "At least one administrator must remain."
+    },
+    "settings": {
+      "invalidModel": "Invalid model: expected \"provider/model\"."
+    },
+    "accounts": {
+      "notFound": "Mailbox not found.",
+      "serversRequired": "IMAP and SMTP servers and ports are required.",
+      "passwordRequired": "Password required.",
+      "connectionFailed": "Could not connect: {detail}"
+    },
+    "oauth": {
+      "notConfigured": "This OAuth provider is not configured on this server.",
+      "denied": "Authorisation refused ({detail}).",
+      "expired": "The OAuth session expired, start again.",
+      "failed": "Connection failed: {detail}"
+    },
+    "sync": {
+      "fetchFailed": "Could not read the mailbox: {detail}",
+      "noKey": "No OpenRouter key: automatic triage is disabled."
+    },
+    "prompts": {
+      "notFound": "Prompt not found.",
+      "incomplete": "Name and instructions are required."
+    },
+    "emails": {
+      "notFound": "Email not found.",
+      "invalidStatus": "Invalid status.",
+      "alreadySent": "A reply has already been sent.",
+      "alreadyHandled": "A reply has already been handled for this email.",
+      "contentErased": "The content of this email has been erased (retention period exceeded)."
+    },
+    "reply": {
+      "empty": "The reply is empty.",
+      "noRecipient": "At least one recipient is required.",
+      "invalidAddress": "Invalid address: {address}",
+      "sendFailed": "Could not send: {detail}",
+      "draftFailed": "Could not save the draft: {detail}"
+    },
+    "llm": {
+      "noKey": "No OpenRouter key configured. Add one in Settings.",
+      "unreachable": "OpenRouter cannot be reached ({detail}).",
+      "keyRefused": "OpenRouter refused the key. Check it in Settings.",
+      "noCredit": "Not enough OpenRouter credit.",
+      "noZdrProvider": "No provider of the model \"{model}\" guarantees zero data retention (ZDR). Choose another model in Settings. {detail}",
+      "rateLimited": "OpenRouter rate limit reached, try again in a moment.",
+      "failed": "OpenRouter error ({status}). {detail}",
+      "emptyAnswer": "The model returned an empty answer."
+    },
+    "triage": {
+      "unknownSender": "Unknown sender.",
+      "ownMessage": "Message sent by yourself.",
+      "alreadyAnswered": "Already answered from your mail client.",
+      "automatedAddress": "Automated address (no-reply, notification…).",
+      "autoSubmitted": "Automated message (Auto-Submitted).",
+      "newsletter": "Mailing list or newsletter.",
+      "bulk": "Bulk mail.",
+      "unavailable": "Automatic triage unavailable: to be checked."
     }
   }
 }

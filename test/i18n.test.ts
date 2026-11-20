@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
+import { MESSAGES } from '../src/messages.ts';
 import { flatten, format, formatRich, parameterNames } from '../web/i18n/format.ts';
 
 const root = new URL('../', import.meta.url);
@@ -87,8 +88,19 @@ test('every key the interface asks for exists, and every key is used', () => {
       if (literal && namespaces.has(literal.split('.')[0])) literals.add(literal);
     }
   }
-  for (const key of literals) assert.ok(key in source, `${key} is used but not translated`);
-  for (const key of Object.keys(source)) assert.ok(literals.has(key), `${key} is translated but never used`);
+  // A literal may also be a server code the interface compares with (it then lives under `server.`).
+  for (const key of literals) assert.ok(key in source || `server.${key}` in source, `${key} is used but not translated`);
+  // Keys under `server.` are reached through the codes the server sends: see the next test.
+  for (const key of Object.keys(source).filter((k) => !k.startsWith('server.'))) assert.ok(literals.has(key), `${key} is translated but never used`);
+});
+
+test('every message of the server is translated, and English says exactly what the server says', () => {
+  const codes = Object.keys(MESSAGES).sort();
+  for (const { tag } of catalogue.languages) {
+    const translated = Object.keys(messages[tag] ?? {}).filter((k) => k.startsWith('server.')).map((k) => k.slice('server.'.length)).sort();
+    assert.deepEqual(translated, codes, `server messages of ${tag}.json`);
+  }
+  for (const [code, text] of Object.entries(MESSAGES)) assert.equal(messages.en?.[`server.${code}`], text, code);
 });
 
 test('no wording is written in the code: it all comes from the translation files', () => {

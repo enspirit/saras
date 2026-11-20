@@ -1,7 +1,13 @@
 {
-  "default": "fr",
+  "default": "en",
   "languages": [
-    { "tag": "fr", "name": "Français" },
-    { "tag": "en", "name": "English" }
+    {
+      "tag": "en",
+      "name": "English"
+    },
+    {
+      "tag": "fr",
+      "name": "Français"
+    }
   ]
 }

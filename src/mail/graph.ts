@@ -75,7 +75,7 @@ export function createGraphProvider(_account: Sender, { getAccessToken, fetchImp
       ...init,
       headers: { authorization: `Bearer ${await getAccessToken()}`, 'content-type': 'application/json', ...extraHeaders },
     });
-    if (!res.ok) throw new Error(`Microsoft Graph ${res.status} sur ${path.split('?')[0]}`);
+    if (!res.ok) throw new Error(`Microsoft Graph ${res.status} on ${path.split('?')[0]}`);
     return (res.status === 202 || res.status === 204 ? null : await res.json()) as T;
   }
 

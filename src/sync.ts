@@ -2,7 +2,10 @@ import type { Config } from './config.ts';
 import type { Vault } from './crypto.ts';
 import type { Db } from './db.ts';
 import { errorMessage } from './errors.ts';
+import { LlmError } from './llm/openrouter.ts';
 import { buildTriageMessages } from './llm/prompts.ts';
+import { encodeProblem, problem } from './messages.ts';
+import type { Problem } from './messages.ts';
 import type { MailService } from './mail/index.ts';
 import { heuristicTriage, parseTriageAnswer } from './triage.ts';
 import type { AccountRow, ChatAnswer, Email, EmailRow, IncomingEmail, Llm, PromptRow, UserRow } from './types.ts';
@@ -47,7 +50,7 @@ export function llmSettings(
 export interface TriageResult {
   /** Emails the LLM was asked about. */
   triaged: number;
-  error: string | null;
+  error: Problem | null;
 }
 
 export interface SyncResult extends TriageResult {
@@ -113,17 +116,17 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
   async function triagePending(account: AccountRow): Promise<TriageResult> {
     const user = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
     const { apiKey, model } = llmSettings(user, { config, vault });
-    if (!apiKey) return { triaged: 0, error: 'Aucune clé OpenRouter : tri automatique désactivé.' };
+    if (!apiKey) return { triaged: 0, error: problem('sync.noKey') };
     const prompts = await db.query<Pick<PromptRow, 'id' | 'name' | 'description'>>('SELECT id, name, description FROM prompts ORDER BY id');
     const pending = await db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [account.id]);
     let triaged = 0;
     for (const row of pending) {
-      const messages = buildTriageMessages({ email: rowToEmail(row), prompts, ownAddress: account.email });
+      const messages = buildTriageMessages({ email: rowToEmail(row), prompts, ownAddress: account.email, language: user.language });
       let answer: ChatAnswer;
       try {
         answer = await llm.chat({ apiKey, model, messages, temperature: 0, maxTokens: 200 });
       } catch (e) {
-        return { triaged, error: errorMessage(e) };
+        return { triaged, error: e instanceof LlmError ? e.problem : problem('llm.failed', { status: 0, detail: errorMessage(e) }) };
       }
       const verdict = parseTriageAnswer(answer.text, prompts.map((p) => p.id));
       await db.run(`UPDATE emails SET status = $1, triage_source = 'ai', triage_reason = $2, priority = $3, suggested_prompt_id = $4 WHERE id = $5`, [
@@ -152,17 +155,17 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
     const known = new Set(stored.map((r) => r.provider_id));
     const since = new Date(Date.now() - config.syncDays * 86_400_000);
     let fetched = 0;
-    let error: string | null = null;
+    let error: Problem | null = null;
     try {
       const emails = await mail.providerFor(account).listNew({ since, limit: config.syncMaxEmails, known });
       await store(account, emails);
       fetched = emails.length;
     } catch (e) {
-      error = `Lecture de la boîte impossible : ${errorMessage(e)}`;
+      error = problem('sync.fetchFailed', { detail: errorMessage(e) });
     }
     const triage: TriageResult = error ? { triaged: 0, error: null } : await triagePending(account);
     error = error || triage.error;
-    await db.run(`UPDATE accounts SET last_sync_at = now(), last_error = $1 WHERE id = $2`, [error, account.id]);
+    await db.run(`UPDATE accounts SET last_sync_at = now(), last_error = $1 WHERE id = $2`, [encodeProblem(error), account.id]);
     return { fetched, triaged: triage.triaged, error };
   }
 

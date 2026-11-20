@@ -62,6 +62,8 @@ export interface UserRow {
   email: string;
   password_hash: string;
   role: Role;
+  /** Language of the interface as the user last used it: what the server writes for them follows it. */
+  language: string;
   model: string | null;
   signature: string;
   openrouter_key_enc: string | null;
@@ -167,6 +169,8 @@ export interface OutgoingReply {
   to: string[];
   cc: string[];
   text: string;
+  /** Language of the line introducing the quoted original. */
+  language: string;
 }
 
 export interface ListQuery {

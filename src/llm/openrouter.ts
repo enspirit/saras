@@ -1,3 +1,5 @@
+import { problem } from '../messages.ts';
+import type { Problem } from '../messages.ts';
 import type { ChatAnswer, ChatMessage, ChatRequest, Fetch, Llm } from '../types.ts';
 
 /**
@@ -13,11 +15,13 @@ export const PRIVACY = Object.freeze({ zdr: true, data_collection: 'deny' } as c
 
 export class LlmError extends Error {
   status: number;
+  problem: Problem;
 
-  constructor(message: string, status: number) {
-    super(message);
+  constructor(described: Problem, status: number) {
+    super(described.message);
     this.name = 'LlmError';
     this.status = status;
+    this.problem = described;
   }
 }
 
@@ -41,21 +45,21 @@ export function buildChatRequest({ model, messages, temperature = 0.3, maxTokens
 }
 
 /** Pure: turn an OpenRouter error into a message the user can act on. */
-export function explainError(status: number, body: OpenRouterBody | null, model: string): string {
+export function explainError(status: number, body: OpenRouterBody | null, model: string): Problem {
   const detail = body?.error?.message || '';
-  if (status === 401) return 'Clé OpenRouter refusée. Vérifiez-la dans Réglages.';
-  if (status === 402) return 'Crédit OpenRouter insuffisant.';
+  if (status === 401) return problem('llm.keyRefused');
+  if (status === 402) return problem('llm.noCredit');
   if (status === 404 || /data policy|no endpoints|no allowed providers/i.test(detail)) {
-    return `Aucun fournisseur du modèle « ${model} » ne garantit la non-conservation des données (ZDR). Choisissez un autre modèle dans Réglages. ${detail}`.trim();
+    return problem('llm.noZdrProvider', { model, detail });
   }
-  if (status === 429) return 'Limite de débit OpenRouter atteinte, réessayez dans un instant.';
-  return `Erreur OpenRouter (${status}). ${detail}`.trim();
+  if (status === 429) return problem('llm.rateLimited');
+  return problem('llm.failed', { status, detail });
 }
 
 export function createOpenRouter({ baseUrl, fetchImpl = fetch }: { baseUrl: string; fetchImpl?: Fetch }): Llm {
   return {
     async chat({ apiKey, model, messages, temperature, maxTokens }: ChatRequest): Promise<ChatAnswer> {
-      if (!apiKey) throw new LlmError('Aucune clé OpenRouter configurée. Ajoutez-la dans Réglages.', 400);
+      if (!apiKey) throw new LlmError(problem('llm.noKey'), 400);
       let res: Response;
       try {
         res = await fetchImpl(`${baseUrl}/chat/completions`, {
@@ -66,13 +70,13 @@ export function createOpenRouter({ baseUrl, fetchImpl = fetch }: { baseUrl: stri
         });
       } catch (e) {
         const error = e as Error & { cause?: { code?: string } };
-        throw new LlmError(`OpenRouter injoignable (${error.cause?.code || error.name}).`, 502);
+        throw new LlmError(problem('llm.unreachable', { detail: error.cause?.code || error.name }), 502);
       }
       const body = (await res.json().catch(() => null)) as OpenRouterBody | null;
       // OpenRouter may also report provider failures inside a 200 response.
       if (!res.ok || body?.error) throw new LlmError(explainError(body?.error?.code || res.status, body, model), 502);
       const text = body?.choices?.[0]?.message?.content;
-      if (typeof text !== 'string' || !text.trim()) throw new LlmError('Réponse vide du modèle.', 502);
+      if (typeof text !== 'string' || !text.trim()) throw new LlmError(problem('llm.emptyAnswer'), 502);
       return { text: text.trim(), model: body?.model || model, provider: body?.provider || null };
     },
   };

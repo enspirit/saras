@@ -188,7 +188,6 @@
     "connectGoogle": "Connecter Gmail / Google Workspace",
     "connectMicrosoft": "Connecter Outlook / Microsoft 365",
     "oauthUnavailable": "Non configuré sur ce serveur (variables {prefix}_CLIENT_ID / _SECRET)",
-    "oauthFailed": "Connexion échouée : {error}",
     "imapTitle": "Connecter en IMAP / SMTP",
     "email": "Adresse email",
     "name": "Nom",
@@ -324,6 +323,91 @@
       "subject3": "Merci pour hier",
       "body": "Bonjour,\n\nCorps d’un message en texte brut, tel qu’il a été reçu.\n\nCordialement",
       "triage": "Une réponse est attendue."
+    }
+  },
+  "server": {
+    "request": {
+      "jsonRequired": "Content-Type application/json requis.",
+      "unknownRoute": "Route inconnue.",
+      "tooManyAttempts": "Trop de tentatives, réessayez dans quelques minutes."
+    },
+    "error": {
+      "internal": "Erreur interne du serveur."
+    },
+    "auth": {
+      "signedOut": "Non connecté.",
+      "adminOnly": "Réservé aux administrateurs.",
+      "invalidCredentials": "Email ou mot de passe incorrect.",
+      "invalidEmail": "Adresse email invalide.",
+      "passwordTooShort": "Mot de passe : 10 caractères minimum.",
+      "emailTaken": "Un compte existe déjà avec cette adresse.",
+      "signupClosed": "Les inscriptions sont fermées : demandez une invitation à un administrateur."
+    },
+    "invitation": {
+      "invalid": "Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur."
+    },
+    "users": {
+      "notFound": "Utilisateur introuvable.",
+      "cannotDeleteSelf": "Vous ne pouvez pas supprimer votre propre compte.",
+      "invalidRole": "Rôle invalide.",
+      "lastAdmin": "Il doit rester au moins un administrateur."
+    },
+    "settings": {
+      "invalidModel": "Modèle invalide : attendu « fournisseur/modèle »."
+    },
+    "accounts": {
+      "notFound": "Boîte mail introuvable.",
+      "serversRequired": "Serveurs et ports IMAP et SMTP requis.",
+      "passwordRequired": "Mot de passe requis.",
+      "connectionFailed": "Connexion impossible : {detail}"
+    },
+    "oauth": {
+      "notConfigured": "Ce fournisseur OAuth n’est pas configuré sur ce serveur.",
+      "denied": "Autorisation refusée ({detail}).",
+      "expired": "Session OAuth expirée, recommencez.",
+      "failed": "Connexion échouée : {detail}"
+    },
+    "sync": {
+      "fetchFailed": "Lecture de la boîte impossible : {detail}",
+      "noKey": "Aucune clé OpenRouter : tri automatique désactivé."
+    },
+    "prompts": {
+      "notFound": "Prompt introuvable.",
+      "incomplete": "Nom et instructions requis."
+    },
+    "emails": {
+      "notFound": "Email introuvable.",
+      "invalidStatus": "Statut invalide.",
+      "alreadySent": "Réponse déjà envoyée.",
+      "alreadyHandled": "Une réponse a déjà été traitée pour cet email.",
+      "contentErased": "Le contenu de cet email a été effacé (durée de conservation dépassée)."
+    },
+    "reply": {
+      "empty": "La réponse est vide.",
+      "noRecipient": "Au moins un destinataire est requis.",
+      "invalidAddress": "Adresse invalide : {address}",
+      "sendFailed": "Envoi impossible : {detail}",
+      "draftFailed": "Enregistrement du brouillon impossible : {detail}"
+    },
+    "llm": {
+      "noKey": "Aucune clé OpenRouter configurée. Ajoutez-la dans Réglages.",
+      "unreachable": "OpenRouter injoignable ({detail}).",
+      "keyRefused": "Clé OpenRouter refusée. Vérifiez-la dans Réglages.",
+      "noCredit": "Crédit OpenRouter insuffisant.",
+      "noZdrProvider": "Aucun fournisseur du modèle « {model} » ne garantit la non-conservation des données (ZDR). Choisissez un autre modèle dans Réglages. {detail}",
+      "rateLimited": "Limite de débit OpenRouter atteinte, réessayez dans un instant.",
+      "failed": "Erreur OpenRouter ({status}). {detail}",
+      "emptyAnswer": "Réponse vide du modèle."
+    },
+    "triage": {
+      "unknownSender": "Expéditeur inconnu.",
+      "ownMessage": "Message envoyé par vous-même.",
+      "alreadyAnswered": "Déjà répondu depuis votre messagerie.",
+      "automatedAddress": "Adresse automatique (no-reply, notification…).",
+      "autoSubmitted": "Message automatique (Auto-Submitted).",
+      "newsletter": "Liste de diffusion ou newsletter.",
+      "bulk": "Envoi en masse.",
+      "unavailable": "Tri automatique indisponible : à vérifier."
     }
   }
 }

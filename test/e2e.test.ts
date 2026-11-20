@@ -13,8 +13,8 @@ after(() => stack.stop());
 const client = () => createClient(() => stack.url);
 
 const me = client();
-const triageCalls = () => stack.llmRequests.filter((r) => r.body.messages[0].content.includes('Tu tries la boîte'));
-const draftCalls = () => stack.llmRequests.filter((r) => !r.body.messages[0].content.includes('Tu tries la boîte'));
+const triageCalls = () => stack.llmRequests.filter((r) => r.body.messages[0].content.includes('You triage the inbox'));
+const draftCalls = () => stack.llmRequests.filter((r) => !r.body.messages[0].content.includes('You triage the inbox'));
 /** What the API returns for a prompt and for a listed email, as far as these tests look. */
 interface PromptView {
   id: number;
@@ -64,7 +64,9 @@ test('signup, and writes must be JSON', async () => {
 test('a wrong IMAP password is refused, a right one connects', async () => {
   const bad = await me('POST', '/accounts/imap', { ...stack.imapAccount, password: 'nope' });
   assert.equal(bad.status, 400);
-  assert.match(bad.body.error, /Connexion impossible/);
+  assert.equal(bad.body.code, 'accounts.connectionFailed');
+  assert.match(bad.body.error, /^Could not connect: /);
+  assert.ok(bad.body.params.detail);
   assert.equal((await me('POST', '/accounts/imap', stack.imapAccount)).status, 201);
   const stored = (await stack.db.one<{ config_enc: string }>('SELECT config_enc FROM accounts'))?.config_enc ?? '';
   assert.ok(stored.length > 20);
@@ -99,7 +101,7 @@ test('sync fetches the inbox and triages it; newsletters never reach the LLM', a
 
 test('the AI suggests a prompt per email, the user may pick another one', async () => {
   const rdv = (await me('GET', `/emails/${todo[1].id}`)).body;
-  assert.equal(rdv.suggestedPromptId, promptNamed('Prise de rendez-vous').id);
+  assert.equal(rdv.suggestedPromptId, promptNamed('Appointment scheduling').id);
   const devis = (await me('GET', `/emails/${todo[0].id}`)).body;
   assert.equal(devis.suggestedPromptId, null);
   assert.deepEqual(devis.recipients, { to: ['claire@client.example'], cc: [] });
@@ -107,7 +109,7 @@ test('the AI suggests a prompt per email, the user may pick another one', async 
 });
 
 test('draft, edit, explain the change, send', async () => {
-  const support = promptNamed('Support client');
+  const support = promptNamed('Customer support');
   const draft = await me('POST', `/emails/${todo[0].id}/draft`, { promptId: support.id, instructions: 'proposer 1200 euros' });
   assert.equal(draft.status, 201);
   assert.match(draft.body.aiText, /Voici notre proposition/);
@@ -134,8 +136,11 @@ test('draft, edit, explain the change, send', async () => {
   assert.match(mail.raw, /^Subject: Re: Demande de devis pour 20 licences/m);
   assert.match(mail.raw, /^In-Reply-To: <devis-1@client\.example>/m);
   assert.match(mail.raw, /^References: <devis-1@client\.example>/m);
-  assert.match(mail.raw, /1200 euros HT/);
-  assert.match(mail.raw, /> Nous souhaitons equiper 20 personnes/);
+  // Long lines are folded by the quoted-printable encoding: undo it before reading the body.
+  const body = mail.raw.replace(/=\r\n/g, '');
+  assert.match(body, /1200 euros HT/);
+  assert.match(body, /On .* \(UTC\), Claire Martin <claire@client\.example> wrote:/, 'the quote line follows the user\'s language');
+  assert.match(body, /> Nous souhaitons equiper 20 personnes/);
 
   assert.equal(stack.sentFolder().length, 1, 'a copy is filed in the Sent folder');
 
@@ -150,8 +155,8 @@ test('draft, edit, explain the change, send', async () => {
 });
 
 test('the reason of a correction is given to the next draft made with the same prompt', async () => {
-  const support = promptNamed('Support client');
-  const rdvPrompt = promptNamed('Prise de rendez-vous');
+  const support = promptNamed('Customer support');
+  const rdvPrompt = promptNamed('Appointment scheduling');
   await me('POST', `/emails/${todo[1].id}/draft`, { promptId: support.id });
   assert.match(lastDraftSystemPrompt(), /- Toujours donner le prix hors taxes/);
   await me('POST', `/emails/${todo[1].id}/draft`, { promptId: rdvPrompt.id });
@@ -240,7 +245,7 @@ test('prompts are shared; only administrators manage them', async () => {
   assert.deepEqual(seen.map((p: PromptView) => p.id), prompts.map((p: PromptView) => p.id));
   assert.deepEqual(Object.keys(seen[0]), ['id', 'name', 'description']);
 
-  const support = promptNamed('Support client');
+  const support = promptNamed('Customer support');
   assert.equal((await eve('PUT', `/prompts/${support.id}`, { name: 'x', systemPrompt: 'y' })).status, 403);
   assert.equal((await eve('POST', '/prompts', { name: 'x', systemPrompt: 'y' })).status, 403);
   assert.equal((await eve('DELETE', `/prompts/${support.id}`)).status, 403);

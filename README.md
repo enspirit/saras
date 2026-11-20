@@ -11,11 +11,11 @@ A self-hosted web tool to answer email with the help of AI, without handing it t
 
 Nothing is sent without explicit validation.
 
-The interface is available in French and English (see "Translations"); code and documentation are in English.
+Everything is in English by default, and the interface is also available in French (see "Translations").
 
 ## Roles
 
-- The **first account created** is the administrator. They can appoint others in **Utilisateurs**; at least one always remains.
+- The **first account created** is the administrator. They can appoint others in **Users**; at least one always remains.
 - Other accounts join **by invitation**: the administrator enters an address and gets a one-time link, valid for `INVITATION_DAYS` days (7 by default), which they pass on themselves — saras has no outgoing mailbox of its own. The invited person only chooses a password. Only a hash of the link is stored; inviting the same address again invalidates the previous link. `ALLOW_SIGNUP=true` reopens free sign-up.
 - An administrator can **delete an account**: its connected mailboxes and stored emails are erased from saras; the prompts it created are kept.
 - **Prompts are shared** by all users. Only administrators create and edit them; users see their name and description, not the instructions.
@@ -23,7 +23,7 @@ The interface is available in French and English (see "Translations"); code and 
 
 ## Drafts
 
-"Enregistrer en brouillon" files the reply, attached to the original thread, in the mailbox's Drafts folder: over IMAP (the folder flagged `\Drafts`, or named Drafts / Brouillons), through the Gmail API, or through Microsoft Graph. Nothing is sent. What you change afterwards in your mail client is unknown to saras.
+"Save as draft" files the reply, attached to the original thread, in the mailbox's Drafts folder: over IMAP (the folder flagged `\Drafts`, or named Drafts or Brouillons), through the Gmail API, or through Microsoft Graph. Nothing is sent. What you change afterwards in your mail client is unknown to saras.
 
 ## Branding
 
@@ -48,9 +48,9 @@ A file missing from the folder falls back to the default brand's. `brands/exampl
 
 Every word of the interface comes from a translation file; none is written in the code (a test enforces it).
 
-- **Files:** `public/i18n/<language>.json`, one per language, plus `public/i18n/index.json`, which lists the languages and names the default one. French is the source language, English is provided.
+- **Files:** `public/i18n/<language>.json`, one per language, plus `public/i18n/index.json`, which lists the languages and names the default one. English is the default and the source language; French is provided.
 - **Format:** Tolgee's native JSON — keys nested on dots, values in ICU MessageFormat: `{name}` parameters, `{count, plural, one {…} other {…}}`, `{kind, select, …}`, and `<tag>…</tag>` for a part the interface renders as a link or in bold.
-- **Language shown:** the user's choice (Réglages → Langue, also on the sign-in page), else the first browser language available, else the default. A missing translation falls back to the default language. Dates follow the reader's regional format.
+- **Language shown:** the user's choice (Settings → Language, also on the sign-in page), else the first browser language available, else the default. A missing translation falls back to the default language. Dates follow the reader's regional format.
 - **Adding a language:** add `public/i18n/<tag>.json` and one line in `index.json`. No rebuild is needed.
 
 In the code, `t('key', params)` returns a string and `tRich('key', params, { link: … })` returns nodes for messages with tags (`web/i18n.ts`). The formatter itself (`web/i18n/format.ts`) is a small dependency-free implementation of the ICU subset above.
@@ -61,9 +61,17 @@ In the code, `t('key', params)` returns a string and `tRich('key', params, { lin
 
 `.tolgeerc.json` maps the files for the [Tolgee CLI](https://docs.tolgee.io/tolgee-cli): with a project id and an API key (`TOLGEE_API_KEY`), `npx @tolgee/cli push` uploads the keys and `npx @tolgee/cli pull` brings translations back into `public/i18n/`. Tolgee's in-context editing SDK is not integrated.
 
-### Not translated
+### What the server writes
 
-Text produced by the server stays in French for now: API error messages, the reasons given by triage, and the prompts sent to the LLM (which also set the language of the triage reasons). Prompt names and descriptions are whatever the administrators wrote.
+The server never sends sentences of its own to the interface: errors, triage verdicts made by rules and mailbox problems travel as a code with parameters (`src/messages.ts`, with their English text), which the interface translates under the `server.` keys. A test keeps the English file identical to the server's text and every language complete.
+
+The server remembers each user's language (sent by the interface) for what it writes on their behalf:
+
+- the reason the LLM gives for a triage verdict is asked for in that language;
+- the line introducing the quoted original in a reply ("On …, … wrote:") follows it, for the languages the server knows (English and French; English otherwise);
+- the default prompts are created in the language of the first account (English and French sets are provided).
+
+The prompts sent to the LLM are in English. The reply itself is always drafted in the language of the email received. Prompt names and descriptions are whatever the administrators wrote.
 
 ## Design system
 
@@ -122,7 +130,7 @@ npm run build   # compiles the browser code
 npm start
 ```
 
-Open http://localhost:3000 and create the first account: it becomes the administrator, then sign-up closes. Connect a mailbox in **Comptes mail** and invite your colleagues from **Utilisateurs**.
+Open http://localhost:3000 and create the first account: it becomes the administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
 
 With Docker, which also starts a PostgreSQL server:
 
@@ -167,7 +175,7 @@ The schema is created at startup (`src/db.ts`). The tests run on the embedded da
 
 ## Configuration
 
-Every variable is described in [`.env.example`](.env.example). The default model (`OPENROUTER_MODEL`) can be overridden per user in **Réglages**, as can the OpenRouter key.
+Every variable is described in [`.env.example`](.env.example). The default model (`OPENROUTER_MODEL`) can be overridden per user in **Settings**, as can the OpenRouter key.
 
 ## How it works
 
@@ -223,7 +231,6 @@ GitHub Actions type-checks, builds and runs them on every push and pull request 
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
 - No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).
-- Server-side messages (API errors, triage reasons) are not translated yet: see "Translations".
 
 ## License
 

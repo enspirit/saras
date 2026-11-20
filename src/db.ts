@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import pg from 'pg';
-import { DEFAULT_PROMPTS } from './default-prompts.ts';
+import { defaultPrompts } from './default-prompts.ts';
 
 /**
  * The database is PostgreSQL, reached in one of two ways behind the same interface:
@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin','user')),
+  language TEXT NOT NULL DEFAULT 'en',
   model TEXT,
   signature TEXT NOT NULL DEFAULT '',
   openrouter_key_enc TEXT,
@@ -117,6 +118,7 @@ CREATE TABLE IF NOT EXISTS replies (
   cc_json TEXT NOT NULL DEFAULT '[]',
   sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en';
 `;
 
 /** What the server driver and the embedded one have in common, once narrowed to our needs. */
@@ -205,8 +207,8 @@ export async function openDb({ databaseUrl, dataDir = null }: DbOptions = {}): P
 }
 
 /** Prompts are shared by all users; prompts.user_id records who created them. */
-export async function seedDefaultPrompts(db: Db, userId: number): Promise<void> {
-  for (const p of DEFAULT_PROMPTS) {
+export async function seedDefaultPrompts(db: Db, userId: number, language: string): Promise<void> {
+  for (const p of defaultPrompts(language)) {
     await db.run('INSERT INTO prompts (user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4)', [userId, p.name, p.description, p.systemPrompt]);
   }
 }

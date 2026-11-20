@@ -24,7 +24,7 @@ export function escapeHtml(text: string): string {
 
 export function truncate(text: string | null | undefined, max: number): string {
   const s = String(text || '');
-  return s.length <= max ? s : `${s.slice(0, max)}\n[… message tronqué]`;
+  return s.length <= max ? s : `${s.slice(0, max)}\n[… message truncated]`;
 }
 
 /** "Jane Doe <jane@x.org>" or "jane@x.org" -> { name, address } */

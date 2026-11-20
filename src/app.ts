@@ -10,6 +10,8 @@ import type { Db } from './db.ts';
 import { errorMessage } from './errors.ts';
 import type { SessionUser } from './express.d.ts';
 import { LlmError, PRIVACY } from './llm/openrouter.ts';
+import { decodeProblem, problem, readReason } from './messages.ts';
+import type { MessageCode, MessageParams, Problem } from './messages.ts';
 import { buildDraftMessages } from './llm/prompts.ts';
 import type { MailService } from './mail/index.ts';
 import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from './mail/oauth.ts';
@@ -39,14 +41,21 @@ import type {
 const SESSION_DAYS = 30;
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
 
+/** A refusal with its HTTP status and a message code the interface can translate. */
 class HttpError extends Error {
   status: number;
+  problem: Problem;
 
-  constructor(status: number, message: string) {
-    super(message);
+  constructor(status: number, code: MessageCode, params: MessageParams = {}) {
+    const described = problem(code, params);
+    super(described.message);
     this.status = status;
+    this.problem = described;
   }
 }
+
+/** A language tag as the interface sends it, or English when it does not look like one. */
+const languageTag = (v: unknown): string => (typeof v === 'string' && /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(v) ? v : 'en');
 
 /** A trimmed, length-capped string out of anything a client may have sent. */
 const str = (v: unknown, max = 10_000): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -93,7 +102,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.set('cache-control', 'no-store');
     // Cross-site forms cannot send JSON: requiring it on writes is our CSRF barrier, with SameSite=Lax.
     if (!['GET', 'HEAD'].includes(req.method) && !req.is('application/json')) {
-      return next(new HttpError(415, 'Content-Type application/json requis'));
+      return next(new HttpError(415, 'request.jsonRequired'));
     }
     next();
   });
@@ -116,12 +125,12 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
           [sid],
         )
       : undefined;
-    if (!row) return next(new HttpError(401, 'Non connecté'));
+    if (!row) return next(new HttpError(401, 'auth.signedOut'));
     req.user = row;
     next();
   };
 
-  const adminOnly: RequestHandler = (req, _res, next) => next(req.user.role === 'admin' ? undefined : new HttpError(403, 'Réservé aux administrateurs.'));
+  const adminOnly: RequestHandler = (req, _res, next) => next(req.user.role === 'admin' ? undefined : new HttpError(403, 'auth.adminOnly'));
 
   // Brute-force brake on passwords and invitation tokens: ten wrong guesses per address
   // lock that address out for fifteen minutes. Successful requests do not count.
@@ -130,7 +139,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const ip = req.ip || '';
     const now = Date.now();
     const entry = failures.get(ip);
-    if (entry && entry.reset > now && entry.count >= 10) throw new HttpError(429, 'Trop de tentatives, réessayez dans quelques minutes.');
+    if (entry && entry.reset > now && entry.count >= 10) throw new HttpError(429, 'request.tooManyAttempts');
     try {
       await handler(req, res);
     } catch (e) {
@@ -150,13 +159,19 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   };
 
   /** Creates a user, and the default prompts with the very first one. `on` is the database or a transaction on it. */
-  async function createUser(on: Db, email: string, password: unknown, role: Role): Promise<number> {
-    if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
-    if (typeof password !== 'string' || password.length < 10) throw new HttpError(400, 'Mot de passe : 10 caractères minimum.');
-    if (await on.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
-    const created = await on.one<{ id: number }>('INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id', [email, hashPassword(password), role]);
+  async function createUser(on: Db, email: string, password: unknown, role: Role, language: string): Promise<number> {
+    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
+    if (typeof password !== 'string' || password.length < 10) throw new HttpError(400, 'auth.passwordTooShort');
+    if (await on.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'auth.emailTaken');
+    const created = await on.one<{ id: number }>('INSERT INTO users (email, password_hash, role, language) VALUES ($1, $2, $3, $4) RETURNING id', [
+      email,
+      hashPassword(password),
+      role,
+      language,
+    ]);
     const id = created!.id;
-    if (!(await on.one('SELECT 1 FROM prompts LIMIT 1'))) await seedDefaultPrompts(on, id);
+    // The first account's language decides the language of the default prompts.
+    if (!(await on.one('SELECT 1 FROM prompts LIMIT 1'))) await seedDefaultPrompts(on, id, language);
     return id;
   }
 
@@ -166,8 +181,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   app.post('/api/auth/signup', guarded(async (req, res) => {
     const { allowSignup, firstAccount } = await publicInfo();
-    if (!allowSignup) throw new HttpError(403, 'Les inscriptions sont fermées : demandez une invitation à un administrateur.');
-    const id = await db.transaction((tx) => createUser(tx, str(req.body.email, 320).toLowerCase(), req.body.password, firstAccount ? 'admin' : 'user'));
+    if (!allowSignup) throw new HttpError(403, 'auth.signupClosed');
+    const id = await db.transaction((tx) => createUser(tx, str(req.body.email, 320).toLowerCase(), req.body.password, firstAccount ? 'admin' : 'user', languageTag(req.body.language)));
     await openSession(res, id);
     res.status(201).json({ ok: true });
   }));
@@ -180,15 +195,15 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   app.post('/api/invitations/check', guarded(async (req, res) => {
     const invitation = await pendingInvitation(req.body.token);
-    if (!invitation) throw new HttpError(404, 'Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur.');
+    if (!invitation) throw new HttpError(404, 'invitation.invalid');
     res.json({ email: invitation.email });
   }));
 
   app.post('/api/invitations/accept', guarded(async (req, res) => {
     const invitation = await pendingInvitation(req.body.token);
-    if (!invitation) throw new HttpError(404, 'Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur.');
+    if (!invitation) throw new HttpError(404, 'invitation.invalid');
     const id = await db.transaction(async (tx) => {
-      const userId = await createUser(tx, invitation.email, req.body.password, invitation.role);
+      const userId = await createUser(tx, invitation.email, req.body.password, invitation.role, languageTag(req.body.language));
       await tx.run('DELETE FROM invitations WHERE id = $1', [invitation.id]);
       return userId;
     });
@@ -199,7 +214,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.post('/api/auth/login', guarded(async (req, res) => {
     const user = await db.one<UserRow>('SELECT * FROM users WHERE email = $1', [str(req.body.email, 320).toLowerCase()]);
     if (!user || !verifyPassword(String(req.body.password || ''), user.password_hash)) {
-      throw new HttpError(401, 'Email ou mot de passe incorrect.');
+      throw new HttpError(401, 'auth.invalidCredentials');
     }
     await openSession(res, user.id);
     res.json({ ok: true });
@@ -217,6 +232,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.json({
       email: req.user.email,
       role: req.user.role,
+      language: req.user.language,
       signature: req.user.signature,
       model,
       defaultModel: config.openrouter.model,
@@ -229,10 +245,12 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   });
 
   app.put('/api/settings', auth, async (req, res) => {
-    const { model, signature, openrouterKey } = req.body;
+    const { model, signature, openrouterKey, language } = req.body;
+    // The language of the interface, which the server needs for what it writes on the user's behalf.
+    if (typeof language === 'string') await db.run('UPDATE users SET language = $1 WHERE id = $2', [languageTag(language), req.user.id]);
     if (typeof model === 'string') {
       const m = str(model, 200);
-      if (m && !/^[\w.:-]+\/[\w.:-]+$/.test(m)) throw new HttpError(400, 'Modèle invalide : attendu « fournisseur/modèle ».');
+      if (m && !/^[\w.:-]+\/[\w.:-]+$/.test(m)) throw new HttpError(400, 'settings.invalidModel');
       await db.run('UPDATE users SET model = $1 WHERE id = $2', [m || null, req.user.id]);
     }
     if (typeof signature === 'string') await db.run('UPDATE users SET signature = $1 WHERE id = $2', [str(signature, 2000), req.user.id]);
@@ -246,7 +264,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // ---- mail accounts ----------------------------------------------------------------------
   const accountOf = async (req: Request): Promise<AccountRow> => {
     const account = await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1 AND user_id = $2', [Number(req.params.id), req.user.id]);
-    if (!account) throw new HttpError(404, 'Compte introuvable');
+    if (!account) throw new HttpError(404, 'accounts.notFound');
     return account;
   };
   const backgroundSync = (account: AccountRow): void => {
@@ -254,14 +272,13 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   };
 
   app.get('/api/accounts', auth, async (req, res) => {
-    res.json(
-      await db.query(
+    const rows = await db.query<{ lastError: string | null }>(
         `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.last_sync_at AS "lastSyncAt", a.last_error AS "lastError",
                 (SELECT count(*)::int FROM emails e WHERE e.account_id = a.id AND e.status IN ('needs_reply','pending')) AS todo
          FROM accounts a WHERE a.user_id = $1 ORDER BY a.id`,
         [req.user.id],
-      ),
     );
+    res.json(rows.map((row) => ({ ...row, lastError: decodeProblem(row.lastError) })));
   });
 
   app.post('/api/accounts/imap', auth, async (req, res) => {
@@ -277,14 +294,14 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       pass: String(b.password || ''),
     });
     const cfg: ImapCredentials = { imap: server(b.imapHost, b.imapPort, b.imapSecure), smtp: server(b.smtpHost, b.smtpPort, b.smtpSecure) };
-    if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
-    if (!cfg.imap.host || !cfg.smtp.host || !cfg.imap.port || !cfg.smtp.port) throw new HttpError(400, 'Serveurs et ports IMAP et SMTP requis.');
-    if (!cfg.imap.pass) throw new HttpError(400, 'Mot de passe requis.');
+    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
+    if (!cfg.imap.host || !cfg.smtp.host || !cfg.imap.port || !cfg.smtp.port) throw new HttpError(400, 'accounts.serversRequired');
+    if (!cfg.imap.pass) throw new HttpError(400, 'accounts.passwordRequired');
     const draft = { kind: 'imap' as const, email, display_name: str(b.displayName, 200) };
     try {
       await mail.imapProvider(draft, cfg).verify();
     } catch (e) {
-      throw new HttpError(400, `Connexion impossible : ${errorMessage(e)}`);
+      throw new HttpError(400, 'accounts.connectionFailed', { detail: errorMessage(e) });
     }
     const account = await saveAccount(req.user.id, draft, cfg);
     backgroundSync(account);
@@ -314,7 +331,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // ---- OAuth (Google / Microsoft) ---------------------------------------------------------
   app.get('/api/oauth/:kind/start', auth, async (req, res) => {
     const { kind } = req.params;
-    if (!isOAuthKind(kind) || !isConfigured(config, kind)) throw new HttpError(404, 'Fournisseur OAuth non configuré sur ce serveur.');
+    if (!isOAuthKind(kind) || !isConfigured(config, kind)) throw new HttpError(404, 'oauth.notConfigured');
     const state = randomToken(24);
     await db.run('UPDATE sessions SET oauth_state = $1 WHERE id = $2', [`${kind}:${state}`, req.user.sid]);
     res.redirect(authorizationUrl(config, kind, state));
@@ -322,20 +339,22 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   app.get('/api/oauth/:kind/callback', auth, async (req, res) => {
     const { kind } = req.params;
-    const back = (error?: string) => res.redirect(`/#/accounts${error ? `?error=${encodeURIComponent(error)}` : ''}`);
+    // The outcome travels in the URL: a message code, and its technical detail when there is one.
+    const back = (code?: MessageCode, detail = '') =>
+      res.redirect(`/#/accounts${code ? `?error=${encodeURIComponent(code)}&detail=${encodeURIComponent(detail)}` : ''}`);
     const expected = req.user.oauth_state;
     await db.run('UPDATE sessions SET oauth_state = NULL WHERE id = $1', [req.user.sid]);
-    if (!isOAuthKind(kind) || !isConfigured(config, kind)) return back('Fournisseur OAuth non configuré.');
-    if (req.query.error) return back(`Autorisation refusée (${str(req.query.error, 100)}).`);
-    if (!expected || expected !== `${kind}:${req.query.state}`) return back('Session OAuth expirée, recommencez.');
+    if (!isOAuthKind(kind) || !isConfigured(config, kind)) return back('oauth.notConfigured');
+    if (req.query.error) return back('oauth.denied', str(req.query.error, 100));
+    if (!expected || expected !== `${kind}:${req.query.state}`) return back('oauth.expired');
     try {
       const tokens = await exchangeCode(config, kind, String(req.query.code || ''), fetchImpl);
-      if (!tokens.refreshToken) throw new Error('aucun refresh token reçu');
+      if (!tokens.refreshToken) throw new Error('no refresh token received');
       const identity = await fetchIdentity(kind, tokens.accessToken, fetchImpl);
       backgroundSync(await saveAccount(req.user.id, { kind, email: identity.email, display_name: identity.name }, tokens));
       back();
     } catch (e) {
-      back(errorMessage(e));
+      back('oauth.failed', errorMessage(e));
     }
   });
 
@@ -343,12 +362,12 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // Prompts are shared by every user and maintained by administrators.
   const promptOf = async (req: Request, id: unknown = req.params.id): Promise<PromptRow> => {
     const prompt = Number.isInteger(Number(id)) ? await db.one<PromptRow>('SELECT * FROM prompts WHERE id = $1', [Number(id)]) : undefined;
-    if (!prompt) throw new HttpError(404, 'Prompt introuvable');
+    if (!prompt) throw new HttpError(404, 'prompts.notFound');
     return prompt;
   };
   const promptBody = (req: Request) => {
     const p = { name: str(req.body.name, 120), description: str(req.body.description, 500), systemPrompt: str(req.body.systemPrompt, 20_000) };
-    if (!p.name || !p.systemPrompt) throw new HttpError(400, 'Nom et instructions requis.');
+    if (!p.name || !p.systemPrompt) throw new HttpError(400, 'prompts.incomplete');
     return p;
   };
 
@@ -432,8 +451,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.post('/api/invitations', auth, adminOnly, async (req, res) => {
     const email = str(req.body.email, 320).toLowerCase();
     const role: Role = req.body.role === 'admin' ? 'admin' : 'user';
-    if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
-    if (await db.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
+    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
+    if (await db.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'auth.emailTaken');
     const token = randomToken();
     // Inviting the same address again replaces the earlier link.
     const saved = await db.one<{ id: number }>(
@@ -453,13 +472,13 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   const userOf = async (req: Request): Promise<UserRow> => {
     const target = await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [Number(req.params.id) || 0]);
-    if (!target) throw new HttpError(404, 'Utilisateur introuvable');
+    if (!target) throw new HttpError(404, 'users.notFound');
     return target;
   };
 
   app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
     const target = await userOf(req);
-    if (target.id === req.user.id) throw new HttpError(409, 'Vous ne pouvez pas supprimer votre propre compte.');
+    if (target.id === req.user.id) throw new HttpError(409, 'users.cannotDeleteSelf');
     await db.transaction(async (tx) => {
       // Shared prompts outlive their author.
       await tx.run('UPDATE prompts SET user_id = $1 WHERE user_id = $2', [req.user.id, target.id]);
@@ -470,10 +489,10 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   app.put('/api/users/:id', auth, adminOnly, async (req, res) => {
     const target = await userOf(req);
-    if (!['admin', 'user'].includes(req.body.role)) throw new HttpError(400, 'Rôle invalide');
+    if (!['admin', 'user'].includes(req.body.role)) throw new HttpError(400, 'users.invalidRole');
     const admins = await db.one<{ n: number }>(`SELECT count(*)::int AS n FROM users WHERE role = 'admin'`);
     if (target.role === 'admin' && req.body.role === 'user' && admins!.n === 1) {
-      throw new HttpError(409, 'Il doit rester au moins un administrateur.');
+      throw new HttpError(409, 'users.lastAdmin');
     }
     await db.run('UPDATE users SET role = $1 WHERE id = $2', [req.body.role, target.id]);
     res.json({ ok: true });
@@ -488,7 +507,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       `SELECT e.*, a.email AS account_email FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = $1 AND a.user_id = $2`,
       [Number(req.params.id) || 0, req.user.id],
     );
-    if (!row) throw new HttpError(404, 'Email introuvable');
+    if (!row) throw new HttpError(404, 'emails.notFound');
     return row;
   };
 
@@ -496,7 +515,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const statuses = BOXES[String(req.query.box)] || BOXES.todo!;
     const rows = await db.query(
       `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status, e.priority,
-              e.triage_reason AS "triageReason", e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS account,
+              e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS account,
               (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
        FROM emails e JOIN accounts a ON a.id = e.account_id
        WHERE a.user_id = $1 AND e.status = ANY($2)
@@ -526,8 +545,11 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
        FROM replies WHERE email_id = $1 ORDER BY id DESC LIMIT 1`,
       [row.id],
     );
+    const reason = readReason(email.triageReason);
     res.json({
       ...email,
+      triageReason: reason.text,
+      triageReasonCode: reason.code,
       account: row.account_email,
       recipients: replyRecipients(email, row.account_email, false),
       recipientsAll: replyRecipients(email, row.account_email, true),
@@ -539,15 +561,15 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.post('/api/emails/:id/status', auth, async (req, res) => {
     const row = await emailOf(req);
     const status = req.body.status;
-    if (!['needs_reply', 'no_reply', 'ignored'].includes(status)) throw new HttpError(400, 'Statut invalide');
-    if (row.status === 'sent') throw new HttpError(409, 'Réponse déjà envoyée.');
+    if (!['needs_reply', 'no_reply', 'ignored'].includes(status)) throw new HttpError(400, 'emails.invalidStatus');
+    if (row.status === 'sent') throw new HttpError(409, 'emails.alreadySent');
     await db.run(`UPDATE emails SET status = $1, triage_source = 'user' WHERE id = $2`, [status, row.id]);
     res.json({ ok: true });
   });
 
   app.post('/api/emails/:id/draft', auth, async (req, res) => {
     const row = await emailOf(req);
-    if (!row.body_text) throw new HttpError(410, 'Le contenu de cet email a été effacé (durée de conservation dépassée).');
+    if (!row.body_text) throw new HttpError(410, 'emails.contentErased');
     const prompt = await promptOf(req, req.body.promptId);
     const instructions = str(req.body.instructions, 4000);
     const { apiKey, model } = llmSettings(req.user, { config, vault });
@@ -582,22 +604,22 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
     const to = addressList(req.body.to);
     const cc = addressList(req.body.cc);
-    if (!text) throw new HttpError(400, 'La réponse est vide.');
-    if (!to.length) throw new HttpError(400, 'Au moins un destinataire est requis.');
+    if (!text) throw new HttpError(400, 'reply.empty');
+    if (!to.length) throw new HttpError(400, 'reply.noRecipient');
     const bad = [...to, ...cc].find((a) => !isEmailAddress(a));
-    if (bad) throw new HttpError(400, `Adresse invalide : ${bad}`);
-    if (row.status === 'sent' || sending.has(row.id)) throw new HttpError(409, 'Une réponse a déjà été traitée pour cet email.');
+    if (bad) throw new HttpError(400, 'reply.invalidAddress', { address: bad });
+    if (row.status === 'sent' || sending.has(row.id)) throw new HttpError(409, 'emails.alreadyHandled');
     // Claimed before the first await that follows, so that a second request cannot slip in between.
     sending.add(row.id);
     try {
       const draft = Number(req.body.draftId) ? await db.one<DraftRow>('SELECT * FROM drafts WHERE id = $1 AND email_id = $2', [Number(req.body.draftId), row.id]) : undefined;
       const account = await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1', [row.account_id]);
       const provider = mail.providerFor(account!);
-      const reply = { email: rowToEmail(row), to, cc, text };
+      const reply = { email: rowToEmail(row), to, cc, text, language: req.user.language };
       try {
         await (mode === 'draft' ? provider.saveDraft(reply) : provider.send(reply));
       } catch (e) {
-        throw new HttpError(502, `${mode === 'draft' ? 'Enregistrement du brouillon' : 'Envoi'} impossible : ${errorMessage(e)}`);
+        throw new HttpError(502, mode === 'draft' ? 'reply.draftFailed' : 'reply.sendFailed', { detail: errorMessage(e) });
       }
       const edited = draft ? wasEdited(draft.ai_text, text) : false;
       await db.transaction(async (tx) => {
@@ -617,13 +639,16 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.post('/api/emails/:id/save-draft', auth, deliver('draft'));
 
   // ---- errors -----------------------------------------------------------------------------
-  app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Route inconnue')));
+  app.use('/api', (_req, _res, next) => next(new HttpError(404, 'request.unknownRoute')));
   const onError: ErrorRequestHandler = (err: Error & { status?: number; statusCode?: number }, req, res, next) => {
     if (res.headersSent) return next(err);
+    const known = err instanceof HttpError || err instanceof LlmError;
     const status = err instanceof LlmError ? 502 : err.status || err.statusCode || 500;
     // Only the message is logged, never request bodies: they contain mail content.
-    if (status >= 500 && !(err instanceof LlmError) && !(err instanceof HttpError)) console.error(`${req.method} ${req.path}: ${err.message}`);
-    res.status(status).json({ error: status === 500 ? 'Erreur interne du serveur.' : err.message });
+    if (!known && status >= 500) console.error(`${req.method} ${req.path}: ${err.message}`);
+    // Malformed requests refused by the framework (4xx) keep its own message, without a code.
+    const described = known ? err.problem : status >= 500 ? problem('error.internal') : null;
+    res.status(status).json(described ? { error: described.message, code: described.code, params: described.params } : { error: err.message });
   };
   app.use(onError);
 

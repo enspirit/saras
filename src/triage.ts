@@ -1,3 +1,4 @@
+import { reasonCode } from './messages.ts';
 import type { IncomingEmail, Priority } from './types.ts';
 
 /**
@@ -10,6 +11,7 @@ import type { IncomingEmail, Priority } from './types.ts';
 
 export interface RuleVerdict {
   status: 'no_reply';
+  /** A coded reason (see messages.ts), translated by the interface. */
   reason: string;
 }
 
@@ -29,13 +31,13 @@ export function heuristicTriage(
 ): RuleVerdict | null {
   const from = String(email.fromAddr || '').toLowerCase();
   const h = email.headers || {};
-  if (!from) return { status: 'no_reply', reason: 'Expéditeur inconnu' };
-  if (from === String(ownAddress || '').toLowerCase()) return { status: 'no_reply', reason: 'Message envoyé par vous-même' };
-  if (email.answered) return { status: 'no_reply', reason: 'Déjà répondu depuis votre messagerie' };
-  if (NO_REPLY.test(from.split('@')[0])) return { status: 'no_reply', reason: 'Adresse automatique (no-reply, notification…)' };
-  if (h.autoSubmitted && h.autoSubmitted.toLowerCase() !== 'no') return { status: 'no_reply', reason: 'Message automatique (Auto-Submitted)' };
-  if (h.listUnsubscribe || h.listId) return { status: 'no_reply', reason: 'Liste de diffusion ou newsletter' };
-  if (/^(bulk|junk|list)$/i.test(h.precedence || '')) return { status: 'no_reply', reason: 'Envoi en masse' };
+  if (!from) return { status: 'no_reply', reason: reasonCode('triage.unknownSender') };
+  if (from === String(ownAddress || '').toLowerCase()) return { status: 'no_reply', reason: reasonCode('triage.ownMessage') };
+  if (email.answered) return { status: 'no_reply', reason: reasonCode('triage.alreadyAnswered') };
+  if (NO_REPLY.test(from.split('@')[0])) return { status: 'no_reply', reason: reasonCode('triage.automatedAddress') };
+  if (h.autoSubmitted && h.autoSubmitted.toLowerCase() !== 'no') return { status: 'no_reply', reason: reasonCode('triage.autoSubmitted') };
+  if (h.listUnsubscribe || h.listId) return { status: 'no_reply', reason: reasonCode('triage.newsletter') };
+  if (/^(bulk|junk|list)$/i.test(h.precedence || '')) return { status: 'no_reply', reason: reasonCode('triage.bulk') };
   return null;
 }
 
@@ -60,7 +62,7 @@ export function extractJson(text: string | null | undefined): Record<string, unk
 export function parseTriageAnswer(answer: string, promptIds: number[]): TriageVerdict {
   const json = extractJson(answer);
   if (!json || typeof json.needs_reply !== 'boolean') {
-    return { status: 'needs_reply', reason: 'Tri automatique indisponible : à vérifier', promptId: null, priority: 'normal' };
+    return { status: 'needs_reply', reason: reasonCode('triage.unavailable'), promptId: null, priority: 'normal' };
   }
   const promptId = promptIds.includes(Number(json.prompt_id)) ? Number(json.prompt_id) : null;
   const priority = PRIORITIES.find((p) => p === json.priority) ?? 'normal';

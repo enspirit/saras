@@ -137,22 +137,24 @@ export function createImapProvider(account: Sender, cfg: ImapCredentials): MailP
       });
     },
 
-    async send({ email, to, cc, text }) {
-      const raw = await buildRawReply({ account, email, to, cc, text });
+    async send(reply) {
+      const { email, to, cc } = reply;
+      const raw = await buildRawReply({ account, ...reply });
       await smtpTransport().sendMail({ envelope: { from: account.email, to: [...to, ...cc] }, raw });
       // The mail is sent. What follows is bookkeeping in the mailbox and must not fail the send.
       await fileSentCopy(raw, email).catch(() => {});
     },
 
     /** Leave the reply in the mailbox's Drafts folder, for the user to finish in their mail client. */
-    async saveDraft({ email, to, cc, text }) {
-      const raw = await buildRawReply({ account, email, to, cc, text });
+    async saveDraft(reply) {
+      const { email } = reply;
+      const raw = await buildRawReply({ account, ...reply });
       const client = await connected();
       try {
         const boxes = await client.list();
         const drafts =
           boxes.find((box) => box.specialUse === '\\Drafts') || boxes.find((box) => /^(drafts?|brouillons?)$/i.test(box.name));
-        if (!drafts) throw new Error('aucun dossier Brouillons dans cette boîte');
+        if (!drafts) throw new Error('this mailbox has no Drafts folder');
         await client.append(drafts.path, raw, ['\\Draft', '\\Seen']);
       } finally {
         await client.logout().catch(() => {});

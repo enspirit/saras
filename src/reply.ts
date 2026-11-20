@@ -43,19 +43,28 @@ export function replyReferences(email: Pick<Email, 'refs' | 'messageId'>): strin
   return ids.slice(-20);
 }
 
-export function quoteOriginal(email: Pick<Email, 'date' | 'fromName' | 'fromAddr' | 'bodyText'>): string {
-  const when = new Date(email.date).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' });
+/** The line introducing the quoted original, in the languages we know; English otherwise. */
+const ATTRIBUTION: Record<string, (when: string, who: string) => string> = {
+  en: (when, who) => `On ${when} (UTC), ${who} wrote:`,
+  fr: (when, who) => `Le ${when} (UTC), ${who} a écrit :`,
+};
+
+export function quoteOriginal(email: Pick<Email, 'date' | 'fromName' | 'fromAddr' | 'bodyText'>, language = 'en'): string {
+  const base = language.split('-')[0] ?? 'en';
+  const attribution = ATTRIBUTION[base] ?? ATTRIBUTION.en!;
+  const locale = ATTRIBUTION[base] ? language : 'en';
+  const when = new Date(email.date).toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' });
   const who = email.fromName ? `${email.fromName} <${email.fromAddr}>` : email.fromAddr;
   const quoted = String(email.bodyText || '')
     .split('\n')
     .map((l) => (l.startsWith('>') ? `>${l}` : `> ${l}`))
     .join('\n');
-  return `Le ${when} (UTC), ${who} a écrit :\n${quoted}`;
+  return `${attribution(when, who)}\n${quoted}`;
 }
 
-export function composeReplyBody(text: string, email: Pick<Email, 'date' | 'fromName' | 'fromAddr' | 'bodyText'>): string {
+export function composeReplyBody(text: string, email: Pick<Email, 'date' | 'fromName' | 'fromAddr' | 'bodyText'>, language = 'en'): string {
   const body = String(text || '').trimEnd();
-  return email.bodyText ? `${body}\n\n${quoteOriginal(email)}\n` : `${body}\n`;
+  return email.bodyText ? `${body}\n\n${quoteOriginal(email, language)}\n` : `${body}\n`;
 }
 
 /** Was the AI proposal changed by the user? Whitespace-only differences do not count. */

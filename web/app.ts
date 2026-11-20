@@ -7,7 +7,7 @@ import { AppShell, AuthPanel, Mailbox, Page, ReadingHeader } from './ui/organism
 import { loadBrand } from './ui/brand.ts';
 import type { Brand, ButtonOptions } from './ui/atoms.ts';
 import type { Child } from './ui/dom.ts';
-import { api, isSignedOut } from './api.ts';
+import { api, isSignedOut, problemText } from './api.ts';
 import { initI18n, language, languages, locale, setLanguage, t, tRich } from './i18n.ts';
 import type { Account, BoxId, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
 
@@ -106,6 +106,8 @@ async function boot(): Promise<void> {
   if (token) return renderInvitation(token);
   try {
     state.me = await api<Me>('GET', '/me');
+    // The server writes on the user's behalf (triage reasons, reply quoting): keep it told of their language.
+    if (state.me.language !== language()) void api('PUT', '/settings', { language: language() }).catch(() => {});
   } catch (e) {
     if (!isSignedOut(e)) toast(messageOf(e), true);
     state.me = null;
@@ -134,7 +136,7 @@ async function renderAuth(mode: 'login' | 'signup' = 'login', typedEmail = ''): 
   const password = Input({ type: 'password', required: true, minLength: signup ? 10 : 1, autocomplete: signup ? 'new-password' : 'current-password' });
   const submit = Button(signup ? t('auth.createAccount') : t('auth.signIn'), { variant: 'primary', type: 'submit', block: true });
   const form = SubmitForm(submit, '…', async () => {
-    await api('POST', signup ? '/auth/signup' : '/auth/login', { email: email.value, password: password.value });
+    await api('POST', signup ? '/auth/signup' : '/auth/login', { email: email.value, password: password.value, language: language() });
     if (signup) location.hash = '#/accounts';
     await boot();
   }, Field(t('auth.email'), email), Field(t('auth.password'), password, { hint: signup && t('auth.passwordHint') }), submit);
@@ -169,7 +171,7 @@ async function renderInvitation(token: string): Promise<void> {
   const password = Input({ type: 'password', required: true, minLength: 10, autocomplete: 'new-password' });
   const submit = Button(t('auth.createAccount'), { variant: 'primary', type: 'submit', block: true });
   const form = SubmitForm(submit, '…', async () => {
-    await api('POST', '/invitations/accept', { token, password: password.value });
+    await api('POST', '/invitations/accept', { token, password: password.value, language: language() });
     history.replaceState(null, '', '/#/accounts');
     await boot();
   },
@@ -213,7 +215,7 @@ function render(): void {
   if (box) void renderMailbox(box, r.id);
   else if (r.page === 'prompts' && isAdmin()) void renderPrompts();
   else if (r.page === 'users' && isAdmin()) void renderUsers();
-  else if (r.page === 'accounts') void renderAccounts(r.query.get('error'));
+  else if (r.page === 'accounts') void renderAccounts(r.query.get('error'), r.query.get('detail') ?? '');
   else if (r.page === 'settings') void renderSettings();
   else location.hash = '#/inbox';
 }
@@ -231,7 +233,7 @@ const renderMailbox = guard(async (box: Box, selectedId: number | null) => {
     for (const a of accounts) {
       const r = await api<SyncResult>('POST', `/accounts/${a.id}/sync`);
       fetched += r.fetched;
-      if (r.error) errors.push(t('mailbox.accountError', { account: a.email, error: r.error }));
+      if (r.error) errors.push(t('mailbox.accountError', { account: a.email, error: problemText(r.error) }));
     }
     if (errors.length) toast(errors.join(' — '), true);
     else toast(t('mailbox.fetched', { count: fetched }));
@@ -290,7 +292,7 @@ function emailDetail(email: EmailDetail, prompts: Prompt[], box: Box): Child {
     triage: (email.triageReason || pending) && [
       pending ? Badge(t('mailbox.untriaged'), 'warn') : Badge(triageSourceLabel(email.triageSource), 'neutral'),
       ' ',
-      pending ? t('reading.pendingTriage') : email.triageReason,
+      pending ? t('reading.pendingTriage') : email.triageReasonCode ? problemText({ code: email.triageReasonCode, params: {}, message: email.triageReason }) : email.triageReason,
     ],
   });
   const original = Card({}, email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased')));
@@ -518,7 +520,7 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
 /** Kinds of mailbox are product names: the same in every language. */
 const KIND: Record<Account['kind'], string> = { imap: 'IMAP / SMTP', google: 'Google', microsoft: 'Microsoft' };
 
-const renderAccounts = guard(async (oauthError?: string | null) => {
+const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: string) => {
   const accounts = await api<Account[]>('GET', '/accounts');
   const { oauth } = me();
 
@@ -558,16 +560,16 @@ const renderAccounts = guard(async (oauthError?: string | null) => {
   shell(
     Page(
       Heading(1, t('accounts.title')),
-      oauthError && Block(Notice('danger', t('accounts.oauthFailed', { error: oauthError }))),
+      oauthError && Block(Notice('danger', problemText({ code: oauthError, params: { detail: oauthDetail ?? '' }, message: oauthDetail || oauthError }))),
       accounts.length === 0 && Block(Notice('info', t('accounts.none'))),
       accounts.map((a) =>
         Card({ title: a.email, badges: [Badge(KIND[a.kind], 'neutral'), a.todo > 0 && Badge(t('accounts.todo', { count: a.todo }))] },
           Block(Text({ muted: true, small: true }, a.lastSyncAt ? t('accounts.lastSync', { date: fmtFull(a.lastSyncAt) }) : t('accounts.neverSynced'))),
-          a.lastError && Block(Notice('danger', a.lastError)),
+          a.lastError && Block(Notice('danger', problemText(a.lastError))),
           Actions(
             ActionButton(t('accounts.syncNow'), t('mailbox.refreshing'), async () => {
               const r = await api<SyncResult>('POST', `/accounts/${a.id}/sync`);
-              if (r.error) toast(r.error, true);
+              if (r.error) toast(problemText(r.error), true);
               else toast(t('accounts.synced', { fetched: r.fetched, triaged: r.triaged }));
               renderAccounts();
             }),

@@ -63,7 +63,7 @@ async function tokenRequest(config: OAuthConfig, kind: OAuthKind, params: Record
   });
   const body = (await res.json().catch(() => ({}))) as TokenResponse;
   if (!res.ok || !body.access_token) {
-    throw new Error(`Échec OAuth ${kind} : ${body.error_description || body.error || res.status}`);
+    throw new Error(`${kind} OAuth failed: ${body.error_description || body.error || res.status}`);
   }
   return {
     accessToken: body.access_token,
@@ -85,7 +85,7 @@ export async function fetchIdentity(kind: OAuthKind, accessToken: string, fetchI
       ? 'https://gmail.googleapis.com/gmail/v1/users/me/profile'
       : 'https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName';
   const res = await fetchImpl(url, { headers: { authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) throw new Error(`Impossible de lire le profil ${kind} (${res.status})`);
+  if (!res.ok) throw new Error(`could not read the ${kind} profile (${res.status})`);
   const body = (await res.json()) as { emailAddress?: string; mail?: string; userPrincipalName?: string; displayName?: string };
   return kind === 'google'
     ? { email: String(body.emailAddress).toLowerCase(), name: '' }

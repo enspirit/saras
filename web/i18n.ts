@@ -23,8 +23,8 @@ interface Catalogue {
 const STORAGE_KEY = 'saras.language';
 
 // Used only if index.json cannot be read.
-let catalogue: Catalogue = { default: 'fr', languages: [{ tag: 'fr', name: 'fr' }] };
-let current = 'fr';
+let catalogue: Catalogue = { default: 'en', languages: [{ tag: 'en', name: 'en' }] };
+let current = 'en';
 let messages: Record<string, string> = {};
 let fallback: Record<string, string> = {};
 
@@ -62,6 +62,9 @@ export async function initI18n(): Promise<void> {
 
 /** The message of a key: in the current language, else in the default one, else the key itself. */
 const template = (key: string): string => messages[key] ?? fallback[key] ?? key;
+
+/** Whether a key has a message, in the current language or the default one. */
+export const hasMessage = (key: string): boolean => key in messages || key in fallback;
 
 /** Translates a key. */
 export function t(key: string, params?: Params): string {

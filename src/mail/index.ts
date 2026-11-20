@@ -27,7 +27,7 @@ export function createMailService({ db, vault, config, fetchImpl = fetch }: Depe
     return async (): Promise<string> => {
       const tokens = vault.open<OAuthTokens>(account.config_enc);
       if (tokens.expiresAt - Date.now() > 60_000) return tokens.accessToken;
-      if (!tokens.refreshToken) throw new Error('session OAuth expirée : reconnectez la boîte');
+      if (!tokens.refreshToken) throw new Error('the OAuth session expired: reconnect the mailbox');
       const fresh = await refreshTokens(config, kind, tokens.refreshToken, fetchImpl);
       const next: OAuthTokens = { ...fresh, refreshToken: fresh.refreshToken || tokens.refreshToken };
       account.config_enc = vault.seal(next);

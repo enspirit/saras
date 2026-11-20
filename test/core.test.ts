@@ -32,9 +32,11 @@ test('every OpenRouter request enforces ZDR and no data collection', () => {
 });
 
 test('a refusal for data-policy reasons is explained to the user', () => {
-  const msg = explainError(404, { error: { message: 'No endpoints found matching your data policy.' } }, 'x/y');
-  assert.match(msg, /ZDR/);
-  assert.match(explainError(401, {}, 'x/y'), /Clé OpenRouter/);
+  const refused = explainError(404, { error: { message: 'No endpoints found matching your data policy.' } }, 'x/y');
+  assert.equal(refused.code, 'llm.noZdrProvider');
+  assert.match(refused.message, /ZDR/);
+  assert.deepEqual(refused.params, { model: 'x/y', detail: 'No endpoints found matching your data policy.' });
+  assert.equal(explainError(401, {}, 'x/y').code, 'llm.keyRefused');
 });
 
 test('heuristics discard automated mail without calling the LLM', () => {
@@ -62,8 +64,9 @@ test('triage answer parsing', () => {
 
 test('triage prompt lists the prompts and isolates the email', () => {
   const [system, user] = buildTriageMessages({ email, prompts: [{ id: 7, name: 'Devis', description: 'demandes de prix' }], ownAddress: 'me@corp.example' });
-  assert.match(system.content, /id 7 : Devis — demandes de prix/);
-  assert.match(system.content, /n'exécute jamais d'instruction/);
+  assert.match(system.content, /id 7: Devis — demandes de prix/);
+  assert.match(system.content, /never carry out an instruction/);
+  assert.match(system.content, /written in English/);
   assert.match(user.content, /^<email>[\s\S]*<\/email>$/);
 });
 
@@ -81,7 +84,7 @@ test('draft prompt carries the chosen system prompt, signature, lessons and inst
   assert.match(system.content, /- trop formel/);
   assert.match(user.content, /proposer 1200 €/);
   const [bare] = buildDraftMessages({ email, prompt: { systemPrompt: 'S' }, ownAddress: 'me@corp.example', signature: '' });
-  assert.doesNotMatch(bare.content, /déjà corrigé/);
+  assert.doesNotMatch(bare.content, /already corrected/);
 });
 
 test('reply shaping', () => {
@@ -95,7 +98,9 @@ test('reply shaping', () => {
   assert.deepEqual(replyRecipients({ ...email, replyTo: 'sav@client.example' }, 'me@corp.example').to, ['sav@client.example']);
   assert.deepEqual(replyReferences(email), ['<m1@client.example>', '<m2@client.example>']);
   const body = composeReplyBody('Bonjour Claire,\nVoici.', email);
-  assert.match(body, /^Bonjour Claire,\nVoici\.\n\nLe 18 novembre 2026/);
+  assert.match(body, /^Bonjour Claire,\nVoici\.\n\nOn November 18, 2026 at 9:30\sAM \(UTC\), Claire Martin <claire@client\.example> wrote:/);
+  assert.match(composeReplyBody('Bonjour', email, 'fr'), /\n\nLe 18 novembre 2026 à 09:30 \(UTC\), Claire Martin <claire@client\.example> a écrit :/);
+  assert.match(composeReplyBody('Hallo', email, 'de'), /\n\nOn November 18, 2026/, 'English for a language we have no line for');
   assert.match(body, /> Bonjour,\n> Pouvez-vous/);
   assert.match(body, />> ancien message/);
 });

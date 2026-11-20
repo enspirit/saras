@@ -81,7 +81,7 @@ export function createGmailProvider(account: Sender, { getAccessToken, fetchImpl
       ...init,
       headers: { authorization: `Bearer ${await getAccessToken()}`, 'content-type': 'application/json' },
     });
-    if (!res.ok) throw new Error(`Gmail API ${res.status} sur ${path.split('?')[0]}`);
+    if (!res.ok) throw new Error(`Gmail API ${res.status} on ${path.split('?')[0]}`);
     return (await res.json()) as T;
   }
 
@@ -100,16 +100,18 @@ export function createGmailProvider(account: Sender, { getAccessToken, fetchImpl
       return out;
     },
 
-    async send({ email, to, cc, text }) {
-      const raw = await buildRawReply({ account, email, to, cc, text });
+    async send(reply) {
+      const { email, to, cc } = reply;
+      const raw = await buildRawReply({ account, ...reply });
       await api('/messages/send', {
         method: 'POST',
         body: JSON.stringify({ raw: raw.toString('base64url'), threadId: email.threadId || undefined }),
       });
     },
 
-    async saveDraft({ email, to, cc, text }) {
-      const raw = await buildRawReply({ account, email, to, cc, text });
+    async saveDraft(reply) {
+      const { email } = reply;
+      const raw = await buildRawReply({ account, ...reply });
       await api('/drafts', {
         method: 'POST',
         body: JSON.stringify({ message: { raw: raw.toString('base64url'), threadId: email.threadId || undefined } }),

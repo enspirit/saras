@@ -4,14 +4,14 @@ import { formatAddress } from '../text.ts';
 import type { OutgoingReply, Sender } from '../types.ts';
 
 /** Build the RFC 822 reply (threading headers + quoted original) as a Buffer. */
-export async function buildRawReply({ account, email, to, cc, text }: OutgoingReply & { account: Sender }): Promise<Buffer> {
+export async function buildRawReply({ account, email, to, cc, text, language }: OutgoingReply & { account: Sender }): Promise<Buffer> {
   const references = replyReferences(email);
   const composer = new MailComposer({
     from: formatAddress({ name: account.display_name, address: account.email }),
     to,
     cc: cc?.length ? cc : undefined,
     subject: replySubject(email.subject),
-    text: composeReplyBody(text, email),
+    text: composeReplyBody(text, email, language),
     inReplyTo: email.messageId || undefined,
     references: references.length ? references : undefined,
   });

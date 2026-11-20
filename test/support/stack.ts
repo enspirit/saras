@@ -100,9 +100,9 @@ function fakeOpenRouter() {
       }
       const [system, user] = body.messages as [ChatMessage, ChatMessage];
       let content: string;
-      if (system.content.includes('Tu tries la boîte')) {
+      if (system.content.includes('You triage the inbox')) {
         const needs = !/Merci pour la reunion/.test(user.content);
-        const promptId = Number(system.content.match(/id (\d+) : Prise de rendez-vous/)?.[1]) || null;
+        const promptId = Number(system.content.match(/id (\d+): (?:Appointment scheduling|Prise de rendez-vous)/)?.[1]) || null;
         content = JSON.stringify({
           needs_reply: needs,
           reason: needs ? 'Une réponse est attendue.' : 'Simple remerciement.',
