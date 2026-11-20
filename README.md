@@ -175,3 +175,7 @@ The end-to-end tests start a real local IMAP server and a real local SMTP server
 - No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).
 - Interface wording is in French and written directly in `public/app.js`; there is no translation layer yet.
+
+## License
+
+[MIT](LICENSE).
