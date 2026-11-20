@@ -23,7 +23,7 @@ export function rowToEmail(row: EmailRow): Email {
     to: JSON.parse(row.to_json),
     cc: JSON.parse(row.cc_json),
     subject: row.subject,
-    date: row.date,
+    date: row.date.toISOString(),
     bodyText: row.body_text,
     status: row.status,
     triageSource: row.triage_source,
@@ -74,50 +74,48 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
   /** account id -> sync in flight; concurrent callers share it instead of fetching twice. */
   const running = new Map<number, Promise<SyncResult>>();
 
-  const insertEmail = db.prepare(`
-    INSERT OR IGNORE INTO emails
-      (account_id, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
-       subject, date, body_text, status, triage_source, triage_reason)
-    VALUES
-      (@accountId, @providerId, @messageId, @threadId, @refs, @fromName, @fromAddr, @replyTo, @toJson, @ccJson,
-       @subject, @date, @bodyText, @status, @triageSource, @triageReason)`);
-  const setTriage = db.prepare(
-    `UPDATE emails SET status = ?, triage_source = 'ai', triage_reason = ?, priority = ?, suggested_prompt_id = ? WHERE id = ?`,
-  );
-
-  function store(account: AccountRow, emails: IncomingEmail[]): void {
-    db.transaction(() => {
+  /** Stores what was fetched. A message already known (same account and provider id) is left as it is. */
+  async function store(account: AccountRow, emails: IncomingEmail[]): Promise<void> {
+    await db.transaction(async (tx) => {
       for (const email of emails) {
         const verdict = heuristicTriage(email, account.email);
-        insertEmail.run({
-          accountId: account.id,
-          providerId: email.providerId,
-          messageId: email.messageId,
-          threadId: email.threadId,
-          refs: email.refs || '',
-          fromName: email.fromName,
-          fromAddr: email.fromAddr,
-          replyTo: email.replyTo || '',
-          toJson: JSON.stringify(email.to),
-          ccJson: JSON.stringify(email.cc),
-          subject: email.subject,
-          date: email.date,
-          bodyText: email.bodyText.slice(0, MAX_STORED_BODY),
-          status: verdict ? verdict.status : 'pending',
-          triageSource: verdict ? 'rule' : null,
-          triageReason: verdict ? verdict.reason : '',
-        });
+        await tx.run(
+          `INSERT INTO emails
+             (account_id, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
+              subject, date, body_text, status, triage_source, triage_reason)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+           ON CONFLICT (account_id, provider_id) DO NOTHING`,
+          [
+            account.id,
+            email.providerId,
+            email.messageId,
+            email.threadId,
+            email.refs || '',
+            email.fromName,
+            email.fromAddr,
+            email.replyTo || '',
+            JSON.stringify(email.to),
+            JSON.stringify(email.cc),
+            email.subject,
+            email.date,
+            // PostgreSQL text cannot hold a NUL character, which a malformed mail may contain.
+            email.bodyText.replaceAll('\u0000', '').slice(0, MAX_STORED_BODY),
+            verdict ? verdict.status : 'pending',
+            verdict ? 'rule' : null,
+            verdict ? verdict.reason : '',
+          ],
+        );
       }
-    })();
+    });
   }
 
   /** Ask the LLM about every email the rules could not settle. Stops at the first LLM failure. */
   async function triagePending(account: AccountRow): Promise<TriageResult> {
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(account.user_id) as UserRow;
+    const user = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
     const { apiKey, model } = llmSettings(user, { config, vault });
     if (!apiKey) return { triaged: 0, error: 'Aucune clé OpenRouter : tri automatique désactivé.' };
-    const prompts = db.prepare('SELECT id, name, description FROM prompts ORDER BY id').all() as Pick<PromptRow, 'id' | 'name' | 'description'>[];
-    const pending = db.prepare(`SELECT * FROM emails WHERE account_id = ? AND status = 'pending' ORDER BY date DESC`).all(account.id) as EmailRow[];
+    const prompts = await db.query<Pick<PromptRow, 'id' | 'name' | 'description'>>('SELECT id, name, description FROM prompts ORDER BY id');
+    const pending = await db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [account.id]);
     let triaged = 0;
     for (const row of pending) {
       const messages = buildTriageMessages({ email: rowToEmail(row), prompts, ownAddress: account.email });
@@ -128,7 +126,13 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
         return { triaged, error: errorMessage(e) };
       }
       const verdict = parseTriageAnswer(answer.text, prompts.map((p) => p.id));
-      setTriage.run(verdict.status, verdict.reason, verdict.priority, verdict.promptId, row.id);
+      await db.run(`UPDATE emails SET status = $1, triage_source = 'ai', triage_reason = $2, priority = $3, suggested_prompt_id = $4 WHERE id = $5`, [
+        verdict.status,
+        verdict.reason,
+        verdict.priority,
+        verdict.promptId,
+        row.id,
+      ]);
       triaged += 1;
     }
     return { triaged, error: null };
@@ -144,26 +148,26 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
   }
 
   async function runSync(account: AccountRow): Promise<SyncResult> {
-    const stored = db.prepare('SELECT provider_id FROM emails WHERE account_id = ?').all(account.id) as Pick<EmailRow, 'provider_id'>[];
+    const stored = await db.query<Pick<EmailRow, 'provider_id'>>('SELECT provider_id FROM emails WHERE account_id = $1', [account.id]);
     const known = new Set(stored.map((r) => r.provider_id));
     const since = new Date(Date.now() - config.syncDays * 86_400_000);
     let fetched = 0;
     let error: string | null = null;
     try {
       const emails = await mail.providerFor(account).listNew({ since, limit: config.syncMaxEmails, known });
-      store(account, emails);
+      await store(account, emails);
       fetched = emails.length;
     } catch (e) {
       error = `Lecture de la boîte impossible : ${errorMessage(e)}`;
     }
     const triage: TriageResult = error ? { triaged: 0, error: null } : await triagePending(account);
     error = error || triage.error;
-    db.prepare(`UPDATE accounts SET last_sync_at = datetime('now'), last_error = ? WHERE id = ?`).run(error, account.id);
+    await db.run(`UPDATE accounts SET last_sync_at = now(), last_error = $1 WHERE id = $2`, [error, account.id]);
     return { fetched, triaged: triage.triaged, error };
   }
 
   async function syncAll(): Promise<void> {
-    for (const account of db.prepare('SELECT * FROM accounts').all() as AccountRow[]) {
+    for (const account of await db.query<AccountRow>('SELECT * FROM accounts')) {
       await syncAccount(account).catch((e) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`));
     }
   }

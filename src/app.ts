@@ -102,19 +102,20 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // ---- sessions ---------------------------------------------------------------------------
   const cookieOptions: CookieOptions = { httpOnly: true, sameSite: 'lax', secure: config.secureCookies, path: '/' };
 
-  function openSession(res: Response, userId: number | bigint): void {
+  async function openSession(res: Response, userId: number): Promise<void> {
     const id = randomToken();
-    db.prepare(`INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, datetime('now', ?))`).run(id, userId, `+${SESSION_DAYS} days`);
+    await db.run(`INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, now() + make_interval(days => $3))`, [id, userId, SESSION_DAYS]);
     res.cookie('sid', id, { ...cookieOptions, maxAge: SESSION_DAYS * 86_400_000 });
   }
 
-  const auth: RequestHandler = (req, _res, next) => {
+  const auth: RequestHandler = async (req, _res, next) => {
     const sid = readCookie(req, 'sid');
-    const row =
-      sid &&
-      (db
-        .prepare(`SELECT u.*, s.id AS sid, s.oauth_state FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ? AND s.expires_at > datetime('now')`)
-        .get(sid) as SessionUser | undefined);
+    const row = sid
+      ? await db.one<SessionUser>(
+          `SELECT u.*, s.id AS sid, s.oauth_state FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = $1 AND s.expires_at > now()`,
+          [sid],
+        )
+      : undefined;
     if (!row) return next(new HttpError(401, 'Non connecté'));
     req.user = row;
     next();
@@ -125,13 +126,13 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // Brute-force brake on passwords and invitation tokens: ten wrong guesses per address
   // lock that address out for fifteen minutes. Successful requests do not count.
   const failures = new Map<string, { count: number; reset: number }>();
-  const guarded = (handler: (req: Request, res: Response) => void): RequestHandler => (req, res) => {
+  const guarded = (handler: (req: Request, res: Response) => Promise<void>): RequestHandler => async (req, res) => {
     const ip = req.ip || '';
     const now = Date.now();
     const entry = failures.get(ip);
     if (entry && entry.reset > now && entry.count >= 10) throw new HttpError(429, 'Trop de tentatives, réessayez dans quelques minutes.');
     try {
-      return handler(req, res);
+      await handler(req, res);
     } catch (e) {
       if (e instanceof HttpError && (e.status === 401 || e.status === 404)) {
         if (!entry || entry.reset <= now) failures.set(ip, { count: 1, reset: now + 15 * 60_000 });
@@ -142,24 +143,32 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   };
 
   // An empty installation always accepts its first account, which becomes its administrator.
-  const isEmpty = () => !db.prepare('SELECT 1 FROM users').get();
-  const publicInfo = () => ({ allowSignup: config.allowSignup || isEmpty(), firstAccount: isEmpty() });
+  const isEmpty = async (): Promise<boolean> => !(await db.one('SELECT 1 FROM users LIMIT 1'));
+  const publicInfo = async () => {
+    const empty = await isEmpty();
+    return { allowSignup: config.allowSignup || empty, firstAccount: empty };
+  };
 
-  function createUser(email: string, password: unknown, role: Role): number | bigint {
+  /** Creates a user, and the default prompts with the very first one. `on` is the database or a transaction on it. */
+  async function createUser(on: Db, email: string, password: unknown, role: Role): Promise<number> {
     if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
     if (typeof password !== 'string' || password.length < 10) throw new HttpError(400, 'Mot de passe : 10 caractères minimum.');
-    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
-    const { lastInsertRowid } = db.prepare('INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)').run(email, hashPassword(password), role);
-    if (!db.prepare('SELECT 1 FROM prompts').get()) seedDefaultPrompts(db, lastInsertRowid);
-    return lastInsertRowid;
+    if (await on.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
+    const created = await on.one<{ id: number }>('INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id', [email, hashPassword(password), role]);
+    const id = created!.id;
+    if (!(await on.one('SELECT 1 FROM prompts LIMIT 1'))) await seedDefaultPrompts(on, id);
+    return id;
   }
 
-  app.get('/api/public', (req, res) => res.json(publicInfo()));
+  app.get('/api/public', async (_req, res) => {
+    res.json(await publicInfo());
+  });
 
-  app.post('/api/auth/signup', guarded((req, res) => {
-    if (!publicInfo().allowSignup) throw new HttpError(403, 'Les inscriptions sont fermées : demandez une invitation à un administrateur.');
-    const id = createUser(str(req.body.email, 320).toLowerCase(), req.body.password, isEmpty() ? 'admin' : 'user');
-    openSession(res, id);
+  app.post('/api/auth/signup', guarded(async (req, res) => {
+    const { allowSignup, firstAccount } = await publicInfo();
+    if (!allowSignup) throw new HttpError(403, 'Les inscriptions sont fermées : demandez une invitation à un administrateur.');
+    const id = await db.transaction((tx) => createUser(tx, str(req.body.email, 320).toLowerCase(), req.body.password, firstAccount ? 'admin' : 'user'));
+    await openSession(res, id);
     res.status(201).json({ ok: true });
   }));
 
@@ -167,37 +176,37 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // The link carries a random token in the URL fragment; only its hash is stored. Saras has no
   // mailbox of its own, so the administrator passes the link on.
   const pendingInvitation = (token: unknown) =>
-    db.prepare(`SELECT * FROM invitations WHERE token_hash = ? AND expires_at > datetime('now')`).get(tokenHash(token || '')) as InvitationRow | undefined;
+    db.one<InvitationRow>(`SELECT * FROM invitations WHERE token_hash = $1 AND expires_at > now()`, [tokenHash(token || '')]);
 
-  app.post('/api/invitations/check', guarded((req, res) => {
-    const invitation = pendingInvitation(req.body.token);
+  app.post('/api/invitations/check', guarded(async (req, res) => {
+    const invitation = await pendingInvitation(req.body.token);
     if (!invitation) throw new HttpError(404, 'Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur.');
     res.json({ email: invitation.email });
   }));
 
-  app.post('/api/invitations/accept', guarded((req, res) => {
-    const invitation = pendingInvitation(req.body.token);
+  app.post('/api/invitations/accept', guarded(async (req, res) => {
+    const invitation = await pendingInvitation(req.body.token);
     if (!invitation) throw new HttpError(404, 'Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur.');
-    const id = db.transaction(() => {
-      const userId = createUser(invitation.email, req.body.password, invitation.role);
-      db.prepare('DELETE FROM invitations WHERE id = ?').run(invitation.id);
+    const id = await db.transaction(async (tx) => {
+      const userId = await createUser(tx, invitation.email, req.body.password, invitation.role);
+      await tx.run('DELETE FROM invitations WHERE id = $1', [invitation.id]);
       return userId;
-    })();
-    openSession(res, id);
+    });
+    await openSession(res, id);
     res.status(201).json({ ok: true });
   }));
 
-  app.post('/api/auth/login', guarded((req, res) => {
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(str(req.body.email, 320).toLowerCase()) as UserRow | undefined;
+  app.post('/api/auth/login', guarded(async (req, res) => {
+    const user = await db.one<UserRow>('SELECT * FROM users WHERE email = $1', [str(req.body.email, 320).toLowerCase()]);
     if (!user || !verifyPassword(String(req.body.password || ''), user.password_hash)) {
       throw new HttpError(401, 'Email ou mot de passe incorrect.');
     }
-    openSession(res, user.id);
+    await openSession(res, user.id);
     res.json({ ok: true });
   }));
 
-  app.post('/api/auth/logout', auth, (req, res) => {
-    db.prepare('DELETE FROM sessions WHERE id = ?').run(req.user.sid);
+  app.post('/api/auth/logout', auth, async (req, res) => {
+    await db.run('DELETE FROM sessions WHERE id = $1', [req.user.sid]);
     res.clearCookie('sid', cookieOptions);
     res.json({ ok: true });
   });
@@ -219,24 +228,24 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     });
   });
 
-  app.put('/api/settings', auth, (req, res) => {
+  app.put('/api/settings', auth, async (req, res) => {
     const { model, signature, openrouterKey } = req.body;
     if (typeof model === 'string') {
       const m = str(model, 200);
       if (m && !/^[\w.:-]+\/[\w.:-]+$/.test(m)) throw new HttpError(400, 'Modèle invalide : attendu « fournisseur/modèle ».');
-      db.prepare('UPDATE users SET model = ? WHERE id = ?').run(m || null, req.user.id);
+      await db.run('UPDATE users SET model = $1 WHERE id = $2', [m || null, req.user.id]);
     }
-    if (typeof signature === 'string') db.prepare('UPDATE users SET signature = ? WHERE id = ?').run(str(signature, 2000), req.user.id);
+    if (typeof signature === 'string') await db.run('UPDATE users SET signature = $1 WHERE id = $2', [str(signature, 2000), req.user.id]);
     if (typeof openrouterKey === 'string') {
       const key = str(openrouterKey, 500);
-      db.prepare('UPDATE users SET openrouter_key_enc = ? WHERE id = ?').run(key ? vault.seal(key) : null, req.user.id);
+      await db.run('UPDATE users SET openrouter_key_enc = $1 WHERE id = $2', [key ? vault.seal(key) : null, req.user.id]);
     }
     res.json({ ok: true });
   });
 
   // ---- mail accounts ----------------------------------------------------------------------
-  const accountOf = (req: Request): AccountRow => {
-    const account = db.prepare('SELECT * FROM accounts WHERE id = ? AND user_id = ?').get(Number(req.params.id), req.user.id) as AccountRow | undefined;
+  const accountOf = async (req: Request): Promise<AccountRow> => {
+    const account = await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1 AND user_id = $2', [Number(req.params.id), req.user.id]);
     if (!account) throw new HttpError(404, 'Compte introuvable');
     return account;
   };
@@ -244,15 +253,14 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     sync.syncAccount(account).catch((e) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`));
   };
 
-  app.get('/api/accounts', auth, (req, res) => {
+  app.get('/api/accounts', auth, async (req, res) => {
     res.json(
-      db
-        .prepare(
-          `SELECT a.id, a.kind, a.email, a.display_name AS displayName, a.last_sync_at AS lastSyncAt, a.last_error AS lastError,
-                  (SELECT count(*) FROM emails e WHERE e.account_id = a.id AND e.status IN ('needs_reply','pending')) AS todo
-           FROM accounts a WHERE a.user_id = ? ORDER BY a.id`,
-        )
-        .all(req.user.id),
+      await db.query(
+        `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.last_sync_at AS "lastSyncAt", a.last_error AS "lastError",
+                (SELECT count(*)::int FROM emails e WHERE e.account_id = a.id AND e.status IN ('needs_reply','pending')) AS todo
+         FROM accounts a WHERE a.user_id = $1 ORDER BY a.id`,
+        [req.user.id],
+      ),
     );
   });
 
@@ -278,35 +286,37 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     } catch (e) {
       throw new HttpError(400, `Connexion impossible : ${errorMessage(e)}`);
     }
-    const account = saveAccount(req.user.id, draft, cfg);
+    const account = await saveAccount(req.user.id, draft, cfg);
     backgroundSync(account);
     res.status(201).json({ id: account.id });
   });
 
   /** Creates the account, or replaces the credentials of the same mailbox connected earlier. */
-  function saveAccount(userId: number, { kind, email, display_name }: Sender & { kind: AccountKind }, cfg: ImapCredentials | OAuthTokens): AccountRow {
-    db.prepare(
-      `INSERT INTO accounts (user_id, kind, email, display_name, config_enc) VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT (user_id, kind, email) DO UPDATE SET config_enc = excluded.config_enc, display_name = excluded.display_name, last_error = NULL`,
-    ).run(userId, kind, email, display_name, vault.seal(cfg));
-    return db.prepare('SELECT * FROM accounts WHERE user_id = ? AND kind = ? AND email = ?').get(userId, kind, email) as AccountRow;
+  async function saveAccount(userId: number, { kind, email, display_name }: Sender & { kind: AccountKind }, cfg: ImapCredentials | OAuthTokens): Promise<AccountRow> {
+    const saved = await db.one<AccountRow>(
+      `INSERT INTO accounts (user_id, kind, email, display_name, config_enc) VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, kind, email) DO UPDATE SET config_enc = excluded.config_enc, display_name = excluded.display_name, last_error = NULL
+       RETURNING *`,
+      [userId, kind, email, display_name, vault.seal(cfg)],
+    );
+    return saved!;
   }
 
-  app.delete('/api/accounts/:id', auth, (req, res) => {
-    db.prepare('DELETE FROM accounts WHERE id = ?').run(accountOf(req).id);
+  app.delete('/api/accounts/:id', auth, async (req, res) => {
+    await db.run('DELETE FROM accounts WHERE id = $1', [(await accountOf(req)).id]);
     res.json({ ok: true });
   });
 
   app.post('/api/accounts/:id/sync', auth, async (req, res) => {
-    res.json(await sync.syncAccount(accountOf(req)));
+    res.json(await sync.syncAccount(await accountOf(req)));
   });
 
   // ---- OAuth (Google / Microsoft) ---------------------------------------------------------
-  app.get('/api/oauth/:kind/start', auth, (req, res) => {
+  app.get('/api/oauth/:kind/start', auth, async (req, res) => {
     const { kind } = req.params;
     if (!isOAuthKind(kind) || !isConfigured(config, kind)) throw new HttpError(404, 'Fournisseur OAuth non configuré sur ce serveur.');
     const state = randomToken(24);
-    db.prepare('UPDATE sessions SET oauth_state = ? WHERE id = ?').run(`${kind}:${state}`, req.user.sid);
+    await db.run('UPDATE sessions SET oauth_state = $1 WHERE id = $2', [`${kind}:${state}`, req.user.sid]);
     res.redirect(authorizationUrl(config, kind, state));
   });
 
@@ -314,7 +324,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const { kind } = req.params;
     const back = (error?: string) => res.redirect(`/#/accounts${error ? `?error=${encodeURIComponent(error)}` : ''}`);
     const expected = req.user.oauth_state;
-    db.prepare('UPDATE sessions SET oauth_state = NULL WHERE id = ?').run(req.user.sid);
+    await db.run('UPDATE sessions SET oauth_state = NULL WHERE id = $1', [req.user.sid]);
     if (!isOAuthKind(kind) || !isConfigured(config, kind)) return back('Fournisseur OAuth non configuré.');
     if (req.query.error) return back(`Autorisation refusée (${str(req.query.error, 100)}).`);
     if (!expected || expected !== `${kind}:${req.query.state}`) return back('Session OAuth expirée, recommencez.');
@@ -322,7 +332,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       const tokens = await exchangeCode(config, kind, String(req.query.code || ''), fetchImpl);
       if (!tokens.refreshToken) throw new Error('aucun refresh token reçu');
       const identity = await fetchIdentity(kind, tokens.accessToken, fetchImpl);
-      backgroundSync(saveAccount(req.user.id, { kind, email: identity.email, display_name: identity.name }, tokens));
+      backgroundSync(await saveAccount(req.user.id, { kind, email: identity.email, display_name: identity.name }, tokens));
       back();
     } catch (e) {
       back(errorMessage(e));
@@ -331,8 +341,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   // ---- prompts ----------------------------------------------------------------------------
   // Prompts are shared by every user and maintained by administrators.
-  const promptOf = (req: Request, id: unknown = req.params.id): PromptRow => {
-    const prompt = db.prepare('SELECT * FROM prompts WHERE id = ?').get(Number(id)) as PromptRow | undefined;
+  const promptOf = async (req: Request, id: unknown = req.params.id): Promise<PromptRow> => {
+    const prompt = Number.isInteger(Number(id)) ? await db.one<PromptRow>('SELECT * FROM prompts WHERE id = $1', [Number(id)]) : undefined;
     if (!prompt) throw new HttpError(404, 'Prompt introuvable');
     return prompt;
   };
@@ -342,39 +352,40 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     return p;
   };
 
-  app.get('/api/prompts', auth, (req, res) => {
+  app.get('/api/prompts', auth, async (req, res) => {
     if (req.user.role !== 'admin') {
       // Users pick a prompt by name and purpose; its instructions stay with the administrators.
-      return res.json(db.prepare('SELECT id, name, description FROM prompts ORDER BY id').all());
+      return void res.json(await db.query('SELECT id, name, description FROM prompts ORDER BY id'));
     }
     res.json(
-      db
-        .prepare(
-          `SELECT p.id, p.name, p.description, p.system_prompt AS systemPrompt,
-                  (SELECT count(*) FROM replies r WHERE r.prompt_id = p.id) AS used,
-                  (SELECT count(*) FROM replies r WHERE r.prompt_id = p.id AND r.was_edited = 1) AS edited
-           FROM prompts p ORDER BY p.id`,
-        )
-        .all(),
+      await db.query(
+        `SELECT p.id, p.name, p.description, p.system_prompt AS "systemPrompt",
+                (SELECT count(*)::int FROM replies r WHERE r.prompt_id = p.id) AS used,
+                (SELECT count(*)::int FROM replies r WHERE r.prompt_id = p.id AND r.was_edited) AS edited
+         FROM prompts p ORDER BY p.id`,
+      ),
     );
   });
 
-  app.post('/api/prompts', auth, adminOnly, (req, res) => {
+  app.post('/api/prompts', auth, adminOnly, async (req, res) => {
     const p = promptBody(req);
-    const { lastInsertRowid } = db
-      .prepare('INSERT INTO prompts (user_id, name, description, system_prompt) VALUES (?, ?, ?, ?)')
-      .run(req.user.id, p.name, p.description, p.systemPrompt);
-    res.status(201).json({ id: lastInsertRowid });
+    const created = await db.one<{ id: number }>('INSERT INTO prompts (user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4) RETURNING id', [
+      req.user.id,
+      p.name,
+      p.description,
+      p.systemPrompt,
+    ]);
+    res.status(201).json({ id: created!.id });
   });
 
-  app.put('/api/prompts/:id', auth, adminOnly, (req, res) => {
+  app.put('/api/prompts/:id', auth, adminOnly, async (req, res) => {
     const p = promptBody(req);
-    db.prepare('UPDATE prompts SET name = ?, description = ?, system_prompt = ? WHERE id = ?').run(p.name, p.description, p.systemPrompt, promptOf(req).id);
+    await db.run('UPDATE prompts SET name = $1, description = $2, system_prompt = $3 WHERE id = $4', [p.name, p.description, p.systemPrompt, (await promptOf(req)).id]);
     res.json({ ok: true });
   });
 
-  app.delete('/api/prompts/:id', auth, adminOnly, (req, res) => {
-    db.prepare('DELETE FROM prompts WHERE id = ?').run(promptOf(req).id);
+  app.delete('/api/prompts/:id', auth, adminOnly, async (req, res) => {
+    await db.run('DELETE FROM prompts WHERE id = $1', [(await promptOf(req)).id]);
     res.json({ ok: true });
   });
 
@@ -383,93 +394,88 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
    * Corrections are personal ("I am on first-name terms with this client"): they steer the
    * drafts of the user who made them, not those of colleagues.
    */
-  const lessonsFor = (promptId: number, userId: number): string[] =>
-    (db
-      .prepare(
-        `SELECT r.change_reason FROM replies r JOIN emails e ON e.id = r.email_id JOIN accounts a ON a.id = e.account_id
-         WHERE r.prompt_id = ? AND a.user_id = ? AND r.was_edited = 1 AND r.change_reason != '' ORDER BY r.id DESC LIMIT 8`,
-      )
-      .all(promptId, userId) as { change_reason: string }[])
-      .map((r) => r.change_reason);
+  const lessonsFor = async (promptId: number, userId: number): Promise<string[]> => {
+    const rows = await db.query<{ change_reason: string }>(
+      `SELECT r.change_reason FROM replies r JOIN emails e ON e.id = r.email_id JOIN accounts a ON a.id = e.account_id
+       WHERE r.prompt_id = $1 AND a.user_id = $2 AND r.was_edited AND r.change_reason != '' ORDER BY r.id DESC LIMIT 8`,
+      [promptId, userId],
+    );
+    return rows.map((r) => r.change_reason);
+  };
 
   /** For administrators: every user's corrections on a prompt, the raw material to improve it. */
-  app.get('/api/prompts/:id/corrections', auth, adminOnly, (req, res) => {
+  app.get('/api/prompts/:id/corrections', auth, adminOnly, async (req, res) => {
     res.json(
-      db
-        .prepare(
-          `SELECT r.change_reason AS reason, u.email AS user, r.sent_at AS at
-           FROM replies r JOIN emails e ON e.id = r.email_id JOIN accounts a ON a.id = e.account_id JOIN users u ON u.id = a.user_id
-           WHERE r.prompt_id = ? AND r.was_edited = 1 AND r.change_reason != '' ORDER BY r.id DESC LIMIT 50`,
-        )
-        .all(promptOf(req).id),
+      await db.query(
+        `SELECT r.change_reason AS reason, u.email AS "user", r.sent_at AS at
+         FROM replies r JOIN emails e ON e.id = r.email_id JOIN accounts a ON a.id = e.account_id JOIN users u ON u.id = a.user_id
+         WHERE r.prompt_id = $1 AND r.was_edited AND r.change_reason != '' ORDER BY r.id DESC LIMIT 50`,
+        [(await promptOf(req)).id],
+      ),
     );
   });
 
   // ---- users (administrators) -------------------------------------------------------------
-  app.get('/api/users', auth, adminOnly, (req, res) => {
+  app.get('/api/users', auth, adminOnly, async (_req, res) => {
     res.json(
-      db
-        .prepare(
-          `SELECT u.id, u.email, u.role, u.created_at AS createdAt, (SELECT count(*) FROM accounts a WHERE a.user_id = u.id) AS accounts
-           FROM users u ORDER BY u.id`,
-        )
-        .all(),
+      await db.query(
+        `SELECT u.id, u.email, u.role, u.created_at AS "createdAt", (SELECT count(*)::int FROM accounts a WHERE a.user_id = u.id) AS accounts
+         FROM users u ORDER BY u.id`,
+      ),
     );
   });
 
-  app.get('/api/invitations', auth, adminOnly, (req, res) => {
-    res.json(
-      (db
-        .prepare(`SELECT id, email, role, expires_at AS expiresAt, expires_at <= datetime('now') AS expired FROM invitations ORDER BY id DESC`)
-        .all() as { id: number; email: string; role: Role; expiresAt: string; expired: number }[])
-        .map((i) => ({ ...i, expired: Boolean(i.expired) })),
-    );
+  app.get('/api/invitations', auth, adminOnly, async (_req, res) => {
+    res.json(await db.query(`SELECT id, email, role, expires_at AS "expiresAt", expires_at <= now() AS expired FROM invitations ORDER BY id DESC`));
   });
 
-  app.post('/api/invitations', auth, adminOnly, (req, res) => {
+  app.post('/api/invitations', auth, adminOnly, async (req, res) => {
     const email = str(req.body.email, 320).toLowerCase();
     const role: Role = req.body.role === 'admin' ? 'admin' : 'user';
     if (!isEmailAddress(email)) throw new HttpError(400, 'Adresse email invalide.');
-    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
+    if (await db.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
     const token = randomToken();
     // Inviting the same address again replaces the earlier link.
-    const { id } = db
-      .prepare(
-        `INSERT INTO invitations (email, role, token_hash, created_by, expires_at) VALUES (?, ?, ?, ?, datetime('now', ?))
-         ON CONFLICT (email) DO UPDATE SET role = excluded.role, token_hash = excluded.token_hash, created_by = excluded.created_by, expires_at = excluded.expires_at
-         RETURNING id`,
-      )
-      .get(email, role, tokenHash(token), req.user.id, `+${config.invitationDays} days`) as { id: number };
+    const saved = await db.one<{ id: number }>(
+      `INSERT INTO invitations (email, role, token_hash, created_by, expires_at) VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))
+       ON CONFLICT (email) DO UPDATE SET role = excluded.role, token_hash = excluded.token_hash, created_by = excluded.created_by, expires_at = excluded.expires_at
+       RETURNING id`,
+      [email, role, tokenHash(token), req.user.id, config.invitationDays],
+    );
     // The only time the link exists in clear: it cannot be shown again.
-    res.status(201).json({ id, email, link: `${config.baseUrl}/#/invitation/${token}`, validDays: config.invitationDays });
+    res.status(201).json({ id: saved!.id, email, link: `${config.baseUrl}/#/invitation/${token}`, validDays: config.invitationDays });
   });
 
-  app.delete('/api/invitations/:id', auth, adminOnly, (req, res) => {
-    db.prepare('DELETE FROM invitations WHERE id = ?').run(Number(req.params.id));
+  app.delete('/api/invitations/:id', auth, adminOnly, async (req, res) => {
+    await db.run('DELETE FROM invitations WHERE id = $1', [Number(req.params.id) || 0]);
     res.json({ ok: true });
   });
 
-  app.delete('/api/users/:id', auth, adminOnly, (req, res) => {
-    const target = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as UserRow | undefined;
+  const userOf = async (req: Request): Promise<UserRow> => {
+    const target = await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [Number(req.params.id) || 0]);
     if (!target) throw new HttpError(404, 'Utilisateur introuvable');
+    return target;
+  };
+
+  app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
+    const target = await userOf(req);
     if (target.id === req.user.id) throw new HttpError(409, 'Vous ne pouvez pas supprimer votre propre compte.');
-    db.transaction(() => {
+    await db.transaction(async (tx) => {
       // Shared prompts outlive their author.
-      db.prepare('UPDATE prompts SET user_id = ? WHERE user_id = ?').run(req.user.id, target.id);
-      db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
-    })();
+      await tx.run('UPDATE prompts SET user_id = $1 WHERE user_id = $2', [req.user.id, target.id]);
+      await tx.run('DELETE FROM users WHERE id = $1', [target.id]);
+    });
     res.json({ ok: true });
   });
 
-  app.put('/api/users/:id', auth, adminOnly, (req, res) => {
-    const target = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(req.params.id)) as UserRow | undefined;
-    if (!target) throw new HttpError(404, 'Utilisateur introuvable');
+  app.put('/api/users/:id', auth, adminOnly, async (req, res) => {
+    const target = await userOf(req);
     if (!['admin', 'user'].includes(req.body.role)) throw new HttpError(400, 'Rôle invalide');
-    const { n: admins } = db.prepare(`SELECT count(*) AS n FROM users WHERE role = 'admin'`).get() as { n: number };
-    if (target.role === 'admin' && req.body.role === 'user' && admins === 1) {
+    const admins = await db.one<{ n: number }>(`SELECT count(*)::int AS n FROM users WHERE role = 'admin'`);
+    if (target.role === 'admin' && req.body.role === 'user' && admins!.n === 1) {
       throw new HttpError(409, 'Il doit rester au moins un administrateur.');
     }
-    db.prepare('UPDATE users SET role = ? WHERE id = ?').run(req.body.role, target.id);
+    await db.run('UPDATE users SET role = $1 WHERE id = $2', [req.body.role, target.id]);
     res.json({ ok: true });
   });
 
@@ -477,71 +483,72 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   /** The boxes of the interface, and the statuses each one shows. */
   const BOXES: Record<string, EmailStatus[]> = { todo: ['needs_reply', 'pending'], none: ['no_reply'], sent: ['sent'], ignored: ['ignored'] };
 
-  const emailOf = (req: Request): OwnedEmailRow => {
-    const row = db
-      .prepare(
-        `SELECT e.*, a.email AS account_email FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = ? AND a.user_id = ?`,
-      )
-      .get(Number(req.params.id), req.user.id) as OwnedEmailRow | undefined;
+  const emailOf = async (req: Request): Promise<OwnedEmailRow> => {
+    const row = await db.one<OwnedEmailRow>(
+      `SELECT e.*, a.email AS account_email FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = $1 AND a.user_id = $2`,
+      [Number(req.params.id) || 0, req.user.id],
+    );
     if (!row) throw new HttpError(404, 'Email introuvable');
     return row;
   };
 
-  app.get('/api/emails', auth, (req, res) => {
+  app.get('/api/emails', auth, async (req, res) => {
     const statuses = BOXES[String(req.query.box)] || BOXES.todo!;
-    const rows = db
-      .prepare(
-        `SELECT e.id, e.from_name AS fromName, e.from_addr AS fromAddr, e.subject, e.date, e.status, e.priority,
-                e.triage_reason AS triageReason, e.triage_source AS triageSource, substr(e.body_text, 1, 160) AS snippet, a.email AS account,
-                (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS replyMode
-         FROM emails e JOIN accounts a ON a.id = e.account_id
-         WHERE a.user_id = ? AND e.status IN (${statuses.map(() => '?').join(',')})
-         ORDER BY e.date DESC LIMIT 200`,
-      )
-      .all(req.user.id, ...statuses);
+    const rows = await db.query(
+      `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status, e.priority,
+              e.triage_reason AS "triageReason", e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS account,
+              (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
+       FROM emails e JOIN accounts a ON a.id = e.account_id
+       WHERE a.user_id = $1 AND e.status = ANY($2)
+       ORDER BY e.date DESC LIMIT 200`,
+      [req.user.id, statuses],
+    );
     const counts = Object.fromEntries(Object.keys(BOXES).map((box) => [box, 0]));
-    const perStatus = db
-      .prepare(`SELECT e.status, count(*) AS n FROM emails e JOIN accounts a ON a.id = e.account_id WHERE a.user_id = ? GROUP BY e.status`)
-      .all(req.user.id) as { status: EmailStatus; n: number }[];
+    const perStatus = await db.query<{ status: EmailStatus; n: number }>(
+      `SELECT e.status, count(*)::int AS n FROM emails e JOIN accounts a ON a.id = e.account_id WHERE a.user_id = $1 GROUP BY e.status`,
+      [req.user.id],
+    );
     for (const { status, n } of perStatus) {
       for (const [box, list] of Object.entries(BOXES)) if (list.includes(status)) counts[box] = (counts[box] || 0) + n;
     }
     res.json({ emails: rows, counts });
   });
 
-  app.get('/api/emails/:id', auth, (req, res) => {
-    const row = emailOf(req);
+  app.get('/api/emails/:id', auth, async (req, res) => {
+    const row = await emailOf(req);
     const email = rowToEmail(row);
-    const draft = db.prepare('SELECT id, prompt_id AS promptId, model, instructions, ai_text AS aiText FROM drafts WHERE email_id = ? ORDER BY id DESC LIMIT 1').get(row.id);
-    const reply = db
-      .prepare(
-        `SELECT final_text AS finalText, was_edited AS wasEdited, change_reason AS changeReason, mode, to_json AS toJson, cc_json AS ccJson, sent_at AS sentAt
-         FROM replies WHERE email_id = ? ORDER BY id DESC LIMIT 1`,
-      )
-      .get(row.id) as { finalText: string; wasEdited: number; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: string } | undefined;
+    const draft = await db.one(
+      'SELECT id, prompt_id AS "promptId", model, instructions, ai_text AS "aiText" FROM drafts WHERE email_id = $1 ORDER BY id DESC LIMIT 1',
+      [row.id],
+    );
+    const reply = await db.one<{ finalText: string; wasEdited: boolean; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: Date }>(
+      `SELECT final_text AS "finalText", was_edited AS "wasEdited", change_reason AS "changeReason", mode, to_json AS "toJson", cc_json AS "ccJson", sent_at AS "sentAt"
+       FROM replies WHERE email_id = $1 ORDER BY id DESC LIMIT 1`,
+      [row.id],
+    );
     res.json({
       ...email,
       account: row.account_email,
       recipients: replyRecipients(email, row.account_email, false),
       recipientsAll: replyRecipients(email, row.account_email, true),
       draft: draft || null,
-      reply: reply ? { ...reply, wasEdited: Boolean(reply.wasEdited), to: JSON.parse(reply.toJson), cc: JSON.parse(reply.ccJson) } : null,
+      reply: reply ? { ...reply, to: JSON.parse(reply.toJson), cc: JSON.parse(reply.ccJson) } : null,
     });
   });
 
-  app.post('/api/emails/:id/status', auth, (req, res) => {
-    const row = emailOf(req);
+  app.post('/api/emails/:id/status', auth, async (req, res) => {
+    const row = await emailOf(req);
     const status = req.body.status;
     if (!['needs_reply', 'no_reply', 'ignored'].includes(status)) throw new HttpError(400, 'Statut invalide');
     if (row.status === 'sent') throw new HttpError(409, 'Réponse déjà envoyée.');
-    db.prepare(`UPDATE emails SET status = ?, triage_source = 'user' WHERE id = ?`).run(status, row.id);
+    await db.run(`UPDATE emails SET status = $1, triage_source = 'user' WHERE id = $2`, [status, row.id]);
     res.json({ ok: true });
   });
 
   app.post('/api/emails/:id/draft', auth, async (req, res) => {
-    const row = emailOf(req);
+    const row = await emailOf(req);
     if (!row.body_text) throw new HttpError(410, 'Le contenu de cet email a été effacé (durée de conservation dépassée).');
-    const prompt = promptOf(req, req.body.promptId);
+    const prompt = await promptOf(req, req.body.promptId);
     const instructions = str(req.body.instructions, 4000);
     const { apiKey, model } = llmSettings(req.user, { config, vault });
     const messages = buildDraftMessages({
@@ -550,13 +557,17 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       ownAddress: row.account_email,
       signature: req.user.signature,
       instructions,
-      lessons: lessonsFor(prompt.id, req.user.id),
+      lessons: await lessonsFor(prompt.id, req.user.id),
     });
     const answer = await llm.chat({ apiKey, model, messages });
-    const { lastInsertRowid } = db
-      .prepare('INSERT INTO drafts (email_id, prompt_id, model, instructions, ai_text) VALUES (?, ?, ?, ?, ?)')
-      .run(row.id, prompt.id, answer.model, instructions, answer.text);
-    res.status(201).json({ id: lastInsertRowid, promptId: prompt.id, model: answer.model, provider: answer.provider, aiText: answer.text });
+    const created = await db.one<{ id: number }>('INSERT INTO drafts (email_id, prompt_id, model, instructions, ai_text) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
+      row.id,
+      prompt.id,
+      answer.model,
+      instructions,
+      answer.text,
+    ]);
+    res.status(201).json({ id: created!.id, promptId: prompt.id, model: answer.model, provider: answer.provider, aiText: answer.text });
   });
 
   /** Emails with a delivery in flight, so that a double click cannot send twice. */
@@ -567,7 +578,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
    * Both record what the AI proposed, what the user made of it, and why.
    */
   const deliver = (mode: ReplyMode): RequestHandler => async (req, res) => {
-    const row = emailOf(req);
+    const row = await emailOf(req);
     const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
     const to = addressList(req.body.to);
     const cc = addressList(req.body.cc);
@@ -576,12 +587,12 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const bad = [...to, ...cc].find((a) => !isEmailAddress(a));
     if (bad) throw new HttpError(400, `Adresse invalide : ${bad}`);
     if (row.status === 'sent' || sending.has(row.id)) throw new HttpError(409, 'Une réponse a déjà été traitée pour cet email.');
-    const draft = req.body.draftId ? (db.prepare('SELECT * FROM drafts WHERE id = ? AND email_id = ?').get(Number(req.body.draftId), row.id) as DraftRow | undefined) : null;
-    const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(row.account_id) as AccountRow;
-
+    // Claimed before the first await that follows, so that a second request cannot slip in between.
     sending.add(row.id);
     try {
-      const provider = mail.providerFor(account);
+      const draft = Number(req.body.draftId) ? await db.one<DraftRow>('SELECT * FROM drafts WHERE id = $1 AND email_id = $2', [Number(req.body.draftId), row.id]) : undefined;
+      const account = await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1', [row.account_id]);
+      const provider = mail.providerFor(account!);
       const reply = { email: rowToEmail(row), to, cc, text };
       try {
         await (mode === 'draft' ? provider.saveDraft(reply) : provider.send(reply));
@@ -589,12 +600,13 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
         throw new HttpError(502, `${mode === 'draft' ? 'Enregistrement du brouillon' : 'Envoi'} impossible : ${errorMessage(e)}`);
       }
       const edited = draft ? wasEdited(draft.ai_text, text) : false;
-      db.transaction(() => {
-        db.prepare(
-          `INSERT INTO replies (email_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ).run(row.id, draft?.prompt_id ?? null, draft?.ai_text ?? null, text, edited ? 1 : 0, edited ? str(req.body.changeReason, 1000) : '', mode, JSON.stringify(to), JSON.stringify(cc));
-        db.prepare(`UPDATE emails SET status = 'sent' WHERE id = ?`).run(row.id);
-      })();
+      await db.transaction(async (tx) => {
+        await tx.run(
+          `INSERT INTO replies (email_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [row.id, draft?.prompt_id ?? null, draft?.ai_text ?? null, text, edited, edited ? str(req.body.changeReason, 1000) : '', mode, JSON.stringify(to), JSON.stringify(cc)],
+        );
+        await tx.run(`UPDATE emails SET status = 'sent' WHERE id = $1`, [row.id]);
+      });
       res.json({ ok: true, wasEdited: edited });
     } finally {
       sending.delete(row.id);
@@ -605,7 +617,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.post('/api/emails/:id/save-draft', auth, deliver('draft'));
 
   // ---- errors -----------------------------------------------------------------------------
-  app.use('/api', (req, res, next) => next(new HttpError(404, 'Route inconnue')));
+  app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Route inconnue')));
   const onError: ErrorRequestHandler = (err: Error & { status?: number; statusCode?: number }, req, res, next) => {
     if (res.headersSent) return next(err);
     const status = err instanceof LlmError ? 502 : err.status || err.statusCode || 500;

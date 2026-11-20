@@ -66,7 +66,8 @@ test('a wrong IMAP password is refused, a right one connects', async () => {
   assert.equal(bad.status, 400);
   assert.match(bad.body.error, /Connexion impossible/);
   assert.equal((await me('POST', '/accounts/imap', stack.imapAccount)).status, 201);
-  const stored = (stack.db.prepare('SELECT config_enc FROM accounts').get() as { config_enc: string }).config_enc;
+  const stored = (await stack.db.one<{ config_enc: string }>('SELECT config_enc FROM accounts'))?.config_enc ?? '';
+  assert.ok(stored.length > 20);
   assert.ok(!stored.includes('testpass'), 'mailbox password must be encrypted at rest');
 });
 
@@ -184,7 +185,8 @@ test('a model without ZDR provider fails loudly instead of being routed elsewher
 
 test('a personal OpenRouter key replaces the server key and is stored encrypted', async () => {
   await me('PUT', '/settings', { openrouterKey: 'sk-or-personal' });
-  assert.ok(!(stack.db.prepare('SELECT openrouter_key_enc AS k FROM users').get() as { k: string }).k.includes('sk-or-personal'));
+  const key = (await stack.db.one<{ k: string }>('SELECT openrouter_key_enc AS k FROM users WHERE openrouter_key_enc IS NOT NULL'))?.k ?? '';
+  assert.ok(key.length > 20 && !key.includes('sk-or-personal'));
   const none = (await me('GET', '/emails?box=todo')).body.emails;
   await me('POST', `/emails/${none[0].id}/draft`, { promptId: prompts[0].id });
   assert.equal(lastOf(stack.llmRequests).authorization, 'Bearer sk-or-personal');

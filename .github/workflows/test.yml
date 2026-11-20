@@ -24,5 +24,35 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
-      # Starts local IMAP, SMTP and OpenRouter stand-ins: no secret and no outside service needed.
+      # Starts local IMAP, SMTP and OpenRouter stand-ins, on the embedded PostgreSQL:
+      # no secret and no outside service needed.
       - run: npm test
+
+  # The same suite against a PostgreSQL server, as in production.
+  test-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: saras
+          POSTGRES_PASSWORD: saras
+          POSTGRES_DB: saras
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U saras -d saras"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+        env:
+          TEST_DATABASE_URL: postgres://saras:saras@localhost:5432/saras

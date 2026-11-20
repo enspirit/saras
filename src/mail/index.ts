@@ -31,7 +31,7 @@ export function createMailService({ db, vault, config, fetchImpl = fetch }: Depe
       const fresh = await refreshTokens(config, kind, tokens.refreshToken, fetchImpl);
       const next: OAuthTokens = { ...fresh, refreshToken: fresh.refreshToken || tokens.refreshToken };
       account.config_enc = vault.seal(next);
-      db.prepare('UPDATE accounts SET config_enc = ? WHERE id = ?').run(account.config_enc, account.id);
+      await db.run('UPDATE accounts SET config_enc = $1 WHERE id = $2', [account.config_enc, account.id]);
       return next.accessToken;
     };
   }

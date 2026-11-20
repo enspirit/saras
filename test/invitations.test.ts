@@ -33,7 +33,7 @@ test('an administrator creates a one-time link; only its hash is stored', async 
   invitation = created.body;
   assert.equal(invitation.email, 'lea@corp.example');
   assert.match(invitation.link, /^https:\/\/saras\.example\/#\/invitation\/[\w-]{40,}$/);
-  const stored = stack.db.prepare('SELECT * FROM invitations').get();
+  const stored = await stack.db.one('SELECT * FROM invitations');
   assert.ok(!JSON.stringify(stored).includes(tokenOf(invitation.link)));
   const listed = (await admin('GET', '/invitations')).body;
   assert.deepEqual(listed.map((i: { email: string; role: string; expired: boolean }) => [i.email, i.role, i.expired]), [['lea@corp.example', 'user', false]]);
@@ -75,7 +75,7 @@ test('an invitation can grant the administrator role, be revoked, or expire', as
   assert.equal((await client()('POST', '/invitations/check', { token: tokenOf(revoked.link) })).status, 404);
 
   const late = (await admin('POST', '/invitations', { email: 'tard@corp.example' })).body;
-  stack.db.prepare(`UPDATE invitations SET expires_at = datetime('now', '-1 minute') WHERE id = ?`).run(late.id);
+  await stack.db.run(`UPDATE invitations SET expires_at = now() - interval '1 minute' WHERE id = $1`, [late.id]);
   assert.equal((await client()('POST', '/invitations/accept', { token: tokenOf(late.link), password: 'un-bon-mot-de-passe' })).status, 404);
   assert.equal((await admin('GET', '/invitations')).body[0].expired, true);
 });
@@ -84,7 +84,7 @@ test('an administrator deletes an account; shared prompts survive their author',
   const users = (await admin('GET', '/users')).body;
   const boss = users.find((u: { id: number; email: string }) => u.email === 'boss@corp.example');
   const lea = users.find((u: { id: number; email: string }) => u.email === 'lea@corp.example');
-  stack.db.prepare('UPDATE prompts SET user_id = ? WHERE id = 1').run(boss.id);
+  await stack.db.run('UPDATE prompts SET user_id = $1 WHERE id = (SELECT min(id) FROM prompts)', [boss.id]);
   assert.equal((await admin('DELETE', `/users/${users[0].id}`)).status, 409, 'not oneself');
   assert.equal((await admin('DELETE', `/users/${boss.id}`)).status, 200);
   assert.equal((await admin('DELETE', `/users/${lea.id}`)).status, 200);

@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 import { createApp } from './app.ts';
 import { loadConfig, loadDotEnv } from './config.ts';
 import { createVault } from './crypto.ts';
@@ -24,24 +23,38 @@ if (!existsSync(new URL('../public/js/app.js', import.meta.url))) {
   process.exit(1);
 }
 
-mkdirSync(config.dataDir, { recursive: true });
-const db = openDb(join(config.dataDir, 'saras.sqlite'));
+const db = await openDb({ databaseUrl: config.databaseUrl, dataDir: config.dataDir });
 const vault = createVault(config.appSecret);
 const mail = createMailService({ db, vault, config });
 const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
 const sync = createSync({ db, mail, llm, config, vault });
 
 createApp({ config, db, vault, mail, llm, sync }).listen(config.port, () => {
-  console.log(`saras listening on ${config.baseUrl} — OpenRouter in ZDR mode, default model ${config.openrouter.model}`);
+  const database = config.databaseUrl ? 'PostgreSQL server' : `embedded PostgreSQL in ${config.dataDir}`;
+  console.log(`saras listening on ${config.baseUrl} — ${database}, OpenRouter in ZDR mode, default model ${config.openrouter.model}`);
 });
 
-const housekeeping = () => {
-  db.prepare(`DELETE FROM sessions WHERE expires_at <= datetime('now')`).run();
-  purgeOldContent(db, config.retentionDays);
+// Close the database before leaving: the embedded one writes its files on the way out.
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    db.close()
+      .catch((e) => console.error(`closing the database failed: ${errorMessage(e)}`))
+      .finally(() => process.exit(0));
+  });
+}
+
+/** Hourly: forget expired sessions and invitations, erase email content past its retention. */
+const housekeeping = async (): Promise<void> => {
+  try {
+    await db.run(`DELETE FROM sessions WHERE expires_at <= now()`);
+    await purgeOldContent(db, config.retentionDays);
+  } catch (e) {
+    console.error(`housekeeping failed: ${errorMessage(e)}`);
+  }
 };
-housekeeping();
+void housekeeping();
 setInterval(housekeeping, 3_600_000).unref();
 
 if (config.syncIntervalMinutes > 0) {
-  setInterval(() => sync.syncAll(), config.syncIntervalMinutes * 60_000).unref();
+  setInterval(() => void sync.syncAll(), config.syncIntervalMinutes * 60_000).unref();
 }

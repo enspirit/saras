@@ -55,7 +55,7 @@ export interface Email extends Omit<IncomingEmail, 'headers' | 'answered'> {
   suggestedPromptId: number | null;
 }
 
-// ---- database rows (snake_case, as SQLite returns them) -----------------------------------
+// ---- database rows (snake_case, as PostgreSQL returns them) -------------------------------
 
 export interface UserRow {
   id: number;
@@ -65,7 +65,7 @@ export interface UserRow {
   model: string | null;
   signature: string;
   openrouter_key_enc: string | null;
-  created_at: string;
+  created_at: Date;
 }
 
 export interface AccountRow {
@@ -76,9 +76,9 @@ export interface AccountRow {
   display_name: string;
   /** Credentials, sealed by the vault. */
   config_enc: string;
-  last_sync_at: string | null;
+  last_sync_at: Date | null;
   last_error: string | null;
-  created_at: string;
+  created_at: Date;
 }
 
 /** What identifies the sender of a reply: enough of an account to build the From header. */
@@ -90,7 +90,7 @@ export interface PromptRow {
   name: string;
   description: string;
   system_prompt: string;
-  created_at: string;
+  created_at: Date;
 }
 
 export interface EmailRow {
@@ -106,14 +106,14 @@ export interface EmailRow {
   to_json: string;
   cc_json: string;
   subject: string;
-  date: string;
+  date: Date;
   body_text: string;
   status: EmailStatus;
   triage_source: TriageSource | null;
   triage_reason: string;
   priority: Priority;
   suggested_prompt_id: number | null;
-  created_at: string;
+  created_at: Date;
 }
 
 export interface DraftRow {
@@ -123,7 +123,7 @@ export interface DraftRow {
   model: string;
   instructions: string;
   ai_text: string;
-  created_at: string;
+  created_at: Date;
 }
 
 export interface InvitationRow {
@@ -132,8 +132,8 @@ export interface InvitationRow {
   role: Role;
   token_hash: string;
   created_by: number | null;
-  expires_at: string;
-  created_at: string;
+  expires_at: Date;
+  created_at: Date;
 }
 
 // ---- credentials kept in the vault ----------------------------------------------------------

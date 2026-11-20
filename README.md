@@ -99,7 +99,7 @@ This is the main design constraint.
 | No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
 | No silent fallback | If no provider of the chosen model satisfies both conditions, OpenRouter refuses the request and the application shows the error. |
 | Minimisation | Newsletters, mailing lists, `no-reply` addresses and automated messages are discarded by rules on headers and never reach the LLM. |
-| Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). |
+| Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
 | Transport | Without direct TLS, STARTTLS is required for IMAP and SMTP (except for a local server): no password travels in clear. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |
 | Logs | The server never logs the content of emails or requests. |
@@ -124,10 +124,10 @@ npm start
 
 Open http://localhost:3000 and create the first account: it becomes the administrator, then sign-up closes. Connect a mailbox in **Comptes mail** and invite your colleagues from **Utilisateurs**.
 
-With Docker:
+With Docker, which also starts a PostgreSQL server:
 
 ```sh
-cp .env.example .env   # then edit
+cp .env.example .env   # then set APP_SECRET, OPENROUTER_API_KEY and POSTGRES_PASSWORD
 docker compose up -d
 ```
 
@@ -151,6 +151,19 @@ Requested scopes: `gmail.readonly` and `gmail.compose` (drafts and sending). `gm
 2. Redirect URI: `{BASE_URL}/api/oauth/microsoft/callback`.
 3. Delegated Microsoft Graph permissions: `Mail.ReadWrite`, `Mail.Send`, `User.Read`, `offline_access`.
 4. Create a client secret, set `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` and, to restrict to your organisation, `MICROSOFT_TENANT`.
+
+## Database
+
+The database is PostgreSQL, used in one of two ways with the same schema and queries:
+
+| Mode | When | Meant for |
+| --- | --- | --- |
+| **PostgreSQL server** | `DATABASE_URL` is set (`docker compose` sets it and starts the server) | Deployments |
+| **Embedded PostgreSQL** ([PGlite](https://pglite.dev)) | `DATABASE_URL` is empty; files go to `DATA_DIR/postgres` | Trying the tool, development, tests |
+
+The embedded mode runs PostgreSQL inside the application's own process: nothing to install, but a single connection and no outside access for backups or monitoring. Use a server for anything real. There is no automatic transfer between the two.
+
+The schema is created at startup (`src/db.ts`). The tests run on the embedded database by default and on a server when `TEST_DATABASE_URL` is set; CI runs both.
 
 ## Configuration
 
@@ -179,7 +192,7 @@ mailbox ──► fetch (IMAP / Gmail API / Graph)
 - `src/mail/`: one provider per kind of mailbox, same interface (`verify`, `listNew`, `send`, `saveDraft`).
 - `src/sync.ts`: fetch and triage; `src/app.ts`: HTTP API; `src/types.ts`: the shapes shared across the server.
 - `web/`: the interface's TypeScript (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
-- Data: SQLite in `DATA_DIR`.
+- Data: PostgreSQL (see "Database").
 
 The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
 
@@ -200,7 +213,7 @@ npm test
 
 The end-to-end tests start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
 
-GitHub Actions type-checks, builds and runs them on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret.
+GitHub Actions type-checks, builds and runs them on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: once on the embedded database and once against a PostgreSQL server.
 
 ## Known limitations
 

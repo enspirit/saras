@@ -17,6 +17,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     secureCookies: baseUrl.startsWith('https://'),
     appSecret: secret,
     dataDir: env.DATA_DIR || './data',
+    // A PostgreSQL server. Empty: an embedded PostgreSQL keeps its files in dataDir.
+    databaseUrl: env.DATABASE_URL || '',
     // Folder holding a company's theme.css, brand.json, logo and favicon; empty for the default brand.
     brandDir: env.BRAND_DIR || '',
     // Closed by default: beyond the first account, people join through an administrator's invitation.

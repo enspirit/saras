@@ -1,13 +1,16 @@
 // A complete local stack for tests and demos: a real IMAP server, a real SMTP server,
 // a stand-in for the OpenRouter HTTP API, and the application wired to them.
 import hoodiecrow from 'hoodiecrow-imap';
+import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import type { AddressInfo, Server } from 'node:net';
+import pg from 'pg';
 import { SMTPServer } from 'smtp-server';
 import { createApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config.ts';
 import { createVault } from '../../src/crypto.ts';
 import { openDb } from '../../src/db.ts';
+import type { Db } from '../../src/db.ts';
 import { createOpenRouter } from '../../src/llm/openrouter.ts';
 import { createMailService } from '../../src/mail/index.ts';
 import { createSync } from '../../src/sync.ts';
@@ -116,13 +119,40 @@ function fakeOpenRouter() {
 }
 
 interface StackOptions {
-  dbPath?: string;
   messages?: { raw: string }[];
   /** Environment variables overriding the test defaults. */
   env?: Record<string, string>;
 }
 
-export async function startStack({ dbPath = ':memory:', messages = INBOX, env = {} }: StackOptions = {}) {
+/**
+ * The database of a test run: by default the embedded PostgreSQL, in memory. With
+ * TEST_DATABASE_URL set, a PostgreSQL server instead, where each stack gets a schema of its
+ * own so that test files running side by side do not see each other's rows.
+ */
+async function testDatabase(): Promise<{ db: Db; drop: () => Promise<void> }> {
+  const url = process.env.TEST_DATABASE_URL;
+  if (!url) {
+    const db = await openDb();
+    return { db, drop: () => db.close() };
+  }
+  const schema = `test_${randomBytes(6).toString('hex')}`;
+  const admin = new pg.Client({ connectionString: url });
+  await admin.connect();
+  await admin.query(`CREATE SCHEMA ${schema}`);
+  const scoped = new URL(url);
+  scoped.searchParams.set('options', `-c search_path=${schema}`);
+  const db = await openDb({ databaseUrl: scoped.toString() });
+  return {
+    db,
+    async drop() {
+      await db.close();
+      await admin.query(`DROP SCHEMA ${schema} CASCADE`);
+      await admin.end();
+    },
+  };
+}
+
+export async function startStack({ messages = INBOX, env = {} }: StackOptions = {}) {
   const imap = hoodiecrow({
     plugins: ['ID', 'UIDPLUS', 'SPECIAL-USE', 'LITERALPLUS'],
     storage: {
@@ -160,7 +190,7 @@ export async function startStack({ dbPath = ':memory:', messages = INBOX, env = 
     ALLOW_SIGNUP: 'true',
     ...env,
   });
-  const db = openDb(dbPath);
+  const { db, drop } = await testDatabase();
   const vault = createVault(config.appSecret);
   const mail = createMailService({ db, vault, config });
   const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
@@ -199,7 +229,7 @@ export async function startStack({ dbPath = ':memory:', messages = INBOX, env = 
       // The IMAP test server has no way to drop idle sockets: stop accepting and let the process exit.
       imap.close();
       imap.server.unref();
-      db.close();
+      await drop();
     },
   };
 }

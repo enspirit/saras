@@ -16,6 +16,7 @@ RUN npm ci --omit=dev
 COPY src ./src
 COPY public ./public
 COPY --from=build /app/public/js ./public/js
+# Only used by the embedded database, when no DATABASE_URL is given.
 ENV DATA_DIR=/data
 RUN mkdir /data && chown node:node /data
 VOLUME /data

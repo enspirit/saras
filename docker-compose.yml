@@ -4,13 +4,30 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATA_DIR: /data
+      DATABASE_URL: postgres://saras:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/saras
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
+    # Your brand: uncomment, and add BRAND_DIR=/brand to .env
+    # volumes:
+    #   - ./brands/example:/brand:ro
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: saras
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: saras
     volumes:
-      - saras-data:/data
-      # Your brand: uncomment, and add BRAND_DIR=/brand to .env
-      # - ./brands/example:/brand:ro
+      - saras-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saras -d saras"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
 volumes:
-  saras-data:
+  saras-postgres:
