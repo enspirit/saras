@@ -2,3 +2,5 @@ node_modules/
 data/
 .env
 *.log
+# Browser code compiled from web/ by `npm run build`
+public/js/

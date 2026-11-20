@@ -1,0 +1,11 @@
+{
+  // Server and tests. Node runs these files directly (it strips the types itself), so
+  // nothing is emitted: this configuration only type-checks.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": ["src", "test"]
+}

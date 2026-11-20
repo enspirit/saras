@@ -1,0 +1,15 @@
+{
+  // Browser code: compiled from web/ to public/js/, one ES module per source file.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": [],
+    "rootDir": "web",
+    "outDir": "public/js",
+    "rewriteRelativeImportExtensions": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": ["web"]
+}

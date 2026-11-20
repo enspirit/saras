@@ -48,16 +48,16 @@ A file missing from the folder falls back to the default brand's. `brands/exampl
 
 The interface follows the hierarchy tokens → atoms → molecules → organisms → pages, one layer per file, in CSS and in JavaScript alike:
 
-| Tier | Styles (`public/design/`) | Components (`public/ui/`) | Content |
+| Tier | Styles (`public/design/`) | Components (`web/ui/`) | Content |
 | --- | --- | --- | --- |
 | Tokens | `tokens.css` | — | Brand inputs `--brand-*`, then semantic tokens `--color-*`, `--font-*`, `--space-*`, `--radius-*`… |
-| Base | `base.css` | `dom.js` | HTML element defaults; the single element-creation function. |
-| Atoms | `atoms.css` | `atoms.js` | `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Text`, `BrandMark`… |
-| Molecules | `molecules.css` | `molecules.js` | `Field`, `FormRow`, `Actions`, `Card`, `NavItem`, `EmailListItem`, `Message`, toast… |
-| Organisms | `organisms.css` | `organisms.js` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `ReadingHeader`. |
-| Pages | — | `app.js`, `styleguide.js` | Behaviour and wording only, assembled from components. |
+| Base | `base.css` | `dom.ts` | HTML element defaults; the single element-creation function. |
+| Atoms | `atoms.css` | `atoms.ts` | `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Text`, `BrandMark`… |
+| Molecules | `molecules.css` | `molecules.ts` | `Field`, `FormRow`, `Actions`, `Card`, `NavItem`, `EmailListItem`, `Message`, toast… |
+| Organisms | `organisms.css` | `organisms.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `ReadingHeader`. |
+| Pages | — | `app.ts`, `styleguide.ts` | Behaviour and wording only, assembled from components. |
 
-Rules, enforced by `test/design-system.test.js`:
+Rules, enforced by `test/design-system.test.ts`:
 
 - a colour or a font is written as a literal only in `tokens.css`;
 - components use semantic tokens only, never `--brand-*`;
@@ -67,7 +67,7 @@ Rules, enforced by `test/design-system.test.js`:
 
 CSS cascade layers (`@layer`) make the hierarchy effective: a molecule always wins over an atom, and `theme.css`, loaded outside any layer, wins over everything without `!important`.
 
-To add a component: the function in `ui/<tier>.js`, its style in `design/<tier>.css`, an example in `styleguide.js`.
+To add a component: the function in `web/ui/<tier>.ts`, its style in `public/design/<tier>.css`, an example in `web/styleguide.ts`.
 
 ## Privacy
 
@@ -75,7 +75,7 @@ This is the main design constraint.
 
 | Guarantee | How |
 | --- | --- |
-| No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/llm/openrouter.js`, the only place where email content leaves the application, and cannot be disabled by configuration. |
+| No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
 | No silent fallback | If no provider of the chosen model satisfies both conditions, OpenRouter refuses the request and the application shows the error. |
 | Minimisation | Newsletters, mailing lists, `no-reply` addresses and automated messages are discarded by rules on headers and never reach the LLM. |
 | Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). |
@@ -91,12 +91,13 @@ This is the main design constraint.
 
 ## Getting started
 
-Requires Node.js ≥ 22.
+Requires Node.js ≥ 22.18.
 
 ```sh
 npm install
 cp .env.example .env
 # set APP_SECRET (openssl rand -hex 32) and OPENROUTER_API_KEY
+npm run build   # compiles the browser code
 npm start
 ```
 
@@ -152,13 +153,23 @@ mailbox ──► fetch (IMAP / Gmail API / Graph)
               sent in your name, or filed as a draft (SMTP / IMAP / Gmail API / Graph)
 ```
 
-- `src/triage.js`, `src/reply.js`, `src/llm/prompts.js`: pure decisions (triage, shaping of the reply, prompt construction).
-- `src/llm/openrouter.js`: OpenRouter client, privacy policy enforced.
+- `src/triage.ts`, `src/reply.ts`, `src/llm/prompts.ts`: pure decisions (triage, shaping of the reply, prompt construction).
+- `src/llm/openrouter.ts`: OpenRouter client, privacy policy enforced.
 - `src/mail/`: one provider per kind of mailbox, same interface (`verify`, `listNew`, `send`, `saveDraft`).
-- `src/sync.js`: fetch and triage; `src/app.js`: HTTP API; `public/`: interface (no build step, see "Design system").
+- `src/sync.ts`: fetch and triage; `src/app.ts`: HTTP API; `src/types.ts`: the shapes shared across the server.
+- `web/`: the interface's TypeScript (see "Design system"); `public/`: its static files (HTML, CSS, default brand).
 - Data: SQLite in `DATA_DIR`.
 
 The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
+
+## TypeScript
+
+Everything is TypeScript in strict mode.
+
+- **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
+- **Browser code** is compiled by `npm run build` from `web/` to `public/js/` (not committed), one ES module per source file, without a bundler.
+- `npm run typecheck` checks both. `npm run dev` rebuilds the browser code and restarts the server on change.
+- `web/api.ts` describes the JSON returned by each route for the interface. It mirrors what `src/app.ts` builds, but the two are not checked against each other.
 
 ## Tests
 
@@ -168,7 +179,7 @@ npm test
 
 The end-to-end tests start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
 
-GitHub Actions runs them on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret.
+GitHub Actions type-checks, builds and runs them on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret.
 
 ## Known limitations
 
@@ -178,7 +189,7 @@ GitHub Actions runs them on every push and pull request (`.github/workflows/test
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
 - No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).
-- Interface wording is in French and written directly in `public/app.js`; there is no translation layer yet.
+- Interface wording is in French and written directly in `web/app.ts`; there is no translation layer yet.
 
 ## License
 
