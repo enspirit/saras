@@ -2,7 +2,7 @@
  * The brand of this installation: its name, tagline and logo, read from /brand/brand.json.
  * Colours and fonts are in /brand/theme.css, loaded by the page itself.
  */
-const FALLBACK = { name: 'mailia', tagline: '', logo: null, logoDark: null };
+const FALLBACK = { name: 'saras', tagline: '', logo: null, logoDark: null };
 
 export async function loadBrand() {
   let brand = FALLBACK;

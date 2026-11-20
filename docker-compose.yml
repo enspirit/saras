@@ -1,5 +1,5 @@
 services:
-  mailia:
+  saras:
     build: .
     restart: unless-stopped
     env_file: .env
@@ -8,9 +8,9 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
-      - mailia-data:/data
+      - saras-data:/data
       # Your brand: uncomment, and add BRAND_DIR=/brand to .env
       # - ./brands/example:/brand:ro
 
 volumes:
-  mailia-data:
+  saras-data:

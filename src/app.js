@@ -121,7 +121,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   }));
 
   // ---- invitations ------------------------------------------------------------------------
-  // The link carries a random token in the URL fragment; only its hash is stored. Mailia has no
+  // The link carries a random token in the URL fragment; only its hash is stored. Saras has no
   // mailbox of its own, so the administrator passes the link on.
   const pendingInvitation = (token) =>
     db.prepare(`SELECT * FROM invitations WHERE token_hash = ? AND expires_at > datetime('now')`).get(tokenHash(token || ''));

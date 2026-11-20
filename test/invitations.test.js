@@ -4,7 +4,7 @@ import { after, before, test } from 'node:test';
 import { startStack } from './support/stack.js';
 
 let stack;
-before(async () => (stack = await startStack({ env: { ALLOW_SIGNUP: 'false', BASE_URL: 'https://mailia.example' } })));
+before(async () => (stack = await startStack({ env: { ALLOW_SIGNUP: 'false', BASE_URL: 'https://saras.example' } })));
 after(() => stack.stop());
 
 function client() {
@@ -42,7 +42,7 @@ test('an administrator creates a one-time link; only its hash is stored', async 
   assert.equal(created.status, 201);
   invitation = created.body;
   assert.equal(invitation.email, 'lea@corp.example');
-  assert.match(invitation.link, /^https:\/\/mailia\.example\/#\/invitation\/[\w-]{40,}$/);
+  assert.match(invitation.link, /^https:\/\/saras\.example\/#\/invitation\/[\w-]{40,}$/);
   const stored = stack.db.prepare('SELECT * FROM invitations').get();
   assert.ok(!JSON.stringify(stored).includes(tokenOf(invitation.link)));
   const listed = (await admin('GET', '/invitations')).body;

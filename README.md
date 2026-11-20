@@ -1,4 +1,4 @@
-# mailia
+# saras
 
 A self-hosted web tool to answer email with the help of AI, without handing it the keys:
 
@@ -14,14 +14,14 @@ The interface is in French; code and documentation are in English.
 ## Roles
 
 - The **first account created** is the administrator. They can appoint others in **Utilisateurs**; at least one always remains.
-- Other accounts join **by invitation**: the administrator enters an address and gets a one-time link, valid for `INVITATION_DAYS` days (7 by default), which they pass on themselves — mailia has no outgoing mailbox of its own. The invited person only chooses a password. Only a hash of the link is stored; inviting the same address again invalidates the previous link. `ALLOW_SIGNUP=true` reopens free sign-up.
-- An administrator can **delete an account**: its connected mailboxes and stored emails are erased from mailia; the prompts it created are kept.
+- Other accounts join **by invitation**: the administrator enters an address and gets a one-time link, valid for `INVITATION_DAYS` days (7 by default), which they pass on themselves — saras has no outgoing mailbox of its own. The invited person only chooses a password. Only a hash of the link is stored; inviting the same address again invalidates the previous link. `ALLOW_SIGNUP=true` reopens free sign-up.
+- An administrator can **delete an account**: its connected mailboxes and stored emails are erased from saras; the prompts it created are kept.
 - **Prompts are shared** by all users. Only administrators create and edit them; users see their name and description, not the instructions.
 - A user's **corrections** only influence their own drafts. Administrators see the reasons given by everyone, prompt by prompt, to improve the instructions. They have no access to other users' emails.
 
 ## Drafts
 
-"Enregistrer en brouillon" files the reply, attached to the original thread, in the mailbox's Drafts folder: over IMAP (the folder flagged `\Drafts`, or named Drafts / Brouillons), through the Gmail API, or through Microsoft Graph. Nothing is sent. What you change afterwards in your mail client is unknown to mailia.
+"Enregistrer en brouillon" files the reply, attached to the original thread, in the mailbox's Drafts folder: over IMAP (the folder flagged `\Drafts`, or named Drafts / Brouillons), through the Gmail API, or through Microsoft Graph. Nothing is sent. What you change afterwards in your mail client is unknown to saras.
 
 ## Branding
 
@@ -172,6 +172,6 @@ The end-to-end tests start a real local IMAP server and a real local SMTP server
 - Replies are plain text; received attachments are neither displayed nor sent to the LLM.
 - Only the inbox is fetched (the `SYNC_MAX_EMAILS` most recent over `SYNC_DAYS` days).
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
-- No password reset and no two-factor authentication for the mailia account.
+- No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).
 - Interface wording is in French and written directly in `public/app.js`; there is no translation layer yet.

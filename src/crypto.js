@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync, 
 
 /** Secret box bound to APP_SECRET: AES-256-GCM, used for every credential stored in the database. */
 export function createVault(appSecret) {
+  // The salt keeps the product's former name: changing it would make every stored secret unreadable.
   const key = scryptSync(appSecret, 'mailia/vault/v1', 32);
   return {
     seal(value) {
