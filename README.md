@@ -1,6 +1,6 @@
 # saras
 
-[![Tests](https://github.com/blambeau/mailia/actions/workflows/test.yml/badge.svg)](https://github.com/blambeau/mailia/actions/workflows/test.yml)
+[![Tests](https://github.com/enspirit/saras/actions/workflows/test.yml/badge.svg)](https://github.com/enspirit/saras/actions/workflows/test.yml)
 
 A self-hosted web tool to answer email with the help of AI, without handing it the keys:
 
