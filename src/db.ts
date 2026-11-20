@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   email TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
   config_enc TEXT NOT NULL,
+  folder TEXT,
+  folder_name TEXT NOT NULL DEFAULT '',
   last_sync_at TIMESTAMPTZ,
   last_error TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -75,6 +77,7 @@ CREATE TABLE IF NOT EXISTS prompts (
 CREATE TABLE IF NOT EXISTS emails (
   id SERIAL PRIMARY KEY,
   account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  folder TEXT NOT NULL DEFAULT 'INBOX',
   provider_id TEXT NOT NULL,
   message_id TEXT,
   thread_id TEXT,
@@ -87,13 +90,13 @@ CREATE TABLE IF NOT EXISTS emails (
   subject TEXT NOT NULL DEFAULT '',
   date TIMESTAMPTZ NOT NULL,
   body_text TEXT NOT NULL DEFAULT '',
+  attachments_json TEXT NOT NULL DEFAULT '[]',
   status TEXT NOT NULL CHECK (status IN ('pending','needs_reply','no_reply','ignored','sent')),
   triage_source TEXT,
   triage_reason TEXT NOT NULL DEFAULT '',
   priority TEXT NOT NULL DEFAULT 'normal',
   suggested_prompt_id INTEGER REFERENCES prompts(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (account_id, provider_id)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS emails_status ON emails (account_id, status, date);
 CREATE TABLE IF NOT EXISTS drafts (
@@ -119,7 +122,18 @@ CREATE TABLE IF NOT EXISTS replies (
   sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en';
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS folder TEXT;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS folder_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE emails ADD COLUMN IF NOT EXISTS folder TEXT NOT NULL DEFAULT 'INBOX';
+ALTER TABLE emails ADD COLUMN IF NOT EXISTS attachments_json TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE emails DROP CONSTRAINT IF EXISTS emails_account_id_provider_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS emails_identity ON emails (account_id, folder, provider_id);
+UPDATE accounts SET folder = CASE kind WHEN 'microsoft' THEN 'inbox' ELSE 'INBOX' END, folder_name = 'Inbox' WHERE folder IS NULL AND last_sync_at IS NOT NULL;
 `;
+
+// The statements after the tables bring a database created by an earlier version up to date:
+// a mailbox fetched before folders existed keeps watching its inbox, and the identity of an
+// email now includes its folder (IMAP numbers messages per folder).
 
 /** What the server driver and the embedded one have in common, once narrowed to our needs. */
 interface Executor {

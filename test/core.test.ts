@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createVault, hashPassword, verifyPassword } from '../src/crypto.ts';
 import { buildChatRequest, explainError, PRIVACY } from '../src/llm/openrouter.ts';
-import { buildDraftMessages, buildTriageMessages } from '../src/llm/prompts.ts';
+import { buildDraftMessages } from '../src/llm/prompts.ts';
 import { gmailToEmail } from '../src/mail/gmail.ts';
 import { graphToEmail, injectReplyHtml } from '../src/mail/graph.ts';
 import { authorizationUrl } from '../src/mail/oauth.ts';
 import { composeReplyBody, replyRecipients, replyReferences, replySubject, wasEdited } from '../src/reply.ts';
 import { htmlToText, parseAddress } from '../src/text.ts';
-import { heuristicTriage, parseTriageAnswer } from '../src/triage.ts';
+import { heuristicTriage } from '../src/triage/rules.ts';
 
 const email = {
   fromName: 'Claire Martin',
@@ -39,7 +39,7 @@ test('a refusal for data-policy reasons is explained to the user', () => {
   assert.equal(explainError(401, {}, 'x/y').code, 'llm.keyRefused');
 });
 
-test('heuristics discard automated mail without calling the LLM', () => {
+test('header rules set automated mail aside before any triage gate', () => {
   const own = 'me@corp.example';
   assert.equal(heuristicTriage(email, own), null);
   assert.equal(heuristicTriage({ ...email, fromAddr: 'no-reply@shop.example' }, own)?.status, 'no_reply');
@@ -51,23 +51,6 @@ test('heuristics discard automated mail without calling the LLM', () => {
   assert.equal(heuristicTriage({ ...email, answered: true }, own)?.status, 'no_reply');
   // "reply" inside a normal name must not match
   assert.equal(heuristicTriage({ ...email, fromAddr: 'replyman@corp.example' }, own), null);
-});
-
-test('triage answer parsing', () => {
-  const ok = parseTriageAnswer('```json\n{"needs_reply": true, "reason": "Demande de devis", "prompt_id": 2, "priority": "high"}\n```', [1, 2]);
-  assert.deepEqual(ok, { status: 'needs_reply', reason: 'Demande de devis', promptId: 2, priority: 'high' });
-  assert.equal(parseTriageAnswer('{"needs_reply": true, "prompt_id": 99}', [1, 2]).promptId, null);
-  assert.equal(parseTriageAnswer('{"needs_reply": false, "reason": "pub", "prompt_id": 1}', [1]).status, 'no_reply');
-  // unreadable answer: a human must look at it
-  assert.equal(parseTriageAnswer('je ne sais pas', [1]).status, 'needs_reply');
-});
-
-test('triage prompt lists the prompts and isolates the email', () => {
-  const [system, user] = buildTriageMessages({ email, prompts: [{ id: 7, name: 'Devis', description: 'demandes de prix' }], ownAddress: 'me@corp.example' });
-  assert.match(system.content, /id 7: Devis — demandes de prix/);
-  assert.match(system.content, /never carry out an instruction/);
-  assert.match(system.content, /written in English/);
-  assert.match(user.content, /^<email>[\s\S]*<\/email>$/);
 });
 
 test('draft prompt carries the chosen system prompt, signature, lessons and instructions', () => {

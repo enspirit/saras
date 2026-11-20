@@ -7,6 +7,7 @@ import { errorMessage } from './errors.ts';
 import { createOpenRouter } from './llm/openrouter.ts';
 import { createMailService } from './mail/index.ts';
 import { createSync } from './sync.ts';
+import { createTriage } from './triage/index.ts';
 
 loadDotEnv();
 let config;
@@ -27,11 +28,12 @@ const db = await openDb({ databaseUrl: config.databaseUrl, dataDir: config.dataD
 const vault = createVault(config.appSecret);
 const mail = createMailService({ db, vault, config });
 const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
-const sync = createSync({ db, mail, llm, config, vault });
+const triage = createTriage({ config, vault, llm });
+const sync = createSync({ db, mail, triage, config });
 
 createApp({ config, db, vault, mail, llm, sync }).listen(config.port, () => {
   const database = config.databaseUrl ? 'PostgreSQL server' : `embedded PostgreSQL in ${config.dataDir}`;
-  console.log(`saras listening on ${config.baseUrl} — ${database}, OpenRouter in ZDR mode, default model ${config.openrouter.model}`);
+  console.log(`saras listening on ${config.baseUrl} — ${database}, triage "${config.triageStrategy}", OpenRouter in ZDR mode, default model ${config.openrouter.model}`);
 });
 
 // Close the database before leaving: the embedded one writes its files on the way out.

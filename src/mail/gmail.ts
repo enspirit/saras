@@ -1,5 +1,5 @@
 import { htmlToText, parseAddress } from '../text.ts';
-import type { Address, Fetch, IncomingEmail, MailProvider, Sender } from '../types.ts';
+import type { Address, Attachment, Fetch, IncomingEmail, MailFolder, MailProvider, Sender } from '../types.ts';
 import { buildRawReply } from './mime.ts';
 
 const API = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -7,8 +7,9 @@ const API = 'https://gmail.googleapis.com/gmail/v1/users/me';
 /** The parts of a Gmail API message (format=full) that we read. */
 interface GmailPart {
   mimeType?: string;
+  filename?: string;
   headers?: { name: string; value: string }[];
-  body?: { data?: string };
+  body?: { data?: string; size?: number };
   parts?: GmailPart[];
 }
 
@@ -31,6 +32,13 @@ function findPart(payload: GmailPart | undefined, mimeType: string): GmailPart |
     if (found) return found;
   }
   return null;
+}
+
+/** Every part that carries a file name, however deep. */
+function attachmentsOf(payload: GmailPart | undefined): Attachment[] {
+  if (!payload) return [];
+  const own = payload.filename ? [{ name: payload.filename, type: payload.mimeType || 'application/octet-stream', size: payload.body?.size || 0 }] : [];
+  return [...own, ...(payload.parts || []).flatMap(attachmentsOf)];
 }
 
 /** Split an address list on the commas that are outside quoted display names. */
@@ -59,6 +67,7 @@ export function gmailToEmail(msg: GmailMessage): IncomingEmail {
     subject: header('subject'),
     date: new Date(Number(msg.internalDate) || Date.now()).toISOString(),
     bodyText: (plain ? decode(plain.body?.data) : htmlToText(html ? decode(html.body?.data) : '')).trim(),
+    attachments: attachmentsOf(msg.payload),
     headers: {
       listUnsubscribe: header('list-unsubscribe'),
       listId: header('list-id'),
@@ -90,10 +99,22 @@ export function createGmailProvider(account: Sender, { getAccessToken, fetchImpl
       await api('/profile');
     },
 
-    async listNew({ since, limit, known }) {
+    /** In Gmail a folder is a label. */
+    async listFolders() {
+      const { labels = [] } = await api<{ labels?: { id: string; name: string; type?: string }[] }>('/labels');
+      // System labels that are not places where mail waits for an answer.
+      const hidden = new Set(['SENT', 'DRAFT', 'TRASH', 'SPAM', 'CHAT', 'UNREAD']);
+      const rank = (id: string) => (id === 'INBOX' ? 0 : 1);
+      return labels
+        .filter((l) => !hidden.has(l.id) && !l.id.startsWith('CATEGORY_'))
+        .map((l): MailFolder => ({ id: l.id, name: l.id === 'INBOX' ? 'Inbox' : l.name }))
+        .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+    },
+
+    async listNew({ folder, since, limit, known }) {
       const after = Math.floor(since.getTime() / 1000);
-      const q = encodeURIComponent(`in:inbox after:${after} -from:me`);
-      const list = await api<{ messages?: { id: string }[] }>(`/messages?q=${q}&maxResults=${limit}`);
+      const q = encodeURIComponent(`after:${after} -from:me`);
+      const list = await api<{ messages?: { id: string }[] }>(`/messages?labelIds=${encodeURIComponent(folder)}&q=${q}&maxResults=${limit}`);
       const fresh = (list.messages || []).filter((m) => !known.has(m.id));
       const out: IncomingEmail[] = [];
       for (const { id } of fresh) out.push(gmailToEmail(await api<GmailMessage>(`/messages/${id}?format=full`)));

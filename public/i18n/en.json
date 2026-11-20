@@ -27,7 +27,7 @@
   "box": {
     "todo": {
       "label": "To handle",
-      "empty": "Nothing to handle. Start a synchronisation from Mailboxes."
+      "empty": "Nothing to handle. Fetch your mailboxes, or connect one in Mailboxes."
     },
     "none": {
       "label": "No reply needed",
@@ -82,8 +82,9 @@
       "user": "You",
       "unknown": "Triage"
     },
-    "pendingTriage": "Automatic triage has not happened yet (missing OpenRouter key, or an error).",
-    "erased": "Content erased (retention period exceeded)."
+    "pendingTriage": "Not sorted yet: it will be at the next fetch.",
+    "erased": "Content erased (retention period exceeded).",
+    "attachments": "{count, plural, one {Attachment} other {Attachments}}: {names}"
   },
   "reply": {
     "sentTitle": "Reply sent",
@@ -180,7 +181,6 @@
     "lastSync": "Last fetched: {date}",
     "neverSynced": "Never fetched",
     "syncNow": "Fetch now",
-    "synced": "{fetched, plural, =0 {No new email} one {# email fetched} other {# emails fetched}}, {triaged, plural, =0 {none triaged by the AI} other {# triaged by the AI}}.",
     "disconnect": "Disconnect",
     "confirmDisconnect": "Disconnect {email}? The emails and replies stored here will be deleted (your mailbox is not touched).",
     "oauthTitle": "Connect with OAuth",
@@ -204,7 +204,14 @@
     "tlsHint": "Direct TLS: ports 993 (IMAP) and 465 (SMTP). Unchecked, the connection uses STARTTLS (143 / 587). The password is encrypted in the database; prefer an application password.",
     "connect": "Test and connect",
     "connecting": "Testing the connection…",
-    "connected": "Mailbox connected. First fetch in progress…"
+    "connected": "Mailbox connected. Now choose the folder to watch.",
+    "watching": "Watching: {folder}",
+    "chooseFolder": "Choose the folder to watch. Only the emails of that folder are fetched.",
+    "folder": "Folder",
+    "loadingFolders": "Loading the folders…",
+    "useFolder": "Watch this folder",
+    "changeFolder": "Change folder",
+    "folderChosen": "Folder chosen. Fetching…"
   },
   "settings": {
     "title": "Settings",
@@ -228,14 +235,15 @@
     "privacy": "Privacy",
     "privacyPolicy": "Every request sent to OpenRouter carries <code>{policy}</code>. This cannot be disabled: if no provider of the model guarantees no retention and no training, the request fails instead of being routed elsewhere.",
     "privacyLogging": "In your OpenRouter account, keep prompt logging disabled (Settings → Privacy): that setting belongs to your account, not to this application.",
-    "privacyRules": "Newsletters and notifications are set aside by local rules and are never sent to the AI.",
     "privacyRetention": "Email content is erased from this application after {days, plural, one {# day} other {# days}}.",
     "privacyNoRetention": "Email content is kept without limit in this application.",
     "privacyEncryption": "Passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM).",
     "privacyValidation": "No email is sent without your explicit validation.",
     "privacyReasons": "The reasons you give when editing a proposal are visible to administrators, who use them to improve the prompts. Your emails are not.",
     "appearance": "Appearance",
-    "appearanceText": "Colours, typography, logo and name come from the server's brand folder. <link>See the style guide</link> to check how every component renders."
+    "appearanceText": "Colours, typography, logo and name come from the server's brand folder. <link>See the style guide</link> to check how every component renders.",
+    "privacyTriageNone": "Fetched emails are not analysed by the AI: every email of the folder you watch is to be handled, apart from plainly automated mail (newsletters, notifications), which local rules set aside. Email content only goes to the AI when you ask for a proposal.",
+    "privacyTriageAi": "Fetched emails are sorted by the AI, which reads their sender, subject, the beginning of their text and the names of their attachments. Plainly automated mail (newsletters, notifications) is set aside by local rules first and never sent to it."
   },
   "styleguide": {
     "title": "Style guide — {product}",
@@ -359,7 +367,10 @@
       "notFound": "Mailbox not found.",
       "serversRequired": "IMAP and SMTP servers and ports are required.",
       "passwordRequired": "Password required.",
-      "connectionFailed": "Could not connect: {detail}"
+      "connectionFailed": "Could not connect: {detail}",
+      "folderRequired": "Choose the folder to watch.",
+      "unknownFolder": "This folder does not exist in the mailbox.",
+      "foldersFailed": "Could not list the folders: {detail}"
     },
     "oauth": {
       "notConfigured": "This OAuth provider is not configured on this server.",
@@ -369,7 +380,7 @@
     },
     "sync": {
       "fetchFailed": "Could not read the mailbox: {detail}",
-      "noKey": "No OpenRouter key: automatic triage is disabled."
+      "triageFailed": "Triage failed: {detail}"
     },
     "prompts": {
       "notFound": "Prompt not found.",
@@ -406,8 +417,7 @@
       "automatedAddress": "Automated address (no-reply, notification…).",
       "autoSubmitted": "Automated message (Auto-Submitted).",
       "newsletter": "Mailing list or newsletter.",
-      "bulk": "Bulk mail.",
-      "unavailable": "Automatic triage unavailable: to be checked."
+      "bulk": "Bulk mail."
     }
   }
 }

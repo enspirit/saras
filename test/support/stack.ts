@@ -14,6 +14,7 @@ import type { Db } from '../../src/db.ts';
 import { createOpenRouter } from '../../src/llm/openrouter.ts';
 import { createMailService } from '../../src/mail/index.ts';
 import { createSync } from '../../src/sync.ts';
+import { createTriage } from '../../src/triage/index.ts';
 import type { ChatMessage } from '../../src/types.ts';
 
 /** Listen on a free local port and return it. */
@@ -101,14 +102,19 @@ function fakeOpenRouter() {
       const [system, user] = body.messages as [ChatMessage, ChatMessage];
       let content: string;
       if (system.content.includes('You triage the inbox')) {
-        const needs = !/Merci pour la reunion/.test(user.content);
+        // One decision per email of the batch, as the AI triage strategy asks.
         const promptId = Number(system.content.match(/id (\d+): (?:Appointment scheduling|Prise de rendez-vous)/)?.[1]) || null;
-        content = JSON.stringify({
-          needs_reply: needs,
-          reason: needs ? 'Une réponse est attendue.' : 'Simple remerciement.',
-          prompt_id: /rendez-vous/.test(user.content) ? promptId : null,
-          priority: /devis/.test(user.content) ? 'high' : 'normal',
+        const decisions = [...user.content.matchAll(/<email id="(\d+)">([\s\S]*?)<\/email>/g)].map(([, id, mail = '']) => {
+          const needs = !/Merci pour la reunion/.test(mail);
+          return {
+            id: Number(id),
+            needs_reply: needs,
+            reason: needs ? 'Une réponse est attendue.' : 'Simple remerciement.',
+            prompt_id: /rendez-vous/.test(mail) ? promptId : null,
+            priority: /devis/.test(mail) ? 'high' : 'normal',
+          };
         });
+        content = JSON.stringify(decisions);
       } else {
         content = 'Bonjour,\n\nMerci pour votre message. Voici notre proposition : [À COMPLÉTER : montant].\n\nCordialement';
       }
@@ -119,6 +125,8 @@ function fakeOpenRouter() {
 }
 
 interface StackOptions {
+  /** Folders of the mailbox besides the inbox, Sent and Drafts, with their messages. */
+  folders?: Record<string, { raw: string }[]>;
   messages?: { raw: string }[];
   /** Environment variables overriding the test defaults. */
   env?: Record<string, string>;
@@ -152,12 +160,19 @@ async function testDatabase(): Promise<{ db: Db; drop: () => Promise<void> }> {
   };
 }
 
-export async function startStack({ messages = INBOX, env = {} }: StackOptions = {}) {
+export async function startStack({ messages = INBOX, folders = {}, env = {} }: StackOptions = {}) {
   const imap = hoodiecrow({
     plugins: ['ID', 'UIDPLUS', 'SPECIAL-USE', 'LITERALPLUS'],
     storage: {
       INBOX: { messages: structuredClone(messages) },
-      '': { separator: '/', folders: { Sent: { 'special-use': '\\Sent' }, Drafts: { 'special-use': '\\Drafts' } } },
+      '': {
+        separator: '/',
+        folders: {
+          Sent: { 'special-use': '\\Sent' },
+          Drafts: { 'special-use': '\\Drafts' },
+          ...Object.fromEntries(Object.entries(folders).map(([name, list]) => [name, { messages: structuredClone(list) }])),
+        },
+      },
     },
   });
   const imapPort = await listen(imap.server);
@@ -194,7 +209,8 @@ export async function startStack({ messages = INBOX, env = {} }: StackOptions = 
   const vault = createVault(config.appSecret);
   const mail = createMailService({ db, vault, config });
   const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
-  const sync = createSync({ db, mail, llm, config, vault });
+  const triage = createTriage({ config, vault, llm });
+  const sync = createSync({ db, mail, triage, config });
   const http = createApp({ config, db, vault, mail, llm, sync }).listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => http.once('listening', () => resolve()));
 
@@ -206,6 +222,7 @@ export async function startStack({ messages = INBOX, env = {} }: StackOptions = 
     sentFolder: () => imap.getMailbox('Sent').messages,
     draftsFolder: () => imap.getMailbox('Drafts').messages,
     inboxFlags: () => imap.getMailbox('INBOX').messages.map((m) => m.flags),
+    folderFlags: (folder: string) => imap.getMailbox(folder).messages.map((m) => m.flags),
     imapAccount: {
       email: 'me@corp.example',
       displayName: 'Moi Test',

@@ -20,6 +20,7 @@ export interface GraphMessage {
   ccRecipients?: GraphRecipient[];
   body?: { contentType?: string; content?: string };
   internetMessageHeaders?: { name: string; value: string }[];
+  attachments?: { name?: string; contentType?: string; size?: number }[];
 }
 
 const recipient = (r: GraphRecipient | undefined): Address => ({
@@ -45,6 +46,7 @@ export function graphToEmail(msg: GraphMessage): IncomingEmail {
     subject: msg.subject || '',
     date: new Date(msg.receivedDateTime).toISOString(),
     bodyText: String(msg.body?.content || '').trim(),
+    attachments: (msg.attachments || []).map((a) => ({ name: a.name || '', type: a.contentType || 'application/octet-stream', size: a.size || 0 })),
     headers: {
       listUnsubscribe: header('list-unsubscribe'),
       listId: header('list-id'),
@@ -98,15 +100,25 @@ export function createGraphProvider(_account: Sender, { getAccessToken, fetchImp
       await api('/me?$select=id');
     },
 
-    async listNew({ since, limit, known }) {
+    /** Top-level folders only. */
+    async listFolders() {
+      const page = await api<{ value?: { id: string; displayName: string }[] }>('/me/mailFolders?$top=100&$select=id,displayName');
+      const inbox = await api<{ id: string; displayName: string }>('/me/mailFolders/inbox?$select=id,displayName');
+      const others = (page.value || []).filter((f) => f.id !== inbox.id).sort((a, b) => a.displayName.localeCompare(b.displayName));
+      // The inbox is addressed by its well-known name, which stays valid whatever its id.
+      return [{ id: 'inbox', name: inbox.displayName }, ...others.map((f) => ({ id: f.id, name: f.displayName }))];
+    },
+
+    async listNew({ folder, since, limit, known }) {
       const params = new URLSearchParams({
         $filter: `receivedDateTime ge ${since.toISOString()}`,
         $orderby: 'receivedDateTime desc',
         $top: String(limit),
         $select:
           'id,internetMessageId,conversationId,subject,from,replyTo,toRecipients,ccRecipients,receivedDateTime,body,internetMessageHeaders',
+        $expand: 'attachments($select=name,contentType,size)',
       });
-      const page = await api<{ value?: GraphMessage[] }>(`/me/mailFolders/inbox/messages?${params}`, {}, { prefer: 'outlook.body-content-type="text"' });
+      const page = await api<{ value?: GraphMessage[] }>(`/me/mailFolders/${encodeURIComponent(folder)}/messages?${params}`, {}, { prefer: 'outlook.body-content-type="text"' });
       return (page.value || []).filter((m) => !known.has(m.id)).map(graphToEmail);
     },
 

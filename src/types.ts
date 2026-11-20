@@ -5,6 +5,22 @@ export interface Address {
   address: string;
 }
 
+/** What we keep of an attachment: never its content. */
+export interface Attachment {
+  name: string;
+  /** MIME type. */
+  type: string;
+  /** In bytes. */
+  size: number;
+}
+
+/** A folder of a mailbox that can be watched. */
+export interface MailFolder {
+  /** What the provider identifies it by (IMAP path, Gmail label id, Graph folder id). */
+  id: string;
+  name: string;
+}
+
 /** The few headers triage rules look at. */
 export interface MailHeaders {
   listUnsubscribe?: string;
@@ -30,6 +46,7 @@ export interface IncomingEmail {
   /** ISO 8601. */
   date: string;
   bodyText: string;
+  attachments: Attachment[];
   headers: MailHeaders;
   /** Already answered from the user's own mail client, when the provider can tell. */
   answered: boolean;
@@ -37,7 +54,8 @@ export interface IncomingEmail {
 
 export type EmailStatus = 'pending' | 'needs_reply' | 'no_reply' | 'ignored' | 'sent';
 export type Priority = 'high' | 'normal' | 'low';
-export type TriageSource = 'rule' | 'ai' | 'user';
+/** Who decided: the header rules, the user, or a triage strategy by its name ('none', 'ai'…). */
+export type TriageSource = string;
 export type Role = 'admin' | 'user';
 export type AccountKind = 'imap' | 'google' | 'microsoft';
 export type OAuthKind = 'google' | 'microsoft';
@@ -48,6 +66,8 @@ export type ReplyMode = 'sent' | 'draft';
 export interface Email extends Omit<IncomingEmail, 'headers' | 'answered'> {
   id: number;
   accountId: number;
+  /** The folder it was fetched from. */
+  folder: string;
   status: EmailStatus;
   triageSource: TriageSource | null;
   triageReason: string;
@@ -78,6 +98,9 @@ export interface AccountRow {
   display_name: string;
   /** Credentials, sealed by the vault. */
   config_enc: string;
+  /** The one folder watched, by its provider id. Null until the user has chosen it. */
+  folder: string | null;
+  folder_name: string;
   last_sync_at: Date | null;
   last_error: string | null;
   created_at: Date;
@@ -98,6 +121,7 @@ export interface PromptRow {
 export interface EmailRow {
   id: number;
   account_id: number;
+  folder: string;
   provider_id: string;
   message_id: string | null;
   thread_id: string | null;
@@ -110,6 +134,7 @@ export interface EmailRow {
   subject: string;
   date: Date;
   body_text: string;
+  attachments_json: string;
   status: EmailStatus;
   triage_source: TriageSource | null;
   triage_reason: string;
@@ -174,6 +199,8 @@ export interface OutgoingReply {
 }
 
 export interface ListQuery {
+  /** Provider id of the folder to read. */
+  folder: string;
   since: Date;
   limit: number;
   /** Provider ids already stored, not to be fetched again. */
@@ -184,7 +211,9 @@ export interface ListQuery {
 export interface MailProvider {
   /** Throws when the credentials do not work. */
   verify(): Promise<void>;
-  /** Emails of the inbox that are not in `known` yet. */
+  /** The folders that can be watched, the inbox first. */
+  listFolders(): Promise<MailFolder[]>;
+  /** Emails of a folder that are not in `known` yet. */
   listNew(query: ListQuery): Promise<IncomingEmail[]>;
   send(reply: OutgoingReply): Promise<void>;
   /** Files the reply in the mailbox's drafts instead of sending it. */

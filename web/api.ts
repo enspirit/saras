@@ -73,6 +73,8 @@ export interface Me {
   hasKey: boolean;
   oauth: { google: boolean; microsoft: boolean };
   privacy: Record<string, unknown>;
+  /** How fetched emails are sorted on this installation. */
+  triage: 'none' | 'ai';
   retentionDays: number;
 }
 
@@ -81,10 +83,18 @@ export interface Account {
   kind: 'imap' | 'google' | 'microsoft';
   email: string;
   displayName: string;
+  /** The watched folder; null until the user has chosen it. */
+  folder: string | null;
+  folderName: string;
   lastSyncAt: string | null;
   lastError: Problem | null;
   /** Emails waiting in this mailbox. */
   todo: number;
+}
+
+export interface MailFolder {
+  id: string;
+  name: string;
 }
 
 export interface SyncResult {
@@ -161,8 +171,10 @@ export interface EmailDetail {
   subject: string;
   date: string;
   bodyText: string;
+  attachments: { name: string; type: string; size: number }[];
   status: EmailStatus;
-  triageSource: 'rule' | 'ai' | 'user' | null;
+  /** 'rule', 'user', or the name of the triage strategy that decided. */
+  triageSource: string | null;
   /** The reason of the triage verdict, and its code when it is one of the server's own. */
   triageReason: string;
   triageReasonCode: string | null;

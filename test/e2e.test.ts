@@ -2,12 +2,14 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { createClient } from './support/client.ts';
+import type { ApiClient } from './support/client.ts';
 import { startStack } from './support/stack.ts';
 import type { Stack } from './support/stack.ts';
 import type { ChatMessage } from '../src/types.ts';
 
 let stack: Stack;
-before(async () => (stack = await startStack()));
+// This file exercises the AI triage strategy; test/folders.test.ts covers the default one.
+before(async () => (stack = await startStack({ env: { TRIAGE_STRATEGY: 'ai' } })));
 after(() => stack.stop());
 
 const client = () => createClient(() => stack.url);
@@ -46,6 +48,12 @@ function promptNamed(name: string): PromptView {
   return prompt;
 }
 
+/** Chooses the folder to watch and waits for the fetch this starts. */
+async function watchFolder(as: ApiClient, accountId: number, folder: string): Promise<void> {
+  assert.equal((await as('PUT', `/accounts/${accountId}/folder`, { folder })).status, 200);
+  await as('POST', `/accounts/${accountId}/sync`);
+}
+
 const lastDraftSystemPrompt = (): string => lastOf(draftCalls()).body.messages[0]?.content ?? '';
 
 test('signup, and writes must be JSON', async () => {
@@ -73,12 +81,15 @@ test('a wrong IMAP password is refused, a right one connects', async () => {
   assert.ok(!stored.includes('testpass'), 'mailbox password must be encrypted at rest');
 });
 
-test('sync fetches the inbox and triages it; newsletters never reach the LLM', async () => {
+test('the inbox is fetched and passes the AI gate in one batch; newsletters never reach the LLM', async () => {
   const [account] = (await me('GET', '/accounts')).body;
+  assert.equal(account.folder, null, 'nothing is watched until a folder is chosen');
+  await watchFolder(me, account.id, 'INBOX');
   const result = (await me('POST', `/accounts/${account.id}/sync`)).body;
-  assert.deepEqual(result, { fetched: 4, triaged: 3, error: null });
+  assert.deepEqual(result, { fetched: 0, triaged: 0, error: null }, 'choosing the folder already fetched and triaged it');
 
-  assert.equal(triageCalls().length, 3);
+  assert.equal(triageCalls().length, 1, 'one request for the whole batch');
+  assert.equal([...lastOf(triageCalls()).body.messages[1]!.content.matchAll(/<email id=/g)].length, 3);
   for (const call of stack.llmRequests) {
     assert.deepEqual(call.body.provider, { zdr: true, data_collection: 'deny' });
     assert.equal(call.authorization, 'Bearer sk-or-test');
@@ -96,7 +107,7 @@ test('sync fetches the inbox and triages it; newsletters never reach the LLM', a
 
   // syncing again imports nothing twice and asks the LLM nothing more
   assert.deepEqual((await me('POST', `/accounts/${account.id}/sync`)).body, { fetched: 0, triaged: 0, error: null });
-  assert.equal(triageCalls().length, 3);
+  assert.equal(triageCalls().length, 1);
 });
 
 test('the AI suggests a prompt per email, the user may pick another one', async () => {
@@ -261,7 +272,7 @@ test('prompts are shared; only administrators manage them', async () => {
   await me('PUT', `/prompts/${support.id}`, { name: support.name, description: support.description, systemPrompt: 'CONSIGNE-ADMIN-V2' });
   assert.equal((await eve('POST', '/accounts/imap', stack.imapAccount)).status, 201);
   const [mine] = (await eve('GET', '/accounts')).body;
-  await eve('POST', `/accounts/${mine.id}/sync`);
+  await watchFolder(eve, mine.id, 'INBOX');
   const [anEmail] = (await eve('GET', '/emails?box=none')).body.emails;
   assert.equal((await eve('POST', `/emails/${anEmail.id}/draft`, { promptId: support.id })).status, 201);
   const system = lastDraftSystemPrompt();

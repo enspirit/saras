@@ -24,6 +24,10 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     // Closed by default: beyond the first account, people join through an administrator's invitation.
     allowSignup: env.ALLOW_SIGNUP === 'true',
     invitationDays: int(env.INVITATION_DAYS, 7),
+    // How fetched emails are sorted: 'none' (the watched folder is the filter) or 'ai'.
+    triageStrategy: env.TRIAGE_STRATEGY === 'ai' ? ('ai' as const) : ('none' as const),
+    // Set plainly automated mail aside (newsletters, no-reply…) before any triage.
+    skipAutomated: env.TRIAGE_SKIP_AUTOMATED !== 'false',
     syncIntervalMinutes: int(env.SYNC_INTERVAL_MINUTES, 10),
     syncDays: int(env.SYNC_DAYS, 7),
     syncMaxEmails: int(env.SYNC_MAX_EMAILS, 50),

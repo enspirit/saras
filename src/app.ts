@@ -16,7 +16,8 @@ import { buildDraftMessages } from './llm/prompts.ts';
 import type { MailService } from './mail/index.ts';
 import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from './mail/oauth.ts';
 import { replyRecipients, wasEdited } from './reply.ts';
-import { llmSettings, rowToEmail } from './sync.ts';
+import { llmSettings } from './llm/settings.ts';
+import { rowToEmail } from './sync.ts';
 import type { Sync } from './sync.ts';
 import { isEmailAddress } from './text.ts';
 import type {
@@ -240,6 +241,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       hasKey: Boolean(apiKey),
       oauth: { google: isConfigured(config, 'google'), microsoft: isConfigured(config, 'microsoft') },
       privacy: PRIVACY,
+      triage: config.triageStrategy,
       retentionDays: config.retentionDays,
     });
   });
@@ -273,7 +275,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   app.get('/api/accounts', auth, async (req, res) => {
     const rows = await db.query<{ lastError: string | null }>(
-        `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.last_sync_at AS "lastSyncAt", a.last_error AS "lastError",
+        `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.folder, a.folder_name AS "folderName",
+                a.last_sync_at AS "lastSyncAt", a.last_error AS "lastError",
                 (SELECT count(*)::int FROM emails e WHERE e.account_id = a.id AND e.status IN ('needs_reply','pending')) AS todo
          FROM accounts a WHERE a.user_id = $1 ORDER BY a.id`,
         [req.user.id],
@@ -303,8 +306,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     } catch (e) {
       throw new HttpError(400, 'accounts.connectionFailed', { detail: errorMessage(e) });
     }
+    // Nothing is fetched yet: the user first chooses the folder to watch.
     const account = await saveAccount(req.user.id, draft, cfg);
-    backgroundSync(account);
     res.status(201).json({ id: account.id });
   });
 
@@ -318,6 +321,33 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     );
     return saved!;
   }
+
+  /** The folders of the mailbox, for the user to choose the one to watch. */
+  app.get('/api/accounts/:id/folders', auth, async (req, res) => {
+    const account = await accountOf(req);
+    try {
+      res.json(await mail.providerFor(account).listFolders());
+    } catch (e) {
+      throw new HttpError(502, 'accounts.foldersFailed', { detail: errorMessage(e) });
+    }
+  });
+
+  /** Chooses the one folder to watch. What was fetched from another folder before is kept. */
+  app.put('/api/accounts/:id/folder', auth, async (req, res) => {
+    const account = await accountOf(req);
+    const wanted = str(req.body.folder, 1000);
+    let folders;
+    try {
+      folders = await mail.providerFor(account).listFolders();
+    } catch (e) {
+      throw new HttpError(502, 'accounts.foldersFailed', { detail: errorMessage(e) });
+    }
+    const folder = folders.find((f) => f.id === wanted);
+    if (!folder) throw new HttpError(400, 'accounts.unknownFolder');
+    const updated = await db.one<AccountRow>('UPDATE accounts SET folder = $1, folder_name = $2, last_error = NULL WHERE id = $3 RETURNING *', [folder.id, folder.name, account.id]);
+    backgroundSync(updated!);
+    res.json({ ok: true, folder: folder.id, folderName: folder.name });
+  });
 
   app.delete('/api/accounts/:id', auth, async (req, res) => {
     await db.run('DELETE FROM accounts WHERE id = $1', [(await accountOf(req)).id]);
@@ -351,7 +381,9 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       const tokens = await exchangeCode(config, kind, String(req.query.code || ''), fetchImpl);
       if (!tokens.refreshToken) throw new Error('no refresh token received');
       const identity = await fetchIdentity(kind, tokens.accessToken, fetchImpl);
-      backgroundSync(await saveAccount(req.user.id, { kind, email: identity.email, display_name: identity.name }, tokens));
+      const account = await saveAccount(req.user.id, { kind, email: identity.email, display_name: identity.name }, tokens);
+      // Reconnecting a mailbox that already watches a folder resumes fetching at once.
+      if (account.folder) backgroundSync(account);
       back();
     } catch (e) {
       back('oauth.failed', errorMessage(e));

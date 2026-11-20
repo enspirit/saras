@@ -1,14 +1,15 @@
 import type { Config } from './config.ts';
-import type { Vault } from './crypto.ts';
 import type { Db } from './db.ts';
 import { errorMessage } from './errors.ts';
 import { LlmError } from './llm/openrouter.ts';
-import { buildTriageMessages } from './llm/prompts.ts';
+import type { MailService } from './mail/index.ts';
 import { encodeProblem, problem } from './messages.ts';
 import type { Problem } from './messages.ts';
-import type { MailService } from './mail/index.ts';
-import { heuristicTriage, parseTriageAnswer } from './triage.ts';
-import type { AccountRow, ChatAnswer, Email, EmailRow, IncomingEmail, Llm, PromptRow, UserRow } from './types.ts';
+import { runGate } from './triage/gate.ts';
+import type { TriageMail, TriagePrompt } from './triage/gate.ts';
+import type { Triage } from './triage/index.ts';
+import { heuristicTriage } from './triage/rules.ts';
+import type { AccountRow, Email, EmailRow, IncomingEmail, UserRow } from './types.ts';
 
 const MAX_STORED_BODY = 100_000;
 
@@ -16,6 +17,7 @@ export function rowToEmail(row: EmailRow): Email {
   return {
     id: row.id,
     accountId: row.account_id,
+    folder: row.folder,
     providerId: row.provider_id,
     messageId: row.message_id,
     threadId: row.thread_id,
@@ -28,6 +30,7 @@ export function rowToEmail(row: EmailRow): Email {
     subject: row.subject,
     date: row.date.toISOString(),
     bodyText: row.body_text,
+    attachments: JSON.parse(row.attachments_json),
     status: row.status,
     triageSource: row.triage_source,
     triageReason: row.triage_reason,
@@ -36,19 +39,21 @@ export function rowToEmail(row: EmailRow): Email {
   };
 }
 
-/** Which key and model does this user's LLM traffic use? */
-export function llmSettings(
-  user: Pick<UserRow, 'openrouter_key_enc' | 'model'>,
-  { config, vault }: { config: Config; vault: Vault },
-): { apiKey: string; model: string } {
+/** Pure: a stored email, as the triage gate is given it. */
+export function toTriageMail(email: Email): TriageMail {
   return {
-    apiKey: user.openrouter_key_enc ? vault.open<string>(user.openrouter_key_enc) : config.openrouter.apiKey,
-    model: user.model || config.openrouter.model,
+    id: email.id,
+    from: { name: email.fromName, address: email.fromAddr },
+    to: email.to,
+    cc: email.cc,
+    subject: email.subject,
+    body: email.bodyText,
+    attachments: email.attachments,
   };
 }
 
 export interface TriageResult {
-  /** Emails the LLM was asked about. */
+  /** Emails the gate decided about. */
   triaged: number;
   error: Problem | null;
 }
@@ -67,29 +72,33 @@ export interface Sync {
 interface Dependencies {
   db: Db;
   mail: MailService;
-  llm: Llm;
+  triage: Triage;
   config: Config;
-  vault: Vault;
 }
 
-/** Fetches new inbox emails of an account and sorts them into "needs a reply" or not. */
-export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync {
+/**
+ * Fetches the new emails of a mailbox's watched folder, then passes them through the triage
+ * gate, which sorts them into "a reply is needed" or not.
+ */
+export function createSync({ db, mail, triage, config }: Dependencies): Sync {
   /** account id -> sync in flight; concurrent callers share it instead of fetching twice. */
   const running = new Map<number, Promise<SyncResult>>();
 
-  /** Stores what was fetched. A message already known (same account and provider id) is left as it is. */
-  async function store(account: AccountRow, emails: IncomingEmail[]): Promise<void> {
+  /** Stores what was fetched. A message already known (same account, folder and provider id) is left as it is. */
+  async function store(account: AccountRow, folder: string, emails: IncomingEmail[]): Promise<void> {
     await db.transaction(async (tx) => {
       for (const email of emails) {
-        const verdict = heuristicTriage(email, account.email);
+        // Plainly automated mail is set aside here, before any gate is asked about it.
+        const verdict = config.skipAutomated ? heuristicTriage(email, account.email) : null;
         await tx.run(
           `INSERT INTO emails
-             (account_id, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
-              subject, date, body_text, status, triage_source, triage_reason)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-           ON CONFLICT (account_id, provider_id) DO NOTHING`,
+             (account_id, folder, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
+              subject, date, body_text, attachments_json, status, triage_source, triage_reason)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+           ON CONFLICT (account_id, folder, provider_id) DO NOTHING`,
           [
             account.id,
+            folder,
             email.providerId,
             email.messageId,
             email.threadId,
@@ -103,6 +112,7 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
             email.date,
             // PostgreSQL text cannot hold a NUL character, which a malformed mail may contain.
             email.bodyText.replaceAll('\u0000', '').slice(0, MAX_STORED_BODY),
+            JSON.stringify(email.attachments),
             verdict ? verdict.status : 'pending',
             verdict ? 'rule' : null,
             verdict ? verdict.reason : '',
@@ -112,33 +122,34 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
     });
   }
 
-  /** Ask the LLM about every email the rules could not settle. Stops at the first LLM failure. */
+  /**
+   * Passes every email still waiting through the gate. An email the gate says nothing about
+   * stays waiting; if the gate fails, so do all those it had not decided yet.
+   */
   async function triagePending(account: AccountRow): Promise<TriageResult> {
     const user = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
-    const { apiKey, model } = llmSettings(user, { config, vault });
-    if (!apiKey) return { triaged: 0, error: problem('sync.noKey') };
-    const prompts = await db.query<Pick<PromptRow, 'id' | 'name' | 'description'>>('SELECT id, name, description FROM prompts ORDER BY id');
     const pending = await db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [account.id]);
-    let triaged = 0;
-    for (const row of pending) {
-      const messages = buildTriageMessages({ email: rowToEmail(row), prompts, ownAddress: account.email, language: user.language });
-      let answer: ChatAnswer;
-      try {
-        answer = await llm.chat({ apiKey, model, messages, temperature: 0, maxTokens: 200 });
-      } catch (e) {
-        return { triaged, error: e instanceof LlmError ? e.problem : problem('llm.failed', { status: 0, detail: errorMessage(e) }) };
-      }
-      const verdict = parseTriageAnswer(answer.text, prompts.map((p) => p.id));
-      await db.run(`UPDATE emails SET status = $1, triage_source = 'ai', triage_reason = $2, priority = $3, suggested_prompt_id = $4 WHERE id = $5`, [
-        verdict.status,
-        verdict.reason,
-        verdict.priority,
-        verdict.promptId,
-        row.id,
-      ]);
-      triaged += 1;
+    if (!pending.length) return { triaged: 0, error: null };
+    const prompts = await db.query<TriagePrompt>('SELECT id, name, description FROM prompts ORDER BY id');
+    const gate = triage.gateFor(account, user);
+    try {
+      const decisions = await runGate(gate, prompts, pending.map((row) => toTriageMail(rowToEmail(row))));
+      await db.transaction(async (tx) => {
+        for (const decision of decisions) {
+          await tx.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3, priority = $4, suggested_prompt_id = $5 WHERE id = $6 AND status = 'pending'`, [
+            decision.replyNeeded ? 'needs_reply' : 'no_reply',
+            gate.name,
+            decision.reason ?? '',
+            decision.priority ?? 'normal',
+            decision.replyNeeded ? decision.promptId : null,
+            decision.mailId,
+          ]);
+        }
+      });
+      return { triaged: decisions.length, error: null };
+    } catch (e) {
+      return { triaged: 0, error: e instanceof LlmError ? e.problem : problem('sync.triageFailed', { detail: errorMessage(e) }) };
     }
-    return { triaged, error: null };
   }
 
   function syncAccount(account: AccountRow): Promise<SyncResult> {
@@ -151,26 +162,29 @@ export function createSync({ db, mail, llm, config, vault }: Dependencies): Sync
   }
 
   async function runSync(account: AccountRow): Promise<SyncResult> {
-    const stored = await db.query<Pick<EmailRow, 'provider_id'>>('SELECT provider_id FROM emails WHERE account_id = $1', [account.id]);
+    const { folder } = account;
+    // Nothing is fetched until the user has said which folder to watch.
+    if (!folder) return { fetched: 0, triaged: 0, error: problem('accounts.folderRequired') };
+    const stored = await db.query<Pick<EmailRow, 'provider_id'>>('SELECT provider_id FROM emails WHERE account_id = $1 AND folder = $2', [account.id, folder]);
     const known = new Set(stored.map((r) => r.provider_id));
     const since = new Date(Date.now() - config.syncDays * 86_400_000);
     let fetched = 0;
     let error: Problem | null = null;
     try {
-      const emails = await mail.providerFor(account).listNew({ since, limit: config.syncMaxEmails, known });
-      await store(account, emails);
+      const emails = await mail.providerFor(account).listNew({ folder, since, limit: config.syncMaxEmails, known });
+      await store(account, folder, emails);
       fetched = emails.length;
     } catch (e) {
       error = problem('sync.fetchFailed', { detail: errorMessage(e) });
     }
-    const triage: TriageResult = error ? { triaged: 0, error: null } : await triagePending(account);
-    error = error || triage.error;
+    const outcome: TriageResult = error ? { triaged: 0, error: null } : await triagePending(account);
+    error = error || outcome.error;
     await db.run(`UPDATE accounts SET last_sync_at = now(), last_error = $1 WHERE id = $2`, [encodeProblem(error), account.id]);
-    return { fetched, triaged: triage.triaged, error };
+    return { fetched, triaged: outcome.triaged, error };
   }
 
   async function syncAll(): Promise<void> {
-    for (const account of await db.query<AccountRow>('SELECT * FROM accounts')) {
+    for (const account of await db.query<AccountRow>('SELECT * FROM accounts WHERE folder IS NOT NULL')) {
       await syncAccount(account).catch((e) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`));
     }
   }

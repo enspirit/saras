@@ -9,7 +9,7 @@ import type { Brand, ButtonOptions } from './ui/atoms.ts';
 import type { Child } from './ui/dom.ts';
 import { api, isSignedOut, problemText } from './api.ts';
 import { initI18n, language, languages, locale, setLanguage, t, tRich } from './i18n.ts';
-import type { Account, BoxId, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
+import type { Account, BoxId, MailFolder, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
 
 const root = document.getElementById('app') as HTMLElement;
 const toast = createToast(document.getElementById('toast') as HTMLElement);
@@ -288,6 +288,8 @@ function emailDetail(email: EmailDetail, prompts: Prompt[], box: Box): Child {
       email.cc.length
         ? t('reading.toCc', { to: addresses(email.to) || email.account, cc: addresses(email.cc) })
         : t('reading.to', { to: addresses(email.to) || email.account }),
+      email.attachments.length > 0 &&
+        t('reading.attachments', { count: email.attachments.length, names: email.attachments.map((a) => a.name || a.type).join(', ') }),
     ],
     triage: (email.triageReason || pending) && [
       pending ? Badge(t('mailbox.untriaged'), 'warn') : Badge(triageSourceLabel(email.triageSource), 'neutral'),
@@ -517,6 +519,31 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
 });
 
 // ---- accounts ---------------------------------------------------------------------------
+/**
+ * Lets the user choose the one folder of a mailbox to watch. The folders are asked of the
+ * mailbox when the chooser appears, with the inbox first and preselected.
+ */
+function FolderChooser(account: Account): HTMLElement {
+  const select = Select([{ value: '', label: t('accounts.loadingFolders') }], { disabled: true });
+  const confirm = ActionButton(t('accounts.useFolder'), '…', async () => {
+    await api('PUT', `/accounts/${account.id}/folder`, { folder: select.value });
+    toast(t('accounts.folderChosen'));
+    void renderAccounts();
+  });
+  confirm.disabled = true;
+  api<MailFolder[]>('GET', `/accounts/${account.id}/folders`)
+    .then((folders) => {
+      const current = account.folder ?? folders[0]?.id;
+      select.replaceChildren(...Select(folders.map((f) => ({ value: f.id, label: f.name }))).children);
+      // Set once the options are in place: an option moved between lists does not keep its selection.
+      if (current) select.value = current;
+      select.disabled = false;
+      confirm.disabled = false;
+    })
+    .catch((e) => toast(messageOf(e), true));
+  return Block(FormRow(Field(t('accounts.folder'), select), Field(null, confirm, { size: 'fit' })));
+}
+
 /** Kinds of mailbox are product names: the same in every language. */
 const KIND: Record<Account['kind'], string> = { imap: 'IMAP / SMTP', google: 'Google', microsoft: 'Microsoft' };
 
@@ -564,13 +591,18 @@ const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: st
       accounts.length === 0 && Block(Notice('info', t('accounts.none'))),
       accounts.map((a) =>
         Card({ title: a.email, badges: [Badge(KIND[a.kind], 'neutral'), a.todo > 0 && Badge(t('accounts.todo', { count: a.todo }))] },
-          Block(Text({ muted: true, small: true }, a.lastSyncAt ? t('accounts.lastSync', { date: fmtFull(a.lastSyncAt) }) : t('accounts.neverSynced'))),
-          a.lastError && Block(Notice('danger', problemText(a.lastError))),
+          a.folder
+            ? Block(Text({ muted: true, small: true }, t('accounts.watching', { folder: a.folderName }), ' · ', a.lastSyncAt ? t('accounts.lastSync', { date: fmtFull(a.lastSyncAt) }) : t('accounts.neverSynced')))
+            : Block(Notice('info', t('accounts.chooseFolder'))),
+          a.lastError && a.folder && Block(Notice('danger', problemText(a.lastError))),
+          // A mailbox that has no folder yet opens on the choice; later it is behind a button.
+          a.folder ? null : FolderChooser(a),
           Actions(
-            ActionButton(t('accounts.syncNow'), t('mailbox.refreshing'), async () => {
+            a.folder && Button(t('accounts.changeFolder'), { onClick: (event) => (event.target as HTMLElement).replaceWith(FolderChooser(a)) }),
+            a.folder && ActionButton(t('accounts.syncNow'), t('mailbox.refreshing'), async () => {
               const r = await api<SyncResult>('POST', `/accounts/${a.id}/sync`);
               if (r.error) toast(problemText(r.error), true);
-              else toast(t('accounts.synced', { fetched: r.fetched, triaged: r.triaged }));
+              else toast(t('mailbox.fetched', { count: r.fetched }));
               renderAccounts();
             }),
             ActionButton(t('accounts.disconnect'), '…', async () => {
@@ -631,7 +663,7 @@ const renderSettings = guard(async () => {
         List([
           tRich('settings.privacyPolicy', { policy: `provider: ${JSON.stringify(me.privacy)}` }, { code: Code }),
           t('settings.privacyLogging'),
-          t('settings.privacyRules'),
+          me.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone'),
           me.retentionDays ? t('settings.privacyRetention', { days: me.retentionDays }) : t('settings.privacyNoRetention'),
           t('settings.privacyEncryption'),
           t('settings.privacyValidation'),

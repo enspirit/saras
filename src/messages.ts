@@ -35,7 +35,10 @@ export const MESSAGES = {
   'oauth.expired': 'The OAuth session expired, start again.',
   'oauth.failed': 'Connection failed: {detail}',
   'sync.fetchFailed': 'Could not read the mailbox: {detail}',
-  'sync.noKey': 'No OpenRouter key: automatic triage is disabled.',
+  'sync.triageFailed': 'Triage failed: {detail}',
+  'accounts.folderRequired': 'Choose the folder to watch.',
+  'accounts.unknownFolder': 'This folder does not exist in the mailbox.',
+  'accounts.foldersFailed': 'Could not list the folders: {detail}',
 
   // Prompts and emails
   'prompts.notFound': 'Prompt not found.',
@@ -61,7 +64,7 @@ export const MESSAGES = {
   'llm.failed': 'OpenRouter error ({status}). {detail}',
   'llm.emptyAnswer': 'The model returned an empty answer.',
 
-  // Triage verdicts that do not come from the LLM
+  // Verdicts of the header rules applied before the triage gate
   'triage.unknownSender': 'Unknown sender.',
   'triage.ownMessage': 'Message sent by yourself.',
   'triage.alreadyAnswered': 'Already answered from your mail client.',
@@ -69,7 +72,6 @@ export const MESSAGES = {
   'triage.autoSubmitted': 'Automated message (Auto-Submitted).',
   'triage.newsletter': 'Mailing list or newsletter.',
   'triage.bulk': 'Bulk mail.',
-  'triage.unavailable': 'Automatic triage unavailable: to be checked.',
 } as const;
 
 export type MessageCode = keyof typeof MESSAGES;

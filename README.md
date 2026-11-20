@@ -4,14 +4,40 @@
 
 A self-hosted web tool to answer email with the help of AI, without handing it the keys:
 
-1. **Connect** one or more mailboxes: IMAP/SMTP, Gmail / Google Workspace (OAuth), Outlook / Microsoft 365 (OAuth).
-2. **Identify** the emails that are waiting for a reply. Local rules discard newsletters and notifications; the AI triages the rest and suggests the most suitable prompt.
-3. **Draft** a reply from a *system prompt* prepared by an administrator, chosen email by email (the suggested one, or another), with one-off instructions when needed.
+1. **Connect** one or more mailboxes: IMAP/SMTP, Gmail / Google Workspace (OAuth), Outlook / Microsoft 365 (OAuth), and choose the one folder of each to watch (the inbox by default).
+2. **Identify** the emails that are waiting for a reply: what is fetched from that folder passes a triage gate. By default the gate decides nothing and every email is to be handled; an LLM can do it instead.
+3. **Draft** a reply from a *system prompt* prepared by an administrator, chosen email by email, with one-off instructions when needed.
 4. **Send** in your name after review, or **save as a draft** in your mailbox to finish there. If you change the proposal you can say why: that reason is fed into your next drafts made with the same prompt.
 
 Nothing is sent without explicit validation.
 
 Everything is in English by default, and the interface is also available in French (see "Translations").
+
+## Folders and triage
+
+**One folder per mailbox.** After connecting a mailbox, the user chooses the folder to watch: the inbox, or any other (an IMAP folder, a Gmail label, an Outlook folder). Nothing is fetched before that choice, and only that folder ever is. Watching a folder you fill yourself — by hand or with your mail client's own rules — is the simplest way to decide what deserves a reply.
+
+**The triage gate.** Every fetched email passes through a gate, which answers two questions: is a reply needed, and with which prompt. It is an abstraction (`src/triage/gate.ts`) with interchangeable strategies:
+
+```ts
+interface TriageGate {
+  readonly name: string;
+  decide(batch: { prompts: TriagePrompt[]; mails: TriageMail[] }): Promise<TriageDecision[]>;
+}
+```
+
+- **In:** the prompts (id, name, description) and up to 20 mails, each with `from`, `to`, `cc`, `subject`, `body` and its attachments' names, types and sizes. Never the content of an attachment, and nothing else: no database, no mailbox.
+- **Out:** per mail, `replyNeeded` and `promptId` (or `null` to let the user choose), plus an optional `reason` and `priority`.
+- A mail the gate says nothing about, or a gate that fails, leaves the mail untriaged; it is presented again at the next fetch.
+
+| `TRIAGE_STRATEGY` | What it does | Cost |
+| --- | --- | --- |
+| `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a draft is asked for. |
+| `ai` | An LLM decides and suggests a prompt. It reads the sender, subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
+
+To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/triage/index.ts`.
+
+**Before the gate**, header rules set plainly automated mail aside (no-reply senders, mailing lists, automatic replies, bulk mail, and over IMAP what you already answered), so that no strategy spends anything on it. Those emails stay visible under "No reply needed" and can be moved back. `TRIAGE_SKIP_AUTOMATED=false` turns the rules off.
 
 ## Roles
 
@@ -67,7 +93,7 @@ The server never sends sentences of its own to the interface: errors, triage ver
 
 The server remembers each user's language (sent by the interface) for what it writes on their behalf:
 
-- the reason the LLM gives for a triage verdict is asked for in that language;
+- the reason the LLM gives for a triage verdict (with the AI strategy) is asked for in that language;
 - the line introducing the quoted original in a reply ("On …, … wrote:") follows it, for the languages the server knows (English and French; English otherwise);
 - the default prompts are created in the language of the first account (English and French sets are provided).
 
@@ -106,7 +132,7 @@ This is the main design constraint.
 | --- | --- |
 | No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
 | No silent fallback | If no provider of the chosen model satisfies both conditions, OpenRouter refuses the request and the application shows the error. |
-| Minimisation | Newsletters, mailing lists, `no-reply` addresses and automated messages are discarded by rules on headers and never reach the LLM. |
+| Minimisation | Only the folder you chose is fetched. By default no email is analysed by the LLM: content leaves the server only when you ask for a draft. Newsletters, mailing lists, `no-reply` addresses and automated messages are set aside by header rules and never reach it. |
 | Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
 | Transport | Without direct TLS, STARTTLS is required for IMAP and SMTP (except for a local server): no password travels in clear. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |
@@ -180,11 +206,11 @@ Every variable is described in [`.env.example`](.env.example). The default model
 ## How it works
 
 ```
-mailbox ──► fetch (IMAP / Gmail API / Graph)
+mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               │
-              ├─ local rules ──► "no reply needed"        (never sent to the LLM)
+              ├─ header rules ──► "no reply needed"       (automated mail, never shown to a gate)
               │
-              └─ LLM triage (ZDR) ──► "to handle" + suggested prompt
+              └─ triage gate, 20 at a time ──► "to handle" (+ suggested prompt, with the AI strategy)
                                         │
                         you pick the prompt, add instructions
                                         │
@@ -195,9 +221,10 @@ mailbox ──► fetch (IMAP / Gmail API / Graph)
               sent in your name, or filed as a draft (SMTP / IMAP / Gmail API / Graph)
 ```
 
-- `src/triage.ts`, `src/reply.ts`, `src/llm/prompts.ts`: pure decisions (triage, shaping of the reply, prompt construction).
+- `src/triage/`: the triage gate, its strategies, and the header rules applied before it.
+- `src/reply.ts`, `src/llm/prompts.ts`: pure decisions (shaping of the reply, prompt construction).
 - `src/llm/openrouter.ts`: OpenRouter client, privacy policy enforced.
-- `src/mail/`: one provider per kind of mailbox, same interface (`verify`, `listNew`, `send`, `saveDraft`).
+- `src/mail/`: one provider per kind of mailbox, same interface (`verify`, `listFolders`, `listNew`, `send`, `saveDraft`).
 - `src/sync.ts`: fetch and triage; `src/app.ts`: HTTP API; `src/types.ts`: the shapes shared across the server.
 - `web/`: the interface's TypeScript (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
 - Data: PostgreSQL (see "Database").
@@ -226,8 +253,8 @@ GitHub Actions type-checks, builds and runs them on every push and pull request 
 ## Known limitations
 
 - The Gmail and Microsoft Graph connectors are covered by message-conversion tests but have not been exercised against the real services: validate them with your own OAuth credentials.
-- Replies are plain text; received attachments are neither displayed nor sent to the LLM.
-- Only the inbox is fetched (the `SYNC_MAX_EMAILS` most recent over `SYNC_DAYS` days).
+- Replies are plain text. Of received attachments only the name, type and size are kept and shown; their content is neither stored nor sent to the LLM.
+- One folder per mailbox is fetched (the `SYNC_MAX_EMAILS` most recent over `SYNC_DAYS` days). For Outlook, only top-level folders are offered.
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
 - No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).

@@ -31,6 +31,7 @@ export function parsedToEmail(parsed: ParsedMail, { providerId, answered }: { pr
     subject: parsed.subject || '',
     date: (parsed.date || new Date()).toISOString(),
     bodyText: (parsed.text || htmlToText(parsed.html)).trim(),
+    attachments: parsed.attachments.map((a) => ({ name: a.filename || '', type: a.contentType || 'application/octet-stream', size: a.size || 0 })),
     headers: {
       listUnsubscribe: list.unsubscribe ? 'yes' : '',
       listId: list.id ? 'yes' : '',
@@ -81,11 +82,11 @@ export function createImapProvider(account: Sender, cfg: ImapCredentials): MailP
     return client;
   }
 
-  /** Runs `fn` with the inbox selected, then always logs out. */
-  async function withInbox<T>(fn: (client: ImapFlow, uidValidity: string) => Promise<T>): Promise<T> {
+  /** Runs `fn` with a folder selected, then always logs out. */
+  async function withFolder<T>(folder: string, fn: (client: ImapFlow, uidValidity: string) => Promise<T>): Promise<T> {
     const client = await connected();
     try {
-      const lock = await client.getMailboxLock('INBOX');
+      const lock = await client.getMailboxLock(folder);
       try {
         const uidValidity = client.mailbox ? String(client.mailbox.uidValidity) : '';
         return await fn(client, uidValidity);
@@ -111,19 +112,33 @@ export function createImapProvider(account: Sender, cfg: ImapCredentials): MailP
     }
     const [validity, uid] = email.providerId.split(':');
     if (!uid) return;
-    await withInbox(async (inbox, uidValidity) => {
-      if (uidValidity === validity) await inbox.messageFlagsAdd(uid, ['\\Answered'], { uid: true });
+    await withFolder(email.folder, async (folder, uidValidity) => {
+      if (uidValidity === validity) await folder.messageFlagsAdd(uid, ['\\Answered'], { uid: true });
     });
   }
 
   return {
     async verify() {
-      await withInbox(async () => {});
+      await withFolder('INBOX', async () => {});
       await smtpTransport().verify();
     },
 
-    async listNew({ since, limit, known }) {
-      return withInbox(async (client, validity) => {
+    async listFolders() {
+      const client = await connected();
+      try {
+        const boxes = (await client.list()).filter((box) => !box.flags.has('\\Noselect'));
+        // The inbox first, then the others by name.
+        const rank = (path: string) => (path.toUpperCase() === 'INBOX' ? 0 : 1);
+        return boxes
+          .map((box) => ({ id: box.path, name: rank(box.path) === 0 ? 'Inbox' : box.path }))
+          .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+      } finally {
+        await client.logout().catch(() => {});
+      }
+    },
+
+    async listNew({ folder, since, limit, known }) {
+      return withFolder(folder, async (client, validity) => {
         const uids = (await client.search({ since }, { uid: true })) || [];
         const fresh = uids.filter((uid) => !known.has(`${validity}:${uid}`)).slice(-limit);
         if (!fresh.length) return [];
