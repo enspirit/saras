@@ -1,6 +1,9 @@
 {
   "name": "Courrier Dupont",
-  "tagline": "L’assistant de réponse du cabinet Dupont & Associés.",
+  "tagline": {
+    "fr": "L’assistant de réponse du cabinet Dupont & Associés.",
+    "en": "The reply assistant of Dupont & Associés."
+  },
   "logo": "logo.svg",
   "logoDark": "logo-dark.svg"
 }

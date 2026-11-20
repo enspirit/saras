@@ -1,0 +1,7 @@
+{
+  "default": "fr",
+  "languages": [
+    { "tag": "fr", "name": "Français" },
+    { "tag": "en", "name": "English" }
+  ]
+}

@@ -1,6 +1,9 @@
 {
   "name": "saras",
-  "tagline": "Vos réponses aux emails, proposées par l’IA, validées par vous.",
+  "tagline": {
+    "fr": "Vos réponses aux emails, proposées par l’IA, validées par vous.",
+    "en": "Your email replies, drafted by AI, validated by you."
+  },
   "logo": null,
   "logoDark": null
 }

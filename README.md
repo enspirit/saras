@@ -11,7 +11,7 @@ A self-hosted web tool to answer email with the help of AI, without handing it t
 
 Nothing is sent without explicit validation.
 
-The interface is in French; code and documentation are in English.
+The interface is available in French and English (see "Translations"); code and documentation are in English.
 
 ## Roles
 
@@ -37,12 +37,33 @@ BRAND_DIR=./my-brand npm start   # or BRAND_DIR in .env; with Docker, mount the 
 | File | Role |
 | --- | --- |
 | `theme.css` | A dozen variables: accent colour, background, text (light and dark), fonts, corner radius, light/dark mode. Everything else is derived from them. |
-| `brand.json` | `name` (title, tab, wording), `tagline`, `logo` and `logoDark` (file names in the folder, optional). |
+| `brand.json` | `name` (title, tab, wording), `tagline` (one text, or one per language: `{ "fr": "…", "en": "…" }`), `logo` and `logoDark` (file names in the folder, optional). |
 | `favicon.svg`, logos, fonts | Served from the folder. A web font is declared with `@font-face` in `theme.css`. |
 
 A file missing from the folder falls back to the default brand's. `brands/example/` is a complete fictitious brand: `BRAND_DIR=./brands/example npm start`.
 
 **`/styleguide.html`** shows every token and component with the brand in place: it is the page to watch while tuning `theme.css`.
+
+## Translations
+
+Every word of the interface comes from a translation file; none is written in the code (a test enforces it).
+
+- **Files:** `public/i18n/<language>.json`, one per language, plus `public/i18n/index.json`, which lists the languages and names the default one. French is the source language, English is provided.
+- **Format:** Tolgee's native JSON — keys nested on dots, values in ICU MessageFormat: `{name}` parameters, `{count, plural, one {…} other {…}}`, `{kind, select, …}`, and `<tag>…</tag>` for a part the interface renders as a link or in bold.
+- **Language shown:** the user's choice (Réglages → Langue, also on the sign-in page), else the first browser language available, else the default. A missing translation falls back to the default language. Dates follow the reader's regional format.
+- **Adding a language:** add `public/i18n/<tag>.json` and one line in `index.json`. No rebuild is needed.
+
+In the code, `t('key', params)` returns a string and `tRich('key', params, { link: … })` returns nodes for messages with tags (`web/i18n.ts`). The formatter itself (`web/i18n/format.ts`) is a small dependency-free implementation of the ICU subset above.
+
+`test/i18n.test.ts` checks that every language has exactly the keys of the source language, with the same parameters and tags; that every key used in the code exists; and that no key is left unused.
+
+### With Tolgee
+
+`.tolgeerc.json` maps the files for the [Tolgee CLI](https://docs.tolgee.io/tolgee-cli): with a project id and an API key (`TOLGEE_API_KEY`), `npx @tolgee/cli push` uploads the keys and `npx @tolgee/cli pull` brings translations back into `public/i18n/`. Tolgee's in-context editing SDK is not integrated.
+
+### Not translated
+
+Text produced by the server stays in French for now: API error messages, the reasons given by triage, and the prompts sent to the LLM (which also set the language of the triage reasons). Prompt names and descriptions are whatever the administrators wrote.
 
 ## Design system
 
@@ -55,7 +76,7 @@ The interface follows the hierarchy tokens → atoms → molecules → organisms
 | Atoms | `atoms.css` | `atoms.ts` | `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Text`, `BrandMark`… |
 | Molecules | `molecules.css` | `molecules.ts` | `Field`, `FormRow`, `Actions`, `Card`, `NavItem`, `EmailListItem`, `Message`, toast… |
 | Organisms | `organisms.css` | `organisms.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `ReadingHeader`. |
-| Pages | — | `app.ts`, `styleguide.ts` | Behaviour and wording only, assembled from components. |
+| Pages | — | `app.ts`, `styleguide.ts` | Behaviour only, assembled from components; wording comes from the translation files. |
 
 Rules, enforced by `test/design-system.test.ts`:
 
@@ -157,7 +178,7 @@ mailbox ──► fetch (IMAP / Gmail API / Graph)
 - `src/llm/openrouter.ts`: OpenRouter client, privacy policy enforced.
 - `src/mail/`: one provider per kind of mailbox, same interface (`verify`, `listNew`, `send`, `saveDraft`).
 - `src/sync.ts`: fetch and triage; `src/app.ts`: HTTP API; `src/types.ts`: the shapes shared across the server.
-- `web/`: the interface's TypeScript (see "Design system"); `public/`: its static files (HTML, CSS, default brand).
+- `web/`: the interface's TypeScript (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
 - Data: SQLite in `DATA_DIR`.
 
 The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
@@ -189,7 +210,7 @@ GitHub Actions type-checks, builds and runs them on every push and pull request 
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
 - No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).
-- Interface wording is in French and written directly in `web/app.ts`; there is no translation layer yet.
+- Server-side messages (API errors, triage reasons) are not translated yet: see "Translations".
 
 ## License
 

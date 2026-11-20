@@ -3,6 +3,8 @@
  * route returns. These shapes mirror the JSON built in src/app.ts.
  */
 
+import { t } from './i18n.ts';
+
 export class ApiError extends Error {
   status: number;
 
@@ -19,7 +21,7 @@ export async function api<T = unknown>(method: 'GET' | 'POST' | 'PUT' | 'DELETE'
     body: method === 'GET' ? undefined : JSON.stringify(body || {}),
   });
   const data = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new ApiError(data.error || `Erreur ${res.status}`, res.status);
+  if (!res.ok) throw new ApiError(data.error || t('common.httpError', { status: res.status }), res.status);
   return data as T;
 }
 

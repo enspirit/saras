@@ -61,19 +61,23 @@ export interface MailboxOptions {
   /** Text shown when there is no item. */
   empty: string;
   backHref: string;
+  /** Label of the link back to the list, on small screens. */
+  backLabel: string;
+  /** Shown in the reading pane while no email is open. */
+  selectHint: string;
   /** Content of the reading pane, or null when no email is open. */
   detail: Child;
 }
 
 /** List of emails on one side, reading pane on the other. */
-export function Mailbox({ title, action, items, empty, backHref, detail }: MailboxOptions): HTMLDivElement {
+export function Mailbox({ title, action, items, empty, backHref, backLabel, selectHint, detail }: MailboxOptions): HTMLDivElement {
   return h('div', { class: cx('mailbox', Boolean(detail) && 'mailbox--reading') },
     h('section', { class: 'mailbox__list' },
       h('div', { class: 'mailbox__list-head' }, Heading(2, title), action),
       items.length ? items : EmptyState(empty),
     ),
     h('section', { class: 'mailbox__detail' },
-      detail ? [h('div', { class: 'mailbox__back' }, ButtonLink('← Retour', { href: backHref })), detail] : EmptyState(items.length ? 'Sélectionnez un email.' : ''),
+      detail ? [h('div', { class: 'mailbox__back' }, ButtonLink(backLabel, { href: backHref })), detail] : EmptyState(items.length ? selectHint : ''),
     ),
   );
 }

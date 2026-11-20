@@ -7,14 +7,18 @@ import type { Brand } from './atoms.ts';
 /** brand.json as written by a company: file names, not URLs. */
 interface BrandFile {
   name: string;
-  tagline: string;
+  /** One text for every language, or one per language tag. */
+  tagline: string | Record<string, string>;
   logo: string | null;
   logoDark: string | null;
 }
 
 const FALLBACK: BrandFile = { name: 'saras', tagline: '', logo: null, logoDark: null };
 
-export async function loadBrand(): Promise<Brand> {
+/**
+ * @param language the tag of the language in use, to pick the tagline
+ */
+export async function loadBrand(language: string): Promise<Brand> {
   let brand = FALLBACK;
   try {
     const res = await fetch('/brand/brand.json');
@@ -24,5 +28,7 @@ export async function loadBrand(): Promise<Brand> {
   }
   document.title = brand.name;
   const asset = (file: string | null): string | null => (file ? `/brand/${file}` : null);
-  return { name: brand.name, tagline: brand.tagline, logo: asset(brand.logo), logoDark: asset(brand.logoDark) };
+  const { tagline } = brand;
+  const text = typeof tagline === 'string' ? tagline : (tagline[language] ?? Object.values(tagline)[0] ?? '');
+  return { name: brand.name, tagline: text, logo: asset(brand.logo), logoDark: asset(brand.logoDark) };
 }
