@@ -19,6 +19,7 @@ import { replyRecipients, wasEdited } from './reply.ts';
 import { llmSettings } from './llm/settings.ts';
 import { rowToEmail } from './sync.ts';
 import type { Sync } from './sync.ts';
+import { isTriageStrategy } from './triage/index.ts';
 import { isEmailAddress } from './text.ts';
 import type {
   AccountKind,
@@ -29,6 +30,7 @@ import type {
   Fetch,
   ImapCredentials,
   InvitationRow,
+  OrganizationRow,
   Llm,
   OAuthTokens,
   PromptRow,
@@ -71,7 +73,7 @@ function readCookie(req: Request, name: string): string | null {
 }
 
 /** An email row joined with the address of the mailbox it belongs to. */
-type OwnedEmailRow = EmailRow & { account_email: string };
+type OwnedEmailRow = EmailRow & { account_email: string; account_shared: boolean };
 
 interface Dependencies {
   config: Config;
@@ -128,6 +130,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       : undefined;
     if (!row) return next(new HttpError(401, 'auth.signedOut'));
     req.user = row;
+    req.org = (await db.one<OrganizationRow>('SELECT * FROM organizations WHERE id = $1', [row.org_id]))!;
     next();
   };
 
@@ -152,28 +155,41 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     }
   };
 
-  // An empty installation always accepts its first account, which becomes its administrator.
+  // Signing up creates an organisation, which the new account administers. Whether strangers
+  // may do so is the operator's choice; an empty installation always accepts its first account.
   const isEmpty = async (): Promise<boolean> => !(await db.one('SELECT 1 FROM users LIMIT 1'));
   const publicInfo = async () => {
     const empty = await isEmpty();
     return { allowSignup: config.allowSignup || empty, firstAccount: empty };
   };
 
-  /** Creates a user, and the default prompts with the very first one. `on` is the database or a transaction on it. */
-  async function createUser(on: Db, email: string, password: unknown, role: Role, language: string): Promise<number> {
+  /** Creates a user in an organisation. `on` is the database or a transaction on it. */
+  async function createUser(on: Db, orgId: number, email: string, password: unknown, role: Role, language: string): Promise<number> {
     if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
     if (typeof password !== 'string' || password.length < 10) throw new HttpError(400, 'auth.passwordTooShort');
     if (await on.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'auth.emailTaken');
-    const created = await on.one<{ id: number }>('INSERT INTO users (email, password_hash, role, language) VALUES ($1, $2, $3, $4) RETURNING id', [
+    const created = await on.one<{ id: number }>('INSERT INTO users (org_id, email, password_hash, role, language) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
+      orgId,
       email,
       hashPassword(password),
       role,
       language,
     ]);
-    const id = created!.id;
-    // The first account's language decides the language of the default prompts.
-    if (!(await on.one('SELECT 1 FROM prompts LIMIT 1'))) await seedDefaultPrompts(on, id, language);
-    return id;
+    return created!.id;
+  }
+
+  /** Creates an organisation with its administrator and its first prompts, in the administrator's language. */
+  async function createOrganization(on: Db, name: string, email: string, password: unknown, language: string): Promise<number> {
+    // Checked first, so that a refused account leaves no organisation behind even outside a transaction.
+    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
+    const org = await on.one<{ id: number }>('INSERT INTO organizations (name, triage_strategy, skip_automated) VALUES ($1, $2, $3) RETURNING id', [
+      name || email.split('@')[1] || email,
+      config.triageStrategy,
+      config.skipAutomated,
+    ]);
+    const userId = await createUser(on, org!.id, email, password, 'admin', language);
+    await seedDefaultPrompts(on, org!.id, userId, language);
+    return userId;
   }
 
   app.get('/api/public', async (_req, res) => {
@@ -181,30 +197,33 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   });
 
   app.post('/api/auth/signup', guarded(async (req, res) => {
-    const { allowSignup, firstAccount } = await publicInfo();
+    const { allowSignup } = await publicInfo();
     if (!allowSignup) throw new HttpError(403, 'auth.signupClosed');
-    const id = await db.transaction((tx) => createUser(tx, str(req.body.email, 320).toLowerCase(), req.body.password, firstAccount ? 'admin' : 'user', languageTag(req.body.language)));
+    const id = await db.transaction((tx) =>
+      createOrganization(tx, str(req.body.organization, 120), str(req.body.email, 320).toLowerCase(), req.body.password, languageTag(req.body.language)),
+    );
     await openSession(res, id);
     res.status(201).json({ ok: true });
   }));
 
   // ---- invitations ------------------------------------------------------------------------
-  // The link carries a random token in the URL fragment; only its hash is stored. Saras has no
-  // mailbox of its own, so the administrator passes the link on.
+  // An invitation is to an organisation. The link carries a random token in the URL fragment;
+  // only its hash is stored. Saras has no mailbox of its own, so the administrator passes it on.
   const pendingInvitation = (token: unknown) =>
     db.one<InvitationRow>(`SELECT * FROM invitations WHERE token_hash = $1 AND expires_at > now()`, [tokenHash(token || '')]);
 
   app.post('/api/invitations/check', guarded(async (req, res) => {
     const invitation = await pendingInvitation(req.body.token);
     if (!invitation) throw new HttpError(404, 'invitation.invalid');
-    res.json({ email: invitation.email });
+    const org = await db.one<OrganizationRow>('SELECT * FROM organizations WHERE id = $1', [invitation.org_id]);
+    res.json({ email: invitation.email, organization: org!.name });
   }));
 
   app.post('/api/invitations/accept', guarded(async (req, res) => {
     const invitation = await pendingInvitation(req.body.token);
     if (!invitation) throw new HttpError(404, 'invitation.invalid');
     const id = await db.transaction(async (tx) => {
-      const userId = await createUser(tx, invitation.email, req.body.password, invitation.role, languageTag(req.body.language));
+      const userId = await createUser(tx, invitation.org_id, invitation.email, req.body.password, invitation.role, languageTag(req.body.language));
       await tx.run('DELETE FROM invitations WHERE id = $1', [invitation.id]);
       return userId;
     });
@@ -229,19 +248,27 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   // ---- profile & settings -----------------------------------------------------------------
   app.get('/api/me', auth, (req, res) => {
-    const { apiKey, model } = llmSettings(req.user, { config, vault });
+    const { apiKey, model } = llmSettings(req.user, req.org, { config, vault });
+    const admin = req.user.role === 'admin';
     res.json({
       email: req.user.email,
+      organization: {
+        name: req.org.name,
+        triage: req.org.triage_strategy,
+        skipAutomated: req.org.skip_automated,
+        // What follows is the administrators' business.
+        model: admin ? req.org.model || '' : undefined,
+        hasKey: admin ? Boolean(req.org.openrouter_key_enc) : undefined,
+      },
       role: req.user.role,
       language: req.user.language,
       signature: req.user.signature,
       model,
-      defaultModel: config.openrouter.model,
+      defaultModel: req.org.model || config.openrouter.model,
       hasOwnKey: Boolean(req.user.openrouter_key_enc),
       hasKey: Boolean(apiKey),
       oauth: { google: isConfigured(config, 'google'), microsoft: isConfigured(config, 'microsoft') },
       privacy: PRIVACY,
-      triage: config.triageStrategy,
       retentionDays: config.retentionDays,
     });
   });
@@ -263,10 +290,46 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.json({ ok: true });
   });
 
+  /** The organisation's own settings, for its administrators. Only the fields sent are changed. */
+  app.put('/api/organization', auth, adminOnly, async (req, res) => {
+    const { name, triage, skipAutomated, model, openrouterKey } = req.body;
+    const set = (column: string, value: unknown) => db.run(`UPDATE organizations SET ${column} = $1 WHERE id = $2`, [value, req.org.id]);
+    if (typeof name === 'string' && str(name, 120)) await set('name', str(name, 120));
+    if (triage !== undefined) {
+      if (!isTriageStrategy(triage)) throw new HttpError(400, 'organization.invalidTriage');
+      await set('triage_strategy', triage);
+    }
+    if (typeof skipAutomated === 'boolean') await set('skip_automated', skipAutomated);
+    if (typeof model === 'string') {
+      const m = str(model, 200);
+      if (m && !/^[\w.:-]+\/[\w.:-]+$/.test(m)) throw new HttpError(400, 'settings.invalidModel');
+      await set('model', m || null);
+    }
+    if (typeof openrouterKey === 'string') {
+      const key = str(openrouterKey, 500);
+      await set('openrouter_key_enc', key ? vault.seal(key) : null);
+    }
+    res.json({ ok: true });
+  });
+
   // ---- mail accounts ----------------------------------------------------------------------
+  // A mailbox is reachable by its owner and, when shared, by every member of its organisation.
+  // `a` is the alias of the accounts table; $org and $user are given positions by the caller.
+  const canUse = (org: string, user: string): string => `a.org_id = ${org} AND (a.user_id = ${user} OR a.shared)`;
+
   const accountOf = async (req: Request): Promise<AccountRow> => {
-    const account = await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1 AND user_id = $2', [Number(req.params.id), req.user.id]);
+    const account = await db.one<AccountRow>(`SELECT a.* FROM accounts a WHERE a.id = $1 AND ${canUse('$2', '$3')}`, [Number(req.params.id) || 0, req.org.id, req.user.id]);
     if (!account) throw new HttpError(404, 'accounts.notFound');
+    return account;
+  };
+
+  /** Changing or disconnecting a mailbox is for its owner; for a shared one, for administrators. */
+  const canManage = (req: Request, account: Pick<AccountRow, 'shared' | 'user_id'>): boolean =>
+    account.shared ? req.user.role === 'admin' : account.user_id === req.user.id;
+
+  const managedAccountOf = async (req: Request): Promise<AccountRow> => {
+    const account = await accountOf(req);
+    if (!canManage(req, account)) throw new HttpError(403, 'accounts.adminOnly');
     return account;
   };
   const backgroundSync = (account: AccountRow): void => {
@@ -274,14 +337,14 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   };
 
   app.get('/api/accounts', auth, async (req, res) => {
-    const rows = await db.query<{ lastError: string | null }>(
-        `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.folder, a.folder_name AS "folderName",
+    const rows = await db.query<{ lastError: string | null; shared: boolean; user_id: number }>(
+        `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.shared, a.user_id, a.folder, a.folder_name AS "folderName",
                 a.last_sync_at AS "lastSyncAt", a.last_error AS "lastError",
                 (SELECT count(*)::int FROM emails e WHERE e.account_id = a.id AND e.status IN ('needs_reply','pending')) AS todo
-         FROM accounts a WHERE a.user_id = $1 ORDER BY a.id`,
-        [req.user.id],
+         FROM accounts a WHERE ${canUse('$1', '$2')} ORDER BY a.shared DESC, a.id`,
+        [req.org.id, req.user.id],
     );
-    res.json(rows.map((row) => ({ ...row, lastError: decodeProblem(row.lastError) })));
+    res.json(rows.map(({ user_id, ...row }) => ({ ...row, canManage: canManage(req, { shared: row.shared, user_id }), lastError: decodeProblem(row.lastError) })));
   });
 
   app.post('/api/accounts/imap', auth, async (req, res) => {
@@ -300,26 +363,45 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
     if (!cfg.imap.host || !cfg.smtp.host || !cfg.imap.port || !cfg.smtp.port) throw new HttpError(400, 'accounts.serversRequired');
     if (!cfg.imap.pass) throw new HttpError(400, 'accounts.passwordRequired');
-    const draft = { kind: 'imap' as const, email, display_name: str(b.displayName, 200) };
+    const draft = { kind: 'imap' as const, email, display_name: str(b.displayName, 200), shared: wantsShared(req, b.shared) };
     try {
       await mail.imapProvider(draft, cfg).verify();
     } catch (e) {
       throw new HttpError(400, 'accounts.connectionFailed', { detail: errorMessage(e) });
     }
     // Nothing is fetched yet: the user first chooses the folder to watch.
-    const account = await saveAccount(req.user.id, draft, cfg);
+    const account = await saveAccount(req, draft, cfg);
     res.status(201).json({ id: account.id });
   });
 
-  /** Creates the account, or replaces the credentials of the same mailbox connected earlier. */
-  async function saveAccount(userId: number, { kind, email, display_name }: Sender & { kind: AccountKind }, cfg: ImapCredentials | OAuthTokens): Promise<AccountRow> {
-    const saved = await db.one<AccountRow>(
-      `INSERT INTO accounts (user_id, kind, email, display_name, config_enc) VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (user_id, kind, email) DO UPDATE SET config_enc = excluded.config_enc, display_name = excluded.display_name, last_error = NULL
-       RETURNING *`,
-      [userId, kind, email, display_name, vault.seal(cfg)],
-    );
-    return saved!;
+  /** Only administrators connect shared mailboxes; anyone else asking for one gets a personal one. */
+  const wantsShared = (req: Request, asked: unknown): boolean => req.user.role === 'admin' && asked === true;
+
+  /**
+   * Connects a mailbox to the organisation, or renews the credentials of one the user manages.
+   * An address is connected once per organisation: nobody takes over someone else's mailbox.
+   */
+  async function saveAccount(req: Request, { kind, email, display_name, shared }: Sender & { kind: AccountKind; shared: boolean }, cfg: ImapCredentials | OAuthTokens): Promise<AccountRow> {
+    const existing = await db.one<AccountRow>('SELECT * FROM accounts WHERE org_id = $1 AND kind = $2 AND email = $3', [req.org.id, kind, email]);
+    if (existing) {
+      if (!canManage(req, existing)) throw new HttpError(409, 'accounts.alreadyConnected');
+      const renewed = await db.one<AccountRow>('UPDATE accounts SET config_enc = $1, display_name = $2, last_error = NULL WHERE id = $3 RETURNING *', [
+        vault.seal(cfg),
+        display_name,
+        existing.id,
+      ]);
+      return renewed!;
+    }
+    const created = await db.one<AccountRow>('INSERT INTO accounts (org_id, user_id, shared, kind, email, display_name, config_enc) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [
+      req.org.id,
+      req.user.id,
+      shared,
+      kind,
+      email,
+      display_name,
+      vault.seal(cfg),
+    ]);
+    return created!;
   }
 
   /** The folders of the mailbox, for the user to choose the one to watch. */
@@ -334,7 +416,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   /** Chooses the one folder to watch. What was fetched from another folder before is kept. */
   app.put('/api/accounts/:id/folder', auth, async (req, res) => {
-    const account = await accountOf(req);
+    const account = await managedAccountOf(req);
     const wanted = str(req.body.folder, 1000);
     let folders;
     try {
@@ -350,7 +432,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   });
 
   app.delete('/api/accounts/:id', auth, async (req, res) => {
-    await db.run('DELETE FROM accounts WHERE id = $1', [(await accountOf(req)).id]);
+    await db.run('DELETE FROM accounts WHERE id = $1', [(await managedAccountOf(req)).id]);
     res.json({ ok: true });
   });
 
@@ -363,7 +445,9 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const { kind } = req.params;
     if (!isOAuthKind(kind) || !isConfigured(config, kind)) throw new HttpError(404, 'oauth.notConfigured');
     const state = randomToken(24);
-    await db.run('UPDATE sessions SET oauth_state = $1 WHERE id = $2', [`${kind}:${state}`, req.user.sid]);
+    // Whether a shared mailbox was asked for is kept with the state, on our side of the round trip.
+    const scope = wantsShared(req, req.query.shared === '1') ? 'shared' : 'personal';
+    await db.run('UPDATE sessions SET oauth_state = $1 WHERE id = $2', [`${kind}:${state}:${scope}`, req.user.sid]);
     res.redirect(authorizationUrl(config, kind, state));
   });
 
@@ -376,24 +460,26 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     await db.run('UPDATE sessions SET oauth_state = NULL WHERE id = $1', [req.user.sid]);
     if (!isOAuthKind(kind) || !isConfigured(config, kind)) return back('oauth.notConfigured');
     if (req.query.error) return back('oauth.denied', str(req.query.error, 100));
-    if (!expected || expected !== `${kind}:${req.query.state}`) return back('oauth.expired');
+    const [expectedKind, expectedState, scope] = (expected || '').split(':');
+    if (!expectedState || expectedKind !== kind || expectedState !== req.query.state) return back('oauth.expired');
     try {
       const tokens = await exchangeCode(config, kind, String(req.query.code || ''), fetchImpl);
       if (!tokens.refreshToken) throw new Error('no refresh token received');
       const identity = await fetchIdentity(kind, tokens.accessToken, fetchImpl);
-      const account = await saveAccount(req.user.id, { kind, email: identity.email, display_name: identity.name }, tokens);
+      const account = await saveAccount(req, { kind, email: identity.email, display_name: identity.name, shared: wantsShared(req, scope === 'shared') }, tokens);
       // Reconnecting a mailbox that already watches a folder resumes fetching at once.
       if (account.folder) backgroundSync(account);
       back();
     } catch (e) {
+      if (e instanceof HttpError) return back(e.problem.code);
       back('oauth.failed', errorMessage(e));
     }
   });
 
   // ---- prompts ----------------------------------------------------------------------------
-  // Prompts are shared by every user and maintained by administrators.
+  // Prompts belong to the organisation: shared by its members, maintained by its administrators.
   const promptOf = async (req: Request, id: unknown = req.params.id): Promise<PromptRow> => {
-    const prompt = Number.isInteger(Number(id)) ? await db.one<PromptRow>('SELECT * FROM prompts WHERE id = $1', [Number(id)]) : undefined;
+    const prompt = Number.isInteger(Number(id)) ? await db.one<PromptRow>('SELECT * FROM prompts WHERE id = $1 AND org_id = $2', [Number(id), req.org.id]) : undefined;
     if (!prompt) throw new HttpError(404, 'prompts.notFound');
     return prompt;
   };
@@ -406,21 +492,23 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.get('/api/prompts', auth, async (req, res) => {
     if (req.user.role !== 'admin') {
       // Users pick a prompt by name and purpose; its instructions stay with the administrators.
-      return void res.json(await db.query('SELECT id, name, description FROM prompts ORDER BY id'));
+      return void res.json(await db.query('SELECT id, name, description FROM prompts WHERE org_id = $1 ORDER BY id', [req.org.id]));
     }
     res.json(
       await db.query(
         `SELECT p.id, p.name, p.description, p.system_prompt AS "systemPrompt",
                 (SELECT count(*)::int FROM replies r WHERE r.prompt_id = p.id) AS used,
                 (SELECT count(*)::int FROM replies r WHERE r.prompt_id = p.id AND r.was_edited) AS edited
-         FROM prompts p ORDER BY p.id`,
+         FROM prompts p WHERE p.org_id = $1 ORDER BY p.id`,
+        [req.org.id],
       ),
     );
   });
 
   app.post('/api/prompts', auth, adminOnly, async (req, res) => {
     const p = promptBody(req);
-    const created = await db.one<{ id: number }>('INSERT INTO prompts (user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4) RETURNING id', [
+    const created = await db.one<{ id: number }>('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
+      req.org.id,
       req.user.id,
       p.name,
       p.description,
@@ -447,8 +535,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
    */
   const lessonsFor = async (promptId: number, userId: number): Promise<string[]> => {
     const rows = await db.query<{ change_reason: string }>(
-      `SELECT r.change_reason FROM replies r JOIN emails e ON e.id = r.email_id JOIN accounts a ON a.id = e.account_id
-       WHERE r.prompt_id = $1 AND a.user_id = $2 AND r.was_edited AND r.change_reason != '' ORDER BY r.id DESC LIMIT 8`,
+      `SELECT change_reason FROM replies
+       WHERE prompt_id = $1 AND user_id = $2 AND was_edited AND change_reason != '' ORDER BY id DESC LIMIT 8`,
       [promptId, userId],
     );
     return rows.map((r) => r.change_reason);
@@ -459,7 +547,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.json(
       await db.query(
         `SELECT r.change_reason AS reason, u.email AS "user", r.sent_at AS at
-         FROM replies r JOIN emails e ON e.id = r.email_id JOIN accounts a ON a.id = e.account_id JOIN users u ON u.id = a.user_id
+         FROM replies r JOIN users u ON u.id = r.user_id
          WHERE r.prompt_id = $1 AND r.was_edited AND r.change_reason != '' ORDER BY r.id DESC LIMIT 50`,
         [(await promptOf(req)).id],
       ),
@@ -467,17 +555,20 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   });
 
   // ---- users (administrators) -------------------------------------------------------------
-  app.get('/api/users', auth, adminOnly, async (_req, res) => {
+  app.get('/api/users', auth, adminOnly, async (req, res) => {
     res.json(
       await db.query(
-        `SELECT u.id, u.email, u.role, u.created_at AS "createdAt", (SELECT count(*)::int FROM accounts a WHERE a.user_id = u.id) AS accounts
-         FROM users u ORDER BY u.id`,
+        `SELECT u.id, u.email, u.role, u.created_at AS "createdAt", (SELECT count(*)::int FROM accounts a WHERE a.user_id = u.id AND NOT a.shared) AS accounts
+         FROM users u WHERE u.org_id = $1 ORDER BY u.id`,
+        [req.org.id],
       ),
     );
   });
 
-  app.get('/api/invitations', auth, adminOnly, async (_req, res) => {
-    res.json(await db.query(`SELECT id, email, role, expires_at AS "expiresAt", expires_at <= now() AS expired FROM invitations ORDER BY id DESC`));
+  app.get('/api/invitations', auth, adminOnly, async (req, res) => {
+    res.json(
+      await db.query(`SELECT id, email, role, expires_at AS "expiresAt", expires_at <= now() AS expired FROM invitations WHERE org_id = $1 ORDER BY id DESC`, [req.org.id]),
+    );
   });
 
   app.post('/api/invitations', auth, adminOnly, async (req, res) => {
@@ -488,22 +579,22 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const token = randomToken();
     // Inviting the same address again replaces the earlier link.
     const saved = await db.one<{ id: number }>(
-      `INSERT INTO invitations (email, role, token_hash, created_by, expires_at) VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))
-       ON CONFLICT (email) DO UPDATE SET role = excluded.role, token_hash = excluded.token_hash, created_by = excluded.created_by, expires_at = excluded.expires_at
+      `INSERT INTO invitations (org_id, email, role, token_hash, created_by, expires_at) VALUES ($6, $1, $2, $3, $4, now() + make_interval(days => $5))
+       ON CONFLICT (org_id, email) DO UPDATE SET role = excluded.role, token_hash = excluded.token_hash, created_by = excluded.created_by, expires_at = excluded.expires_at
        RETURNING id`,
-      [email, role, tokenHash(token), req.user.id, config.invitationDays],
+      [email, role, tokenHash(token), req.user.id, config.invitationDays, req.org.id],
     );
     // The only time the link exists in clear: it cannot be shown again.
     res.status(201).json({ id: saved!.id, email, link: `${config.baseUrl}/#/invitation/${token}`, validDays: config.invitationDays });
   });
 
   app.delete('/api/invitations/:id', auth, adminOnly, async (req, res) => {
-    await db.run('DELETE FROM invitations WHERE id = $1', [Number(req.params.id) || 0]);
+    await db.run('DELETE FROM invitations WHERE id = $1 AND org_id = $2', [Number(req.params.id) || 0, req.org.id]);
     res.json({ ok: true });
   });
 
   const userOf = async (req: Request): Promise<UserRow> => {
-    const target = await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [Number(req.params.id) || 0]);
+    const target = await db.one<UserRow>('SELECT * FROM users WHERE id = $1 AND org_id = $2', [Number(req.params.id) || 0, req.org.id]);
     if (!target) throw new HttpError(404, 'users.notFound');
     return target;
   };
@@ -512,8 +603,9 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const target = await userOf(req);
     if (target.id === req.user.id) throw new HttpError(409, 'users.cannotDeleteSelf');
     await db.transaction(async (tx) => {
-      // Shared prompts outlive their author.
+      // What belongs to the organisation outlives the member who created it.
       await tx.run('UPDATE prompts SET user_id = $1 WHERE user_id = $2', [req.user.id, target.id]);
+      await tx.run('UPDATE accounts SET user_id = $1 WHERE user_id = $2 AND shared', [req.user.id, target.id]);
       await tx.run('DELETE FROM users WHERE id = $1', [target.id]);
     });
     res.json({ ok: true });
@@ -522,7 +614,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.put('/api/users/:id', auth, adminOnly, async (req, res) => {
     const target = await userOf(req);
     if (!['admin', 'user'].includes(req.body.role)) throw new HttpError(400, 'users.invalidRole');
-    const admins = await db.one<{ n: number }>(`SELECT count(*)::int AS n FROM users WHERE role = 'admin'`);
+    const admins = await db.one<{ n: number }>(`SELECT count(*)::int AS n FROM users WHERE role = 'admin' AND org_id = $1`, [req.org.id]);
     if (target.role === 'admin' && req.body.role === 'user' && admins!.n === 1) {
       throw new HttpError(409, 'users.lastAdmin');
     }
@@ -536,8 +628,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   const emailOf = async (req: Request): Promise<OwnedEmailRow> => {
     const row = await db.one<OwnedEmailRow>(
-      `SELECT e.*, a.email AS account_email FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = $1 AND a.user_id = $2`,
-      [Number(req.params.id) || 0, req.user.id],
+      `SELECT e.*, a.email AS account_email, a.shared AS account_shared FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = $1 AND ${canUse('$2', '$3')}`,
+      [Number(req.params.id) || 0, req.org.id, req.user.id],
     );
     if (!row) throw new HttpError(404, 'emails.notFound');
     return row;
@@ -547,17 +639,17 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const statuses = BOXES[String(req.query.box)] || BOXES.todo!;
     const rows = await db.query(
       `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status, e.priority,
-              e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS account,
+              e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS account, a.shared,
               (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
        FROM emails e JOIN accounts a ON a.id = e.account_id
-       WHERE a.user_id = $1 AND e.status = ANY($2)
+       WHERE ${canUse('$1', '$2')} AND e.status = ANY($3)
        ORDER BY e.date DESC LIMIT 200`,
-      [req.user.id, statuses],
+      [req.org.id, req.user.id, statuses],
     );
     const counts = Object.fromEntries(Object.keys(BOXES).map((box) => [box, 0]));
     const perStatus = await db.query<{ status: EmailStatus; n: number }>(
-      `SELECT e.status, count(*)::int AS n FROM emails e JOIN accounts a ON a.id = e.account_id WHERE a.user_id = $1 GROUP BY e.status`,
-      [req.user.id],
+      `SELECT e.status, count(*)::int AS n FROM emails e JOIN accounts a ON a.id = e.account_id WHERE ${canUse('$1', '$2')} GROUP BY e.status`,
+      [req.org.id, req.user.id],
     );
     for (const { status, n } of perStatus) {
       for (const [box, list] of Object.entries(BOXES)) if (list.includes(status)) counts[box] = (counts[box] || 0) + n;
@@ -572,9 +664,10 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       'SELECT id, prompt_id AS "promptId", model, instructions, ai_text AS "aiText" FROM drafts WHERE email_id = $1 ORDER BY id DESC LIMIT 1',
       [row.id],
     );
-    const reply = await db.one<{ finalText: string; wasEdited: boolean; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: Date }>(
-      `SELECT final_text AS "finalText", was_edited AS "wasEdited", change_reason AS "changeReason", mode, to_json AS "toJson", cc_json AS "ccJson", sent_at AS "sentAt"
-       FROM replies WHERE email_id = $1 ORDER BY id DESC LIMIT 1`,
+    const reply = await db.one<{ finalText: string; wasEdited: boolean; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: Date; by: string | null }>(
+      `SELECT r.final_text AS "finalText", r.was_edited AS "wasEdited", r.change_reason AS "changeReason", r.mode, r.to_json AS "toJson", r.cc_json AS "ccJson",
+              r.sent_at AS "sentAt", u.email AS by
+       FROM replies r LEFT JOIN users u ON u.id = r.user_id WHERE r.email_id = $1 ORDER BY r.id DESC LIMIT 1`,
       [row.id],
     );
     const reason = readReason(email.triageReason);
@@ -583,6 +676,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       triageReason: reason.text,
       triageReasonCode: reason.code,
       account: row.account_email,
+      shared: row.account_shared,
       recipients: replyRecipients(email, row.account_email, false),
       recipientsAll: replyRecipients(email, row.account_email, true),
       draft: draft || null,
@@ -604,7 +698,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     if (!row.body_text) throw new HttpError(410, 'emails.contentErased');
     const prompt = await promptOf(req, req.body.promptId);
     const instructions = str(req.body.instructions, 4000);
-    const { apiKey, model } = llmSettings(req.user, { config, vault });
+    const { apiKey, model } = llmSettings(req.user, req.org, { config, vault });
     const messages = buildDraftMessages({
       email: rowToEmail(row),
       prompt: { systemPrompt: prompt.system_prompt },
@@ -656,8 +750,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       const edited = draft ? wasEdited(draft.ai_text, text) : false;
       await db.transaction(async (tx) => {
         await tx.run(
-          `INSERT INTO replies (email_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [row.id, draft?.prompt_id ?? null, draft?.ai_text ?? null, text, edited, edited ? str(req.body.changeReason, 1000) : '', mode, JSON.stringify(to), JSON.stringify(cc)],
+          `INSERT INTO replies (email_id, user_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json) VALUES ($1, $10, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [row.id, draft?.prompt_id ?? null, draft?.ai_text ?? null, text, edited, edited ? str(req.body.changeReason, 1000) : '', mode, JSON.stringify(to), JSON.stringify(cc), req.user.id],
         );
         await tx.run(`UPDATE emails SET status = 'sent' WHERE id = $1`, [row.id]);
       });

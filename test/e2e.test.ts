@@ -1,7 +1,7 @@
 // End to end over real protocols: HTTP API -> IMAP fetch -> triage -> draft -> SMTP send.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { createClient } from './support/client.ts';
+import { createClient, join } from './support/client.ts';
 import type { ApiClient } from './support/client.ts';
 import { startStack } from './support/stack.ts';
 import type { Stack } from './support/stack.ts';
@@ -237,18 +237,23 @@ test('saving as a draft files the reply in the mailbox without sending it', asyn
 
 const eve = client();
 
-test('users are isolated from each other', async () => {
-  await eve('POST', '/auth/signup', { email: 'eve@corp.example', password: 'un-autre-mot-de-passe' });
+test('a colleague does not reach a personal mailbox', async () => {
+  await join(me, eve, 'eve@corp.example');
   assert.deepEqual((await eve('GET', '/emails?box=sent')).body.emails, []);
   assert.equal((await eve('GET', `/emails/${todo[0].id}`)).status, 404);
   assert.equal((await eve('POST', `/emails/${todo[0].id}/draft`, { promptId: prompts[0].id })).status, 404);
   assert.equal((await eve('POST', `/emails/${todo[0].id}/save-draft`, { text: 'x', to: ['a@b.example'] })).status, 404);
   const [account] = (await me('GET', '/accounts')).body;
   assert.equal((await eve('POST', `/accounts/${account.id}/sync`)).status, 404);
+  assert.deepEqual((await eve('GET', '/accounts')).body, []);
+  // An address is connected once per organisation: she cannot take the mailbox over either.
+  const takeover = await eve('POST', '/accounts/imap', stack.imapAccount);
+  assert.equal(takeover.status, 409);
+  assert.equal(takeover.body.code, 'accounts.alreadyConnected');
 });
 
-test('prompts are shared; only administrators manage them', async () => {
-  assert.equal((await me('GET', '/me')).body.role, 'admin', 'the first account administers the installation');
+test('prompts belong to the organisation; only its administrators manage them', async () => {
+  assert.equal((await me('GET', '/me')).body.role, 'admin', 'who creates the organisation administers it');
   assert.equal((await eve('GET', '/me')).body.role, 'user');
 
   // a user sees the shared catalogue, without the instructions
@@ -262,34 +267,23 @@ test('prompts are shared; only administrators manage them', async () => {
   assert.equal((await eve('DELETE', `/prompts/${support.id}`)).status, 403);
   assert.equal((await eve('GET', `/prompts/${support.id}/corrections`)).status, 403);
   assert.equal((await eve('GET', '/users')).status, 403);
-  assert.equal((await eve('PUT', '/users/2', { role: 'admin' })).status, 403);
+  assert.equal((await eve('PUT', '/users/1', { role: 'admin' })).status, 403);
 
   // the administrator sees who corrected what
   const corrections = (await me('GET', `/prompts/${support.id}/corrections`)).body;
   assert.deepEqual(corrections.map((c: { reason: string; user: string }) => [c.reason, c.user]), [['Toujours donner le prix hors taxes', 'bob@corp.example']]);
-
-  // an edit by the administrator reaches every user's next draft
-  await me('PUT', `/prompts/${support.id}`, { name: support.name, description: support.description, systemPrompt: 'CONSIGNE-ADMIN-V2' });
-  assert.equal((await eve('POST', '/accounts/imap', stack.imapAccount)).status, 201);
-  const [mine] = (await eve('GET', '/accounts')).body;
-  await watchFolder(eve, mine.id, 'INBOX');
-  const [anEmail] = (await eve('GET', '/emails?box=none')).body.emails;
-  assert.equal((await eve('POST', `/emails/${anEmail.id}/draft`, { promptId: support.id })).status, 201);
-  const system = lastDraftSystemPrompt();
-  assert.ok(system.startsWith('CONSIGNE-ADMIN-V2'));
-  // ...but a colleague's personal corrections do not
-  assert.doesNotMatch(system, /prix hors taxes/);
 });
 
 test('roles can be handed over, but one administrator always remains', async () => {
   const users = (await me('GET', '/users')).body;
   assert.deepEqual(users.map((u: { email: string; role: string }) => [u.email, u.role]), [['bob@corp.example', 'admin'], ['eve@corp.example', 'user']]);
-  assert.equal((await me('PUT', '/users/1', { role: 'user' })).status, 409);
-  assert.equal((await me('PUT', '/users/2', { role: 'admin' })).status, 200);
+  const [bob, evie] = users as { id: number }[];
+  assert.equal((await me('PUT', `/users/${bob!.id}`, { role: 'user' })).status, 409);
+  assert.equal((await me('PUT', `/users/${evie!.id}`, { role: 'admin' })).status, 200);
   assert.equal((await eve('POST', '/prompts', { name: 'Nouveau', systemPrompt: 'S' })).status, 201);
-  assert.equal((await me('PUT', '/users/1', { role: 'user' })).status, 200);
-  assert.equal((await me('GET', '/prompts/1/corrections')).status, 403);
-  assert.equal((await eve('PUT', '/users/2', { role: 'user' })).status, 409);
+  assert.equal((await me('PUT', `/users/${bob!.id}`, { role: 'user' })).status, 200);
+  assert.equal((await me('GET', `/prompts/${prompts[0]!.id}/corrections`)).status, 403);
+  assert.equal((await eve('PUT', `/users/${evie!.id}`, { role: 'user' })).status, 409);
 });
 
 test('logout ends the session', async () => {

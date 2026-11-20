@@ -134,12 +134,18 @@ async function renderAuth(mode: 'login' | 'signup' = 'login', typedEmail = ''): 
   const signup = mode === 'signup' && info.allowSignup;
   const email = Input({ type: 'email', required: true, autocomplete: 'username', value: typedEmail });
   const password = Input({ type: 'password', required: true, minLength: signup ? 10 : 1, autocomplete: signup ? 'new-password' : 'current-password' });
+  const organization = Input({ required: true, autocomplete: 'organization' });
   const submit = Button(signup ? t('auth.createAccount') : t('auth.signIn'), { variant: 'primary', type: 'submit', block: true });
   const form = SubmitForm(submit, '…', async () => {
-    await api('POST', signup ? '/auth/signup' : '/auth/login', { email: email.value, password: password.value, language: language() });
+    await api('POST', signup ? '/auth/signup' : '/auth/login', { email: email.value, password: password.value, organization: organization.value, language: language() });
     if (signup) location.hash = '#/accounts';
     await boot();
-  }, Field(t('auth.email'), email), Field(t('auth.password'), password, { hint: signup && t('auth.passwordHint') }), submit);
+  },
+    signup && Field(t('auth.organization'), organization, { hint: t('auth.organizationHint') }),
+    Field(t('auth.email'), email),
+    Field(t('auth.password'), password, { hint: signup && t('auth.passwordHint') }),
+    submit,
+  );
 
   const foot = info.allowSignup
     ? [signup ? t('auth.haveAccount') : t('auth.noAccountYet'), ' ', Button(signup ? t('auth.signIn') : t('auth.signUp'), { variant: 'link', onClick: () => renderAuth(signup ? 'login' : 'signup', email.value) })]
@@ -162,9 +168,9 @@ async function renderInvitation(token: string): Promise<void> {
     history.replaceState(null, '', '/');
     return boot();
   };
-  let invitation: { email: string };
+  let invitation: { email: string; organization: string };
   try {
-    invitation = await api<{ email: string }>('POST', '/invitations/check', { token });
+    invitation = await api<{ email: string; organization: string }>('POST', '/invitations/check', { token });
   } catch (e) {
     return root.replaceChildren(AuthPanel({ brand, tagline: brand.tagline }, Block(Notice('danger', messageOf(e))), Button(t('invitation.goToSignIn'), { onClick: leave })));
   }
@@ -179,7 +185,7 @@ async function renderInvitation(token: string): Promise<void> {
     Field(t('invitation.choosePassword'), password, { hint: t('auth.passwordHint') }),
     submit,
   );
-  root.replaceChildren(AuthPanel({ brand, tagline: t('invitation.invited', { product: brand.name }) }, form));
+  root.replaceChildren(AuthPanel({ brand, tagline: t('invitation.invited', { organization: invitation.organization, product: brand.name }) }, form));
   password.focus();
 }
 
@@ -198,7 +204,7 @@ function shell(content: Child): void {
         text: t('nav.assurance.text'),
         title: t('nav.assurance.title'),
       },
-      user: me().email,
+      user: t('nav.member', { email: me().email, organization: me().organization.name }),
       logout: ActionButton(t('nav.signOut'), '…', async () => {
         await api('POST', '/auth/logout');
         location.hash = '';
@@ -260,6 +266,8 @@ const renderMailbox = guard(async (box: Box, selectedId: number | null) => {
           current: e.id === selectedId,
           onClick: () => (location.hash = `#/${box.path}/${e.id}`),
           badges: [
+            // In a shared mailbox, say which: several may be shown together.
+            e.shared && Badge(e.account, 'neutral'),
             e.status === 'pending' && Badge(t('mailbox.untriaged'), 'warn'),
             e.priority === 'high' && e.status !== 'sent' && Badge(t('mailbox.priority'), 'danger'),
             e.replyMode === 'draft' && Badge(t('mailbox.draft'), 'neutral'),
@@ -306,11 +314,12 @@ function emailDetail(email: EmailDetail, prompts: Prompt[], box: Box): Child {
 function sentReply(r: SentReply): Child {
   const draft = r.mode === 'draft';
   const recipients = { date: fmtFull(r.sentAt), to: r.to.join(', '), cc: r.cc.join(', ') };
+  const author = r.by && r.by !== me().email ? r.by : null;
   return Card({
     title: draft ? t('reply.draftTitle') : t('reply.sentTitle'),
     badges: [Badge(r.wasEdited ? t('reply.edited') : t('reply.unedited'), r.wasEdited ? 'warn' : 'ok')],
   },
-    Block(Text({ muted: true, small: true }, r.cc.length ? t('reply.metaCc', recipients) : t('reply.meta', recipients))),
+    Block(Text({ muted: true, small: true }, r.cc.length ? t('reply.metaCc', recipients) : t('reply.meta', recipients), author && ` · ${t('reply.by', { user: author })}`)),
     r.changeReason && Block(Text({ small: true }, tRich('reply.changeReason', { reason: r.changeReason }, { strong: Strong }))),
     draft && Block(Notice('info', t('reply.draftNotice'))),
     Message(Prose(r.finalText || t('reply.textErased'))),
@@ -476,7 +485,7 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
   shell(
     Page(
       Heading(1, t('users.title')),
-      Block(Text({ muted: true }, t('users.intro'))),
+      Block(Text({ muted: true }, t('users.intro', { organization: me().organization.name }))),
       Card({ title: t('users.invite') },
         freshLink,
         inviteForm,
@@ -551,8 +560,18 @@ const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: st
   const accounts = await api<Account[]>('GET', '/accounts');
   const { oauth } = me();
 
-  const oauthButton = (kind: 'google' | 'microsoft', label: string) =>
-    ButtonLink(label, { href: `/api/oauth/${kind}/start`, disabled: !oauth[kind], title: oauth[kind] ? undefined : t('accounts.oauthUnavailable', { prefix: kind.toUpperCase() }) });
+  // Administrators may connect a mailbox for the whole organisation. The choice applies to
+  // whichever way of connecting is used next.
+  const shared = Checkbox();
+  const oauthLinks: { kind: string; link: HTMLElement }[] = [];
+  const oauthButton = (kind: 'google' | 'microsoft', label: string) => {
+    const link = ButtonLink(label, { href: `/api/oauth/${kind}/start`, disabled: !oauth[kind], title: oauth[kind] ? undefined : t('accounts.oauthUnavailable', { prefix: kind.toUpperCase() }) });
+    oauthLinks.push({ kind, link });
+    return link;
+  };
+  shared.addEventListener('change', () => {
+    for (const { kind, link } of oauthLinks) if (link instanceof HTMLAnchorElement) link.href = `/api/oauth/${kind}/start${shared.checked ? '?shared=1' : ''}`;
+  });
 
   const email = Input({ type: 'email', required: true });
   const displayName = Input({ placeholder: t('accounts.namePlaceholder') });
@@ -572,6 +591,7 @@ const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: st
       email: email.value, displayName: displayName.value, username: username.value, password: password.value,
       imapHost: imapHost.value, imapPort: Number(imapPort.value), imapSecure: imapSecure.checked,
       smtpHost: smtpHost.value, smtpPort: Number(smtpPort.value), smtpSecure: smtpSecure.checked,
+      shared: shared.checked,
     });
     toast(t('accounts.connected'));
     renderAccounts();
@@ -590,28 +610,32 @@ const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: st
       oauthError && Block(Notice('danger', problemText({ code: oauthError, params: { detail: oauthDetail ?? '' }, message: oauthDetail || oauthError }))),
       accounts.length === 0 && Block(Notice('info', t('accounts.none'))),
       accounts.map((a) =>
-        Card({ title: a.email, badges: [Badge(KIND[a.kind], 'neutral'), a.todo > 0 && Badge(t('accounts.todo', { count: a.todo }))] },
+        Card({ title: a.email, badges: [a.shared && Badge(t('accounts.shared')), Badge(KIND[a.kind], 'neutral'), a.todo > 0 && Badge(t('accounts.todo', { count: a.todo }))] },
           a.folder
             ? Block(Text({ muted: true, small: true }, t('accounts.watching', { folder: a.folderName }), ' · ', a.lastSyncAt ? t('accounts.lastSync', { date: fmtFull(a.lastSyncAt) }) : t('accounts.neverSynced')))
-            : Block(Notice('info', t('accounts.chooseFolder'))),
+            : Block(Notice('info', a.canManage ? t('accounts.chooseFolder') : t('accounts.folderPending'))),
           a.lastError && a.folder && Block(Notice('danger', problemText(a.lastError))),
           // A mailbox that has no folder yet opens on the choice; later it is behind a button.
-          a.folder ? null : FolderChooser(a),
+          a.folder || !a.canManage ? null : FolderChooser(a),
           Actions(
-            a.folder && Button(t('accounts.changeFolder'), { onClick: (event) => (event.target as HTMLElement).replaceWith(FolderChooser(a)) }),
+            a.folder && a.canManage && Button(t('accounts.changeFolder'), { onClick: (event) => (event.target as HTMLElement).replaceWith(FolderChooser(a)) }),
             a.folder && ActionButton(t('accounts.syncNow'), t('mailbox.refreshing'), async () => {
               const r = await api<SyncResult>('POST', `/accounts/${a.id}/sync`);
               if (r.error) toast(problemText(r.error), true);
               else toast(t('mailbox.fetched', { count: r.fetched }));
               renderAccounts();
             }),
-            ActionButton(t('accounts.disconnect'), '…', async () => {
+            a.canManage && ActionButton(t('accounts.disconnect'), '…', async () => {
               if (!confirm(t('accounts.confirmDisconnect', { email: a.email }))) return;
               await api('DELETE', `/accounts/${a.id}`);
               renderAccounts();
             }, { variant: 'danger' }),
           ),
         ),
+      ),
+      isAdmin() && Card({ title: t('accounts.sharedTitle') },
+        Block(Text({ muted: true }, t('accounts.sharedIntro', { organization: me().organization.name }))),
+        CheckField(t('accounts.sharedCheck'), shared),
       ),
       Card({ title: t('accounts.oauthTitle') },
         Block(Text({ muted: true }, t('accounts.oauthIntro'))),
@@ -628,6 +652,39 @@ function LanguagePicker(): Child {
   if (languages().length < 2) return null;
   const select = Select(languages().map((l) => ({ value: l.tag, label: l.name, selected: l.tag === language() })), { onchange: () => setLanguage(select.value) });
   return Field(t('settings.language'), select);
+}
+
+/** The organisation's own settings, for its administrators. */
+function OrganizationSettings(me: Me): Child {
+  const org = me.organization;
+  const name = Input({ required: true, value: org.name });
+  const triage = Select([
+    { value: 'none', label: t('organization.triageNone'), selected: org.triage === 'none' },
+    { value: 'ai', label: t('organization.triageAi'), selected: org.triage === 'ai' },
+  ]);
+  const skipAutomated = Checkbox({ checked: org.skipAutomated });
+  const model = Input({ value: org.model ?? '', placeholder: t('organization.modelPlaceholder') });
+  const key = Input({ type: 'password', autocomplete: 'off', placeholder: org.hasKey ? t('settings.keySaved') : 'sk-or-…' });
+  const save = Button(t('common.save'), { variant: 'primary', type: 'submit' });
+  const form = SubmitForm(save, '…', async () => {
+    const body: Record<string, unknown> = { name: name.value, triage: triage.value, skipAutomated: skipAutomated.checked, model: model.value };
+    if (key.value) body.openrouterKey = key.value;
+    await api('PUT', '/organization', body);
+    toast(t('settings.saved'));
+    void renderSettings();
+  },
+    Field(t('organization.name'), name),
+    Field(t('organization.triage'), triage, { hint: t('organization.triageHint') }),
+    CheckField(t('organization.skipAutomated'), skipAutomated),
+    Field(t('organization.model'), model, { hint: t('organization.modelHint') }),
+    Field(t('organization.key'), key, { hint: org.hasKey ? t('settings.keyHintOwn') : t('organization.keyHint') }),
+    Actions(save, org.hasKey && ActionButton(t('organization.deleteKey'), '…', async () => {
+      await api('PUT', '/organization', { openrouterKey: '' });
+      toast(t('settings.keyDeleted'));
+      void renderSettings();
+    }, { variant: 'danger' })),
+  );
+  return Card({ title: t('organization.title') }, Block(Text({ muted: true }, t('organization.intro'))), form);
 }
 
 const renderSettings = guard(async () => {
@@ -659,11 +716,12 @@ const renderSettings = guard(async () => {
       !me.hasKey && Block(Notice('warn', t('settings.noKey'))),
       Card({ title: t('settings.writing') }, form),
       languages().length > 1 && Card({ title: t('settings.display') }, LanguagePicker()),
+      isAdmin() && OrganizationSettings(me),
       Card({ title: t('settings.privacy') },
         List([
           tRich('settings.privacyPolicy', { policy: `provider: ${JSON.stringify(me.privacy)}` }, { code: Code }),
           t('settings.privacyLogging'),
-          me.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone'),
+          me.organization.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone'),
           me.retentionDays ? t('settings.privacyRetention', { days: me.retentionDays }) : t('settings.privacyNoRetention'),
           t('settings.privacyEncryption'),
           t('settings.privacyValidation'),

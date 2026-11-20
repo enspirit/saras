@@ -9,7 +9,7 @@ import { runGate } from './triage/gate.ts';
 import type { TriageMail, TriagePrompt } from './triage/gate.ts';
 import type { Triage } from './triage/index.ts';
 import { heuristicTriage } from './triage/rules.ts';
-import type { AccountRow, Email, EmailRow, IncomingEmail, UserRow } from './types.ts';
+import type { AccountRow, Email, EmailRow, IncomingEmail, OrganizationRow, UserRow } from './types.ts';
 
 const MAX_STORED_BODY = 100_000;
 
@@ -84,12 +84,15 @@ export function createSync({ db, mail, triage, config }: Dependencies): Sync {
   /** account id -> sync in flight; concurrent callers share it instead of fetching twice. */
   const running = new Map<number, Promise<SyncResult>>();
 
+  const organizationOf = async (account: AccountRow): Promise<OrganizationRow> =>
+    (await db.one<OrganizationRow>('SELECT * FROM organizations WHERE id = $1', [account.org_id]))!;
+
   /** Stores what was fetched. A message already known (same account, folder and provider id) is left as it is. */
-  async function store(account: AccountRow, folder: string, emails: IncomingEmail[]): Promise<void> {
+  async function store(account: AccountRow, org: OrganizationRow, folder: string, emails: IncomingEmail[]): Promise<void> {
     await db.transaction(async (tx) => {
       for (const email of emails) {
         // Plainly automated mail is set aside here, before any gate is asked about it.
-        const verdict = config.skipAutomated ? heuristicTriage(email, account.email) : null;
+        const verdict = org.skip_automated ? heuristicTriage(email, account.email) : null;
         await tx.run(
           `INSERT INTO emails
              (account_id, folder, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
@@ -127,11 +130,12 @@ export function createSync({ db, mail, triage, config }: Dependencies): Sync {
    * stays waiting; if the gate fails, so do all those it had not decided yet.
    */
   async function triagePending(account: AccountRow): Promise<TriageResult> {
-    const user = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
+    const org = await organizationOf(account);
+    const owner = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
     const pending = await db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [account.id]);
     if (!pending.length) return { triaged: 0, error: null };
-    const prompts = await db.query<TriagePrompt>('SELECT id, name, description FROM prompts ORDER BY id');
-    const gate = triage.gateFor(account, user);
+    const prompts = await db.query<TriagePrompt>('SELECT id, name, description FROM prompts WHERE org_id = $1 ORDER BY id', [org.id]);
+    const gate = triage.gateFor(account, org, owner);
     try {
       const decisions = await runGate(gate, prompts, pending.map((row) => toTriageMail(rowToEmail(row))));
       await db.transaction(async (tx) => {
@@ -172,7 +176,7 @@ export function createSync({ db, mail, triage, config }: Dependencies): Sync {
     let error: Problem | null = null;
     try {
       const emails = await mail.providerFor(account).listNew({ folder, since, limit: config.syncMaxEmails, known });
-      await store(account, folder, emails);
+      await store(account, await organizationOf(account), folder, emails);
       fetched = emails.length;
     } catch (e) {
       error = problem('sync.fetchFailed', { detail: errorMessage(e) });

@@ -33,7 +33,7 @@ const sync = createSync({ db, mail, triage, config });
 
 createApp({ config, db, vault, mail, llm, sync }).listen(config.port, () => {
   const database = config.databaseUrl ? 'PostgreSQL server' : `embedded PostgreSQL in ${config.dataDir}`;
-  console.log(`saras listening on ${config.baseUrl} — ${database}, triage "${config.triageStrategy}", OpenRouter in ZDR mode, default model ${config.openrouter.model}`);
+  console.log(`saras listening on ${config.baseUrl} — ${database}, OpenRouter in ZDR mode, default model ${config.openrouter.model}`);
 });
 
 // Close the database before leaving: the embedded one writes its files on the way out.

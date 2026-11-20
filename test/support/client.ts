@@ -7,6 +7,14 @@ export interface ApiResponse {
 
 export type ApiClient = (method: string, path: string, body?: unknown, headers?: Record<string, string>) => Promise<ApiResponse>;
 
+/** Invites an address into the administrator's organisation and accepts the invitation as `guest`. */
+export async function join(admin: ApiClient, guest: ApiClient, email: string, role: 'user' | 'admin' = 'user'): Promise<void> {
+  const invitation = await admin('POST', '/invitations', { email, role });
+  const token = String(invitation.body.link).split('#/invitation/')[1];
+  const accepted = await guest('POST', '/invitations/accept', { token, password: 'un-bon-mot-de-passe' });
+  if (accepted.status !== 201) throw new Error(`could not join: ${JSON.stringify(accepted.body)}`);
+}
+
 /** A browser-like API client: it keeps the session cookie between calls. */
 export function createClient(baseUrl: () => string): ApiClient {
   let cookie = '';

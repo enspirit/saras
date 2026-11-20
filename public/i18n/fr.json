@@ -22,7 +22,8 @@
     "assurance": {
       "text": "IA sans conservation de données (ZDR) : imposé à chaque requête",
       "title": "Chaque appel à l’IA impose zdr=true et data_collection=deny chez OpenRouter."
-    }
+    },
+    "member": "{email} · {organization}"
   },
   "box": {
     "todo": {
@@ -47,15 +48,17 @@
     "password": "Mot de passe",
     "passwordHint": "10 caractères minimum.",
     "signIn": "Se connecter",
-    "signUp": "Créer un compte",
+    "signUp": "Créer une organisation",
     "createAccount": "Créer mon compte",
     "haveAccount": "Déjà un compte ?",
-    "noAccountYet": "Pas encore de compte ?",
+    "noAccountYet": "Nouveau ici ?",
     "askInvitation": "Pas de compte ? Demandez une invitation à votre administrateur.",
-    "firstAccount": "Aucun compte n’existe encore : le premier créé sera l’administrateur."
+    "firstAccount": "Aucun compte n’existe encore. Créez votre organisation : vous en serez l’administrateur.",
+    "organization": "Organisation",
+    "organizationHint": "Votre entreprise ou votre équipe. Vous en serez l’administrateur et pourrez inviter d’autres personnes."
   },
   "invitation": {
-    "invited": "Vous avez été invité à rejoindre {product}.",
+    "invited": "Vous avez été invité à rejoindre {organization} sur {product}.",
     "choosePassword": "Choisissez un mot de passe",
     "goToSignIn": "Aller à la connexion"
   },
@@ -95,7 +98,8 @@
     "metaCc": "{date} · À {to} · Cc {cc}",
     "changeReason": "<strong>Raison de la modification :</strong> {reason}",
     "draftNotice": "Ce message n’est pas parti : il attend dans le dossier Brouillons de votre messagerie, où vous pouvez le compléter et l’envoyer.",
-    "textErased": "(texte effacé)"
+    "textErased": "(texte effacé)",
+    "by": "par {user}"
   },
   "composer": {
     "title": "Votre réponse",
@@ -140,7 +144,7 @@
     "edit": "Modifier le prompt",
     "create": "Créer le prompt",
     "saved": "Prompt enregistré.",
-    "intro": "Chaque prompt décrit une façon de répondre. Ils sont communs à tous les utilisateurs : au tri, l’IA suggère le plus adapté, et chacun reste libre d’en choisir un autre pour chaque email. Les utilisateurs voient le nom et la description, pas les instructions.",
+    "intro": "Chaque prompt décrit une façon de répondre. Ils appartiennent à l’organisation : au tri, l’IA peut suggérer le plus adapté, et chaque membre reste libre d’en choisir un autre pour chaque email. Les membres voient le nom et la description, pas les instructions.",
     "name": "Nom",
     "when": "Quand l’utiliser",
     "whenHint": "L’IA lit cette description pour suggérer le bon prompt à chaque email.",
@@ -154,7 +158,7 @@
   },
   "users": {
     "title": "Utilisateurs",
-    "intro": "Les administrateurs gèrent les prompts, les invitations et les rôles. Ils n’ont pas accès aux emails des autres utilisateurs.",
+    "intro": "Membres de {organization}. Les administrateurs gèrent les prompts, les invitations, les boîtes partagées et les réglages de l’organisation. Ils n’ont pas accès à la boîte personnelle d’un membre.",
     "invite": "Inviter quelqu’un",
     "email": "Adresse email",
     "emailPlaceholder": "prenom.nom@exemple.com",
@@ -168,7 +172,7 @@
     "expiresOn": "expire le {date}",
     "revoke": "Révoquer",
     "you": "Vous",
-    "summary": "Inscrit le {date} · {count, plural, =0 {aucune boîte connectée} one {# boîte connectée} other {# boîtes connectées}}",
+    "summary": "Inscrit le {date} · {count, plural, =0 {aucune boîte personnelle} one {# boîte personnelle} other {# boîtes personnelles}}",
     "promote": "Nommer administrateur",
     "demote": "Retirer le rôle administrateur",
     "delete": "Supprimer le compte",
@@ -211,21 +215,26 @@
     "loadingFolders": "Chargement des dossiers…",
     "useFolder": "Surveiller ce dossier",
     "changeFolder": "Changer de dossier",
-    "folderChosen": "Dossier choisi. Relève en cours…"
+    "folderChosen": "Dossier choisi. Relève en cours…",
+    "shared": "Partagée",
+    "sharedTitle": "Boîte partagée",
+    "sharedIntro": "Une boîte partagée (contact@, info@…) est utilisée par tous les membres de {organization} : ils voient tous ses emails et peuvent y répondre. Seuls les administrateurs en connectent, modifient ou déconnectent une.",
+    "sharedCheck": "Connecter la prochaine boîte comme partagée",
+    "folderPending": "Un administrateur doit encore choisir le dossier à surveiller."
   },
   "settings": {
     "title": "Réglages",
     "noKey": "Aucune clé OpenRouter : le tri automatique et les propositions sont désactivés.",
     "writing": "Rédaction",
     "model": "Modèle OpenRouter",
-    "modelHint": "Identifiant « fournisseur/modèle ». Laisser vide pour le modèle du serveur ({model}). Le modèle doit avoir au moins un fournisseur ZDR, sinon la requête est refusée.",
+    "modelHint": "Identifiant « fournisseur/modèle ». Laisser vide pour le modèle de votre organisation ({model}). Le modèle doit avoir au moins un fournisseur ZDR, sinon la requête est refusée.",
     "signature": "Signature",
     "signaturePlaceholder": "Cordialement,\nPrénom Nom",
     "signatureHint": "Ajoutée telle quelle à la fin de chaque proposition.",
     "key": "Clé API OpenRouter personnelle",
     "keySaved": "•••••••• (enregistrée)",
-    "keyServer": "Clé du serveur utilisée",
-    "keyHint": "Chiffrée en base. Laissez vide pour utiliser la clé du serveur.",
+    "keyServer": "Clé de l’organisation utilisée",
+    "keyHint": "Chiffrée en base. Laissez vide pour utiliser la clé de votre organisation.",
     "keyHintOwn": "Laissez vide pour conserver la clé actuelle.",
     "deleteKey": "Supprimer ma clé",
     "keyDeleted": "Clé personnelle supprimée.",
@@ -239,7 +248,7 @@
     "privacyNoRetention": "Le contenu des emails est conservé sans limite dans cette application.",
     "privacyEncryption": "Mots de passe, tokens OAuth et clés API sont chiffrés en base (AES-256-GCM).",
     "privacyValidation": "Aucun email n’est envoyé sans votre validation explicite.",
-    "privacyReasons": "Les raisons que vous donnez en modifiant une proposition sont visibles des administrateurs, qui s’en servent pour améliorer les prompts. Vos emails ne le sont pas.",
+    "privacyReasons": "Les raisons que vous donnez en modifiant une proposition sont visibles des administrateurs de votre organisation, qui s’en servent pour améliorer les prompts. Les emails de votre boîte personnelle ne le sont pas.",
     "appearance": "Apparence",
     "appearanceText": "Couleurs, typographie, logo et nom viennent du dossier de marque du serveur. <link>Voir le guide de style</link> pour vérifier le rendu de tous les composants.",
     "privacyTriageNone": "Les emails relevés ne sont pas analysés par l’IA : tout email du dossier surveillé est à traiter, hormis le courrier manifestement automatique (newsletters, notifications), écarté par des règles locales. Le contenu d’un email ne part vers l’IA que lorsque vous demandez une proposition.",
@@ -370,7 +379,9 @@
       "connectionFailed": "Connexion impossible : {detail}",
       "folderRequired": "Choisissez le dossier à surveiller.",
       "unknownFolder": "Ce dossier n’existe pas dans la boîte.",
-      "foldersFailed": "Impossible de lister les dossiers : {detail}"
+      "foldersFailed": "Impossible de lister les dossiers : {detail}",
+      "adminOnly": "Une boîte partagée est gérée par les administrateurs.",
+      "alreadyConnected": "Cette boîte est déjà connectée dans votre organisation."
     },
     "oauth": {
       "notConfigured": "Ce fournisseur OAuth n’est pas configuré sur ce serveur.",
@@ -418,6 +429,25 @@
       "autoSubmitted": "Message automatique (Auto-Submitted).",
       "newsletter": "Liste de diffusion ou newsletter.",
       "bulk": "Envoi en masse."
+    },
+    "organization": {
+      "invalidTriage": "Stratégie de tri inconnue."
     }
+  },
+  "organization": {
+    "title": "Organisation",
+    "intro": "Ces réglages s’appliquent à tous les membres et à toutes les boîtes de l’organisation.",
+    "name": "Nom",
+    "triage": "Tri des emails relevés",
+    "triageNone": "Aucun : tout email du dossier surveillé est à traiter",
+    "triageAi": "Par l’IA : elle décide si une réponse est nécessaire et suggère un prompt",
+    "triageHint": "Le tri par l’IA coûte une requête par 20 emails relevés, et lui transmet leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes.",
+    "skipAutomated": "Écarter d’abord le courrier manifestement automatique (newsletters, notifications)",
+    "model": "Modèle OpenRouter par défaut",
+    "modelPlaceholder": "Modèle du serveur",
+    "modelHint": "Utilisé par les membres qui n’ont pas choisi le leur. Laisser vide pour celui du serveur.",
+    "key": "Clé API OpenRouter de l’organisation",
+    "keyHint": "Chiffrée en base. Utilisée par tout membre qui n’a pas sa propre clé.",
+    "deleteKey": "Supprimer la clé de l’organisation"
   }
 }

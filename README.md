@@ -30,22 +30,30 @@ interface TriageGate {
 - **Out:** per mail, `replyNeeded` and `promptId` (or `null` to let the user choose), plus an optional `reason` and `priority`.
 - A mail the gate says nothing about, or a gate that fails, leaves the mail untriaged; it is presented again at the next fetch.
 
-| `TRIAGE_STRATEGY` | What it does | Cost |
+| Strategy | What it does | Cost |
 | --- | --- | --- |
 | `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a draft is asked for. |
 | `ai` | An LLM decides and suggests a prompt. It reads the sender, subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
 
-To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/triage/index.ts`.
+The strategy is chosen **per organisation**, by its administrators; `TRIAGE_STRATEGY` only sets what a new organisation starts with. To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/triage/index.ts`.
 
-**Before the gate**, header rules set plainly automated mail aside (no-reply senders, mailing lists, automatic replies, bulk mail, and over IMAP what you already answered), so that no strategy spends anything on it. Those emails stay visible under "No reply needed" and can be moved back. `TRIAGE_SKIP_AUTOMATED=false` turns the rules off.
+**Before the gate**, header rules set plainly automated mail aside (no-reply senders, mailing lists, automatic replies, bulk mail, and over IMAP what you already answered), so that no strategy spends anything on it. Those emails stay visible under "No reply needed" and can be moved back. An organisation can turn the rules off in its settings.
 
-## Roles
+## Organisations, members and mailboxes
 
-- The **first account created** is the administrator. They can appoint others in **Users**; at least one always remains.
-- Other accounts join **by invitation**: the administrator enters an address and gets a one-time link, valid for `INVITATION_DAYS` days (7 by default), which they pass on themselves — saras has no outgoing mailbox of its own. The invited person only chooses a password. Only a hash of the link is stored; inviting the same address again invalidates the previous link. `ALLOW_SIGNUP=true` reopens free sign-up.
-- An administrator can **delete an account**: its connected mailboxes and stored emails are erased from saras; the prompts it created are kept.
-- **Prompts are shared** by all users. Only administrators create and edit them; users see their name and description, not the instructions.
-- A user's **corrections** only influence their own drafts. Administrators see the reasons given by everyone, prompt by prompt, to improve the instructions. They have no access to other users' emails.
+saras is multi-tenant: everything lives inside an **organisation**, and nothing crosses from one to another.
+
+- **Signing up creates an organisation**, and whoever signs up administers it. Whether strangers may do so is the operator's choice (`ALLOW_SIGNUP`); an empty installation always accepts its first one.
+- **Members join by invitation**: an administrator enters an address and gets a one-time link, valid for `INVITATION_DAYS` days (7 by default), which they pass on themselves — saras has no outgoing mailbox of its own. The invited person only chooses a password. Only a hash of the link is stored; inviting the same address again invalidates the previous link. An address has one account, in one organisation.
+- **A mailbox is personal or shared.** Any member connects their own address, which only they see — administrators included. An administrator may connect a mailbox as *shared* (contact@, info@…): every member, present and future, sees its emails and replies from it. Only administrators change its folder or disconnect it. An address is connected once per organisation.
+- **In a shared mailbox**, a reply by one member takes the email off everyone's list, and shows who replied. Each member keeps their own signature, and their corrections steer their own drafts only.
+- **Prompts belong to the organisation.** Only its administrators create and edit them; members see their name and description, not the instructions. Administrators also see the reasons members give when correcting drafts, prompt by prompt.
+- **The organisation's settings** (Settings → Organisation, for administrators): its name, its triage strategy, and its own OpenRouter key and default model.
+- **Administrators** can appoint others, at least one always remains, and can delete a member: their personal mailboxes are erased from saras, while the prompts and shared mailboxes they created stay with the organisation.
+
+**Who pays for the LLM.** A request uses the member's own key if they entered one, else the organisation's, else the server's (`OPENROUTER_API_KEY`). An operator hosting organisations that are not theirs leaves the server key empty.
+
+Not per organisation: the brand, the OAuth applications, the retention period and the fetch settings are the installation's.
 
 ## Drafts
 
@@ -95,7 +103,7 @@ The server remembers each user's language (sent by the interface) for what it wr
 
 - the reason the LLM gives for a triage verdict (with the AI strategy) is asked for in that language;
 - the line introducing the quoted original in a reply ("On …, … wrote:") follows it, for the languages the server knows (English and French; English otherwise);
-- the default prompts are created in the language of the first account (English and French sets are provided).
+- the default prompts of an organisation are created in the language of whoever created it (English and French sets are provided).
 
 The prompts sent to the LLM are in English. The reply itself is always drafted in the language of the email received. Prompt names and descriptions are whatever the administrators wrote.
 
@@ -156,7 +164,7 @@ npm run build   # compiles the browser code
 npm start
 ```
 
-Open http://localhost:3000 and create the first account: it becomes the administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
+Open http://localhost:3000 and create your organisation: you become its administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
 
 With Docker, which also starts a PostgreSQL server:
 
@@ -201,7 +209,7 @@ The schema is created at startup (`src/db.ts`). The tests run on the embedded da
 
 ## Configuration
 
-Every variable is described in [`.env.example`](.env.example). The default model (`OPENROUTER_MODEL`) can be overridden per user in **Settings**, as can the OpenRouter key.
+Every variable is described in [`.env.example`](.env.example). The default model (`OPENROUTER_MODEL`) and the OpenRouter key can be overridden per organisation and per user in **Settings**.
 
 ## How it works
 

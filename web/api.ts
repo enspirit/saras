@@ -60,8 +60,19 @@ export interface PublicInfo {
   firstAccount?: boolean;
 }
 
+/** The organisation of the signed-in user. Its key and model are told to administrators only. */
+export interface Organization {
+  name: string;
+  /** Name of the triage strategy its mailboxes go through. */
+  triage: 'none' | 'ai';
+  skipAutomated: boolean;
+  model?: string;
+  hasKey?: boolean;
+}
+
 export interface Me {
   email: string;
+  organization: Organization;
   role: Role;
   /** The language the server last knew this user to use. */
   language: string;
@@ -73,8 +84,6 @@ export interface Me {
   hasKey: boolean;
   oauth: { google: boolean; microsoft: boolean };
   privacy: Record<string, unknown>;
-  /** How fetched emails are sorted on this installation. */
-  triage: 'none' | 'ai';
   retentionDays: number;
 }
 
@@ -83,6 +92,10 @@ export interface Account {
   kind: 'imap' | 'google' | 'microsoft';
   email: string;
   displayName: string;
+  /** Used by every member of the organisation, not only by who connected it. */
+  shared: boolean;
+  /** Whether the signed-in user may change its folder or disconnect it. */
+  canManage: boolean;
   /** The watched folder; null until the user has chosen it. */
   folder: string | null;
   folderName: string;
@@ -128,6 +141,9 @@ export interface EmailSummary {
   status: EmailStatus;
   priority: 'high' | 'normal' | 'low';
   snippet: string;
+  /** Address of the mailbox it arrived in, and whether that mailbox is shared. */
+  account: string;
+  shared: boolean;
   replyMode: 'sent' | 'draft' | null;
 }
 
@@ -153,6 +169,8 @@ export interface SentReply {
   to: string[];
   cc: string[];
   sentAt: string;
+  /** Who replied: in a shared mailbox, not necessarily the reader. */
+  by: string | null;
 }
 
 export interface Recipients {
@@ -162,8 +180,9 @@ export interface Recipients {
 
 export interface EmailDetail {
   id: number;
-  /** Address of the mailbox the email arrived in. */
+  /** Address of the mailbox the email arrived in, and whether that mailbox is shared. */
   account: string;
+  shared: boolean;
   fromName: string;
   fromAddr: string;
   to: { name: string; address: string }[];

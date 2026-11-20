@@ -1,4 +1,5 @@
-// A closed installation: only the first account signs up, everyone else is invited.
+// A closed installation: only the first account signs up, creating the organisation that
+// everyone else is invited into.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { createClient } from './support/client.ts';
@@ -17,7 +18,7 @@ let invitation: { id: number; email: string; link: string };
 
 test('an empty installation accepts its first account, then closes', async () => {
   assert.deepEqual((await admin('GET', '/public')).body, { allowSignup: true, firstAccount: true });
-  assert.equal((await admin('POST', '/auth/signup', { email: 'admin@corp.example', password: 'un-bon-mot-de-passe' })).status, 201);
+  assert.equal((await admin('POST', '/auth/signup', { email: 'admin@corp.example', password: 'un-bon-mot-de-passe', organization: 'Acme' })).status, 201);
   assert.equal((await admin('GET', '/me')).body.role, 'admin');
   assert.deepEqual((await admin('GET', '/public')).body, { allowSignup: false, firstAccount: false });
   const stranger = await client()('POST', '/auth/signup', { email: 'x@corp.example', password: 'un-bon-mot-de-passe' });
@@ -51,7 +52,7 @@ test('inviting the same address again invalidates the earlier link', async () =>
 test('the invited person sets a password and is in; the link then stops working', async () => {
   const lea = client();
   const token = tokenOf(invitation.link);
-  assert.deepEqual((await lea('POST', '/invitations/check', { token })).body, { email: 'lea@corp.example' });
+  assert.deepEqual((await lea('POST', '/invitations/check', { token })).body, { email: 'lea@corp.example', organization: 'Acme' });
   assert.equal((await lea('POST', '/invitations/accept', { token, password: 'court' })).status, 400);
   assert.equal((await lea('POST', '/invitations/accept', { token, password: 'le-mot-de-passe-de-lea' })).status, 201);
   const profile = (await lea('GET', '/me')).body;

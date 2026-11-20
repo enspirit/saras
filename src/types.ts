@@ -77,8 +77,23 @@ export interface Email extends Omit<IncomingEmail, 'headers' | 'answered'> {
 
 // ---- database rows (snake_case, as PostgreSQL returns them) -------------------------------
 
+/** The tenant: who signs up creates one and administers it; everything else lives inside it. */
+export interface OrganizationRow {
+  id: number;
+  name: string;
+  /** Name of the triage strategy its mailboxes go through ('none', 'ai'…). */
+  triage_strategy: string;
+  /** Set plainly automated mail aside before the triage gate. */
+  skip_automated: boolean;
+  /** The organisation's own OpenRouter key, sealed by the vault. */
+  openrouter_key_enc: string | null;
+  model: string | null;
+  created_at: Date;
+}
+
 export interface UserRow {
   id: number;
+  org_id: number;
   email: string;
   password_hash: string;
   role: Role;
@@ -92,7 +107,11 @@ export interface UserRow {
 
 export interface AccountRow {
   id: number;
+  org_id: number;
+  /** Who connected it. For a personal mailbox, also the only one who uses it. */
   user_id: number;
+  /** A shared mailbox (contact@, info@…) is used by every member of the organisation. */
+  shared: boolean;
   kind: AccountKind;
   email: string;
   display_name: string;
@@ -111,6 +130,7 @@ export type Sender = Pick<AccountRow, 'email' | 'display_name'>;
 
 export interface PromptRow {
   id: number;
+  org_id: number;
   user_id: number;
   name: string;
   description: string;
@@ -155,6 +175,7 @@ export interface DraftRow {
 
 export interface InvitationRow {
   id: number;
+  org_id: number;
   email: string;
   role: Role;
   token_hash: string;

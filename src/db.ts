@@ -26,8 +26,18 @@ export interface Db {
 }
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS organizations (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  triage_strategy TEXT NOT NULL DEFAULT 'none',
+  skip_automated BOOLEAN NOT NULL DEFAULT true,
+  openrouter_key_enc TEXT,
+  model TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
+  org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin','user')),
@@ -45,7 +55,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE TABLE IF NOT EXISTS invitations (
   id SERIAL PRIMARY KEY,
-  email TEXT NOT NULL UNIQUE,
+  org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin','user')),
   token_hash TEXT NOT NULL UNIQUE,
   created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -54,7 +65,9 @@ CREATE TABLE IF NOT EXISTS invitations (
 );
 CREATE TABLE IF NOT EXISTS accounts (
   id SERIAL PRIMARY KEY,
+  org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  shared BOOLEAN NOT NULL DEFAULT false,
   kind TEXT NOT NULL CHECK (kind IN ('imap','google','microsoft')),
   email TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
@@ -63,11 +76,11 @@ CREATE TABLE IF NOT EXISTS accounts (
   folder_name TEXT NOT NULL DEFAULT '',
   last_sync_at TIMESTAMPTZ,
   last_error TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (user_id, kind, email)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS prompts (
   id SERIAL PRIMARY KEY,
+  org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
@@ -111,6 +124,7 @@ CREATE TABLE IF NOT EXISTS drafts (
 CREATE TABLE IF NOT EXISTS replies (
   id SERIAL PRIMARY KEY,
   email_id INTEGER NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   prompt_id INTEGER REFERENCES prompts(id) ON DELETE SET NULL,
   ai_text TEXT,
   final_text TEXT NOT NULL,
@@ -129,11 +143,32 @@ ALTER TABLE emails ADD COLUMN IF NOT EXISTS attachments_json TEXT NOT NULL DEFAU
 ALTER TABLE emails DROP CONSTRAINT IF EXISTS emails_account_id_provider_id_key;
 CREATE UNIQUE INDEX IF NOT EXISTS emails_identity ON emails (account_id, folder, provider_id);
 UPDATE accounts SET folder = CASE kind WHEN 'microsoft' THEN 'inbox' ELSE 'INBOX' END, folder_name = 'Inbox' WHERE folder IS NULL AND last_sync_at IS NOT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE invitations ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE prompts ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS shared BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE replies ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+INSERT INTO organizations (name) SELECT 'Organisation' WHERE EXISTS (SELECT 1 FROM users WHERE org_id IS NULL) AND NOT EXISTS (SELECT 1 FROM organizations);
+UPDATE users SET org_id = (SELECT min(id) FROM organizations) WHERE org_id IS NULL;
+UPDATE invitations SET org_id = (SELECT min(id) FROM organizations) WHERE org_id IS NULL;
+UPDATE prompts SET org_id = (SELECT min(id) FROM organizations) WHERE org_id IS NULL;
+UPDATE accounts a SET org_id = (SELECT u.org_id FROM users u WHERE u.id = a.user_id) WHERE a.org_id IS NULL;
+UPDATE replies r SET user_id = (SELECT a.user_id FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = r.email_id) WHERE r.user_id IS NULL;
+ALTER TABLE users ALTER COLUMN org_id SET NOT NULL;
+ALTER TABLE invitations ALTER COLUMN org_id SET NOT NULL;
+ALTER TABLE prompts ALTER COLUMN org_id SET NOT NULL;
+ALTER TABLE accounts ALTER COLUMN org_id SET NOT NULL;
+ALTER TABLE accounts DROP CONSTRAINT IF EXISTS accounts_user_id_kind_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS accounts_identity ON accounts (org_id, kind, email);
+ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS invitations_identity ON invitations (org_id, email);
 `;
 
 // The statements after the tables bring a database created by an earlier version up to date:
-// a mailbox fetched before folders existed keeps watching its inbox, and the identity of an
-// email now includes its folder (IMAP numbers messages per folder).
+// a mailbox fetched before folders existed keeps watching its inbox, the identity of an email
+// includes its folder (IMAP numbers messages per folder), and what existed before
+// organisations did is gathered into a single one.
 
 /** What the server driver and the embedded one have in common, once narrowed to our needs. */
 interface Executor {
@@ -220,10 +255,10 @@ export async function openDb({ databaseUrl, dataDir = null }: DbOptions = {}): P
   return db;
 }
 
-/** Prompts are shared by all users; prompts.user_id records who created them. */
-export async function seedDefaultPrompts(db: Db, userId: number, language: string): Promise<void> {
+/** Prompts belong to an organisation; prompts.user_id records who created them. */
+export async function seedDefaultPrompts(db: Db, orgId: number, userId: number, language: string): Promise<void> {
   for (const p of defaultPrompts(language)) {
-    await db.run('INSERT INTO prompts (user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4)', [userId, p.name, p.description, p.systemPrompt]);
+    await db.run('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5)', [orgId, userId, p.name, p.description, p.systemPrompt]);
   }
 }
 

@@ -22,7 +22,8 @@
     "assurance": {
       "text": "AI with zero data retention (ZDR): enforced on every request",
       "title": "Every AI call enforces zdr=true and data_collection=deny at OpenRouter."
-    }
+    },
+    "member": "{email} · {organization}"
   },
   "box": {
     "todo": {
@@ -47,15 +48,17 @@
     "password": "Password",
     "passwordHint": "At least 10 characters.",
     "signIn": "Sign in",
-    "signUp": "Create an account",
+    "signUp": "Create an organisation",
     "createAccount": "Create my account",
     "haveAccount": "Already have an account?",
-    "noAccountYet": "No account yet?",
+    "noAccountYet": "New here?",
     "askInvitation": "No account? Ask your administrator for an invitation.",
-    "firstAccount": "No account exists yet: the first one created will be the administrator."
+    "firstAccount": "No account exists yet. Create your organisation: you will be its administrator.",
+    "organization": "Organisation",
+    "organizationHint": "Your company or team. You will be its administrator and can invite others."
   },
   "invitation": {
-    "invited": "You have been invited to join {product}.",
+    "invited": "You have been invited to join {organization} on {product}.",
     "choosePassword": "Choose a password",
     "goToSignIn": "Go to sign-in"
   },
@@ -95,7 +98,8 @@
     "metaCc": "{date} · To {to} · Cc {cc}",
     "changeReason": "<strong>Reason for the change:</strong> {reason}",
     "draftNotice": "This message has not been sent: it is waiting in the Drafts folder of your mailbox, where you can finish and send it.",
-    "textErased": "(text erased)"
+    "textErased": "(text erased)",
+    "by": "by {user}"
   },
   "composer": {
     "title": "Your reply",
@@ -140,7 +144,7 @@
     "edit": "Edit the prompt",
     "create": "Create the prompt",
     "saved": "Prompt saved.",
-    "intro": "Each prompt describes a way of replying. They are shared by all users: at triage the AI suggests the most suitable one, and everyone remains free to choose another for each email. Users see the name and the description, not the instructions.",
+    "intro": "Each prompt describes a way of replying. They belong to the organisation: at triage the AI may suggest the most suitable one, and every member remains free to choose another for each email. Members see the name and the description, not the instructions.",
     "name": "Name",
     "when": "When to use it",
     "whenHint": "The AI reads this description to suggest the right prompt for each email.",
@@ -154,7 +158,7 @@
   },
   "users": {
     "title": "Users",
-    "intro": "Administrators manage prompts, invitations and roles. They have no access to other users' emails.",
+    "intro": "Members of {organization}. Administrators manage the prompts, the invitations, the shared mailboxes and the organisation's settings. They have no access to a member's personal mailbox.",
     "invite": "Invite someone",
     "email": "Email address",
     "emailPlaceholder": "first.last@example.com",
@@ -168,7 +172,7 @@
     "expiresOn": "expires on {date}",
     "revoke": "Revoke",
     "you": "You",
-    "summary": "Joined on {date} · {count, plural, =0 {no mailbox connected} one {# mailbox connected} other {# mailboxes connected}}",
+    "summary": "Joined on {date} · {count, plural, =0 {no personal mailbox} one {# personal mailbox} other {# personal mailboxes}}",
     "promote": "Make administrator",
     "demote": "Remove the administrator role",
     "delete": "Delete the account",
@@ -211,21 +215,26 @@
     "loadingFolders": "Loading the folders…",
     "useFolder": "Watch this folder",
     "changeFolder": "Change folder",
-    "folderChosen": "Folder chosen. Fetching…"
+    "folderChosen": "Folder chosen. Fetching…",
+    "shared": "Shared",
+    "sharedTitle": "Shared mailbox",
+    "sharedIntro": "A shared mailbox (contact@, info@…) is used by every member of {organization}: they all see its emails and can reply from it. Only administrators connect, change or disconnect one.",
+    "sharedCheck": "Connect the next mailbox as shared",
+    "folderPending": "An administrator has yet to choose the folder to watch."
   },
   "settings": {
     "title": "Settings",
     "noKey": "No OpenRouter key: automatic triage and proposals are disabled.",
     "writing": "Writing",
     "model": "OpenRouter model",
-    "modelHint": "Identifier “provider/model”. Leave empty for the server's model ({model}). The model must have at least one ZDR provider, otherwise the request is refused.",
+    "modelHint": "Identifier “provider/model”. Leave empty for your organisation's model ({model}). The model must have at least one ZDR provider, otherwise the request is refused.",
     "signature": "Signature",
     "signaturePlaceholder": "Kind regards,\nFirst Last",
     "signatureHint": "Added as is at the end of each proposal.",
     "key": "Personal OpenRouter API key",
     "keySaved": "•••••••• (saved)",
-    "keyServer": "Using the server's key",
-    "keyHint": "Encrypted in the database. Leave empty to use the server's key.",
+    "keyServer": "Using the organisation's key",
+    "keyHint": "Encrypted in the database. Leave empty to use your organisation's key.",
     "keyHintOwn": "Leave empty to keep the current key.",
     "deleteKey": "Delete my key",
     "keyDeleted": "Personal key deleted.",
@@ -239,7 +248,7 @@
     "privacyNoRetention": "Email content is kept without limit in this application.",
     "privacyEncryption": "Passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM).",
     "privacyValidation": "No email is sent without your explicit validation.",
-    "privacyReasons": "The reasons you give when editing a proposal are visible to administrators, who use them to improve the prompts. Your emails are not.",
+    "privacyReasons": "The reasons you give when editing a proposal are visible to your organisation's administrators, who use them to improve the prompts. The emails of your personal mailbox are not.",
     "appearance": "Appearance",
     "appearanceText": "Colours, typography, logo and name come from the server's brand folder. <link>See the style guide</link> to check how every component renders.",
     "privacyTriageNone": "Fetched emails are not analysed by the AI: every email of the folder you watch is to be handled, apart from plainly automated mail (newsletters, notifications), which local rules set aside. Email content only goes to the AI when you ask for a proposal.",
@@ -370,7 +379,9 @@
       "connectionFailed": "Could not connect: {detail}",
       "folderRequired": "Choose the folder to watch.",
       "unknownFolder": "This folder does not exist in the mailbox.",
-      "foldersFailed": "Could not list the folders: {detail}"
+      "foldersFailed": "Could not list the folders: {detail}",
+      "adminOnly": "A shared mailbox is managed by administrators.",
+      "alreadyConnected": "This mailbox is already connected in your organisation."
     },
     "oauth": {
       "notConfigured": "This OAuth provider is not configured on this server.",
@@ -418,6 +429,25 @@
       "autoSubmitted": "Automated message (Auto-Submitted).",
       "newsletter": "Mailing list or newsletter.",
       "bulk": "Bulk mail."
+    },
+    "organization": {
+      "invalidTriage": "Unknown triage strategy."
     }
+  },
+  "organization": {
+    "title": "Organisation",
+    "intro": "These settings apply to every member and every mailbox of the organisation.",
+    "name": "Name",
+    "triage": "Sorting of fetched emails",
+    "triageNone": "None: every email of the watched folder is to be handled",
+    "triageAi": "By the AI: it decides whether a reply is needed and suggests a prompt",
+    "triageHint": "Sorting by the AI costs one request per 20 emails fetched, and sends it their sender, subject, beginning of text and attachment names.",
+    "skipAutomated": "Set plainly automated mail aside first (newsletters, notifications)",
+    "model": "Default OpenRouter model",
+    "modelPlaceholder": "Server default",
+    "modelHint": "Used by members who have not chosen their own. Leave empty for the server's.",
+    "key": "OpenRouter API key of the organisation",
+    "keyHint": "Encrypted in the database. Used by every member who has no key of their own.",
+    "deleteKey": "Delete the organisation's key"
   }
 }
