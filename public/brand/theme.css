@@ -2,7 +2,7 @@
  * BRAND THEME — the file to change to put the tool in a company's colours.
  *
  * Do not edit it here for a deployment: copy the `public/brand` folder elsewhere, change
- * the copy, and point the BRAND_DIR environment variable at it (see README, « Marque »).
+ * the copy, and point the BRAND_DIR environment variable at it (see README, "Branding").
  *
  * Everything below is optional. A line left out keeps the default of design/tokens.css.
  * The complete result can be checked on /styleguide.html.

@@ -76,16 +76,16 @@ const roleLabel = (role) => (role === 'admin' ? 'Administrateur' : 'Utilisateur'
 
 // ---- state & routing --------------------------------------------------------------------
 const BOXES = [
-  { id: 'todo', path: 'a-traiter', label: 'À traiter', empty: 'Rien à traiter. Lancez une synchronisation depuis Comptes.' },
-  { id: 'none', path: 'sans-reponse', label: 'Sans réponse requise', empty: 'Aucun email écarté par le tri.' },
-  { id: 'sent', path: 'repondus', label: 'Répondus', empty: 'Aucune réponse envoyée ni mise en brouillon pour l’instant.' },
-  { id: 'ignored', path: 'ignores', label: 'Ignorés', empty: 'Aucun email ignoré.' },
+  { id: 'todo', path: 'inbox', label: 'À traiter', empty: 'Rien à traiter. Lancez une synchronisation depuis Comptes.' },
+  { id: 'none', path: 'no-reply', label: 'Sans réponse requise', empty: 'Aucun email écarté par le tri.' },
+  { id: 'sent', path: 'replied', label: 'Répondus', empty: 'Aucune réponse envoyée ni mise en brouillon pour l’instant.' },
+  { id: 'ignored', path: 'ignored', label: 'Ignorés', empty: 'Aucun email ignoré.' },
 ];
 const PAGES = [
-  { path: 'comptes', label: 'Comptes mail' },
-  { path: 'reglages', label: 'Réglages' },
+  { path: 'accounts', label: 'Comptes mail' },
+  { path: 'settings', label: 'Réglages' },
   { path: 'prompts', label: 'Prompts', admin: true },
-  { path: 'utilisateurs', label: 'Utilisateurs', admin: true },
+  { path: 'users', label: 'Utilisateurs', admin: true },
 ];
 const isAdmin = () => state.me?.role === 'admin';
 
@@ -94,7 +94,7 @@ const state = { me: null, counts: {} };
 function route() {
   const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');
   const [page = '', id] = path.split('/');
-  return { page: page || 'a-traiter', id: id ? Number(id) : null, query: new URLSearchParams(query) };
+  return { page: page || 'inbox', id: id ? Number(id) : null, query: new URLSearchParams(query) };
 }
 
 const invitationToken = () => location.hash.match(/^#\/invitation\/([\w-]+)$/)?.[1] || null;
@@ -131,7 +131,7 @@ async function renderAuth(mode = 'login', typedEmail = '') {
   const submit = Button(signup ? 'Créer mon compte' : 'Se connecter', { variant: 'primary', type: 'submit', block: true });
   const form = SubmitForm(submit, '…', async () => {
     await api('POST', signup ? '/auth/signup' : '/auth/login', { email: email.value, password: password.value });
-    if (signup) location.hash = '#/comptes';
+    if (signup) location.hash = '#/accounts';
     await boot();
   }, Field('Email', email), Field('Mot de passe', password, { hint: signup && '10 caractères minimum.' }), submit);
 
@@ -165,7 +165,7 @@ async function renderInvitation(token) {
   const submit = Button('Créer mon compte', { variant: 'primary', type: 'submit', block: true });
   const form = SubmitForm(submit, '…', async () => {
     await api('POST', '/invitations/accept', { token, password: password.value });
-    history.replaceState(null, '', '/#/comptes');
+    history.replaceState(null, '', '/#/accounts');
     await boot();
   },
     Field('Email', Input({ type: 'email', value: invitation.email, disabled: true, autocomplete: 'username' })),
@@ -206,10 +206,10 @@ function render() {
   const box = BOXES.find((b) => b.path === r.page);
   if (box) return renderMailbox(box, r.id);
   if (r.page === 'prompts' && isAdmin()) return renderPrompts();
-  if (r.page === 'utilisateurs' && isAdmin()) return renderUsers();
-  if (r.page === 'comptes') return renderAccounts(r.query.get('erreur'));
-  if (r.page === 'reglages') return renderSettings();
-  location.hash = '#/a-traiter';
+  if (r.page === 'users' && isAdmin()) return renderUsers();
+  if (r.page === 'accounts') return renderAccounts(r.query.get('error'));
+  if (r.page === 'settings') return renderSettings();
+  location.hash = '#/inbox';
 }
 
 // ---- mailbox ----------------------------------------------------------------------------
@@ -219,7 +219,7 @@ const renderMailbox = guard(async (box, selectedId) => {
 
   const refresh = ActionButton('Relever', 'Relève…', async () => {
     const accounts = await api('GET', '/accounts');
-    if (!accounts.length) return void (location.hash = '#/comptes');
+    if (!accounts.length) return void (location.hash = '#/accounts');
     let fetched = 0;
     const errors = [];
     for (const a of accounts) {
@@ -355,7 +355,7 @@ function composer(email, prompts, box) {
     : ActionButton('Remettre dans « À traiter »', '…', setStatus('needs_reply', 'Remis dans À traiter.'));
 
   return Card({ title: 'Votre réponse' },
-    !state.me.hasKey && Block(Notice('warn', 'Aucune clé OpenRouter configurée : ajoutez-la dans ', Link('Réglages', '#/reglages'), ' pour obtenir des propositions.')),
+    !state.me.hasKey && Block(Notice('warn', 'Aucune clé OpenRouter configurée : ajoutez-la dans ', Link('Réglages', '#/settings'), ' pour obtenir des propositions.')),
     !prompts.length && Block(Notice('warn', isAdmin() ? ['Aucun prompt : créez-en un dans ', Link('Prompts', '#/prompts'), '.'] : 'Aucun prompt disponible : demandez à un administrateur d’en créer.')),
     FormRow(Field('Prompt', promptSelect), Field('Consignes (optionnel)', instructions), Field(null, generate, { size: 'fit' })),
     FormRow(Field('À', to), Field('Cc', cc)),

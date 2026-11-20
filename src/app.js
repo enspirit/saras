@@ -197,7 +197,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     if (!account) throw new HttpError(404, 'Compte introuvable');
     return account;
   };
-  const backgroundSync = (account) => sync.syncAccount(account).catch((e) => console.error(`sync compte ${account.id} : ${e.message}`));
+  const backgroundSync = (account) => sync.syncAccount(account).catch((e) => console.error(`sync of account ${account.id} failed: ${e.message}`));
 
   app.get('/api/accounts', auth, (req, res) => {
     res.json(
@@ -261,7 +261,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   app.get('/api/oauth/:kind/callback', auth, async (req, res) => {
     const { kind } = req.params;
-    const back = (error) => res.redirect(`/#/comptes${error ? `?erreur=${encodeURIComponent(error)}` : ''}`);
+    const back = (error) => res.redirect(`/#/accounts${error ? `?error=${encodeURIComponent(error)}` : ''}`);
     const expected = req.user.oauth_state;
     db.prepare('UPDATE sessions SET oauth_state = NULL WHERE id = ?').run(req.user.sid);
     if (!isOAuthKind(kind) || !isConfigured(config, kind)) return back('Fournisseur OAuth non configuré.');
@@ -556,7 +556,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     if (res.headersSent) return next(err);
     const status = err instanceof LlmError ? 502 : err.status || err.statusCode || 500;
     // Only the message is logged, never request bodies: they contain mail content.
-    if (status >= 500 && !(err instanceof LlmError) && !(err instanceof HttpError)) console.error(`${req.method} ${req.path} : ${err.message}`);
+    if (status >= 500 && !(err instanceof LlmError) && !(err instanceof HttpError)) console.error(`${req.method} ${req.path}: ${err.message}`);
     res.status(status).json({ error: status === 500 ? 'Erreur interne du serveur.' : err.message });
   });
 

@@ -6,7 +6,7 @@ const int = (v, d) => (v === undefined || v === '' || Number.isNaN(Number(v)) ? 
 export function loadConfig(env = process.env) {
   const secret = env.APP_SECRET || '';
   if (secret.length < 32) {
-    throw new Error('APP_SECRET manquant ou trop court (32 caractères minimum). Générez-le avec : openssl rand -hex 32');
+    throw new Error('APP_SECRET is missing or too short (32 characters minimum). Generate one with: openssl rand -hex 32');
   }
   const baseUrl = (env.BASE_URL || `http://localhost:${int(env.PORT, 3000)}`).replace(/\/+$/, '');
   return {

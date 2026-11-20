@@ -129,7 +129,7 @@ export function createSync({ db, mail, llm, config, vault }) {
 
   async function syncAll() {
     for (const account of db.prepare('SELECT * FROM accounts').all()) {
-      await syncAccount(account).catch((e) => console.error(`sync compte ${account.id} : ${e.message}`));
+      await syncAccount(account).catch((e) => console.error(`sync of account ${account.id} failed: ${e.message}`));
     }
   }
 

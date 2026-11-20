@@ -25,7 +25,7 @@ const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
 const sync = createSync({ db, mail, llm, config, vault });
 
 createApp({ config, db, vault, mail, llm, sync }).listen(config.port, () => {
-  console.log(`mailia écoute sur ${config.baseUrl} — OpenRouter en mode ZDR, modèle par défaut ${config.openrouter.model}`);
+  console.log(`mailia listening on ${config.baseUrl} — OpenRouter in ZDR mode, default model ${config.openrouter.model}`);
 });
 
 const housekeeping = () => {
