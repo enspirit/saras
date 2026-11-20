@@ -1,5 +1,7 @@
 # saras
 
+[![Tests](https://github.com/blambeau/mailia/actions/workflows/test.yml/badge.svg)](https://github.com/blambeau/mailia/actions/workflows/test.yml)
+
 A self-hosted web tool to answer email with the help of AI, without handing it the keys:
 
 1. **Connect** one or more mailboxes: IMAP/SMTP, Gmail / Google Workspace (OAuth), Outlook / Microsoft 365 (OAuth).
@@ -165,6 +167,8 @@ npm test
 ```
 
 The end-to-end tests start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
+
+GitHub Actions runs them on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret.
 
 ## Known limitations
 
