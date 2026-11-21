@@ -110,12 +110,12 @@ test('nothing of an organisation is reachable from another', async () => {
   const [prompt] = (await zoe('GET', '/prompts')).body;
   assert.equal((await zoe('GET', `/emails/${email.id}`)).status, 404);
   assert.equal((await zoe('POST', `/emails/${email.id}/status`, { status: 'ignored' })).status, 404);
-  assert.equal((await zoe('POST', `/emails/${email.id}/draft`, { promptId: prompt.id })).status, 404);
-  assert.equal((await zoe('POST', `/emails/${email.id}/send`, { text: 'x', to: ['a@b.example'] })).status, 404);
+  assert.equal((await zoe('POST', `/emails/${email.id}/assist`, { action: 'prompt', promptId: prompt.id })).status, 404);
+  assert.equal((await zoe('POST', `/emails/${email.id}/send`, { html: '<p>x</p>', to: ['a@b.example'] })).status, 404);
   assert.equal((await zoe('POST', `/accounts/${sharedId}/sync`)).status, 404);
   assert.equal((await zoe('GET', `/accounts/${sharedId}/folders`)).status, 404);
   // A member cannot use a prompt of another organisation on their own email either.
-  assert.equal((await bruno('POST', `/emails/${email.id}/draft`, { promptId: prompt.id })).status, 404);
+  assert.equal((await bruno('POST', `/emails/${email.id}/assist`, { action: 'prompt', promptId: prompt.id })).status, 404);
   // The same mailbox may be connected by another organisation: they are separate worlds.
   assert.equal((await zoe('POST', '/accounts/imap', stack.imapAccount)).status, 201);
 });
@@ -124,10 +124,10 @@ test('a member replies from the shared mailbox; everyone sees it done, and by wh
   const todo = (await bruno('GET', '/emails?box=todo')).body.emails;
   quote = todo.find((e: { subject: string }) => e.subject.startsWith('Demande de devis'));
   const [prompt] = (await bruno('GET', '/prompts')).body;
-  const draft = (await bruno('POST', `/emails/${quote.id}/draft`, { promptId: prompt.id })).body;
+  const draft = (await bruno('POST', `/emails/${quote.id}/assist`, { action: 'prompt', promptId: prompt.id })).body;
   const sent = await bruno('POST', `/emails/${quote.id}/send`, {
     draftId: draft.id,
-    text: draft.aiText.replace('[À COMPLÉTER : montant]', '1200 euros'),
+    html: draft.html.replace('[À COMPLÉTER : montant]', '1200 euros'),
     to: ['claire@client.example'],
     changeReason: 'Bruno tutoie Claire',
   });
@@ -137,14 +137,14 @@ test('a member replies from the shared mailbox; everyone sees it done, and by wh
   assert.equal((await subjects(chloe)).length, 2, 'it left everyone\'s list');
   const seenByChloe = (await chloe('GET', `/emails/${quote.id}`)).body;
   assert.deepEqual([seenByChloe.status, seenByChloe.reply.by, seenByChloe.shared], ['sent', 'bruno@acme.example', true]);
-  assert.equal((await chloe('POST', `/emails/${quote.id}/send`, { text: 'bis', to: ['claire@client.example'] })).status, 409, 'nobody answers it twice');
+  assert.equal((await chloe('POST', `/emails/${quote.id}/send`, { html: '<p>bis</p>', to: ['claire@client.example'] })).status, 409, 'nobody answers it twice');
 });
 
 test('a correction steers its author only; the administrators see them all', async () => {
   const [prompt] = (await alice('GET', '/prompts')).body;
   const [next] = (await chloe('GET', '/emails?box=todo')).body.emails;
   const system = async (as: ApiClient): Promise<string> => {
-    await as('POST', `/emails/${next.id}/draft`, { promptId: prompt.id });
+    await as('POST', `/emails/${next.id}/assist`, { action: 'prompt', promptId: prompt.id });
     return stack.llmRequests.at(-1)!.body.messages[0]!.content;
   };
   assert.match(await system(bruno), /- Bruno tutoie Claire/);
@@ -169,17 +169,17 @@ test('the triage strategy and the LLM key belong to the organisation', async () 
   // Members now draft with the organisation's key, unless they have their own.
   const [prompt] = (await bruno('GET', '/prompts')).body;
   const [next] = (await bruno('GET', '/emails?box=todo')).body.emails;
-  await bruno('POST', `/emails/${next.id}/draft`, { promptId: prompt.id });
+  await bruno('POST', `/emails/${next.id}/assist`, { action: 'prompt', promptId: prompt.id });
   assert.equal(stack.llmRequests.at(-1)!.authorization, 'Bearer sk-or-acme');
   await chloe('PUT', '/settings', { openrouterKey: 'sk-or-chloe' });
-  await chloe('POST', `/emails/${next.id}/draft`, { promptId: prompt.id });
+  await chloe('POST', `/emails/${next.id}/assist`, { action: 'prompt', promptId: prompt.id });
   assert.equal(stack.llmRequests.at(-1)!.authorization, 'Bearer sk-or-chloe');
   const [theirPrompt] = (await zoe('GET', '/prompts')).body;
   const [zoeAccount] = (await zoe('GET', '/accounts')).body;
   await zoe('PUT', `/accounts/${zoeAccount.id}/folder`, { folder: 'INBOX' });
   await zoe('POST', `/accounts/${zoeAccount.id}/sync`);
   const [theirEmail] = (await zoe('GET', '/emails?box=todo')).body.emails;
-  await zoe('POST', `/emails/${theirEmail.id}/draft`, { promptId: theirPrompt.id });
+  await zoe('POST', `/emails/${theirEmail.id}/assist`, { action: 'prompt', promptId: theirPrompt.id });
   assert.equal(stack.llmRequests.at(-1)!.authorization, 'Bearer sk-or-test', 'an organisation without a key falls back to the server\'s');
 });
 

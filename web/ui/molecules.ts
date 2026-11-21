@@ -1,9 +1,11 @@
 /**
  * MOLECULES — styled by design/molecules.css. A few atoms assembled for one job.
  */
-import { Checkbox, Heading } from './atoms.ts';
+import Squire from '../vendor/squire.mjs';
+import { Button, Checkbox, Heading } from './atoms.ts';
 import { cx, h } from './dom.ts';
 import type { Attrs, Child } from './dom.ts';
+import { sanitizeToFragment } from './sanitize.ts';
 
 /** 'fill' (default) | 'narrow' (ports, short selects) | 'fit' (a button in a form row) */
 export type FieldSize = 'fill' | 'narrow' | 'fit';
@@ -86,6 +88,95 @@ export function EmailListItem({ from, date, subject, snippet, badges = [], curre
 
 /** The body of an email, scrollable when long. */
 export const Message = (prose: Child): HTMLDivElement => h('div', { class: 'message' }, prose);
+
+/** Wording of the editor's toolbar, given by the page. */
+export interface EditorLabels {
+  bold: string;
+  italic: string;
+  underline: string;
+  bullets: string;
+  numbers: string;
+  link: string;
+  /** Question asked for the address of a link. */
+  linkPrompt: string;
+  clear: string;
+}
+
+export interface RichEditorHandle {
+  element: HTMLDivElement;
+  /** The content as HTML, empty when nothing was written. */
+  getHtml(): string;
+  setHtml(html: string): void;
+  /** The content as text, to compare two versions without their markup. */
+  getText(): string;
+  isEmpty(): boolean;
+  onChange(listener: () => void): void;
+  focus(): void;
+}
+
+/**
+ * A rich-text editor for composing a reply: paragraphs, emphasis, lists and links, with a
+ * toolbar. Built on Squire, an editor made for email; whatever is pasted or set goes through
+ * the sanitiser first.
+ */
+export function RichEditor({ labels, placeholder = '' }: { labels: EditorLabels; placeholder?: string }): RichEditorHandle {
+  const surface = h('div', { class: 'editor__surface rich', 'data-placeholder': placeholder });
+  const squire = new Squire(surface, { blockTag: 'P', sanitizeToDOMFragment: (html: string) => sanitizeToFragment(html) });
+  const listeners: (() => void)[] = [];
+
+  const text = (): string => (surface.textContent ?? '').replace(/\u200b/g, '');
+  const isEmpty = (): boolean => !text().trim();
+
+  /** A toolbar button that turns a format on, or off when the selection already has it. */
+  const tool = (label: string, title: string, tag: string, on: () => unknown, off: () => unknown): HTMLButtonElement => {
+    const button = Button(label, { variant: 'tool', title, onClick: () => {
+      (squire.hasFormat(tag) ? off : on)();
+      squire.focus();
+    } });
+    button.dataset.format = tag;
+    return button;
+  };
+  const tools = [
+    tool('B', labels.bold, 'B', () => squire.bold(), () => squire.removeBold()),
+    tool('I', labels.italic, 'I', () => squire.italic(), () => squire.removeItalic()),
+    tool('U', labels.underline, 'U', () => squire.underline(), () => squire.removeUnderline()),
+    tool('•', labels.bullets, 'UL', () => squire.makeUnorderedList(), () => squire.removeList()),
+    tool('1.', labels.numbers, 'OL', () => squire.makeOrderedList(), () => squire.removeList()),
+    tool(labels.link, labels.link, 'A', () => {
+      const url = window.prompt(labels.linkPrompt, 'https://');
+      if (url && /^(https?:|mailto:)/i.test(url.trim())) squire.makeLink(url.trim());
+    }, () => squire.removeLink()),
+  ];
+  const clear = Button(labels.clear, { variant: 'tool', title: labels.clear, onClick: () => {
+    squire.removeAllFormatting();
+    squire.focus();
+  } });
+
+  const element = h('div', { class: 'editor' }, h('div', { class: 'editor__toolbar', role: 'toolbar' }, tools, clear), surface);
+  const refresh = (): void => {
+    element.classList.toggle('editor--empty', isEmpty());
+    for (const button of tools) button.setAttribute('aria-pressed', String(squire.hasFormat(button.dataset.format ?? '')));
+  };
+  squire.addEventListener('input', () => {
+    refresh();
+    for (const listener of listeners) listener();
+  });
+  squire.addEventListener('pathChange', refresh);
+  refresh();
+
+  return {
+    element,
+    getHtml: () => (isEmpty() ? '' : squire.getHTML()),
+    setHtml(html) {
+      squire.setHTML(html);
+      refresh();
+    },
+    getText: text,
+    isEmpty,
+    onChange: (listener) => void listeners.push(listener),
+    focus: () => void squire.focus(),
+  };
+}
 
 /** One colour token, shown in the style guide. */
 export function Swatch(token: string): HTMLDivElement {

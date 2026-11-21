@@ -59,6 +59,9 @@ export type TriageSource = string;
 export type Role = 'admin' | 'user';
 export type AccountKind = 'imap' | 'google' | 'microsoft';
 export type OAuthKind = 'google' | 'microsoft';
+/** What the LLM is asked to do with the text the user wrote in the reply area. */
+export type AssistAction = 'typos' | 'style' | 'prompt';
+
 /** How a reply was handed to the mailbox. */
 export type ReplyMode = 'sent' | 'draft';
 
@@ -166,6 +169,8 @@ export interface EmailRow {
 export interface DraftRow {
   id: number;
   email_id: number;
+  /** What the LLM was asked to do. Null for a draft made before assistance had kinds: then `ai_text` is plain text. */
+  action: AssistAction | null;
   prompt_id: number | null;
   model: string;
   instructions: string;
@@ -214,7 +219,8 @@ export interface OutgoingReply {
   email: Email;
   to: string[];
   cc: string[];
-  text: string;
+  /** The reply as sanitised HTML; its plain-text form is derived from it. */
+  html: string;
   /** Language of the line introducing the quoted original. */
   language: string;
 }

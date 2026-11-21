@@ -1,4 +1,3 @@
-import { escapeHtml } from '../text.ts';
 import type { Address, Fetch, IncomingEmail, MailProvider, OutgoingReply, Sender } from '../types.ts';
 
 const API = 'https://graph.microsoft.com/v1.0';
@@ -57,9 +56,9 @@ export function graphToEmail(msg: GraphMessage): IncomingEmail {
   };
 }
 
-/** Pure: put the reply text above the quoted original that Graph generated in the draft. */
-export function injectReplyHtml(draftHtml: string | null | undefined, text: string): string {
-  const mine = `<div>${escapeHtml(text.trimEnd()).replace(/\n/g, '<br>')}</div><br>`;
+/** Pure: put the reply above the quoted original that Graph generated in the draft. */
+export function injectReplyHtml(draftHtml: string | null | undefined, replyHtml: string): string {
+  const mine = `<div>${replyHtml}</div><br>`;
   const html = String(draftHtml || '');
   return /<body[^>]*>/i.test(html) ? html.replace(/<body[^>]*>/i, (tag) => `${tag}${mine}`) : `${mine}${html}`;
 }
@@ -82,14 +81,14 @@ export function createGraphProvider(_account: Sender, { getAccessToken, fetchImp
   }
 
   /** createReply gives a draft already threaded and quoting the original; we only add our text. */
-  async function createDraft({ email, to, cc, text }: OutgoingReply): Promise<string> {
+  async function createDraft({ email, to, cc, html }: OutgoingReply): Promise<string> {
     const draft = await api<GraphMessage>(`/me/messages/${email.providerId}/createReply`, { method: 'POST', body: '{}' });
     await api(`/me/messages/${draft.id}`, {
       method: 'PATCH',
       body: JSON.stringify({
         toRecipients: toRecipients(to),
         ccRecipients: toRecipients(cc),
-        body: { contentType: 'HTML', content: injectReplyHtml(draft.body?.content, text) },
+        body: { contentType: 'HTML', content: injectReplyHtml(draft.body?.content, html) },
       }),
     });
     return draft.id;

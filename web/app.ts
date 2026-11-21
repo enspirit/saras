@@ -1,8 +1,8 @@
 // Pages of the application. They hold behaviour only: every element on screen comes from
 // the design system in ./ui (atoms, molecules, organisms) and every word from the
 // translation files, through t() and tRich(). Tests enforce both.
-import { Badge, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, Select, Small, Spacer, Strong, Text, Textarea } from './ui/atoms.ts';
-import { Actions, Block, Card, CardSection, CheckField, EmailListItem, Field, Form, FormRow, Message, PageHeader, createToast } from './ui/molecules.ts';
+import { Badge, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Strong, Text, Textarea } from './ui/atoms.ts';
+import { Actions, Block, Card, CardSection, CheckField, EmailListItem, Field, Form, FormRow, Message, PageHeader, RichEditor, createToast } from './ui/molecules.ts';
 import { AppShell, AuthPanel, Mailbox, Page, ReadingHeader } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
 import type { Brand, ButtonOptions } from './ui/atoms.ts';
@@ -322,45 +322,88 @@ function sentReply(r: SentReply): Child {
     Block(Text({ muted: true, small: true }, r.cc.length ? t('reply.metaCc', recipients) : t('reply.meta', recipients), author && ` · ${t('reply.by', { user: author })}`)),
     r.changeReason && Block(Text({ small: true }, tRich('reply.changeReason', { reason: r.changeReason }, { strong: Strong }))),
     draft && Block(Notice('info', t('reply.draftNotice'))),
-    Message(Prose(r.finalText || t('reply.textErased'))),
+    Message(r.finalHtml ? RichText(r.finalHtml) : Prose(r.finalText || t('reply.textErased'))),
   );
 }
 
+/**
+ * The reply area. The user writes whatever they want in the one editor — a full reply, a few
+ * notes, instructions — then, if they wish, asks the AI to check typos, improve the style, or
+ * write the reply with one of the organisation's prompts.
+ */
 function composer(email: EmailDetail, prompts: Prompt[], box: Box): Child {
-  let draft: Draft | null = email.draft;
+  /** The last thing the AI proposed, to tell whether the user changed it since. */
+  let proposal: { id: number; action: Draft['action']; text: string } | null = null;
+  /** What the editor held before the AI last replaced it, for the user to get it back. */
+  let before: string | null = null;
   const suggested = email.suggestedPromptId;
   const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
-  const generatedBy = (d: Draft): string => (d.provider ? t('composer.generatedVia', { model: d.model, provider: d.provider }) : t('composer.generatedBy', { model: d.model }));
 
+  const editor = RichEditor({
+    placeholder: t('composer.placeholder'),
+    labels: {
+      bold: t('editor.bold'),
+      italic: t('editor.italic'),
+      underline: t('editor.underline'),
+      bullets: t('editor.bullets'),
+      numbers: t('editor.numbers'),
+      link: t('editor.link'),
+      linkPrompt: t('editor.linkPrompt'),
+      clear: t('editor.clear'),
+    },
+  });
   const promptSelect = Select(prompts.map((p) => ({
     value: p.id,
     label: p.id === suggested ? t('composer.suggested', { name: p.name }) : p.name,
-    selected: p.id === (draft?.promptId ?? suggested),
-  })));
-  const instructions = Input({ placeholder: t('composer.instructionsPlaceholder'), value: draft?.instructions || '' });
+    selected: p.id === (email.draft?.promptId ?? suggested),
+  })), { 'aria-label': t('composer.prompt') });
   const to = Input({ value: email.recipients.to.join(', ') });
   const cc = Input();
   const replyAll = Checkbox({ onchange: () => (cc.value = replyAll.checked ? email.recipientsAll.cc.join(', ') : '') });
-  const text = Textarea({ tall: true, value: draft?.aiText || '', placeholder: t('composer.textPlaceholder') });
-  const modelInfo = Small(draft ? generatedBy(draft) : '');
+  const info = Small('');
   const reason = Input({ placeholder: t('composer.reasonPlaceholder') });
   const reasonField = Field(t('composer.reason'), reason, { hint: t('composer.reasonHint') });
-  const syncReason = () => (reasonField.hidden = !draft || norm(text.value) === norm(draft.aiText));
-  syncReason();
-  text.addEventListener('input', syncReason);
 
-  const generate = ActionButton(t('composer.generate'), t('composer.generating'), async () => {
-    if (draft && norm(text.value) !== norm(draft.aiText) && !confirm(t('composer.confirmReplace'))) return;
-    const fresh = await api<Draft>('POST', `/emails/${email.id}/draft`, { promptId: Number(promptSelect.value), instructions: instructions.value });
-    draft = fresh;
-    text.value = fresh.aiText;
-    modelInfo.textContent = generatedBy(fresh);
+  // Only a proposal made with a prompt can teach that prompt something.
+  const syncReason = () => (reasonField.hidden = proposal?.action !== 'prompt' || norm(editor.getText()) === norm(proposal.text));
+  editor.onChange(syncReason);
+
+  const undo = Button(t('composer.undo'), { variant: 'link', onClick: () => {
+    if (before === null) return;
+    editor.setHtml(before);
+    before = null;
+    proposal = null;
+    info.textContent = '';
+    undo.hidden = true;
     syncReason();
-  });
+  } });
+  undo.hidden = true;
+
+  /** Shows a proposal in the editor and remembers it. */
+  const show = (draft: Draft, replaced: string | null): void => {
+    before = replaced;
+    editor.setHtml(draft.html);
+    proposal = { id: draft.id, action: draft.action, text: editor.getText() };
+    const by = draft.provider ? t('composer.generatedVia', { model: draft.model, provider: draft.provider }) : t('composer.generatedBy', { model: draft.model });
+    const done = { typos: t('composer.done.typos'), style: t('composer.done.style'), prompt: t('composer.done.prompt') }[draft.action];
+    info.textContent = `${done} ${by}`;
+    undo.hidden = replaced === null;
+    syncReason();
+  };
+  if (email.draft) show(email.draft, null);
+  else syncReason();
+
+  const assist = (action: Draft['action']) => async (): Promise<void> => {
+    const html = editor.getHtml();
+    show(await api<Draft>('POST', `/emails/${email.id}/assist`, { action, html, promptId: action === 'prompt' ? Number(promptSelect.value) : undefined }), html);
+  };
+  const typos = ActionButton(t('composer.typos'), t('composer.working'), assist('typos'), { title: t('composer.typosTitle') });
+  const style = ActionButton(t('composer.style'), t('composer.working'), assist('style'), { title: t('composer.styleTitle') });
+  const apply = ActionButton(t('composer.applyPrompt'), t('composer.working'), assist('prompt'), { title: t('composer.applyPromptTitle') });
 
   const payload = () => ({
-    draftId: draft?.id,
-    text: text.value,
+    draftId: proposal?.id,
+    html: editor.getHtml(),
     to: splitAddresses(to.value),
     cc: splitAddresses(cc.value),
     changeReason: reasonField.hidden ? '' : reason.value,
@@ -390,11 +433,17 @@ function composer(email: EmailDetail, prompts: Prompt[], box: Box): Child {
 
   return Card({ title: t('composer.title') },
     !me().hasKey && Block(Notice('warn', tRich('composer.noKey', {}, { link: (label) => Link(label, '#/settings') }))),
-    !prompts.length && Block(Notice('warn', isAdmin() ? tRich('composer.noPromptAdmin', {}, { link: (label) => Link(label, '#/prompts') }) : t('composer.noPrompt'))),
-    FormRow(Field(t('composer.prompt'), promptSelect), Field(t('composer.instructions'), instructions), Field(null, generate, { size: 'fit' })),
     FormRow(Field(t('composer.to'), to), Field(t('composer.cc'), cc)),
     email.recipientsAll.cc.length > 0 && CheckField(t('composer.replyAll'), replyAll),
-    Field(t('composer.text'), text, { hint: modelInfo }),
+    Block(editor.element),
+    CardSection(t('composer.help'),
+      Block(Text({ muted: true, small: true }, t('composer.helpText'))),
+      Block(Actions(typos, style)),
+      prompts.length
+        ? FormRow(Field(null, promptSelect), Field(null, apply, { size: 'fit' }))
+        : Notice('warn', isAdmin() ? tRich('composer.noPromptAdmin', {}, { link: (label) => Link(label, '#/prompts') }) : t('composer.noPrompt')),
+      Block(Text({ small: true }, info, ' ', undo)),
+    ),
     reasonField,
     Actions(send, saveDraft, Spacer(), triageActions),
   );

@@ -8,7 +8,16 @@ export function htmlToText(html: string | null | undefined | false): string {
   return String(html || '')
     .replace(/<(script|style|head)[\s\S]*?<\/\1>/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|tr|li|h[1-6]|blockquote)>/gi, '\n')
+    // A link keeps its address, unless the address is what is shown.
+    .replace(/<a\b[^>]*\shref\s*=\s*["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href: string, label: string) => {
+      const shown = label.replace(/<[^>]+>/g, '').trim();
+      const address = href.replace(/^mailto:/i, '');
+      return !shown || shown === address || shown === href ? address : `${shown} (${address})`;
+    })
+    .replace(/<li\b[^>]*>/gi, '- ')
+    .replace(/<\/(p|div|tr|li|h[1-6]|blockquote|ul|ol)>/gi, '\n')
+    // Paragraphs and lists are separated by a blank line, as a person would type them.
+    .replace(/<(p|ul|ol)\b[^>]*>/gi, '\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))

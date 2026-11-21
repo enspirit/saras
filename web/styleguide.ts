@@ -1,8 +1,8 @@
 // Living style guide: every token and every component of the design system, rendered with
 // the installation's own brand. It is built from the same modules as the application and
 // reads the token list from design/tokens.css itself, so it cannot drift from the real thing.
-import { Badge, BrandMark, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, Select, Small, Spacer, Strong, Text, Textarea } from './ui/atoms.ts';
-import { Actions, Assurance, Block, Card, CardSection, CheckField, EmailListItem, EmptyState, Field, Form, FormRow, Message, NavItem, PageHeader, Swatch, createToast } from './ui/molecules.ts';
+import { Badge, BrandMark, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Strong, Text, Textarea } from './ui/atoms.ts';
+import { Actions, Assurance, Block, Card, CardSection, CheckField, EmailListItem, EmptyState, Field, Form, FormRow, Message, NavItem, PageHeader, RichEditor, Swatch, createToast } from './ui/molecules.ts';
 import { AuthPanel, Mailbox, Page, ReadingHeader } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
 import { initI18n, language, locale, t, tRich } from './i18n.ts';
@@ -97,6 +97,14 @@ const sampleEmail = (over = {}) =>
       sampleEmail({ current: true, from: 'Sophie Leroy', subject: t('styleguide.sample.subject2'), badges: [Badge(t('mailbox.untriaged'), 'warn'), Badge(t('mailbox.draft'), 'neutral')] }),
       Message(Prose(t('styleguide.sample.body'))),
       EmptyState(t('styleguide.empty')),
+    ),
+
+    Card({ title: t('styleguide.editor') },
+      Block(RichEditor({
+        placeholder: t('composer.placeholder'),
+        labels: { bold: t('editor.bold'), italic: t('editor.italic'), underline: t('editor.underline'), bullets: t('editor.bullets'), numbers: t('editor.numbers'), link: t('editor.link'), linkPrompt: t('editor.linkPrompt'), clear: t('editor.clear') },
+      }).element),
+      CardSection(t('styleguide.richText'), RichText(t('styleguide.sample.rich'))),
     ),
 
     Heading(2, t('styleguide.organisms')),

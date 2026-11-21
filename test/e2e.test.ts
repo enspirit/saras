@@ -121,18 +121,18 @@ test('the AI suggests a prompt per email, the user may pick another one', async 
 
 test('draft, edit, explain the change, send', async () => {
   const support = promptNamed('Customer support');
-  const draft = await me('POST', `/emails/${todo[0].id}/draft`, { promptId: support.id, instructions: 'proposer 1200 euros' });
+  const draft = await me('POST', `/emails/${todo[0].id}/assist`, { action: 'prompt', promptId: support.id, html: '<p>proposer 1200 euros</p>' });
   assert.equal(draft.status, 201);
-  assert.match(draft.body.aiText, /Voici notre proposition/);
+  assert.match(draft.body.html, /Voici notre proposition/);
   const [system, user] = lastOf(draftCalls()).body.messages as [ChatMessage, ChatMessage];
   assert.ok(system.content.startsWith(support.systemPrompt));
   assert.match(user.content, /proposer 1200 euros/);
   assert.match(user.content, /equiper 20 personnes/);
 
-  const finalText = draft.body.aiText.replace('[À COMPLÉTER : montant]', '1200 euros HT');
+  const finalText = draft.body.html.replace('[À COMPLÉTER : montant]', '1200 euros HT');
   const sent = await me('POST', `/emails/${todo[0].id}/send`, {
     draftId: draft.body.id,
-    text: finalText,
+    html: finalText,
     to: ['claire@client.example'],
     cc: ['paul@client.example'],
     changeReason: 'Toujours donner le prix hors taxes',
@@ -160,7 +160,7 @@ test('draft, edit, explain the change, send', async () => {
   assert.equal(after.reply.wasEdited, true);
   assert.equal(after.reply.changeReason, 'Toujours donner le prix hors taxes');
 
-  const again = await me('POST', `/emails/${todo[0].id}/send`, { text: 'bis', to: ['claire@client.example'] });
+  const again = await me('POST', `/emails/${todo[0].id}/send`, { html: '<p>bis</p>', to: ['claire@client.example'] });
   assert.equal(again.status, 409);
   assert.equal(stack.outbox.length, 1);
 });
@@ -168,9 +168,9 @@ test('draft, edit, explain the change, send', async () => {
 test('the reason of a correction is given to the next draft made with the same prompt', async () => {
   const support = promptNamed('Customer support');
   const rdvPrompt = promptNamed('Appointment scheduling');
-  await me('POST', `/emails/${todo[1].id}/draft`, { promptId: support.id });
+  await me('POST', `/emails/${todo[1].id}/assist`, { action: 'prompt', promptId: support.id });
   assert.match(lastDraftSystemPrompt(), /- Toujours donner le prix hors taxes/);
-  await me('POST', `/emails/${todo[1].id}/draft`, { promptId: rdvPrompt.id });
+  await me('POST', `/emails/${todo[1].id}/assist`, { action: 'prompt', promptId: rdvPrompt.id });
   assert.doesNotMatch(lastDraftSystemPrompt(), /prix hors taxes/);
 });
 
@@ -178,7 +178,7 @@ test('sending the proposal untouched is recorded as not edited, and the original
   const detail = (await me('GET', `/emails/${todo[1].id}`)).body;
   const sent = await me('POST', `/emails/${todo[1].id}/send`, {
     draftId: detail.draft.id,
-    text: `${detail.draft.aiText}\n`,
+    html: detail.draft.html,
     to: detail.recipients.to,
     changeReason: 'ignored because nothing changed',
   });
@@ -193,7 +193,7 @@ test('a model without ZDR provider fails loudly instead of being routed elsewher
   assert.equal((await me('PUT', '/settings', { model: 'nozdr/model' })).status, 200);
   const none = (await me('GET', '/emails?box=none')).body.emails;
   await me('POST', `/emails/${none[0].id}/status`, { status: 'needs_reply' });
-  const draft = await me('POST', `/emails/${none[0].id}/draft`, { promptId: prompts[0].id });
+  const draft = await me('POST', `/emails/${none[0].id}/assist`, { action: 'prompt', promptId: prompts[0].id });
   assert.equal(draft.status, 502);
   assert.match(draft.body.error, /ZDR/);
   await me('PUT', '/settings', { model: '' });
@@ -204,7 +204,7 @@ test('a personal OpenRouter key replaces the server key and is stored encrypted'
   const key = (await stack.db.one<{ k: string }>('SELECT openrouter_key_enc AS k FROM users WHERE openrouter_key_enc IS NOT NULL'))?.k ?? '';
   assert.ok(key.length > 20 && !key.includes('sk-or-personal'));
   const none = (await me('GET', '/emails?box=todo')).body.emails;
-  await me('POST', `/emails/${none[0].id}/draft`, { promptId: prompts[0].id });
+  await me('POST', `/emails/${none[0].id}/assist`, { action: 'prompt', promptId: prompts[0].id });
   assert.equal(lastOf(stack.llmRequests).authorization, 'Bearer sk-or-personal');
 });
 
@@ -214,7 +214,7 @@ test('saving as a draft files the reply in the mailbox without sending it', asyn
   const sentBefore = stack.outbox.length;
   const saved = await me('POST', `/emails/${email.id}/save-draft`, {
     draftId: detail.draft.id,
-    text: `${detail.draft.aiText}\nPS : à finir dans ma messagerie.`,
+    html: `${detail.draft.html}<p>PS : à finir dans ma messagerie.</p>`,
     to: detail.recipients.to,
     changeReason: 'Ajout d’un post-scriptum',
   });
@@ -232,7 +232,7 @@ test('saving as a draft files the reply in the mailbox without sending it', asyn
   assert.equal(after.reply.mode, 'draft');
   const listed = (await me('GET', '/emails?box=sent')).body.emails;
   assert.deepEqual(listed.map((e: EmailView) => e.replyMode).sort(), ['draft', 'sent', 'sent']);
-  assert.equal((await me('POST', `/emails/${email.id}/send`, { text: 'bis', to: detail.recipients.to })).status, 409);
+  assert.equal((await me('POST', `/emails/${email.id}/send`, { html: '<p>bis</p>', to: detail.recipients.to })).status, 409);
 });
 
 const eve = client();
@@ -241,8 +241,8 @@ test('a colleague does not reach a personal mailbox', async () => {
   await join(me, eve, 'eve@corp.example');
   assert.deepEqual((await eve('GET', '/emails?box=sent')).body.emails, []);
   assert.equal((await eve('GET', `/emails/${todo[0].id}`)).status, 404);
-  assert.equal((await eve('POST', `/emails/${todo[0].id}/draft`, { promptId: prompts[0].id })).status, 404);
-  assert.equal((await eve('POST', `/emails/${todo[0].id}/save-draft`, { text: 'x', to: ['a@b.example'] })).status, 404);
+  assert.equal((await eve('POST', `/emails/${todo[0].id}/assist`, { action: 'prompt', promptId: prompts[0].id })).status, 404);
+  assert.equal((await eve('POST', `/emails/${todo[0].id}/save-draft`, { html: '<p>x</p>', to: ['a@b.example'] })).status, 404);
   const [account] = (await me('GET', '/accounts')).body;
   assert.equal((await eve('POST', `/accounts/${account.id}/sync`)).status, 404);
   assert.deepEqual((await eve('GET', '/accounts')).body, []);

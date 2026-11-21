@@ -4,8 +4,10 @@
  */
 import { cx, h } from './dom.ts';
 import type { Attrs, Child } from './dom.ts';
+import { sanitizeToFragment } from './sanitize.ts';
 
-export type ButtonVariant = 'default' | 'primary' | 'danger' | 'link';
+/** 'tool' is a compact button of a toolbar; `pressed` shows it as active. */
+export type ButtonVariant = 'default' | 'primary' | 'danger' | 'link' | 'tool';
 export type BadgeTone = 'accent' | 'ok' | 'warn' | 'danger' | 'neutral';
 export type NoticeTone = 'info' | 'ok' | 'warn' | 'danger';
 
@@ -96,6 +98,13 @@ export const List = (items: Child[]): HTMLUListElement => h('ul', {}, items.map(
 
 /** Preformatted plain text that wraps: mail bodies, drafts. */
 export const Prose = (text: string): HTMLPreElement => h('pre', { class: 'prose' }, text);
+
+/** Rich text from elsewhere (a reply, a proposal), sanitised before it is shown. */
+export function RichText(html: string): HTMLDivElement {
+  const el = h('div', { class: 'rich' });
+  el.append(sanitizeToFragment(html));
+  return el;
+}
 
 /** In a row, pushes what follows to the far end. */
 export const Spacer = (): HTMLSpanElement => h('span', { class: 'spacer' });

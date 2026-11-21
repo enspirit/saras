@@ -5,6 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.base.json tsconfig.web.json ./
 COPY web ./web
+COPY scripts ./scripts
 RUN npm run build
 
 # Runtime: Node runs the TypeScript server directly, so no compiler is shipped.

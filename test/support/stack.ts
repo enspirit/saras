@@ -116,7 +116,15 @@ function fakeOpenRouter() {
         });
         content = JSON.stringify(decisions);
       } else {
-        content = 'Bonjour,\n\nMerci pour votre message. Voici notre proposition : [À COMPLÉTER : montant].\n\nCordialement';
+        const written = user.content.match(/<draft>\n([\s\S]*)\n<\/draft>/)?.[1] ?? '';
+        if (system.content.startsWith('You are a proofreader')) {
+          // Corrects one known mistake and, like a careless model, wraps its answer in a code fence.
+          content = '```html\n' + written.replace('reponse', 'réponse') + '\n```';
+        } else if (system.content.startsWith('You are an editor')) {
+          content = written.replace('<p>', '<p>Bien cordialement, ') + '<script>alert(1)</script><img src=x onerror=alert(2)>';
+        } else {
+          content = '<p>Bonjour,</p><p>Merci pour votre message. Voici notre proposition : [À COMPLÉTER : montant].</p><p>Cordialement</p>';
+        }
       }
       reply(200, { model: body.model, provider: 'FakeZDR', choices: [{ message: { role: 'assistant', content } }] });
     });

@@ -6,7 +6,7 @@ A self-hosted web tool to answer email with the help of AI, without handing it t
 
 1. **Connect** one or more mailboxes: IMAP/SMTP, Gmail / Google Workspace (OAuth), Outlook / Microsoft 365 (OAuth), and choose the one folder of each to watch (the inbox by default).
 2. **Identify** the emails that are waiting for a reply: what is fetched from that folder passes a triage gate. By default the gate decides nothing and every email is to be handled; an LLM can do it instead.
-3. **Draft** a reply from a *system prompt* prepared by an administrator, chosen email by email, with one-off instructions when needed.
+3. **Write** the reply in a rich-text editor — in full, or as a few notes — and, if you wish, let the AI check the typos, improve the style, or write it with a *system prompt* prepared by an administrator.
 4. **Send** in your name after review, or **save as a draft** in your mailbox to finish there. If you change the proposal you can say why: that reason is fed into your next drafts made with the same prompt.
 
 Nothing is sent without explicit validation.
@@ -54,6 +54,20 @@ saras is multi-tenant: everything lives inside an **organisation**, and nothing 
 **Who pays for the LLM.** A request uses the member's own key if they entered one, else the organisation's, else the server's (`OPENROUTER_API_KEY`). An operator hosting organisations that are not theirs leaves the server key empty.
 
 Not per organisation: the brand, the OAuth applications, the retention period and the fetch settings are the installation's.
+
+## Writing a reply
+
+There is one reply area: a rich-text editor (bold, italic, underline, lists, links). Write whatever you want in it — a complete reply, a few notes, instructions — and send it as it is, or first ask the AI for one of three things:
+
+| Action | What the AI does | What it is sent |
+| --- | --- | --- |
+| **Just check typos** | Corrects spelling, grammar and punctuation; changes nothing else. | Only what you wrote. |
+| **Improve style** | Rewrites for clarity and tone, keeping the meaning and the facts. | Only what you wrote. |
+| **Apply a prompt** | Writes the reply the way one of the organisation's prompts describes, from the email received and from what you wrote (which may be nothing). | The email received, the prompt, and what you wrote. |
+
+The proposal replaces your text; "Put my text back" restores it. When you change a proposal made with a prompt, you can say why: that reason is given to your next proposals made with the same prompt.
+
+A reply is sent as HTML with a plain-text alternative, both quoting the original. Only the elements an email needs are allowed (`src/html.ts`): whatever the LLM returns, and whatever is stored or sent, is rebuilt from that list on the server, and the interface sanitises again before displaying anything.
 
 ## Drafts
 
@@ -140,7 +154,7 @@ This is the main design constraint.
 | --- | --- |
 | No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
 | No silent fallback | If no provider of the chosen model satisfies both conditions, OpenRouter refuses the request and the application shows the error. |
-| Minimisation | Only the folder you chose is fetched. By default no email is analysed by the LLM: content leaves the server only when you ask for a draft. Newsletters, mailing lists, `no-reply` addresses and automated messages are set aside by header rules and never reach it. |
+| Minimisation | Checking typos and improving style never send the received email to the LLM, only your own text. Only the folder you chose is fetched. By default no email is analysed by the LLM: content leaves the server only when you ask for a draft. Newsletters, mailing lists, `no-reply` addresses and automated messages are set aside by header rules and never reach it. |
 | Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
 | Transport | Without direct TLS, STARTTLS is required for IMAP and SMTP (except for a local server): no password travels in clear. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |
@@ -220,9 +234,9 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               │
               └─ triage gate, 20 at a time ──► "to handle" (+ suggested prompt, with the AI strategy)
                                         │
-                        you pick the prompt, add instructions
+                     you write in the reply area, as much as you like
                                         │
-                                LLM draft (ZDR)
+              optionally, the LLM (ZDR): check typos / improve style / apply a prompt
                                         │
                        you review, edit, explain (optional)
                                         │
@@ -244,7 +258,7 @@ The content of a received email is treated as untrusted data: it is delimited in
 Everything is TypeScript in strict mode.
 
 - **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
-- **Browser code** is compiled by `npm run build` from `web/` to `public/js/` (not committed), one ES module per source file, without a bundler.
+- **Browser code** is compiled by `npm run build` from `web/` to `public/js/` (not committed), one ES module per source file, without a bundler. The same command copies the two browser libraries (see "Third-party software") to `public/js/vendor/`.
 - `npm run typecheck` checks both. `npm run dev` rebuilds the browser code and restarts the server on change.
 - `web/api.ts` describes the JSON returned by each route for the interface. It mirrors what `src/app.ts` builds, but the two are not checked against each other.
 
@@ -261,11 +275,20 @@ GitHub Actions type-checks, builds and runs them on every push and pull request 
 ## Known limitations
 
 - The Gmail and Microsoft Graph connectors are covered by message-conversion tests but have not been exercised against the real services: validate them with your own OAuth credentials.
-- Replies are plain text. Of received attachments only the name, type and size are kept and shown; their content is neither stored nor sent to the LLM.
+- Replies cannot carry attachments or images, and received emails are shown as plain text. Of received attachments only the name, type and size are kept and shown; their content is neither stored nor sent to the LLM.
 - One folder per mailbox is fetched (the `SYNC_MAX_EMAILS` most recent over `SYNC_DAYS` days). For Outlook, only top-level folders are offered.
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
 - No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).
+
+## Third-party software
+
+Two libraries run in the browser, both open source and copied unmodified from their packages at build time:
+
+- [Squire](https://github.com/fastmail/Squire), the rich-text editor Fastmail built for composing email — MIT.
+- [DOMPurify](https://github.com/cure53/DOMPurify), the HTML sanitiser — Apache-2.0 or MPL-2.0.
+
+The server's dependencies are listed in `package.json`; all are under permissive licences.
 
 ## License
 

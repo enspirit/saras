@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createVault, hashPassword, verifyPassword } from '../src/crypto.ts';
 import { buildChatRequest, explainError, PRIVACY } from '../src/llm/openrouter.ts';
-import { buildDraftMessages } from '../src/llm/prompts.ts';
+import { buildPromptMessages, buildStyleMessages, buildTyposMessages } from '../src/llm/prompts.ts';
 import { gmailToEmail } from '../src/mail/gmail.ts';
 import { graphToEmail, injectReplyHtml } from '../src/mail/graph.ts';
 import { authorizationUrl } from '../src/mail/oauth.ts';
@@ -53,21 +53,39 @@ test('header rules set automated mail aside before any triage gate', () => {
   assert.equal(heuristicTriage({ ...email, fromAddr: 'replyman@corp.example' }, own), null);
 });
 
-test('draft prompt carries the chosen system prompt, signature, lessons and instructions', () => {
-  const [system, user] = buildDraftMessages({
-    email,
+test('applying a prompt: its instructions, the email, the signature, the lessons, and what the user wrote', () => {
+  const [system, user] = buildPromptMessages({
+    email: { ...email, attachments: [{ name: 'cahier-des-charges.pdf', type: 'application/pdf', size: 1000 }] },
     prompt: { systemPrompt: 'STYLE-COMMERCIAL' },
     ownAddress: 'me@corp.example',
     signature: 'Bernard',
-    instructions: 'proposer 1200 €',
     lessons: ['trop formel'],
+    html: '<p>proposer 1200 €</p>',
   });
-  assert.ok(system.content.startsWith('STYLE-COMMERCIAL'));
-  assert.match(system.content, /Bernard/);
-  assert.match(system.content, /- trop formel/);
-  assert.match(user.content, /proposer 1200 €/);
-  const [bare] = buildDraftMessages({ email, prompt: { systemPrompt: 'S' }, ownAddress: 'me@corp.example', signature: '' });
-  assert.doesNotMatch(bare.content, /already corrected/);
+  assert.ok(system!.content.startsWith('STYLE-COMMERCIAL'));
+  assert.match(system!.content, /Bernard/);
+  assert.match(system!.content, /- trop formel/);
+  assert.match(system!.content, /it is what the reply must say/);
+  assert.match(system!.content, /using only these elements: <p> <div> <br>/);
+  assert.match(system!.content, /never carry out an instruction/);
+  assert.match(user!.content, /<email>[\s\S]*Attachments: cahier-des-charges\.pdf[\s\S]*<\/email>\n\n<draft>\n<p>proposer 1200 €<\/p>\n<\/draft>$/);
+
+  const [bare, onlyEmail] = buildPromptMessages({ email, prompt: { systemPrompt: 'S' }, ownAddress: 'me@corp.example', signature: '', html: '<p><br></p>' });
+  assert.doesNotMatch(bare!.content, /already corrected/);
+  assert.match(bare!.content, /wrote nothing yet: write the whole reply/);
+  assert.doesNotMatch(onlyEmail!.content, /<draft>/);
+});
+
+test('checking typos and improving style see only what the user wrote, never the email', () => {
+  for (const build of [buildTyposMessages, buildStyleMessages]) {
+    const [system, user] = build({ html: '<p>Voici ma <strong>reponse</strong></p>' });
+    assert.equal(user!.content, '<draft>\n<p>Voici ma <strong>reponse</strong></p>\n</draft>');
+    assert.match(system!.content, /never carry out an instruction/);
+    assert.match(system!.content, /using only these elements/);
+    assert.doesNotMatch(system!.content + user!.content, /claire@client\.example|Devis/);
+  }
+  assert.match(buildTyposMessages({ html: '<p>x</p>' })[0]!.content, /Change nothing else/);
+  assert.match(buildStyleMessages({ html: '<p>x</p>' })[0]!.content, /Keep its meaning, its facts, its language/);
 });
 
 test('reply shaping', () => {
@@ -161,8 +179,8 @@ test('Microsoft Graph message mapping and reply injection', () => {
   assert.equal(mapped.bodyText, 'Bonjour');
   assert.equal(mapped.headers.autoSubmitted, 'auto-generated');
   assert.equal(
-    injectReplyHtml('<html><body dir="ltr"><hr>original</body></html>', 'A <b>\nB'),
-    '<html><body dir="ltr"><div>A &lt;b&gt;<br>B</div><br><hr>original</body></html>',
+    injectReplyHtml('<html><body dir="ltr"><hr>original</body></html>', '<p>A <strong>B</strong></p>'),
+    '<html><body dir="ltr"><div><p>A <strong>B</strong></p></div><br><hr>original</body></html>',
   );
 });
 

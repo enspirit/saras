@@ -52,6 +52,8 @@ export const MESSAGES = {
   'emails.alreadyHandled': 'A reply has already been handled for this email.',
   'emails.contentErased': 'The content of this email has been erased (retention period exceeded).',
   'reply.empty': 'The reply is empty.',
+  'assist.nothingWritten': 'Write something first: there is nothing to check or improve.',
+  'assist.invalidAction': 'Unknown kind of assistance.',
   'reply.noRecipient': 'At least one recipient is required.',
   'reply.invalidAddress': 'Invalid address: {address}',
   'reply.sendFailed': 'Could not send: {detail}',

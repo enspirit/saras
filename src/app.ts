@@ -12,7 +12,8 @@ import type { SessionUser } from './express.d.ts';
 import { LlmError, PRIVACY } from './llm/openrouter.ts';
 import { decodeProblem, problem, readReason } from './messages.ts';
 import type { MessageCode, MessageParams, Problem } from './messages.ts';
-import { buildDraftMessages } from './llm/prompts.ts';
+import { isBlankHtml, sanitizeHtml, stripCodeFence, textToHtml } from './html.ts';
+import { buildPromptMessages, buildStyleMessages, buildTyposMessages } from './llm/prompts.ts';
 import type { MailService } from './mail/index.ts';
 import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from './mail/oauth.ts';
 import { replyRecipients, wasEdited } from './reply.ts';
@@ -20,10 +21,11 @@ import { llmSettings } from './llm/settings.ts';
 import { rowToEmail } from './sync.ts';
 import type { Sync } from './sync.ts';
 import { isTriageStrategy } from './triage/index.ts';
-import { isEmailAddress } from './text.ts';
+import { htmlToText, isEmailAddress } from './text.ts';
 import type {
   AccountKind,
   AccountRow,
+  ChatMessage,
   DraftRow,
   EmailRow,
   EmailStatus,
@@ -660,12 +662,10 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.get('/api/emails/:id', auth, async (req, res) => {
     const row = await emailOf(req);
     const email = rowToEmail(row);
-    const draft = await db.one(
-      'SELECT id, prompt_id AS "promptId", model, instructions, ai_text AS "aiText" FROM drafts WHERE email_id = $1 ORDER BY id DESC LIMIT 1',
-      [row.id],
-    );
-    const reply = await db.one<{ finalText: string; wasEdited: boolean; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: Date; by: string | null }>(
-      `SELECT r.final_text AS "finalText", r.was_edited AS "wasEdited", r.change_reason AS "changeReason", r.mode, r.to_json AS "toJson", r.cc_json AS "ccJson",
+    // The latest proposal, to resume where the user left off.
+    const draft = await db.one<DraftRow>('SELECT * FROM drafts WHERE email_id = $1 ORDER BY id DESC LIMIT 1', [row.id]);
+    const reply = await db.one<{ finalText: string; finalHtml: string; wasEdited: boolean; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: Date; by: string | null }>(
+      `SELECT r.final_text AS "finalText", r.final_html AS "finalHtml", r.was_edited AS "wasEdited", r.change_reason AS "changeReason", r.mode, r.to_json AS "toJson", r.cc_json AS "ccJson",
               r.sent_at AS "sentAt", u.email AS by
        FROM replies r LEFT JOIN users u ON u.id = r.user_id WHERE r.email_id = $1 ORDER BY r.id DESC LIMIT 1`,
       [row.id],
@@ -679,7 +679,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       shared: row.account_shared,
       recipients: replyRecipients(email, row.account_email, false),
       recipientsAll: replyRecipients(email, row.account_email, true),
-      draft: draft || null,
+      draft: draft ? { id: draft.id, action: draft.action ?? 'prompt', promptId: draft.prompt_id, model: draft.model, html: proposalHtml(draft) } : null,
       reply: reply ? { ...reply, to: JSON.parse(reply.toJson), cc: JSON.parse(reply.ccJson) } : null,
     });
   });
@@ -693,29 +693,54 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.json({ ok: true });
   });
 
-  app.post('/api/emails/:id/draft', auth, async (req, res) => {
+  /** Pure: a stored proposal as HTML. One made before proposals were rich text is plain text. */
+  const proposalHtml = (draft: Pick<DraftRow, 'action' | 'ai_text'>): string => (draft.action ? draft.ai_text : textToHtml(draft.ai_text));
+
+  /**
+   * The LLM helps with what the user wrote in the reply area, in one of three ways:
+   *  - typos:  corrects spelling and grammar, nothing else;
+   *  - style:  rewrites for clarity and tone, same meaning;
+   *  - prompt: writes the reply with one of the organisation's prompts, from the email and
+   *            from what the user wrote (notes, instructions, a draft, or nothing).
+   * Only `prompt` sends the received email to the LLM.
+   */
+  app.post('/api/emails/:id/assist', auth, async (req, res) => {
     const row = await emailOf(req);
-    if (!row.body_text) throw new HttpError(410, 'emails.contentErased');
-    const prompt = await promptOf(req, req.body.promptId);
-    const instructions = str(req.body.instructions, 4000);
+    const action: unknown = req.body.action;
+    if (action !== 'typos' && action !== 'style' && action !== 'prompt') throw new HttpError(400, 'assist.invalidAction');
+    const html = sanitizeHtml(typeof req.body.html === 'string' ? req.body.html.slice(0, 200_000) : '');
     const { apiKey, model } = llmSettings(req.user, req.org, { config, vault });
-    const messages = buildDraftMessages({
-      email: rowToEmail(row),
-      prompt: { systemPrompt: prompt.system_prompt },
-      ownAddress: row.account_email,
-      signature: req.user.signature,
-      instructions,
-      lessons: await lessonsFor(prompt.id, req.user.id),
-    });
-    const answer = await llm.chat({ apiKey, model, messages });
-    const created = await db.one<{ id: number }>('INSERT INTO drafts (email_id, prompt_id, model, instructions, ai_text) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
+
+    let messages: ChatMessage[];
+    let promptId: number | null = null;
+    if (action === 'prompt') {
+      if (!row.body_text) throw new HttpError(410, 'emails.contentErased');
+      const prompt = await promptOf(req, req.body.promptId);
+      promptId = prompt.id;
+      messages = buildPromptMessages({
+        email: rowToEmail(row),
+        prompt: { systemPrompt: prompt.system_prompt },
+        ownAddress: row.account_email,
+        signature: req.user.signature,
+        lessons: await lessonsFor(prompt.id, req.user.id),
+        html,
+      });
+    } else {
+      if (isBlankHtml(html)) throw new HttpError(400, 'assist.nothingWritten');
+      messages = action === 'typos' ? buildTyposMessages({ html }) : buildStyleMessages({ html });
+    }
+
+    const answer = await llm.chat({ apiKey, model, messages, maxTokens: 3000 });
+    // Whatever the model returned, only the elements a reply may contain are kept.
+    const proposed = sanitizeHtml(stripCodeFence(answer.text));
+    const created = await db.one<{ id: number }>('INSERT INTO drafts (email_id, action, prompt_id, model, ai_text) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
       row.id,
-      prompt.id,
+      action,
+      promptId,
       answer.model,
-      instructions,
-      answer.text,
+      proposed,
     ]);
-    res.status(201).json({ id: created!.id, promptId: prompt.id, model: answer.model, provider: answer.provider, aiText: answer.text });
+    res.status(201).json({ id: created!.id, action, promptId, model: answer.model, provider: answer.provider, html: proposed });
   });
 
   /** Emails with a delivery in flight, so that a double click cannot send twice. */
@@ -727,10 +752,12 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
    */
   const deliver = (mode: ReplyMode): RequestHandler => async (req, res) => {
     const row = await emailOf(req);
-    const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
+    // The reply is rich text; its plain-text form, for storage, comparison and mail clients, is derived from it.
+    const html = sanitizeHtml(typeof req.body.html === 'string' ? req.body.html.slice(0, 200_000) : '');
+    const text = htmlToText(html);
     const to = addressList(req.body.to);
     const cc = addressList(req.body.cc);
-    if (!text) throw new HttpError(400, 'reply.empty');
+    if (isBlankHtml(html)) throw new HttpError(400, 'reply.empty');
     if (!to.length) throw new HttpError(400, 'reply.noRecipient');
     const bad = [...to, ...cc].find((a) => !isEmailAddress(a));
     if (bad) throw new HttpError(400, 'reply.invalidAddress', { address: bad });
@@ -741,17 +768,19 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       const draft = Number(req.body.draftId) ? await db.one<DraftRow>('SELECT * FROM drafts WHERE id = $1 AND email_id = $2', [Number(req.body.draftId), row.id]) : undefined;
       const account = await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1', [row.account_id]);
       const provider = mail.providerFor(account!);
-      const reply = { email: rowToEmail(row), to, cc, text, language: req.user.language };
+      const reply = { email: rowToEmail(row), to, cc, html, language: req.user.language };
       try {
         await (mode === 'draft' ? provider.saveDraft(reply) : provider.send(reply));
       } catch (e) {
         throw new HttpError(502, mode === 'draft' ? 'reply.draftFailed' : 'reply.sendFailed', { detail: errorMessage(e) });
       }
-      const edited = draft ? wasEdited(draft.ai_text, text) : false;
+      const proposedText = draft ? htmlToText(proposalHtml(draft)) : null;
+      const edited = draft ? wasEdited(proposedText, text) : false;
       await db.transaction(async (tx) => {
         await tx.run(
-          `INSERT INTO replies (email_id, user_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json) VALUES ($1, $10, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [row.id, draft?.prompt_id ?? null, draft?.ai_text ?? null, text, edited, edited ? str(req.body.changeReason, 1000) : '', mode, JSON.stringify(to), JSON.stringify(cc), req.user.id],
+          `INSERT INTO replies (email_id, user_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json, final_html)
+           VALUES ($1, $10, $2, $3, $4, $5, $6, $7, $8, $9, $11)`,
+          [row.id, draft?.prompt_id ?? null, proposedText, text, edited, edited ? str(req.body.changeReason, 1000) : '', mode, JSON.stringify(to), JSON.stringify(cc), req.user.id, html],
         );
         await tx.run(`UPDATE emails SET status = 'sent' WHERE id = $1`, [row.id]);
       });

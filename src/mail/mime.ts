@@ -1,17 +1,21 @@
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
-import { composeReplyBody, replyReferences, replySubject } from '../reply.ts';
-import { formatAddress } from '../text.ts';
+import { composeReplyBody, composeReplyHtml, replyReferences, replySubject } from '../reply.ts';
+import { formatAddress, htmlToText } from '../text.ts';
 import type { OutgoingReply, Sender } from '../types.ts';
 
-/** Build the RFC 822 reply (threading headers + quoted original) as a Buffer. */
-export async function buildRawReply({ account, email, to, cc, text, language }: OutgoingReply & { account: Sender }): Promise<Buffer> {
+/**
+ * Build the RFC 822 reply as a Buffer: threading headers, and the reply with the quoted
+ * original both as HTML and as the plain text a mail client may prefer.
+ */
+export async function buildRawReply({ account, email, to, cc, html, language }: OutgoingReply & { account: Sender }): Promise<Buffer> {
   const references = replyReferences(email);
   const composer = new MailComposer({
     from: formatAddress({ name: account.display_name, address: account.email }),
     to,
     cc: cc?.length ? cc : undefined,
     subject: replySubject(email.subject),
-    text: composeReplyBody(text, email, language),
+    text: composeReplyBody(htmlToText(html), email, language),
+    html: composeReplyHtml(html, email, language),
     inReplyTo: email.messageId || undefined,
     references: references.length ? references : undefined,
   });

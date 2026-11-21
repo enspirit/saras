@@ -115,6 +115,7 @@ CREATE INDEX IF NOT EXISTS emails_status ON emails (account_id, status, date);
 CREATE TABLE IF NOT EXISTS drafts (
   id SERIAL PRIMARY KEY,
   email_id INTEGER NOT NULL REFERENCES emails(id) ON DELETE CASCADE,
+  action TEXT,
   prompt_id INTEGER REFERENCES prompts(id) ON DELETE SET NULL,
   model TEXT NOT NULL,
   instructions TEXT NOT NULL DEFAULT '',
@@ -128,6 +129,7 @@ CREATE TABLE IF NOT EXISTS replies (
   prompt_id INTEGER REFERENCES prompts(id) ON DELETE SET NULL,
   ai_text TEXT,
   final_text TEXT NOT NULL,
+  final_html TEXT NOT NULL DEFAULT '',
   was_edited BOOLEAN NOT NULL DEFAULT false,
   change_reason TEXT NOT NULL DEFAULT '',
   mode TEXT NOT NULL DEFAULT 'sent' CHECK (mode IN ('sent','draft')),
@@ -143,6 +145,8 @@ ALTER TABLE emails ADD COLUMN IF NOT EXISTS attachments_json TEXT NOT NULL DEFAU
 ALTER TABLE emails DROP CONSTRAINT IF EXISTS emails_account_id_provider_id_key;
 CREATE UNIQUE INDEX IF NOT EXISTS emails_identity ON emails (account_id, folder, provider_id);
 UPDATE accounts SET folder = CASE kind WHEN 'microsoft' THEN 'inbox' ELSE 'INBOX' END, folder_name = 'Inbox' WHERE folder IS NULL AND last_sync_at IS NOT NULL;
+ALTER TABLE drafts ADD COLUMN IF NOT EXISTS action TEXT;
+ALTER TABLE replies ADD COLUMN IF NOT EXISTS final_html TEXT NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE invitations ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE prompts ADD COLUMN IF NOT EXISTS org_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE;
@@ -272,6 +276,6 @@ export async function purgeOldContent(db: Db, retentionDays: number): Promise<nu
   const old = `(SELECT id FROM emails WHERE date < now() - make_interval(days => $1))`;
   const days = [Number(retentionDays)];
   await db.run(`DELETE FROM drafts WHERE email_id IN ${old}`, days);
-  await db.run(`UPDATE replies SET ai_text = NULL, final_text = '' WHERE email_id IN ${old}`, days);
+  await db.run(`UPDATE replies SET ai_text = NULL, final_text = '', final_html = '' WHERE email_id IN ${old}`, days);
   return db.run(`UPDATE emails SET body_text = '' WHERE body_text != '' AND date < now() - make_interval(days => $1)`, days);
 }

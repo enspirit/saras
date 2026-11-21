@@ -57,8 +57,10 @@ test('pages are made of components: no class name, no element created directly',
 test('dependencies point downwards: atoms < molecules < organisms < pages', () => {
   const imports = (file: string): string[] => [...new Set([...readWeb(`ui/${file}`).matchAll(/from '\.\/([\w-]+)\.ts'/g)].map((m) => m[1] ?? ''))];
   assert.deepEqual(imports('dom.ts'), []);
-  assert.deepEqual(imports('atoms.ts'), ['dom']);
-  assert.deepEqual(imports('molecules.ts').sort(), ['atoms', 'dom']);
+  // sanitize.ts is base-level, beside dom.ts: it turns foreign HTML into safe nodes.
+  assert.deepEqual(imports('sanitize.ts'), []);
+  assert.deepEqual(imports('atoms.ts').sort(), ['dom', 'sanitize']);
+  assert.deepEqual(imports('molecules.ts').sort(), ['atoms', 'dom', 'sanitize']);
   assert.deepEqual(imports('organisms.ts').sort(), ['atoms', 'dom', 'molecules']);
 });
 

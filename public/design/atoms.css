@@ -111,3 +111,27 @@ textarea.input--tall { min-height: 240px; }
 
 /* ---- Spacer (pushes what follows to the far end of a row) ---- */
 .spacer { flex: 1; }
+
+/* ---- Tool button: compact, for toolbars; pressed when its format is active ---- */
+.btn--tool {
+  --btn-bg: transparent;
+  --btn-border: transparent;
+  min-width: 32px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+.btn--tool:hover { --btn-bg: var(--color-hover); --btn-border: transparent; }
+.btn--tool[aria-pressed="true"] { --btn-bg: var(--color-accent-soft); --btn-text: var(--color-accent); }
+
+/* ---- Rich text: a reply as it will be read ---- */
+.rich { overflow-wrap: anywhere; }
+.rich p, .rich div { margin: 0 0 var(--space-3); }
+.rich > :last-child { margin-bottom: 0; }
+.rich ul, .rich ol { margin: 0 0 var(--space-3); }
+.rich blockquote {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-muted);
+}

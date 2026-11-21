@@ -1,3 +1,4 @@
+import { escapeHtml } from './text.ts';
 import type { Email } from './types.ts';
 
 /** Pure decisions about how a reply is shaped: subject, recipients, threading headers, quoting. */
@@ -49,25 +50,41 @@ const ATTRIBUTION: Record<string, (when: string, who: string) => string> = {
   fr: (when, who) => `Le ${when} (UTC), ${who} a écrit :`,
 };
 
-export function quoteOriginal(email: Pick<Email, 'date' | 'fromName' | 'fromAddr' | 'bodyText'>, language = 'en'): string {
+type Quoted = Pick<Email, 'date' | 'fromName' | 'fromAddr' | 'bodyText'>;
+
+/** "On …, Claire <claire@…> wrote:", in the user's language when we have the line for it. */
+function attributionLine(email: Quoted, language: string): string {
   const base = language.split('-')[0] ?? 'en';
   const attribution = ATTRIBUTION[base] ?? ATTRIBUTION.en!;
   const locale = ATTRIBUTION[base] ? language : 'en';
   const when = new Date(email.date).toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short', timeZone: 'UTC' });
   const who = email.fromName ? `${email.fromName} <${email.fromAddr}>` : email.fromAddr;
+  return attribution(when, who);
+}
+
+/** The original, quoted the plain-text way: each line behind a ">". */
+export function quoteOriginal(email: Quoted, language = 'en'): string {
   const quoted = String(email.bodyText || '')
     .split('\n')
     .map((l) => (l.startsWith('>') ? `>${l}` : `> ${l}`))
     .join('\n');
-  return `${attribution(when, who)}\n${quoted}`;
+  return `${attributionLine(email, language)}\n${quoted}`;
 }
 
-export function composeReplyBody(text: string, email: Pick<Email, 'date' | 'fromName' | 'fromAddr' | 'bodyText'>, language = 'en'): string {
+/** The plain-text part of a reply: its text, then the quoted original. */
+export function composeReplyBody(text: string, email: Quoted, language = 'en'): string {
   const body = String(text || '').trimEnd();
   return email.bodyText ? `${body}\n\n${quoteOriginal(email, language)}\n` : `${body}\n`;
 }
 
-/** Was the AI proposal changed by the user? Whitespace-only differences do not count. */
+/** The HTML part of a reply: its (already sanitised) HTML, then the original in a blockquote. */
+export function composeReplyHtml(html: string, email: Quoted, language = 'en'): string {
+  if (!email.bodyText) return html;
+  const original = escapeHtml(email.bodyText.trimEnd()).replace(/\n/g, '<br>');
+  return `${html}<br><div>${escapeHtml(attributionLine(email, language))}</div><blockquote>${original}</blockquote>`;
+}
+
+/** Was the AI proposal changed by the user? Compared as text: whitespace and markup alone do not count. */
 export function wasEdited(aiText: string | null | undefined, finalText: string | null | undefined): boolean {
   const norm = (s: string | null | undefined) => String(s || '').replace(/\s+/g, ' ').trim();
   return norm(aiText) !== norm(finalText);

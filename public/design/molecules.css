@@ -119,3 +119,27 @@
   border-radius: var(--radius-sm);
 }
 .swatch__name { font-family: var(--font-mono); }
+
+/* ---- Editor: a toolbar over a writing surface ---- */
+.editor {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.editor:focus-within { outline: var(--focus-width) solid var(--color-focus); outline-offset: 1px; }
+.editor__toolbar {
+  display: flex; flex-wrap: wrap; gap: 2px;
+  padding: var(--space-1);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+.editor__surface {
+  min-height: 240px; max-height: 60vh; overflow-y: auto;
+  padding: var(--space-3);
+  outline: none;
+}
+.editor--empty .editor__surface::before {
+  content: attr(data-placeholder);
+  float: left; height: 0;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}

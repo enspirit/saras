@@ -152,17 +152,21 @@ export interface EmailList {
   counts: Record<BoxId, number>;
 }
 
+/** A proposal by the AI: the result of one of the three kinds of assistance. */
 export interface Draft {
   id: number;
+  action: 'typos' | 'style' | 'prompt';
   promptId: number | null;
   model: string;
-  instructions?: string;
-  aiText: string;
+  /** The proposed reply, as HTML. */
+  html: string;
   provider?: string | null;
 }
 
 export interface SentReply {
   finalText: string;
+  /** The reply as rich text; empty for a reply sent before replies were rich text. */
+  finalHtml: string;
   wasEdited: boolean;
   changeReason: string;
   mode: 'sent' | 'draft';

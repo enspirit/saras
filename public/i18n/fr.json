@@ -103,20 +103,13 @@
   },
   "composer": {
     "title": "Votre réponse",
-    "prompt": "Prompt",
+    "prompt": "Prompt de réponse",
     "suggested": "{name} (suggéré par l’IA)",
-    "instructions": "Consignes (optionnel)",
-    "instructionsPlaceholder": "Ex. : accepter, proposer jeudi 14 h",
-    "generate": "Proposer une réponse",
-    "generating": "Rédaction en cours…",
-    "generatedBy": "Proposition générée par {model}.",
-    "generatedVia": "Proposition générée par {model} via {provider}.",
-    "confirmReplace": "Remplacer votre texte par une nouvelle proposition ?",
+    "generatedBy": "Par {model}.",
+    "generatedVia": "Par {model} via {provider}.",
     "to": "À",
     "cc": "Cc",
     "replyAll": "Répondre à tous",
-    "text": "Texte",
-    "textPlaceholder": "La proposition de l’IA apparaîtra ici. Vous pouvez aussi écrire directement.",
     "reason": "Pourquoi cette modification ? (optionnel)",
     "reasonPlaceholder": "Ex. : trop formel, je tutoie ce client",
     "reasonHint": "Sera pris en compte dans vos prochaines propositions faites avec ce prompt.",
@@ -136,7 +129,23 @@
     "restored": "Remis dans À traiter.",
     "noKey": "Aucune clé OpenRouter configurée : ajoutez-la dans <link>Réglages</link> pour obtenir des propositions.",
     "noPromptAdmin": "Aucun prompt : créez-en un dans <link>Prompts</link>.",
-    "noPrompt": "Aucun prompt disponible : demandez à un administrateur d’en créer."
+    "noPrompt": "Aucun prompt disponible : demandez à un administrateur d’en créer.",
+    "placeholder": "Écrivez votre réponse, ou simplement quelques notes sur ce qu’il faut dire.",
+    "help": "Aide de l’IA",
+    "helpText": "Facultatif. Elle part de ce que vous avez écrit ci-dessus et le remplace par sa proposition, que vous pouvez modifier ou annuler.",
+    "typos": "Corriger les fautes uniquement",
+    "typosTitle": "Corrige l’orthographe et la grammaire, sans rien changer d’autre. L’email reçu n’est pas transmis à l’IA.",
+    "style": "Améliorer le style",
+    "styleTitle": "Reformule pour la clarté et le ton, en gardant le sens. L’email reçu n’est pas transmis à l’IA.",
+    "applyPrompt": "Appliquer ce prompt",
+    "applyPromptTitle": "Rédige la réponse à partir de l’email reçu et de ce que vous avez écrit, à la manière décrite par ce prompt.",
+    "working": "En cours…",
+    "undo": "Remettre mon texte",
+    "done": {
+      "typos": "Fautes corrigées.",
+      "style": "Style amélioré.",
+      "prompt": "Réponse rédigée avec le prompt."
+    }
   },
   "prompts": {
     "title": "Prompts",
@@ -339,8 +348,11 @@
       "subject2": "Report de notre rendez-vous",
       "subject3": "Merci pour hier",
       "body": "Bonjour,\n\nCorps d’un message en texte brut, tel qu’il a été reçu.\n\nCordialement",
-      "triage": "Une réponse est attendue."
-    }
+      "triage": "Une réponse est attendue.",
+      "rich": "<p>Bonjour <strong>Claire</strong>,</p><ul><li>un premier point</li><li>un <em>second</em></li></ul><p>Voir <a href=\"https://example.com\">la documentation</a>.</p><blockquote>Une ligne citée.</blockquote>"
+    },
+    "editor": "Éditeur de texte riche",
+    "richText": "Texte riche, tel qu’affiché"
   },
   "server": {
     "request": {
@@ -432,6 +444,10 @@
     },
     "organization": {
       "invalidTriage": "Stratégie de tri inconnue."
+    },
+    "assist": {
+      "nothingWritten": "Écrivez d’abord quelque chose : il n’y a rien à corriger ni à améliorer.",
+      "invalidAction": "Type d’aide inconnu."
     }
   },
   "organization": {
@@ -449,5 +465,15 @@
     "key": "Clé API OpenRouter de l’organisation",
     "keyHint": "Chiffrée en base. Utilisée par tout membre qui n’a pas sa propre clé.",
     "deleteKey": "Supprimer la clé de l’organisation"
+  },
+  "editor": {
+    "bold": "Gras",
+    "italic": "Italique",
+    "underline": "Souligné",
+    "bullets": "Liste à puces",
+    "numbers": "Liste numérotée",
+    "link": "Lien",
+    "linkPrompt": "Adresse du lien :",
+    "clear": "Effacer la mise en forme"
   }
 }
