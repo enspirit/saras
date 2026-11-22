@@ -11,10 +11,16 @@ import type { Db } from '../db.ts';
 import { proposalHtml } from '../../domain/computations/replying.ts';
 import { Refusal } from '../../domain/refusal.ts';
 import type { RefusalKind } from '../../domain/refusal.ts';
+import { createPrompt } from '../../domain/prompts/create-prompt.ts';
+import { deletePrompt } from '../../domain/prompts/delete-prompt.ts';
+import { editPrompt } from '../../domain/prompts/edit-prompt.ts';
 import { checkTypos } from '../../domain/replying/check-typos.ts';
 import { fileReplyAsDraft } from '../../domain/replying/file-reply-as-draft.ts';
 import { improveStyle } from '../../domain/replying/improve-style.ts';
 import { sendReply } from '../../domain/replying/send-reply.ts';
+import { ignoreEmail } from '../../domain/sorting/ignore-email.ts';
+import { markNoReplyNeeded } from '../../domain/sorting/mark-no-reply-needed.ts';
+import { moveBackToHandle } from '../../domain/sorting/move-back-to-handle.ts';
 import { writeWithPrompt } from '../../domain/replying/write-with-prompt.ts';
 import { emailFor } from '../../domain/state/emails.ts';
 import type { OwnedEmailRow } from '../../domain/state/emails.ts';
@@ -522,11 +528,6 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // ---- prompts ----------------------------------------------------------------------------
   // Prompts belong to the organisation: shared by its members, maintained by its administrators.
   const promptOf = (req: Request, id: unknown = req.params.id): Promise<PromptRow> => organizationPrompt(db, req.org.id, id);
-  const promptBody = (req: Request) => {
-    const p = { name: str(req.body.name, 120), description: str(req.body.description, 500), systemPrompt: str(req.body.systemPrompt, 20_000) };
-    if (!p.name || !p.systemPrompt) throw new HttpError(400, 'prompts.incomplete');
-    return p;
-  };
 
   app.get('/api/prompts', auth, async (req, res) => {
     if (req.user.role !== 'admin') {
@@ -550,26 +551,18 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.json(defaultPrompts(req.user.language).filter((p) => !taken.has(p.name)));
   });
 
-  app.post('/api/prompts', auth, adminOnly, async (req, res) => {
-    const p = promptBody(req);
-    const created = await db.one<{ id: number }>('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
-      req.org.id,
-      req.user.id,
-      p.name,
-      p.description,
-      p.systemPrompt,
-    ]);
-    res.status(201).json({ id: created!.id });
+  // The operations are in domain/prompts; each checks for itself that an administrator asks.
+  app.post('/api/prompts', auth, async (req, res) => {
+    res.status(201).json(await createPrompt(world, actorOf(req), req.body));
   });
 
-  app.put('/api/prompts/:id', auth, adminOnly, async (req, res) => {
-    const p = promptBody(req);
-    await db.run('UPDATE prompts SET name = $1, description = $2, system_prompt = $3 WHERE id = $4', [p.name, p.description, p.systemPrompt, (await promptOf(req)).id]);
+  app.put('/api/prompts/:id', auth, async (req, res) => {
+    await editPrompt(world, actorOf(req), req.params.id, req.body);
     res.json({ ok: true });
   });
 
-  app.delete('/api/prompts/:id', auth, adminOnly, async (req, res) => {
-    await db.run('DELETE FROM prompts WHERE id = $1', [(await promptOf(req)).id]);
+  app.delete('/api/prompts/:id', auth, async (req, res) => {
+    await deletePrompt(world, actorOf(req), req.params.id);
     res.json({ ok: true });
   });
 
@@ -705,12 +698,17 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     });
   });
 
+  // The three corrections of the sorting are in domain/sorting; the status asked for says which.
+  const CORRECTIONS = { no_reply: markNoReplyNeeded, ignored: ignoreEmail, needs_reply: moveBackToHandle };
+
   app.post('/api/emails/:id/status', auth, async (req, res) => {
-    const row = await emailOf(req);
-    const status = req.body.status;
-    if (!['needs_reply', 'no_reply', 'ignored'].includes(status)) throw new HttpError(400, 'emails.invalidStatus');
-    if (row.status === 'sent') throw new HttpError(409, 'emails.alreadySent');
-    await db.run(`UPDATE emails SET status = $1, triage_source = 'user' WHERE id = $2`, [status, row.id]);
+    const correct = CORRECTIONS[String(req.body.status) as keyof typeof CORRECTIONS];
+    if (!correct) {
+      // An email one may not see is not found, whatever else is wrong with the request.
+      await emailOf(req);
+      throw new HttpError(400, 'emails.invalidStatus');
+    }
+    await correct(world, actorOf(req), req.params.id);
     res.json({ ok: true });
   });
 
