@@ -3,7 +3,7 @@
 import { sanitizeHtml, stripCodeFence } from '../../tooling/html.ts';
 import type { AssistAction, ChatMessage } from '../../types.ts';
 import { keepProposal } from '../state/proposals.ts';
-import type { World } from '../world.ts';
+import type { Reach } from '../world.ts';
 
 /** A proposal as the member receives it. */
 export interface Proposal {
@@ -21,7 +21,7 @@ export const writtenSoFar = (html: unknown): string => sanitizeHtml(typeof html 
 
 /** Asks the LLM and keeps its answer as a proposal. `keyAndModel` are those in force for whoever asks. */
 export async function writeProposal(
-  { db, llm }: World,
+  { db, llm }: Reach,
   ask: { emailId: number; action: AssistAction; promptId: number | null; messages: ChatMessage[]; apiKey: string; model: string },
 ): Promise<Proposal> {
   const answer = await llm.chat({ apiKey: ask.apiKey, model: ask.model, messages: ask.messages, maxTokens: 3000 });

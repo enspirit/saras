@@ -4,15 +4,26 @@ import type { Vault } from '../tooling/crypto.ts';
 import type { Db } from '../tooling/db.ts';
 import type { MailService } from '../tooling/mail/index.ts';
 import type { Llm, OrganizationRow, UserRow } from '../types.ts';
+import type { Attempts } from './computations/access.ts';
 
 /** The other agents and the stores an operation may reach: the database, the mailboxes, the LLM. */
-export interface World {
+export interface Reach {
   db: Db;
   mail: MailService;
   llm: Llm;
   vault: Vault;
   config: Config;
 }
+
+/** The same, with what this running server keeps in memory only. */
+export interface World extends Reach {
+  /** Wrong guesses of passwords and invitation links, per origin. */
+  attempts: Map<string, Attempts>;
+  /** Emails whose reply is on its way to the mailbox. */
+  handingOver: Set<number>;
+}
+
+export const createWorld = (reach: Reach): World => ({ ...reach, attempts: new Map(), handingOver: new Set() });
 
 /** The member an operation is performed by, with their organisation. */
 export interface Actor {

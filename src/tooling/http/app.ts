@@ -3,12 +3,26 @@ import type { CookieOptions, ErrorRequestHandler, Express, Request, RequestHandl
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Config } from '../config.ts';
-import { hashPassword, randomToken, tokenHash, verifyPassword } from '../crypto.ts';
+import { randomToken } from '../crypto.ts';
 import type { Vault } from '../crypto.ts';
-import { seedDefaultPrompts } from '../db.ts';
 import { defaultPrompts } from '../../domain/prompts/ready-made-prompts.ts';
 import type { Db } from '../db.ts';
+import { acceptInvitation } from '../../domain/access/accept-invitation.ts';
+import { appointAdministrator } from '../../domain/access/appoint-administrator.ts';
+import { checkInvitation } from '../../domain/access/check-invitation.ts';
+import { createOrganization } from '../../domain/access/create-organization.ts';
+import { deleteMember } from '../../domain/access/delete-member.ts';
+import { inviteMember } from '../../domain/access/invite-member.ts';
+import { removeAdministratorRole } from '../../domain/access/remove-administrator-role.ts';
+import { revokeInvitation } from '../../domain/access/revoke-invitation.ts';
+import { signIn } from '../../domain/access/sign-in.ts';
+import { signOut } from '../../domain/access/sign-out.ts';
+import { signUpIsOpen } from '../../domain/computations/access.ts';
+import { addressesGiven as addressList, clipped as str, languageGiven as languageTag } from '../../domain/computations/given.ts';
 import { proposalHtml } from '../../domain/computations/replying.ts';
+import { installationIsEmpty, memberOf, organizationById } from '../../domain/state/members.ts';
+import { memberOfSession } from '../../domain/state/sessions.ts';
+import type { Session } from '../../domain/state/sessions.ts';
 import { Refusal } from '../../domain/refusal.ts';
 import type { RefusalKind } from '../../domain/refusal.ts';
 import { createPrompt } from '../../domain/prompts/create-prompt.ts';
@@ -26,9 +40,9 @@ import { emailFor } from '../../domain/state/emails.ts';
 import type { OwnedEmailRow } from '../../domain/state/emails.ts';
 import { mayUse } from '../../domain/state/mailboxes.ts';
 import { promptOf as organizationPrompt } from '../../domain/state/prompts.ts';
+import { createWorld } from '../../domain/world.ts';
 import type { Actor, World } from '../../domain/world.ts';
 import { errorMessage } from '../errors.ts';
-import type { SessionUser } from './express.d.ts';
 import { LlmError, PRIVACY } from '../llm/openrouter.ts';
 import { decodeProblem, problem, readReason } from '../messages.ts';
 import type { MessageCode, MessageParams, Problem } from '../messages.ts';
@@ -49,19 +63,14 @@ import type {
   EmailStatus,
   Fetch,
   ImapCredentials,
-  InvitationRow,
-  OrganizationRow,
   Llm,
   OAuthTokens,
   PromptRow,
   ReplyMode,
-  Role,
   Sender,
   ServerCredentials,
-  UserRow,
 } from '../../types.ts';
 
-const SESSION_DAYS = 30;
 const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
 
 /** A refusal with its HTTP status and a message code the interface can translate. */
@@ -76,13 +85,6 @@ class HttpError extends Error {
     this.problem = described;
   }
 }
-
-/** A language tag as the interface sends it, or English when it does not look like one. */
-const languageTag = (v: unknown): string => (typeof v === 'string' && /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(v) ? v : 'en');
-
-/** A trimmed, length-capped string out of anything a client may have sent. */
-const str = (v: unknown, max = 10_000): string => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-const addressList = (v: unknown): string[] => (Array.isArray(v) ? v.map((a) => str(a, 320).toLowerCase()).filter(Boolean) : []);
 
 function readCookie(req: Request, name: string): string | null {
   for (const part of String(req.headers.cookie || '').split(';')) {
@@ -104,11 +106,11 @@ interface Dependencies {
 }
 
 /** The status that says each kind of refusal. */
-const STATUS: Record<RefusalKind, number> = { invalid: 400, forbidden: 403, notFound: 404, conflict: 409, gone: 410, upstream: 502 };
+const STATUS: Record<RefusalKind, number> = { invalid: 400, unauthenticated: 401, forbidden: 403, notFound: 404, conflict: 409, gone: 410, tooMany: 429, upstream: 502 };
 
 export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetch }: Dependencies): Express {
   /** What the operations of the domain act in, and on whose behalf. */
-  const world: World = { db, mail, llm, vault, config };
+  const world: World = createWorld({ db, mail, llm, vault, config });
   const actorOf = (req: Request): Actor => ({ member: req.user, organization: req.org });
   const app = express();
   app.disable('x-powered-by');
@@ -138,136 +140,58 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // ---- sessions ---------------------------------------------------------------------------
   const cookieOptions: CookieOptions = { httpOnly: true, sameSite: 'lax', secure: config.secureCookies, path: '/' };
 
-  async function openSession(res: Response, userId: number): Promise<void> {
-    const id = randomToken();
-    await db.run(`INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, now() + make_interval(days => $3))`, [id, userId, SESSION_DAYS]);
-    res.cookie('sid', id, { ...cookieOptions, maxAge: SESSION_DAYS * 86_400_000 });
-  }
+  /** Has the browser keep a session just opened. */
+  const startSession = (res: Response, session: Session): void => void res.cookie('sid', session.id, { ...cookieOptions, maxAge: session.days * 86_400_000 });
 
   const auth: RequestHandler = async (req, _res, next) => {
     const sid = readCookie(req, 'sid');
-    const row = sid
-      ? await db.one<SessionUser>(
-          `SELECT u.*, s.id AS sid, s.oauth_state FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = $1 AND s.expires_at > now()`,
-          [sid],
-        )
-      : undefined;
+    const row = sid ? await memberOfSession(db, sid) : undefined;
     if (!row) return next(new HttpError(401, 'auth.signedOut'));
     req.user = row;
-    req.org = (await db.one<OrganizationRow>('SELECT * FROM organizations WHERE id = $1', [row.org_id]))!;
+    req.org = await organizationById(db, row.org_id);
     next();
   };
 
   const adminOnly: RequestHandler = (req, _res, next) => next(req.user.role === 'admin' ? undefined : new HttpError(403, 'auth.adminOnly'));
 
-  // Brute-force brake on passwords and invitation tokens: ten wrong guesses per address
-  // lock that address out for fifteen minutes. Successful requests do not count.
-  const failures = new Map<string, { count: number; reset: number }>();
-  const guarded = (handler: (req: Request, res: Response) => Promise<void>): RequestHandler => async (req, res) => {
-    const ip = req.ip || '';
-    const now = Date.now();
-    const entry = failures.get(ip);
-    if (entry && entry.reset > now && entry.count >= 10) throw new HttpError(429, 'request.tooManyAttempts');
-    try {
-      await handler(req, res);
-    } catch (e) {
-      if ((e instanceof HttpError && (e.status === 401 || e.status === 404)) || (e instanceof Refusal && e.kind === 'notFound')) {
-        if (!entry || entry.reset <= now) failures.set(ip, { count: 1, reset: now + 15 * 60_000 });
-        else entry.count += 1;
-      }
-      throw e;
-    }
-  };
-
   // Signing up creates an organisation, which the new account administers. Whether strangers
   // may do so is the operator's choice; an empty installation always accepts its first account.
-  const isEmpty = async (): Promise<boolean> => !(await db.one('SELECT 1 FROM users LIMIT 1'));
   const publicInfo = async () => {
-    const empty = await isEmpty();
+    const empty = await installationIsEmpty(db);
     // How long content is kept is public: the sign-in screen says so.
-    return { allowSignup: config.allowSignup || empty, firstAccount: empty, retentionDays: config.retentionDays };
+    return { allowSignup: signUpIsOpen(config.allowSignup, empty), firstAccount: empty, retentionDays: config.retentionDays };
   };
-
-  /** Creates a user in an organisation. `on` is the database or a transaction on it. */
-  async function createUser(on: Db, orgId: number, email: string, password: unknown, role: Role, language: string, name: string): Promise<number> {
-    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
-    if (typeof password !== 'string' || password.length < 10) throw new HttpError(400, 'auth.passwordTooShort');
-    if (await on.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'auth.emailTaken');
-    const created = await on.one<{ id: number }>('INSERT INTO users (org_id, email, password_hash, role, language, name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id', [
-      orgId,
-      email,
-      hashPassword(password),
-      role,
-      language,
-      name,
-    ]);
-    return created!.id;
-  }
-
-  /** Creates an organisation with its administrator and its first prompts, in the administrator's language. */
-  async function createOrganization(on: Db, name: string, email: string, password: unknown, language: string, userName: string): Promise<number> {
-    // Checked first, so that a refused account leaves no organisation behind even outside a transaction.
-    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
-    const org = await on.one<{ id: number }>('INSERT INTO organizations (name, triage_strategy, skip_automated) VALUES ($1, $2, $3) RETURNING id', [
-      name || email.split('@')[1] || email,
-      config.triageStrategy,
-      config.skipAutomated,
-    ]);
-    const userId = await createUser(on, org!.id, email, password, 'admin', language, userName);
-    await seedDefaultPrompts(on, org!.id, userId, language);
-    return userId;
-  }
 
   app.get('/api/public', async (_req, res) => {
     res.json(await publicInfo());
   });
 
-  app.post('/api/auth/signup', guarded(async (req, res) => {
-    const { allowSignup } = await publicInfo();
-    if (!allowSignup) throw new HttpError(403, 'auth.signupClosed');
-    const id = await db.transaction((tx) =>
-      createOrganization(tx, str(req.body.organization, 120), str(req.body.email, 320).toLowerCase(), req.body.password, languageTag(req.body.language), str(req.body.name, 120)),
-    );
-    await openSession(res, id);
+  // ---- access ----------------------------------------------------------------------------
+  // The operations are in domain/access. Those a visitor may attempt are braked against
+  // guessing, per origin: the address the request comes from.
+  const originOf = (req: Request): string => req.ip || '';
+
+  app.post('/api/auth/signup', async (req, res) => {
+    startSession(res, await createOrganization(world, originOf(req), req.body));
     res.status(201).json({ ok: true });
-  }));
+  });
 
-  // ---- invitations ------------------------------------------------------------------------
-  // An invitation is to an organisation. The link carries a random token in the URL fragment;
-  // only its hash is stored. Saras has no mailbox of its own, so the administrator passes it on.
-  const pendingInvitation = (token: unknown) =>
-    db.one<InvitationRow>(`SELECT * FROM invitations WHERE token_hash = $1 AND expires_at > now()`, [tokenHash(token || '')]);
+  app.post('/api/invitations/check', async (req, res) => {
+    res.json(await checkInvitation(world, originOf(req), req.body.token));
+  });
 
-  app.post('/api/invitations/check', guarded(async (req, res) => {
-    const invitation = await pendingInvitation(req.body.token);
-    if (!invitation) throw new HttpError(404, 'invitation.invalid');
-    const org = await db.one<OrganizationRow>('SELECT * FROM organizations WHERE id = $1', [invitation.org_id]);
-    res.json({ email: invitation.email, organization: org!.name });
-  }));
-
-  app.post('/api/invitations/accept', guarded(async (req, res) => {
-    const invitation = await pendingInvitation(req.body.token);
-    if (!invitation) throw new HttpError(404, 'invitation.invalid');
-    const id = await db.transaction(async (tx) => {
-      const userId = await createUser(tx, invitation.org_id, invitation.email, req.body.password, invitation.role, languageTag(req.body.language), str(req.body.name, 120));
-      await tx.run('DELETE FROM invitations WHERE id = $1', [invitation.id]);
-      return userId;
-    });
-    await openSession(res, id);
+  app.post('/api/invitations/accept', async (req, res) => {
+    startSession(res, await acceptInvitation(world, originOf(req), req.body));
     res.status(201).json({ ok: true });
-  }));
+  });
 
-  app.post('/api/auth/login', guarded(async (req, res) => {
-    const user = await db.one<UserRow>('SELECT * FROM users WHERE email = $1', [str(req.body.email, 320).toLowerCase()]);
-    if (!user || !verifyPassword(String(req.body.password || ''), user.password_hash)) {
-      throw new HttpError(401, 'auth.invalidCredentials');
-    }
-    await openSession(res, user.id);
+  app.post('/api/auth/login', async (req, res) => {
+    startSession(res, await signIn(world, originOf(req), req.body));
     res.json({ ok: true });
-  }));
+  });
 
   app.post('/api/auth/logout', auth, async (req, res) => {
-    await db.run('DELETE FROM sessions WHERE id = $1', [req.user.sid]);
+    await signOut(world, req.user.sid);
     res.clearCookie('sid', cookieOptions);
     res.json({ ok: true });
   });
@@ -595,54 +519,31 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     );
   });
 
-  app.post('/api/invitations', auth, adminOnly, async (req, res) => {
-    const email = str(req.body.email, 320).toLowerCase();
-    const role: Role = req.body.role === 'admin' ? 'admin' : 'user';
-    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
-    if (await db.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'auth.emailTaken');
-    const token = randomToken();
-    // Inviting the same address again replaces the earlier link.
-    const saved = await db.one<{ id: number }>(
-      `INSERT INTO invitations (org_id, email, role, token_hash, created_by, expires_at) VALUES ($6, $1, $2, $3, $4, now() + make_interval(days => $5))
-       ON CONFLICT (org_id, email) DO UPDATE SET role = excluded.role, token_hash = excluded.token_hash, created_by = excluded.created_by, expires_at = excluded.expires_at
-       RETURNING id`,
-      [email, role, tokenHash(token), req.user.id, config.invitationDays, req.org.id],
-    );
-    // The only time the link exists in clear: it cannot be shown again.
-    res.status(201).json({ id: saved!.id, email, link: `${config.baseUrl}/#/invitation/${token}`, validDays: config.invitationDays });
+  app.post('/api/invitations', auth, async (req, res) => {
+    res.status(201).json(await inviteMember(world, actorOf(req), req.body));
   });
 
-  app.delete('/api/invitations/:id', auth, adminOnly, async (req, res) => {
-    await db.run('DELETE FROM invitations WHERE id = $1 AND org_id = $2', [Number(req.params.id) || 0, req.org.id]);
+  app.delete('/api/invitations/:id', auth, async (req, res) => {
+    await revokeInvitation(world, actorOf(req), req.params.id);
     res.json({ ok: true });
   });
 
-  const userOf = async (req: Request): Promise<UserRow> => {
-    const target = await db.one<UserRow>('SELECT * FROM users WHERE id = $1 AND org_id = $2', [Number(req.params.id) || 0, req.org.id]);
-    if (!target) throw new HttpError(404, 'users.notFound');
-    return target;
-  };
-
-  app.delete('/api/users/:id', auth, adminOnly, async (req, res) => {
-    const target = await userOf(req);
-    if (target.id === req.user.id) throw new HttpError(409, 'users.cannotDeleteSelf');
-    await db.transaction(async (tx) => {
-      // What belongs to the organisation outlives the member who created it.
-      await tx.run('UPDATE prompts SET user_id = $1 WHERE user_id = $2', [req.user.id, target.id]);
-      await tx.run('UPDATE accounts SET user_id = $1 WHERE user_id = $2 AND shared', [req.user.id, target.id]);
-      await tx.run('DELETE FROM users WHERE id = $1', [target.id]);
-    });
+  app.delete('/api/users/:id', auth, async (req, res) => {
+    await deleteMember(world, actorOf(req), req.params.id);
     res.json({ ok: true });
   });
+
+  // The role asked for says which of the two operations it is.
+  const ROLE_CHANGES = { admin: appointAdministrator, user: removeAdministratorRole };
 
   app.put('/api/users/:id', auth, adminOnly, async (req, res) => {
-    const target = await userOf(req);
-    if (!['admin', 'user'].includes(req.body.role)) throw new HttpError(400, 'users.invalidRole');
-    const admins = await db.one<{ n: number }>(`SELECT count(*)::int AS n FROM users WHERE role = 'admin' AND org_id = $1`, [req.org.id]);
-    if (target.role === 'admin' && req.body.role === 'user' && admins!.n === 1) {
-      throw new HttpError(409, 'users.lastAdmin');
+    const change = ROLE_CHANGES[String(req.body.role) as keyof typeof ROLE_CHANGES];
+    if (!change) {
+      // A member one may not see is not found, whatever else is wrong with the request.
+      await memberOf(db, req.org.id, req.params.id);
+      throw new HttpError(400, 'users.invalidRole');
     }
-    await db.run('UPDATE users SET role = $1 WHERE id = $2', [req.body.role, target.id]);
+    await change(world, actorOf(req), req.params.id);
     res.json({ ok: true });
   });
 

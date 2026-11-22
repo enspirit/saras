@@ -5,14 +5,16 @@ import { problem } from '../tooling/messages.ts';
 import type { MessageCode, MessageParams, Problem } from '../tooling/messages.ts';
 
 /**
- * invalid:   what was asked makes no sense as asked (a ReqPre on the request itself)
+ * invalid:         what was asked makes no sense as asked (a ReqPre on the request itself)
+ * unauthenticated: the agent is not who they claim to be
+ * tooMany:         the agent tried too often
  * forbidden: this agent may not do it
  * notFound:  it concerns something that does not exist, or that this agent may not see
  * conflict:  the state it starts from is not the one the operation applies to (DomPre)
  * gone:      what it needs existed and no longer does
  * upstream:  another agent the operation depends on failed (the mailbox, the LLM)
  */
-export type RefusalKind = 'invalid' | 'forbidden' | 'notFound' | 'conflict' | 'gone' | 'upstream';
+export type RefusalKind = 'invalid' | 'unauthenticated' | 'forbidden' | 'notFound' | 'conflict' | 'gone' | 'tooMany' | 'upstream';
 
 export class Refusal extends Error {
   kind: RefusalKind;

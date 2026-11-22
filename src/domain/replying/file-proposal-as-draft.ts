@@ -10,10 +10,10 @@ import { replyRecipients } from '../computations/reply.ts';
 import { htmlToText } from '../../tooling/text.ts';
 import type { AccountRow, Email, UserRow } from '../../types.ts';
 import { recordReply } from '../state/proposals.ts';
-import type { World } from '../world.ts';
+import type { Reach } from '../world.ts';
 import type { Proposal } from './proposal.ts';
 
-export async function fileProposalAsDraft({ db, mail }: World, mailbox: AccountRow, owner: UserRow, email: Email, proposal: Proposal): Promise<void> {
+export async function fileProposalAsDraft({ db, mail }: Reach, mailbox: AccountRow, owner: UserRow, email: Email, proposal: Proposal): Promise<void> {
   const { to, cc } = replyRecipients(email, mailbox.email, false);
   if (!to.length) return;
   await mail.providerFor(mailbox).saveDraft({ email, to, cc, html: proposal.html, language: owner.language });

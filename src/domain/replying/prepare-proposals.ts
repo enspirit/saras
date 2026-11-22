@@ -22,7 +22,7 @@ import type { AccountRow, OrganizationRow, UserRow } from '../../types.ts';
 import { promptToPrepareWith } from '../computations/replying.ts';
 import { emailsAwaitingProposal } from '../state/emails.ts';
 import { lessonsFor, promptsOf } from '../state/prompts.ts';
-import type { World } from '../world.ts';
+import type { Reach } from '../world.ts';
 import { fileProposalAsDraft } from './file-proposal-as-draft.ts';
 import { writeProposal } from './proposal.ts';
 
@@ -30,7 +30,7 @@ import { writeProposal } from './proposal.ts';
 const MAX_PREPARED = 10;
 
 /** Returns what went wrong, if anything: a fetch records it on the mailbox. */
-export async function prepareProposals(world: World, mailbox: AccountRow, organization: OrganizationRow, owner: UserRow): Promise<Problem | null> {
+export async function prepareProposals(world: Reach, mailbox: AccountRow, organization: OrganizationRow, owner: UserRow): Promise<Problem | null> {
   const { db } = world;
   if (organization.automation === 'none') return null;
   const settings = llmSettings(owner, organization, world);

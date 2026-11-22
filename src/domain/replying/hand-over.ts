@@ -27,11 +27,9 @@ export interface ReplyRequest {
   changeReason: string;
 }
 
-/** Emails with a hand-over in flight, so that a double click cannot send twice. */
-const inFlight = new Set<number>();
-
 export async function handOver(world: World, actor: Actor, request: ReplyRequest, mode: ReplyMode): Promise<{ wasEdited: boolean }> {
-  const { db, mail } = world;
+  // `handingOver` holds the emails with a hand-over in flight, so that a double click cannot send twice.
+  const { db, mail, handingOver: inFlight } = world;
   const row = await emailFor(db, actor, request.emailId);
   const html = writtenSoFar(request.html);
   // Decided and claimed in the same breath, before anything else is awaited, so that a second request cannot slip in between.

@@ -2,11 +2,13 @@ import { existsSync } from 'node:fs';
 import { createApp } from './tooling/http/app.ts';
 import { loadConfig, loadDotEnv } from './tooling/config.ts';
 import { createVault } from './tooling/crypto.ts';
-import { openDb, purgeOldContent } from './tooling/db.ts';
+import { openDb } from './tooling/db.ts';
 import { errorMessage } from './tooling/errors.ts';
 import { createOpenRouter } from './tooling/llm/openrouter.ts';
 import { createMailService } from './tooling/mail/index.ts';
+import { expireSessions } from './domain/access/expire-sessions.ts';
 import { createSync } from './domain/mailboxes/fetch-mailbox.ts';
+import { erasePastRetention } from './domain/retention/erase-past-retention.ts';
 import { createTriage } from './domain/sorting/index.ts';
 
 loadDotEnv();
@@ -45,11 +47,11 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-/** Hourly: forget expired sessions and invitations, erase email content past its retention. */
+/** Hourly: the two operations the backend owes on its own, ExpireSessions and ErasePastRetention. */
 const housekeeping = async (): Promise<void> => {
   try {
-    await db.run(`DELETE FROM sessions WHERE expires_at <= now()`);
-    await purgeOldContent(db, config.retentionDays);
+    await expireSessions({ db });
+    await erasePastRetention({ db, config });
   } catch (e) {
     console.error(`housekeeping failed: ${errorMessage(e)}`);
   }
