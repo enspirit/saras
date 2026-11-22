@@ -250,15 +250,19 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   /** The organisation's own settings, for its administrators: again one operation per field sent. */
   app.put('/api/organization', auth, adminOnly, async (req, res) => {
-    const { name, triage, skipAutomated, automation, model, openrouterKey, resort } = req.body;
+    const { name, triage, skipAutomated, automation, model, openrouterKey } = req.body;
     const actor = actorOf(req);
     if (typeof name === 'string') await renameOrganization(world, actor, name);
     if (triage !== undefined) await chooseSorting(world, actor, triage);
     if (typeof skipAutomated === 'boolean') await setAsideAutomatedFirst(world, actor, skipAutomated);
     if (automation !== undefined) await chooseProposals(world, actor, automation);
-    if (resort === true) await sortAgainUnsorted(world, actor);
     if (typeof model === 'string') await setOrganizationModel(world, actor, model);
     if (typeof openrouterKey === 'string') await setOrganizationKey(world, actor, openrouterKey);
+    res.json({ ok: true });
+  });
+
+  app.post('/api/organization/sort-again', auth, adminOnly, async (req, res) => {
+    await sortAgainUnsorted(world, actorOf(req));
     res.json({ ok: true });
   });
 

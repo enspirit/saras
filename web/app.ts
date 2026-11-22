@@ -858,7 +858,8 @@ const workStep = guard(async () => {
   ] });
   const finish = ActionButton(t('welcome.finish'), t('mailbox.refreshing'), async () => {
     // What the first fetch let through is sorted again the chosen way, and prepared if asked.
-    await api('PUT', '/organization', { ...WAYS[ways.value() as Way], resort: true });
+    await api('PUT', '/organization', WAYS[ways.value() as Way]);
+    await api('POST', '/organization/sort-again');
     state.me = await api<Me>('GET', '/me');
     for (const account of await api<Account[]>('GET', '/accounts')) if (account.folder) await api('POST', `/accounts/${account.id}/sync`);
     leave('work');

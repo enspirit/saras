@@ -54,7 +54,8 @@ test('an unknown way of preparing replies is refused', async () => {
 
 test('"draft" prepares a proposal for each email to handle, to review in the application', async () => {
   // Chosen after the first fetch, with AI sorting: what was let through unsorted is sorted again.
-  assert.equal((await alice('PUT', '/organization', { triage: 'ai', automation: 'draft', resort: true })).status, 200);
+  assert.equal((await alice('PUT', '/organization', { triage: 'ai', automation: 'draft' })).status, 200);
+  assert.equal((await alice('POST', '/organization/sort-again')).status, 200);
   await alice('POST', `/accounts/${mailbox}/sync`);
   const todo = await box(alice, 'todo');
   assert.deepEqual(todo.map((e) => e.subject).sort(), ['Demande de devis pour 20 licences', 'Report de notre rendez-vous'], 'the thank-you note was set aside by the AI');
