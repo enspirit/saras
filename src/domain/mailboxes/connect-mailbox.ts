@@ -9,7 +9,7 @@
 import { addressIsNotConnected } from '../computations/mailboxes.ts';
 import { accepted } from '../refusal.ts';
 import { addMailbox, mailboxAt } from '../state/mailboxes.ts';
-import type { AccountKind, AccountRow, ImapCredentials, OAuthTokens } from '../../types.ts';
+import type { AccountKind, AccountRow, ImapCredentials, OAuthTokens } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 
 export interface MailboxToConnect {

@@ -1,4 +1,4 @@
-import type { Address, Attachment, Priority } from '../../types.ts';
+import type { Address, Attachment, Priority } from '../model/email.ts';
 
 /**
  * The triage gate: every fetched email passes through it, and it decides whether a reply

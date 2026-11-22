@@ -5,7 +5,7 @@
 import { errorMessage } from '../../tooling/errors.ts';
 import { Refusal } from '../refusal.ts';
 import { mailboxFor } from '../state/mailboxes.ts';
-import type { AccountRow, MailFolder } from '../../types.ts';
+import type { AccountRow, MailFolder } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 
 export async function foldersOf({ mail }: Pick<World, 'mail'>, mailbox: AccountRow): Promise<MailFolder[]> {

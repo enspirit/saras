@@ -2,8 +2,10 @@
 import type { Config } from '../tooling/config.ts';
 import type { Vault } from '../tooling/crypto.ts';
 import type { Db } from '../tooling/db.ts';
-import type { MailService } from '../tooling/mail/index.ts';
-import type { Llm, OrganizationRow, UserRow } from '../types.ts';
+import type { MailService } from '../tooling/mail/mail-service.ts';
+import type { Llm } from './model/llm.ts';
+import type { UserRow } from './model/member.ts';
+import type { OrganizationRow } from './model/organization.ts';
 import type { Attempts } from './computations/access.ts';
 import type { Sync } from './mailboxes/fetch-mailbox.ts';
 

@@ -1,0 +1,90 @@
+// An email, as it arrives from a mailbox and as saras keeps it.
+export interface Address {
+  name: string;
+  address: string;
+}
+
+/** What we keep of an attachment: never its content. */
+export interface Attachment {
+  name: string;
+  /** MIME type. */
+  type: string;
+  /** In bytes. */
+  size: number;
+}
+
+/** The few headers triage rules look at. */
+export interface MailHeaders {
+  listUnsubscribe?: string;
+  listId?: string;
+  autoSubmitted?: string;
+  precedence?: string;
+}
+
+/** An email as a mail provider hands it over, before it is stored. */
+export interface IncomingEmail {
+  /** Identifier of the message at the provider (IMAP "uidvalidity:uid", Gmail or Graph id). */
+  providerId: string;
+  messageId: string | null;
+  threadId: string | null;
+  /** Space-separated Message-IDs of the References header. */
+  refs: string;
+  fromName: string;
+  fromAddr: string;
+  replyTo: string;
+  to: Address[];
+  cc: Address[];
+  subject: string;
+  /** ISO 8601. */
+  date: string;
+  bodyText: string;
+  attachments: Attachment[];
+  headers: MailHeaders;
+  /** Already answered from the user's own mail client, when the provider can tell. */
+  answered: boolean;
+}
+
+export type EmailStatus = 'pending' | 'needs_reply' | 'no_reply' | 'ignored' | 'sent';
+
+export type Priority = 'high' | 'normal' | 'low';
+
+/** Who decided: the header rules, the user, or a triage strategy by its name ('none', 'ai'…). */
+export type TriageSource = string;
+
+/** An email once stored. */
+export interface Email extends Omit<IncomingEmail, 'headers' | 'answered'> {
+  id: number;
+  accountId: number;
+  /** The folder it was fetched from. */
+  folder: string;
+  status: EmailStatus;
+  triageSource: TriageSource | null;
+  triageReason: string;
+  priority: Priority;
+  suggestedPromptId: number | null;
+}
+
+export interface EmailRow {
+  id: number;
+  account_id: number;
+  folder: string;
+  provider_id: string;
+  message_id: string | null;
+  thread_id: string | null;
+  refs: string;
+  from_name: string;
+  from_addr: string;
+  reply_to: string;
+  to_json: string;
+  cc_json: string;
+  subject: string;
+  date: Date;
+  body_text: string;
+  attachments_json: string;
+  status: EmailStatus;
+  triage_source: TriageSource | null;
+  triage_reason: string;
+  priority: Priority;
+  suggested_prompt_id: number | null;
+  created_at: Date;
+}

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { contentIsKept, handOverRecord, hasSomethingWritten, mayHandOver, promptToPrepareWith, proposalHtml } from '../src/domain/computations/replying.ts';
 import type { Verdict } from '../src/domain/refusal.ts';
-import type { EmailStatus, PromptRow } from '../src/types.ts';
+import type { EmailStatus } from '../src/domain/model/email.ts';
+import type { PromptRow } from '../src/domain/model/prompt.ts';
 
 /** What a verdict comes down to: 'ok', or the kind and code of its refusal. */
 const outcome = (verdict: Verdict<unknown>): string => (verdict.ok ? 'ok' : `${verdict.refusal.kind}: ${verdict.refusal.problem.code}`);

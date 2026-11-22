@@ -1,7 +1,8 @@
 // Observation: the emails a member may see, box by box, and one email with where its reply stands.
 import type { Db } from '../../tooling/db.ts';
 import { readReason } from '../../tooling/messages.ts';
-import type { DraftRow, EmailStatus, ReplyMode } from '../../types.ts';
+import type { EmailStatus } from '../model/email.ts';
+import type { DraftRow, ReplyMode } from '../model/reply.ts';
 import { countsPerBox, statusesOf } from '../computations/boxes.ts';
 import { rowToEmail } from '../computations/emails.ts';
 import { replyRecipients } from '../computations/reply.ts';

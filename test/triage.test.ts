@@ -5,7 +5,7 @@ import { aiTriage, buildBatchMessages, parseBatchAnswer } from '../src/domain/so
 import { TRIAGE_BATCH_SIZE, runGate } from '../src/domain/sorting/gate.ts';
 import type { TriageBatch, TriageGate, TriageMail } from '../src/domain/sorting/gate.ts';
 import { noTriage } from '../src/domain/sorting/none.ts';
-import type { ChatRequest } from '../src/types.ts';
+import type { ChatRequest } from '../src/domain/model/llm.ts';
 
 const prompts = [
   { id: 1, name: 'Standard', description: 'general case' },

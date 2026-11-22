@@ -1,7 +1,8 @@
 // State: the members of organisations, and the organisations themselves.
 import { defaultPrompts } from '../prompts/ready-made-prompts.ts';
 import type { Db } from '../../tooling/db.ts';
-import type { OrganizationRow, Role, UserRow } from '../../types.ts';
+import type { Role, UserRow } from '../model/member.ts';
+import type { OrganizationRow } from '../model/organization.ts';
 import { Refusal } from '../refusal.ts';
 
 export const installationIsEmpty = async (db: Db): Promise<boolean> => !(await db.one('SELECT 1 FROM users LIMIT 1'));

@@ -1,6 +1,6 @@
 // State: the proposals the AI wrote, and the replies handed to mailboxes.
 import type { Db } from '../../tooling/db.ts';
-import type { AssistAction, DraftRow, ReplyMode } from '../../types.ts';
+import type { AssistAction, DraftRow, ReplyMode } from '../model/reply.ts';
 
 /** The proposal with this number, when it is one of this email's. */
 export const proposalOf = (db: Db, emailId: number, id: number): Promise<DraftRow | undefined> =>

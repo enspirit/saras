@@ -4,7 +4,7 @@
 //   fetch    the email
 //   decide   may it still be sorted                (pure: mayBeSortedAgain)
 //   execute  it stands where the member says, and the verdict is theirs
-import type { EmailStatus } from '../../types.ts';
+import type { EmailStatus } from '../model/email.ts';
 import { mayBeSortedAgain } from '../computations/sorting.ts';
 import { accepted } from '../refusal.ts';
 import { emailFor } from '../state/emails.ts';

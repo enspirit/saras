@@ -8,7 +8,9 @@
 //            recorded as not edited: the draft is the proposal
 import { replyRecipients } from '../computations/reply.ts';
 import { htmlToText } from '../../tooling/text.ts';
-import type { AccountRow, Email, UserRow } from '../../types.ts';
+import type { Email } from '../model/email.ts';
+import type { AccountRow } from '../model/mailbox.ts';
+import type { UserRow } from '../model/member.ts';
 import { recordReply } from '../state/proposals.ts';
 import type { Reach } from '../world.ts';
 import type { Proposal } from './proposal.ts';

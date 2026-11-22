@@ -7,7 +7,7 @@
 //            and kept, and the email is replied
 import { errorMessage } from '../../tooling/errors.ts';
 import { rowToEmail } from '../computations/emails.ts';
-import type { ReplyMode } from '../../types.ts';
+import type { ReplyMode } from '../model/reply.ts';
 import { handOverRecord, mayHandOver } from '../computations/replying.ts';
 import { Refusal, accepted } from '../refusal.ts';
 import { emailFor } from '../state/emails.ts';

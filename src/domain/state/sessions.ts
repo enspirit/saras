@@ -1,7 +1,7 @@
 // State: who is signed in from which browser, and the wrong guesses of those who are not.
 import { randomToken } from '../../tooling/crypto.ts';
 import type { Db } from '../../tooling/db.ts';
-import type { UserRow } from '../../types.ts';
+import type { UserRow } from '../model/member.ts';
 import { LOCK_OUT_MS, opensNewWindow } from '../computations/access.ts';
 import type { Attempts } from '../computations/access.ts';
 

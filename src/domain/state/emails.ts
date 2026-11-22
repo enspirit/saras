@@ -1,6 +1,6 @@
 // State: the emails saras keeps, and where each stands.
 import type { Db } from '../../tooling/db.ts';
-import type { EmailRow } from '../../types.ts';
+import type { EmailRow } from '../model/email.ts';
 import { Refusal } from '../refusal.ts';
 import type { Actor } from '../world.ts';
 import { mayUse } from './mailboxes.ts';

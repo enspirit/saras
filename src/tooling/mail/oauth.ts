@@ -1,5 +1,6 @@
 import type { Config } from '../config.ts';
-import type { Fetch, OAuthKind, OAuthTokens } from '../../types.ts';
+import type { OAuthKind, OAuthTokens } from '../../domain/model/mailbox.ts';
+import type { Fetch } from '../fetch.ts';
 
 /** OAuth 2 authorization-code flow for Google and Microsoft mailboxes. */
 

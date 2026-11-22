@@ -1,7 +1,10 @@
 import type { Config } from '../../tooling/config.ts';
 import type { Vault } from '../../tooling/crypto.ts';
 import { llmSettings } from '../computations/key-in-force.ts';
-import type { AccountRow, Llm, OrganizationRow, UserRow } from '../../types.ts';
+import type { Llm } from '../model/llm.ts';
+import type { AccountRow } from '../model/mailbox.ts';
+import type { UserRow } from '../model/member.ts';
+import type { OrganizationRow } from '../model/organization.ts';
 import { aiTriage } from './ai.ts';
 import type { TriageGate } from './gate.ts';
 import { noTriage } from './none.ts';

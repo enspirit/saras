@@ -1,4 +1,5 @@
-import type { OrganizationRow, UserRow } from '../../types.ts';
+import type { UserRow } from '../../domain/model/member.ts';
+import type { OrganizationRow } from '../../domain/model/organization.ts';
 
 /** The signed-in user and their session, attached to the request by the `auth` middleware. */
 export interface SessionUser extends UserRow {

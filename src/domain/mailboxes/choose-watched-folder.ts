@@ -10,7 +10,7 @@ import { clipped } from '../computations/given.ts';
 import { folderAmong, mayManage } from '../computations/mailboxes.ts';
 import { accepted } from '../refusal.ts';
 import { mailboxFor, watchFolder } from '../state/mailboxes.ts';
-import type { MailFolder } from '../../types.ts';
+import type { MailFolder } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 import { foldersOf } from './list-folders.ts';
 

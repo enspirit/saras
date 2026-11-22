@@ -1,7 +1,8 @@
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import { composeReplyBody, composeReplyHtml, replyReferences, replySubject } from '../../domain/computations/reply.ts';
 import { formatAddress, htmlToText } from '../text.ts';
-import type { OutgoingReply, Sender } from '../../types.ts';
+import type { Sender } from '../../domain/model/mailbox.ts';
+import type { OutgoingReply } from '../../domain/model/reply.ts';
 
 /**
  * Build the RFC 822 reply as a Buffer: threading headers, and the reply with the quoted

@@ -1,6 +1,6 @@
 // Pure: an email, from how it is kept to how operations and the sorting gate see it.
 import type { TriageMail } from '../sorting/gate.ts';
-import type { Email, EmailRow } from '../../types.ts';
+import type { Email, EmailRow } from '../model/email.ts';
 
 export function rowToEmail(row: EmailRow): Email {
   return {

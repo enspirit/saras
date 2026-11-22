@@ -1,6 +1,6 @@
 // What AppointAdministrator and RemoveAdministratorRole have in common: an administrator
 // changes the role of a member of the organisation.
-import type { Role } from '../../types.ts';
+import type { Role } from '../model/member.ts';
 import { isAdministrator, mayRemoveAdministratorRole } from '../computations/access.ts';
 import { accepted } from '../refusal.ts';
 import { administratorsOf, memberOf } from '../state/members.ts';

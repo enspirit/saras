@@ -1,6 +1,7 @@
 import { problem } from '../messages.ts';
 import type { Problem } from '../messages.ts';
-import type { ChatAnswer, ChatMessage, ChatRequest, Fetch, Llm } from '../../types.ts';
+import type { ChatAnswer, ChatMessage, ChatRequest, Llm } from '../../domain/model/llm.ts';
+import type { Fetch } from '../fetch.ts';
 
 /**
  * OpenRouter client. The single place where email content leaves the application.

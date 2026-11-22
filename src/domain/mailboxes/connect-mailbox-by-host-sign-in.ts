@@ -24,7 +24,7 @@ import { answersSignIn, connectsAsShared, isSameMailbox, rememberedSignIn, signI
 import { clipped } from '../computations/given.ts';
 import { Refusal, accepted } from '../refusal.ts';
 import { forgetHostSignIn, rememberHostSignIn } from '../state/sessions.ts';
-import type { AccountRow } from '../../types.ts';
+import type { AccountRow } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 import { connectMailbox } from './connect-mailbox.ts';
 import { mailboxToRenew, renewWith } from './renew-mailbox-credentials.ts';

@@ -1,7 +1,7 @@
 // State: the pending rights to join an organisation.
 import { tokenHash } from '../../tooling/crypto.ts';
 import type { Db } from '../../tooling/db.ts';
-import type { InvitationRow, Role } from '../../types.ts';
+import type { InvitationRow, Role } from '../model/member.ts';
 
 /** The invitation this token opens, while it has not expired. Only the hash of a token is ever kept. */
 export const pendingInvitation = (db: Db, token: unknown): Promise<InvitationRow | undefined> =>

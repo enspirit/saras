@@ -5,7 +5,7 @@ import { createClient, installTemplates, join } from './support/client.ts';
 import type { ApiClient } from './support/client.ts';
 import { startStack } from './support/stack.ts';
 import type { Stack } from './support/stack.ts';
-import type { ChatMessage } from '../src/types.ts';
+import type { ChatMessage } from '../src/domain/model/llm.ts';
 
 let stack: Stack;
 // This file exercises the AI triage strategy; test/folders.test.ts covers the default one.

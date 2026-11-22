@@ -1,6 +1,6 @@
 // Pure: the way an organisation works — who sorts what is fetched, when proposals are
 // written, and where they wait. Sending is always a member's, whichever the way.
-import type { Automation, OrganizationRow } from '../../types.ts';
+import type { Automation, OrganizationRow } from '../model/organization.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
 import type { TriageStrategy } from '../sorting/index.ts';

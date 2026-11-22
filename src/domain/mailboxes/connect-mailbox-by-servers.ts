@@ -9,7 +9,7 @@ import { errorMessage } from '../../tooling/errors.ts';
 import { connectsAsShared, serversGiven } from '../computations/mailboxes.ts';
 import type { ServersGiven } from '../computations/mailboxes.ts';
 import { Refusal, accepted } from '../refusal.ts';
-import type { AccountRow } from '../../types.ts';
+import type { AccountRow } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 import { connectMailbox } from './connect-mailbox.ts';
 

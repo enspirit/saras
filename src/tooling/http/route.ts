@@ -1,7 +1,7 @@
 // What a route is: a method, a path under /api, who may call it, and what it does.
 import type { Request, Response } from 'express';
 import type { Actor, World } from '../../domain/world.ts';
-import type { Fetch } from '../../types.ts';
+import type { Fetch } from '../fetch.ts';
 
 /** What every route is given: the world the operations act in, and how this server reaches other hosts. */
 export interface Http {

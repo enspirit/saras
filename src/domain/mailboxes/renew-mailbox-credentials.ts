@@ -16,7 +16,7 @@ import { errorMessage } from '../../tooling/errors.ts';
 import { isRenewedByPassword, mayManage, withNewPassword } from '../computations/mailboxes.ts';
 import { Refusal, accepted } from '../refusal.ts';
 import { mailboxFor, renewCredentials } from '../state/mailboxes.ts';
-import type { AccountRow, ImapCredentials, OAuthTokens } from '../../types.ts';
+import type { AccountRow, ImapCredentials, OAuthTokens } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 
 /** The mailbox, if the member may renew its access. */

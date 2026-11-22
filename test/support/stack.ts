@@ -12,10 +12,10 @@ import { createVault } from '../../src/tooling/crypto.ts';
 import { openDb } from '../../src/tooling/db.ts';
 import type { Db } from '../../src/tooling/db.ts';
 import { createOpenRouter } from '../../src/tooling/llm/openrouter.ts';
-import { createMailService } from '../../src/tooling/mail/index.ts';
+import { createMailService } from '../../src/tooling/mail/mail-service.ts';
 import { createSync } from '../../src/domain/mailboxes/fetch-mailbox.ts';
 import { createTriage } from '../../src/domain/sorting/index.ts';
-import type { ChatMessage } from '../../src/types.ts';
+import type { ChatMessage } from '../../src/domain/model/llm.ts';
 
 /** Listen on a free local port and return it. */
 const listen = (server: Server): Promise<number> =>

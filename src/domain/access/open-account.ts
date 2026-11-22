@@ -6,7 +6,7 @@
 //            nobody has this address yet
 import { hashPassword } from '../../tooling/crypto.ts';
 import type { Db } from '../../tooling/db.ts';
-import type { Role } from '../../types.ts';
+import type { Role } from '../model/member.ts';
 import { addressIsFree, mayOpenAccount } from '../computations/access.ts';
 import { accepted } from '../refusal.ts';
 import { addMember, addressIsTaken } from '../state/members.ts';

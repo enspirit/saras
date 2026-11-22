@@ -7,7 +7,7 @@ import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
 import { createWorld } from '../../domain/world.ts';
 import type { Reach } from '../../domain/world.ts';
 import type { Config } from '../config.ts';
-import type { Fetch } from '../../types.ts';
+import type { Fetch } from '../fetch.ts';
 import { ACCESS } from './access.ts';
 import { EMAILS } from './emails.ts';
 import { MAILBOXES } from './mailboxes.ts';

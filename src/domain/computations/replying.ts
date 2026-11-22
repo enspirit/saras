@@ -4,7 +4,9 @@
 import { isBlankHtml, textToHtml } from '../../tooling/html.ts';
 import { wasEdited } from './reply.ts';
 import { htmlToText, isEmailAddress } from '../../tooling/text.ts';
-import type { DraftRow, EmailStatus, PromptRow } from '../../types.ts';
+import type { EmailStatus } from '../model/email.ts';
+import type { PromptRow } from '../model/prompt.ts';
+import type { DraftRow } from '../model/reply.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
 

@@ -1,6 +1,6 @@
 // Pure decisions about mailboxes.
 import { isEmailAddress } from '../../tooling/text.ts';
-import type { AccountRow, ImapCredentials, MailFolder, ServerCredentials } from '../../types.ts';
+import type { AccountRow, ImapCredentials, MailFolder, ServerCredentials } from '../model/mailbox.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
 import type { Actor } from '../world.ts';

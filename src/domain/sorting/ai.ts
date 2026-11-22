@@ -1,6 +1,7 @@
 import { languageName } from '../computations/llm-prompts.ts';
 import { truncate } from '../../tooling/text.ts';
-import type { ChatMessage, Llm, Priority } from '../../types.ts';
+import type { Priority } from '../model/email.ts';
+import type { ChatMessage, Llm } from '../model/llm.ts';
 import type { TriageBatch, TriageDecision, TriageGate, TriageMail } from './gate.ts';
 
 /** How much of each body the model reads: enough to tell a request from a notification. */

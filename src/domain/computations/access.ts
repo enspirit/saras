@@ -1,6 +1,6 @@
 // Pure decisions about who may come in and who may do what.
 import { isEmailAddress } from '../../tooling/text.ts';
-import type { Role } from '../../types.ts';
+import type { Role } from '../model/member.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
 import type { Actor } from '../world.ts';

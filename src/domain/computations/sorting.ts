@@ -1,5 +1,5 @@
 // Pure decisions about where an email stands.
-import type { EmailStatus } from '../../types.ts';
+import type { EmailStatus } from '../model/email.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
 

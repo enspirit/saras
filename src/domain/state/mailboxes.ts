@@ -1,6 +1,6 @@
 // State: the mailboxes of an organisation.
 import type { Db } from '../../tooling/db.ts';
-import type { AccountKind, AccountRow } from '../../types.ts';
+import type { AccountKind, AccountRow } from '../model/mailbox.ts';
 import { Refusal } from '../refusal.ts';
 import type { Actor } from '../world.ts';
 

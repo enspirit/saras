@@ -1,5 +1,5 @@
 import { escapeHtml } from '../../tooling/text.ts';
-import type { Email } from '../../types.ts';
+import type { Email } from '../model/email.ts';
 
 /** Pure decisions about how a reply is shaped: subject, recipients, threading headers, quoting. */
 

@@ -5,7 +5,7 @@ import { createVault } from './tooling/crypto.ts';
 import { openDb } from './tooling/db.ts';
 import { errorMessage } from './tooling/errors.ts';
 import { createOpenRouter } from './tooling/llm/openrouter.ts';
-import { createMailService } from './tooling/mail/index.ts';
+import { createMailService } from './tooling/mail/mail-service.ts';
 import { expireSessions } from './domain/access/expire-sessions.ts';
 import { createSync } from './domain/mailboxes/fetch-mailbox.ts';
 import { erasePastRetention } from './domain/retention/erase-past-retention.ts';

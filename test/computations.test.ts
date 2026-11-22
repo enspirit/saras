@@ -10,7 +10,7 @@ import { WAYS, wayGiven, wayOf } from '../src/domain/computations/way-of-working
 import { mayBeSortedAgain } from '../src/domain/computations/sorting.ts';
 import type { Verdict } from '../src/domain/refusal.ts';
 import type { Actor } from '../src/domain/world.ts';
-import type { EmailStatus } from '../src/types.ts';
+import type { EmailStatus } from '../src/domain/model/email.ts';
 
 const outcome = (verdict: Verdict<unknown>): string => (verdict.ok ? 'ok' : `${verdict.refusal.kind}: ${verdict.refusal.problem.code}`);
 

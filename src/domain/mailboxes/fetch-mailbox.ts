@@ -18,7 +18,7 @@ import { prepareProposals } from '../replying/prepare-proposals.ts';
 import type { Vault } from '../../tooling/crypto.ts';
 import type { Db } from '../../tooling/db.ts';
 import { errorMessage } from '../../tooling/errors.ts';
-import type { MailService } from '../../tooling/mail/index.ts';
+import type { MailService } from '../../tooling/mail/mail-service.ts';
 import { encodeProblem, problem } from '../../tooling/messages.ts';
 import type { Problem } from '../../tooling/messages.ts';
 import { watchedMailboxes } from '../state/mailboxes.ts';
@@ -27,7 +27,11 @@ import type { SortingResult } from '../sorting/sort-waiting-emails.ts';
 import { organizationById } from '../state/members.ts';
 import type { Triage } from '../sorting/index.ts';
 import { heuristicTriage } from '../sorting/rules.ts';
-import type { AccountRow, EmailRow, IncomingEmail, Llm, OrganizationRow, UserRow } from '../../types.ts';
+import type { EmailRow, IncomingEmail } from '../model/email.ts';
+import type { Llm } from '../model/llm.ts';
+import type { AccountRow } from '../model/mailbox.ts';
+import type { UserRow } from '../model/member.ts';
+import type { OrganizationRow } from '../model/organization.ts';
 
 const MAX_STORED_BODY = 100_000;
 
