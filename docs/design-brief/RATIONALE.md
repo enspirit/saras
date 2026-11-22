@@ -38,7 +38,7 @@ The interface is built from the design system in `public/design/` and `web/ui/`;
 
 | What moved | Problem answered |
 | --- | --- |
-| List rows are three lines: sender, tags and time; subject; first words. Tags sit beside the sender. A shared mailbox is a short name with an icon, its full address as a tooltip. | #1 Rows went from 90–115 px to about 76 px. |
+| List rows are three lines: sender, tags and time; subject; first words. Tags sit beside the sender. A shared mailbox is a short name with an icon, its full address as a tooltip. | #1 Rows went from 90–115 px to under 90 px, with the tags on the sender's line. |
 | "Priority" uses the warning tone; "Not triaged" and "Draft" are neutral. | #2 |
 | An empty box and an empty reading pane have an icon, a title and a sentence. With no mailbox connected, the empty box links to Mailboxes. | #3 |
 | The list header shows how many emails the box holds and when mail was last fetched; Fetch is an icon button. | #4 |
@@ -76,7 +76,7 @@ The boxes are a bar at the bottom of the screen, with a "More" entry for configu
 
 ## Dark scheme and brands (6.6 — US-80 to US-82)
 
-Surface and background are further apart in dark, and shadows are stronger. A brand now changes more than the accent: borders, muted text, the sunken navigation and shadows all derive from its ink and canvas, the sign-in ground from its accent. `brands/klaro/` is the Klaro Cards brand, with Poppins self-hosted.
+Cards and panels now carry a shadow as well as a border, which separates them in dark; the surface colour itself is unchanged. A brand now changes more than the accent: borders, muted text, the sunken navigation and shadows all derive from its ink and canvas, the sign-in ground from its accent. `brands/klaro/` is the Klaro Cards brand, with Poppins self-hosted.
 
 ## Known gaps
 
