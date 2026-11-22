@@ -1,0 +1,50 @@
+// The emails a correspondent's test mailbox holds: a request, a newsletter, a thank-you note, a rescheduling.
+const recent = (hoursAgo: number): string => new Date(Date.now() - hoursAgo * 3_600_000).toUTCString();
+
+export const INBOX = [
+  [
+    'From: "Claire Martin" <claire@client.example>',
+    'To: me@corp.example',
+    'Cc: paul@client.example',
+    'Subject: Demande de devis pour 20 licences',
+    'Message-ID: <devis-1@client.example>',
+    `Date: ${recent(2)}`,
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    'Bonjour,',
+    '',
+    'Nous souhaitons equiper 20 personnes. Pouvez-vous nous envoyer un devis',
+    'et nous indiquer vos disponibilites pour un appel la semaine prochaine ?',
+    '',
+    'Bien a vous,',
+    'Claire Martin',
+  ],
+  [
+    'From: "La Lettre Tech" <newsletter@media.example>',
+    'To: me@corp.example',
+    'Subject: Les 10 actus de la semaine',
+    'Message-ID: <nl-1@media.example>',
+    'List-Unsubscribe: <mailto:unsub@media.example>',
+    `Date: ${recent(5)}`,
+    '',
+    'CONTENU-NEWSLETTER qui ne doit jamais partir vers le LLM.',
+  ],
+  [
+    'From: "Marc Dubois" <marc@partner.example>',
+    'To: me@corp.example',
+    'Subject: Merci pour hier',
+    'Message-ID: <merci-1@partner.example>',
+    `Date: ${recent(8)}`,
+    '',
+    'Merci pour la reunion, tout est clair de notre cote.',
+  ],
+  [
+    'From: "Sophie Leroy" <sophie@client.example>',
+    'To: me@corp.example',
+    'Subject: Report de notre rendez-vous',
+    'Message-ID: <rdv-1@client.example>',
+    `Date: ${recent(20)}`,
+    '',
+    'Bonjour, serait-il possible de decaler notre rendez-vous de jeudi ?',
+  ],
+].map((lines) => ({ raw: lines.join('\r\n') }));
