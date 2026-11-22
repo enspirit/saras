@@ -22,11 +22,17 @@ export interface Brand {
   logo: string | null;
   /** URL of the variant used in dark mode. */
   logoDark: string | null;
+  /** Who offers this installation, shown next to the name on the sign-in screen ("by …"). */
+  byline: string;
+  /** Small print under the sign-in form ("Engineered by …"). */
+  credit: string;
+  /** The installation and the AI it calls are hosted in Europe: the sign-in screen may say so. */
+  euHosting: boolean;
 }
 
 /** The glyphs of the icon font that the interface uses (see .icon in design/atoms.css). */
 export type IconName =
-  | 'archive' | 'bold' | 'check' | 'chevron-down' | 'circle-alert' | 'eye-off' | 'file-text' | 'globe' | 'inbox' | 'info' | 'italic'
+  | 'archive' | 'bold' | 'check' | 'chevron-down' | 'chevron-right' | 'copy' | 'folder' | 'key' | 'shield-check' | 'user-plus' | 'circle-alert' | 'eye-off' | 'file-text' | 'globe' | 'inbox' | 'info' | 'italic'
   | 'link' | 'list' | 'list-ordered' | 'lock' | 'log-out' | 'mail' | 'mail-check' | 'paperclip' | 'pen-line' | 'pencil' | 'plug' | 'plus'
   | 'refresh-cw' | 'remove-formatting' | 'reply' | 'search' | 'send' | 'settings' | 'spell-check' | 'timer' | 'trash' | 'triangle-alert'
   | 'underline' | 'undo' | 'users' | 'x';
@@ -143,11 +149,15 @@ export function RichText(html: string): HTMLDivElement {
 }
 
 /** A person, as the initials of their name (or of the start of their address). */
-export function Avatar(name: string, { size = 'medium' }: { size?: 'small' | 'medium' } = {}): HTMLSpanElement {
+export function Avatar(name: string, { size = 'medium', icon }: { size?: 'small' | 'medium'; icon?: IconName } = {}): HTMLSpanElement {
   const words = name.split('@')[0]?.split(/[\s._-]+/).filter(Boolean) ?? [];
   const initials = words.slice(0, 2).map((word) => word[0]).join('').toUpperCase();
-  return h('span', { class: cx('avatar', size === 'small' && 'avatar--small'), 'aria-hidden': 'true' }, initials);
+  // With an icon it stands for something other than one person, e.g. a mailbox shared by a team.
+  return h('span', { class: cx('avatar', size === 'small' && 'avatar--small', icon && 'avatar--neutral'), 'aria-hidden': 'true' }, icon ? Icon(icon) : initials);
 }
+
+/** Text for screen readers only. */
+export const SrOnly = (text: string): HTMLSpanElement => h('span', { class: 'sr-only' }, text);
 
 export interface ChipOptions {
   /** Called when its remove button is pressed; without it the chip cannot be removed. */
@@ -174,10 +184,13 @@ export const TodoMark = (label: string): HTMLElement => h('mark', { class: 'todo
 export const Spacer = (): HTMLSpanElement => h('span', { class: 'spacer' });
 
 /** The product's name, or the brand's logo when it has one (with an optional variant for dark mode). */
-export function BrandMark({ name, logo, logoDark }: Brand, { large = false }: { large?: boolean } = {}): HTMLDivElement {
-  const image = logo && h('picture', {},
-    logoDark && h('source', { srcset: logoDark, media: '(prefers-color-scheme: dark)' }),
-    h('img', { class: 'brandmark__logo', src: logo, alt: name }),
-  );
+export function BrandMark({ name, logo, logoDark }: Pick<Brand, 'name' | 'logo' | 'logoDark'>, { large = false, onDark = false }: { large?: boolean; onDark?: boolean } = {}): HTMLDivElement {
+  // On a ground that is dark in both schemes, the dark variant is the one to show.
+  const image = logo && (onDark
+    ? h('img', { class: 'brandmark__logo', src: logoDark ?? logo, alt: name })
+    : h('picture', {},
+      logoDark && h('source', { srcset: logoDark, media: '(prefers-color-scheme: dark)' }),
+      h('img', { class: 'brandmark__logo', src: logo, alt: name }),
+    ));
   return h('div', { class: cx('brandmark', large && 'brandmark--large') }, image || name);
 }

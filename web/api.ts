@@ -58,6 +58,8 @@ export interface PublicInfo {
   allowSignup: boolean;
   /** No account exists yet: the next one created administers the installation. */
   firstAccount?: boolean;
+  /** Days after which email content is erased; 0 or absent when it is kept. */
+  retentionDays?: number;
 }
 
 /** The organisation of the signed-in user. Its key and model are told to administrators only. */
@@ -72,6 +74,8 @@ export interface Organization {
 
 export interface Me {
   email: string;
+  /** How the other members see this person; empty until given. */
+  name: string;
   organization: Organization;
   role: Role;
   /** The language the server last knew this user to use. */
@@ -128,7 +132,9 @@ export interface Prompt {
 
 export interface Correction {
   reason: string;
+  /** Address of who made it, and their name when they gave one. */
   user: string;
+  userName: string;
   at: string;
 }
 
@@ -173,8 +179,9 @@ export interface SentReply {
   to: string[];
   cc: string[];
   sentAt: string;
-  /** Who replied: in a shared mailbox, not necessarily the reader. */
+  /** Who replied: in a shared mailbox, not necessarily the reader. Their address, and their name when they gave one. */
   by: string | null;
+  byName: string | null;
 }
 
 export interface Recipients {
@@ -212,6 +219,7 @@ export interface EmailDetail {
 export interface User {
   id: number;
   email: string;
+  name: string;
   role: Role;
   createdAt: string;
   /** Number of connected mailboxes. */

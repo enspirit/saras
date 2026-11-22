@@ -11,6 +11,11 @@ interface BrandFile {
   tagline: string | Record<string, string>;
   logo: string | null;
   logoDark: string | null;
+  /** Optional, one text or one per language: who offers the installation, and small print for the sign-in screen. */
+  byline?: string | Record<string, string>;
+  credit?: string | Record<string, string>;
+  /** True when the installation and the AI it calls are hosted in Europe. */
+  euHosting?: boolean;
 }
 
 const FALLBACK: BrandFile = { name: 'saras', tagline: '', logo: null, logoDark: null };
@@ -28,7 +33,6 @@ export async function loadBrand(language: string): Promise<Brand> {
   }
   document.title = brand.name;
   const asset = (file: string | null): string | null => (file ? `/brand/${file}` : null);
-  const { tagline } = brand;
-  const text = typeof tagline === 'string' ? tagline : (tagline[language] ?? Object.values(tagline)[0] ?? '');
-  return { name: brand.name, tagline: text, logo: asset(brand.logo), logoDark: asset(brand.logoDark) };
+  const text = (value: string | Record<string, string> | undefined): string => (typeof value === 'string' ? value : (value?.[language] ?? Object.values(value ?? {})[0] ?? ''));
+  return { name: brand.name, tagline: text(brand.tagline), logo: asset(brand.logo), logoDark: asset(brand.logoDark), byline: text(brand.byline), credit: text(brand.credit), euHosting: brand.euHosting === true };
 }

@@ -36,6 +36,17 @@ test('signing up creates an organisation and makes its creator the administrator
   assert.deepEqual(organizations, [{ name: 'Acme' }, { name: 'other.example' }], 'a refused sign-up leaves no organisation behind');
 });
 
+test('a member has a name, which the administrators see in place of the address', async () => {
+  assert.equal((await profile(alice)).name, '', 'none until given');
+  assert.equal((await alice('PUT', '/settings', { name: 'Alice Martin' })).status, 200);
+  assert.equal((await profile(alice)).name, 'Alice Martin');
+  const listed = (await alice('GET', '/users')).body;
+  assert.deepEqual(listed.map((u: { email: string; name: string }) => [u.email, u.name]), [['alice@acme.example', 'Alice Martin']]);
+  const named = client();
+  assert.equal((await named('POST', '/auth/signup', { email: 'yann@third.example', password: 'un-bon-mot-de-passe', organization: 'Third', name: 'Yann Leroy' })).status, 201);
+  assert.equal((await profile(named)).name, 'Yann Leroy', 'given at sign-up');
+});
+
 test('each organisation has its own prompts, users and invitations', async () => {
   const mine = (await alice('GET', '/prompts')).body;
   const theirs = (await zoe('GET', '/prompts')).body;

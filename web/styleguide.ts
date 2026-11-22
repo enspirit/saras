@@ -3,8 +3,8 @@
 // reads the token list from design/tokens.css itself, so it cannot drift from the real thing.
 import { Avatar, Badge, BrandMark, Button, ButtonLink, Checkbox, Chip, Code, Heading, Icon, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Spinner, Strong, Text, Textarea, TodoMark, setBusy } from './ui/atoms.ts';
 import type { IconName } from './ui/atoms.ts';
-import { Actions, AiHelp, AiNote, Assurance, Block, Card, CardSection, Caution, CheckField, EmailListItem, EmptyState, Field, Form, FormRow, Message, NavItem, PageHeader, Panel, PromptPick, ReasonField, RecipientField, RichEditor, Swatch, confirmDialog, createToast, promptDialog } from './ui/molecules.ts';
-import { AuthPanel, ClosedDock, Mailbox, Page, Reading, ReadingHeader, ReplyDock } from './ui/organisms.ts';
+import { Actions, AiHelp, AiNote, Assurance, Block, Card, CardSection, Callout, Caution, CheckField, Choices, EmailListItem, EmptyState, Features, Field, Form, FormRow, Message, NavItem, PageHeader, Panel, Person, PromptPick, ReasonField, RecipientField, Remark, RichEditor, Steps, Swatch, Table, Tabs, confirmDialog, createToast, promptDialog } from './ui/molecules.ts';
+import { AuthPanel, ClosedDock, Columns, Mailbox, Page, Reading, ReadingHeader, ReplyDock } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
 import { initI18n, language, locale, t, tRich } from './i18n.ts';
 
@@ -75,8 +75,7 @@ const sampleEmail = (over = {}) =>
 
 (document.getElementById('app') as HTMLElement).replaceChildren(
   Page(
-    PageHeader(t('styleguide.title', { product: brand.name }), Spacer(), ButtonLink(t('styleguide.back'), { href: '/' })),
-    Block(Text({ muted: true }, tRich('styleguide.intro', {}, { code: Code }))),
+    PageHeader({ title: t('styleguide.title', { product: brand.name }), intro: tRich('styleguide.intro', {}, { code: Code }) }, ButtonLink(t('styleguide.back'), { href: '/' })),
 
     Heading(2, t('styleguide.tokens')),
     Card({ title: t('styleguide.brandInputs') },
@@ -151,6 +150,26 @@ const sampleEmail = (over = {}) =>
         Button(t('styleguide.dialogPrompt'), { onClick: async () => toast(t('styleguide.dialogAnswer', { answer: String(await promptDialog({ title: t('editor.link'), label: t('editor.linkPrompt'), value: 'https://', confirmLabel: t('editor.linkInsert'), cancelLabel: t('common.cancel') })) })) }),
       ),
     ),
+    Card({ title: t('styleguide.pageParts') },
+      Block(Steps([t('accounts.step1'), t('accounts.step2'), t('accounts.step3')], 1)),
+      Tabs([{ label: t('settings.you'), href: '#', current: true }, { label: t('organization.title'), href: '#' }, { label: t('settings.privacy'), href: '#' }]),
+      Callout('ok', t('accounts.connectedShort', { email: 'claire@client.example' })),
+      Callout('warn', [Strong(t('settings.yourPart')), ' ', t('settings.privacyLogging')]),
+    ),
+    Card({ title: t('styleguide.choices') },
+      Choices({ legend: t('accounts.whose'), name: 'sample-whose', value: 'mine', options: [{ value: 'mine', title: t('accounts.mine'), hint: t('accounts.mineHint') }, { value: 'shared', title: t('accounts.sharedChoice'), hint: t('accounts.imapHint') }, { value: 'off', title: t('accounts.connectGoogle'), hint: t('styleguide.unavailableWhy'), disabled: true }] }).element,
+      Choices({ legend: t('accounts.folders'), name: 'sample-folder', rows: true, value: 'a', options: [{ value: 'a', title: t('styleguide.firstOption') }, { value: 'b', title: t('styleguide.secondOption') }] }).element,
+    ),
+    Card({ title: t('styleguide.tables') },
+      Table({ columns: [t('users.member'), t('users.role'), t('users.joined')], actions: t('common.actions') }, [
+        [Person({ name: 'Claire Martin', detail: 'claire@client.example', tags: [Badge(t('users.you'), 'neutral')] }), Badge(t('role.admin')), '22 Nov 2026', [Button(t('users.demote'), { variant: 'ghost', size: 'small' })]],
+        [Person({ name: 'contact@client.example', detail: 'IMAP / SMTP', icon: 'users' }), Badge(t('role.user'), 'neutral'), '22 Nov 2026', [Button(t('users.promote'), { variant: 'ghost', size: 'small' }), Button(t('users.delete'), { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true })]],
+      ]),
+      Remark({ text: t('composer.reasonPlaceholder'), by: 'Claire Martin', meta: 'Claire Martin · 08:13' }),
+    ),
+    Card({ title: t('styleguide.features') },
+      Features([{ icon: 'lock', title: t('settings.guarantee.zdr'), text: t('settings.privacyZdr') }, { icon: 'key', title: t('settings.guarantee.encryption'), text: t('settings.privacyEncryption') }, { icon: 'check', title: t('settings.guarantee.validation'), text: t('settings.privacyValidation') }]),
+    ),
     Card({ title: t('styleguide.recipients') },
       RecipientField({ label: t('styleguide.to'), values: ['claire.martin@ostrava-logistics.example', 'paul.novak@ostrava-logistics.example'], removeLabel: (address) => t('styleguide.removeRecipient', { address }) }).element,
     ),
@@ -191,8 +210,10 @@ const sampleEmail = (over = {}) =>
       }),
       Block(ClosedDock(t('composer.closedNone'), Button(t('composer.replyAnyway'), { size: 'small', icon: 'reply' }))),
     ),
+    Card({ title: t('styleguide.columns') }, Columns(Card({}, Text({}, t('styleguide.cardText'))), Card({ title: t('prompts.corrections') }, Text({ muted: true, small: true }, t('prompts.noCorrections'))))),
     Card({ title: t('styleguide.authPanel') },
-      AuthPanel({ brand, tagline: brand.tagline, foot: t('styleguide.authFoot') }, Form(Field(t('auth.email'), Input({ type: 'email' })), Button(t('auth.signIn'), { variant: 'primary', block: true }))),
+      AuthPanel({ brand, tagline: brand.tagline, points: [{ icon: 'lock', text: t('auth.pointZdr') }, { icon: 'eye-off', text: t('auth.pointMinimal') }], title: t('auth.signIn'), foot: t('styleguide.authFoot') },
+        Form(Field(t('auth.email'), Input({ type: 'email' })), Button(t('auth.signIn'), { variant: 'primary', size: 'large', block: true }))),
     ),
     Block(Text({ muted: true, small: true }, t('styleguide.shellNote'))),
   ),

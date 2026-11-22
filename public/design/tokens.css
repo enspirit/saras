@@ -65,6 +65,12 @@
   --color-accent: light-dark(var(--brand-accent), var(--brand-accent-dark));
   --color-on-accent: light-dark(var(--brand-on-accent), var(--brand-on-accent-dark));
   --color-accent-soft: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  /* The brand's own ground, on the sign-in screen: the accent taken down to a deep tone, the same in both schemes. */
+  --color-brand-panel: color-mix(in srgb, var(--brand-accent) 48%, #0b0d12);
+  --color-on-brand-panel: #ffffff;
+  --color-on-brand-panel-soft: color-mix(in srgb, #ffffff 80%, var(--color-brand-panel));
+  --color-brand-panel-line: color-mix(in srgb, #ffffff 18%, var(--color-brand-panel));
+  --color-brand-panel-ok: #8fe3bd;
   /* Text proposed by the AI sits on this surface until the user takes it over. */
   --color-ai: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
   --color-ai-border: color-mix(in srgb, var(--color-accent) 28%, var(--color-surface));
@@ -143,7 +149,8 @@
   /* Layout */
   --nav-width: 230px;
   --list-width: 380px;
-  --content-width: 860px;
+  --content-width: 1000px;
+  --form-width: 640px;
   --auth-width: 400px;
   --dialog-width: 440px;
   --logo-height: 28px;

@@ -5,5 +5,14 @@
     "en": "Your email replies, drafted by AI, validated by you."
   },
   "logo": null,
-  "logoDark": null
+  "logoDark": null,
+  "byline": {
+    "en": "by Klaro Cards",
+    "fr": "par Klaro Cards"
+  },
+  "credit": {
+    "en": "saras by Klaro Cards · Engineered by Enspirit",
+    "fr": "saras par Klaro Cards · Conçu par Enspirit"
+  },
+  "euHosting": true
 }

@@ -17,10 +17,10 @@ const tokenOf = (link: string): string => link.split('#/invitation/')[1] ?? '';
 let invitation: { id: number; email: string; link: string };
 
 test('an empty installation accepts its first account, then closes', async () => {
-  assert.deepEqual((await admin('GET', '/public')).body, { allowSignup: true, firstAccount: true });
+  assert.deepEqual((await admin('GET', '/public')).body, { allowSignup: true, firstAccount: true, retentionDays: 30 });
   assert.equal((await admin('POST', '/auth/signup', { email: 'admin@corp.example', password: 'un-bon-mot-de-passe', organization: 'Acme' })).status, 201);
   assert.equal((await admin('GET', '/me')).body.role, 'admin');
-  assert.deepEqual((await admin('GET', '/public')).body, { allowSignup: false, firstAccount: false });
+  assert.deepEqual((await admin('GET', '/public')).body, { allowSignup: false, firstAccount: false, retentionDays: 30 });
   const stranger = await client()('POST', '/auth/signup', { email: 'x@corp.example', password: 'un-bon-mot-de-passe' });
   assert.equal(stranger.status, 403);
   assert.match(stranger.body.error, /invitation/);

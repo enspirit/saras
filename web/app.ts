@@ -2,8 +2,8 @@
 // the design system in ./ui (atoms, molecules, organisms) and every word from the
 // translation files, through t() and tRich(). Tests enforce both.
 import { Badge, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Strong, Text, Textarea, setBusy } from './ui/atoms.ts';
-import { Actions, AiHelp, AiNote, Assurance, Block, Card, CardSection, Caution, CheckField, EmailListItem, EmptyState, Facts, Field, Form, FormRow, Message, NavItem, PageHeader, Panel, PromptPick, ReasonField, RecipientField, RichEditor, confirmDialog, createToast } from './ui/molecules.ts';
-import { AppShell, AuthPanel, ClosedDock, Mailbox, Page, Reading, ReadingHeader, ReplyDock } from './ui/organisms.ts';
+import { Actions, AiHelp, AiNote, Assurance, Block, Callout, Card, CardSection, Caution, CheckField, Choices, EmailListItem, EmptyState, Facts, Features, Field, Form, FormRow, Message, NavItem, PageHeader, Panel, Person, PromptPick, ReasonField, RecipientField, Remark, RichEditor, Steps, Table, Tabs, confirmDialog, createToast } from './ui/molecules.ts';
+import { AppShell, AuthPanel, ClosedDock, Columns, Mailbox, Page, Reading, ReadingHeader, ReplyDock } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
 import type { Brand, ButtonOptions, IconName } from './ui/atoms.ts';
 import type { Child } from './ui/dom.ts';
@@ -13,7 +13,7 @@ import type { Account, BoxId, MailFolder, Correction, Draft, EmailDetail, EmailL
 
 const root = document.getElementById('app') as HTMLElement;
 const toast = createToast(document.getElementById('toast') as HTMLElement);
-let brand: Brand = { name: '', tagline: '', logo: null, logoDark: null };
+let brand: Brand = { name: '', tagline: '', logo: null, logoDark: null, byline: '', credit: '', euHosting: false };
 
 // ---- helpers ----------------------------------------------------------------------------
 /** Asks before an action that cannot be taken back, in the interface's own dialog. */
@@ -71,6 +71,9 @@ const fmtWhen = (iso: string): string => {
 };
 const fmtFull = (iso: string): string => asDate(iso).toLocaleString(locale(), { dateStyle: 'full', timeStyle: 'short' });
 const splitAddresses = (s: string): string[] => s.split(/[,;\s]+/).map((a) => a.trim()).filter(Boolean);
+/** How a person is shown: by their name when they gave one, by their address otherwise. */
+const called = (name: string | null | undefined, email: string): string => name?.trim() || email;
+const fmtDay = (iso: string): string => asDate(iso).toLocaleDateString(locale(), { dateStyle: 'medium' });
 const roleLabel = (role: Role): string => (role === 'admin' ? t('role.admin') : t('role.user'));
 
 // ---- state & routing --------------------------------------------------------------------
@@ -104,10 +107,12 @@ const state: { me: Me | null; counts: Partial<Record<BoxId, number>> } = { me: n
 /** The signed-in user. Only called from pages shown after sign-in. */
 const me = (): Me => state.me as Me;
 
+/** `#/page/12`, `#/page/part` or `#/page/part/12`: a page, optionally one of its parts, optionally one thing by its number. */
 function route() {
   const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?');
-  const [page = '', id] = path.split('/');
-  return { page: page || 'inbox', id: id ? Number(id) : null, query: new URLSearchParams(query) };
+  const [page = '', first = '', second = ''] = path.split('/');
+  const numbered = /^\d+$/.test(first);
+  return { page: page || 'inbox', part: numbered ? '' : first, id: numbered ? Number(first) : second ? Number(second) : null, query: new URLSearchParams(query) };
 }
 
 const invitationToken = () => location.hash.match(/^#\/invitation\/([\w-]+)$/)?.[1] || null;
@@ -140,19 +145,30 @@ const guard = <A extends unknown[]>(fn: (...args: A) => Promise<void>) => async 
 };
 
 // ---- auth -------------------------------------------------------------------------------
+/** What the installation guarantees, said where a visitor first meets it. */
+const guarantees = (info: PublicInfo) => [
+  brand.euHosting && { icon: 'shield-check' as const, title: t('auth.pointEuTitle'), text: t('auth.pointEu') },
+  { icon: 'lock' as const, text: t('auth.pointZdr') },
+  { icon: 'eye-off' as const, text: t('auth.pointMinimal') },
+  info.retentionDays ? { icon: 'timer' as const, text: t('settings.privacyRetention', { days: info.retentionDays }) } : null,
+  { icon: 'check' as const, text: t('settings.privacyValidation') },
+].filter((point) => point !== null && point !== false);
+
 async function renderAuth(mode: 'login' | 'signup' = 'login', typedEmail = ''): Promise<void> {
   const info = await api<PublicInfo>('GET', '/public').catch((): PublicInfo => ({ allowSignup: false }));
   const signup = mode === 'signup' && info.allowSignup;
   const email = Input({ type: 'email', required: true, autocomplete: 'username', value: typedEmail });
   const password = Input({ type: 'password', required: true, minLength: signup ? 10 : 1, autocomplete: signup ? 'new-password' : 'current-password' });
   const organization = Input({ required: true, autocomplete: 'organization' });
-  const submit = Button(signup ? t('auth.createAccount') : t('auth.signIn'), { variant: 'primary', type: 'submit', block: true });
+  const name = Input({ autocomplete: 'name' });
+  const submit = Button(signup ? t('auth.createAccount') : t('auth.signIn'), { variant: 'primary', size: 'large', type: 'submit', block: true });
   const form = SubmitForm(submit, '…', async () => {
-    await api('POST', signup ? '/auth/signup' : '/auth/login', { email: email.value, password: password.value, organization: organization.value, language: language() });
+    await api('POST', signup ? '/auth/signup' : '/auth/login', { email: email.value, password: password.value, organization: organization.value, name: name.value, language: language() });
     if (signup) location.hash = '#/accounts';
     await boot();
   },
     signup && Field(t('auth.organization'), organization, { hint: t('auth.organizationHint') }),
+    signup && Field(t('auth.name'), name, { hint: t('auth.nameHint') }),
     Field(t('auth.email'), email),
     Field(t('auth.password'), password, { hint: signup && t('auth.passwordHint') }),
     submit,
@@ -163,41 +179,42 @@ async function renderAuth(mode: 'login' | 'signup' = 'login', typedEmail = ''): 
     : t('auth.askInvitation');
 
   root.replaceChildren(
-    AuthPanel({ brand, tagline: brand.tagline, foot },
-      info.firstAccount && Block(Notice('info', t('auth.firstAccount'))),
-      form,
-      LanguagePicker(),
-    ),
+    AuthPanel({ brand, tagline: brand.tagline, points: guarantees(info), title: signup ? t('auth.signUp') : t('auth.signIn'), intro: info.firstAccount && t('auth.firstAccount'), tools: LanguagePicker(), foot }, form),
   );
-  email.focus();
+  (signup ? organization : email).focus();
 }
 
-/** Landing page of an invitation link: the invited person only chooses a password. */
+/** Landing page of an invitation link: the invited person gives their name and chooses a password. */
 async function renderInvitation(token: string): Promise<void> {
   const leave = () => {
     // Drop the token from the address bar and the history.
     history.replaceState(null, '', '/');
     return boot();
   };
+  const info = await api<PublicInfo>('GET', '/public').catch((): PublicInfo => ({ allowSignup: false }));
   let invitation: { email: string; organization: string };
   try {
     invitation = await api<{ email: string; organization: string }>('POST', '/invitations/check', { token });
   } catch (e) {
-    return root.replaceChildren(AuthPanel({ brand, tagline: brand.tagline }, Block(Notice('danger', messageOf(e))), Button(t('invitation.goToSignIn'), { onClick: leave })));
+    return root.replaceChildren(AuthPanel({ brand, tagline: brand.tagline, points: guarantees(info), title: t('invitation.title') }, Notice('danger', messageOf(e)), Button(t('invitation.goToSignIn'), { onClick: leave })));
   }
+  const name = Input({ autocomplete: 'name' });
   const password = Input({ type: 'password', required: true, minLength: 10, autocomplete: 'new-password' });
-  const submit = Button(t('auth.createAccount'), { variant: 'primary', type: 'submit', block: true });
+  const submit = Button(t('auth.createAccount'), { variant: 'primary', size: 'large', type: 'submit', block: true });
   const form = SubmitForm(submit, '…', async () => {
-    await api('POST', '/invitations/accept', { token, password: password.value, language: language() });
+    await api('POST', '/invitations/accept', { token, password: password.value, name: name.value, language: language() });
     history.replaceState(null, '', '/#/accounts');
     await boot();
   },
     Field(t('auth.email'), Input({ type: 'email', value: invitation.email, disabled: true, autocomplete: 'username' })),
+    Field(t('auth.name'), name, { hint: t('auth.nameHint') }),
     Field(t('invitation.choosePassword'), password, { hint: t('auth.passwordHint') }),
     submit,
   );
-  root.replaceChildren(AuthPanel({ brand, tagline: t('invitation.invited', { organization: invitation.organization, product: brand.name }) }, form));
-  password.focus();
+  root.replaceChildren(
+    AuthPanel({ brand, tagline: brand.tagline, points: guarantees(info), title: t('invitation.title'), intro: t('invitation.invited', { organization: invitation.organization, product: brand.name }), tools: LanguagePicker() }, form),
+  );
+  name.focus();
 }
 
 // ---- shell ------------------------------------------------------------------------------
@@ -221,7 +238,7 @@ function shell(content: Child): void {
       // On a phone the boxes fill the bar: this entry leads to everything else.
       more: { href: '#/more', label: t('nav.more'), icon: 'settings', current: current === 'more' || pages.some((p) => p.path === current) },
       assurance: assurance(),
-      user: { name: me().email, organization: me().organization.name },
+      user: { name: called(me().name, me().email), organization: me().organization.name },
       logout: signOut({ variant: 'ghost', icon: 'log-out', iconOnly: true }),
     }, content),
   );
@@ -231,8 +248,7 @@ function shell(content: Child): void {
 function renderMore(): void {
   shell(
     Page(
-      PageHeader(me().organization.name),
-      Block(Text({ muted: true }, me().email)),
+      PageHeader({ title: called(me().name, me().email), intro: me().organization.name }),
       Card({}, pagesOfUser().map((p) => NavItem({ href: `#/${p.path}`, label: t(p.label), icon: p.icon }))),
       Block(Assurance(assurance().text, assurance().title)),
       signOut({ icon: 'log-out' }),
@@ -245,10 +261,10 @@ function render(): void {
   const r = route();
   const box = BOXES.find((b) => b.path === r.page);
   if (box) void renderMailbox(box, r.id);
-  else if (r.page === 'prompts' && isAdmin()) void renderPrompts();
+  else if (r.page === 'prompts' && isAdmin()) void renderPrompts(r.part === 'new' ? 'new' : r.id);
   else if (r.page === 'users' && isAdmin()) void renderUsers();
-  else if (r.page === 'accounts') void renderAccounts(r.query.get('error'), r.query.get('detail') ?? '');
-  else if (r.page === 'settings') void renderSettings();
+  else if (r.page === 'accounts') void renderAccounts(r.part, r.id, r.query.get('error'), r.query.get('detail') ?? '');
+  else if (r.page === 'settings') void renderSettings(r.part);
   else if (r.page === 'more') renderMore();
   else location.hash = '#/inbox';
 }
@@ -366,7 +382,7 @@ function emailDetail(email: EmailDetail, prompts: Prompt[], box: Box): Child {
 
 function sentReply(r: SentReply): Child {
   const draft = r.mode === 'draft';
-  const author = r.by && r.by !== me().email ? r.by : null;
+  const author = r.by && r.by !== me().email ? called(r.byName, r.by) : null;
   const facts: [string, Child][] = [[t('composer.to'), r.to.join(', ')]];
   if (r.cc.length) facts.push([t('composer.cc'), r.cc.join(', ')]);
   if (r.changeReason) facts.push([t('reply.why'), r.changeReason]);
@@ -521,52 +537,57 @@ function composer(email: EmailDetail, prompts: Prompt[], done: (message: string)
 }
 
 // ---- prompts (administrators) -----------------------------------------------------------
-const renderPrompts = guard(async () => {
+/** The list of prompts, or with `open` one of them (or a new one) being edited. */
+const renderPrompts = guard(async (open: number | 'new' | null = null) => {
   const prompts = await api<Prompt[]>('GET', '/prompts');
+  const back = (): void => void (location.hash === '#/prompts' ? renderPrompts() : (location.hash = '#/prompts'));
+  const prompt = typeof open === 'number' ? prompts.find((p) => p.id === open) ?? null : null;
 
-  async function editor(prompt: Prompt | null): Promise<void> {
+  if (open !== null && (open === 'new' || prompt)) {
     const items = prompt ? await api<Correction[]>('GET', `/prompts/${prompt.id}/corrections`).catch((): Correction[] => []) : [];
     const name = Input({ required: true, value: prompt?.name || '' });
     const description = Input({ value: prompt?.description || '' });
-    const system = Textarea({ required: true, rows: 7, value: prompt?.systemPrompt || '' });
+    const system = Textarea({ required: true, rows: 9, value: prompt?.systemPrompt || '' });
     const save = Button(prompt ? t('common.save') : t('prompts.create'), { variant: 'primary', type: 'submit' });
     const form = SubmitForm(save, '…', async () => {
       const body = { name: name.value, description: description.value, systemPrompt: system.value };
       await (prompt ? api('PUT', `/prompts/${prompt.id}`, body) : api('POST', '/prompts', body));
       toast(t('prompts.saved'));
-      renderPrompts();
+      back();
     },
       Field(t('prompts.name'), name),
       Field(t('prompts.when'), description, { hint: t('prompts.whenHint') }),
       Field(t('prompts.instructions'), system, { hint: t('prompts.instructionsHint') }),
-      items.length > 0 && CardSection(t('prompts.corrections'),
-        Block(Text({ muted: true, small: true }, t('prompts.correctionsHint'))),
-        Block(List(items.map((c) => [c.reason, Muted(t('prompts.correctionBy', { user: c.user, date: fmtDate(c.at) }))]))),
-      ),
-      Actions(save, Button(t('common.cancel'), { onClick: () => renderPrompts() })),
+      Actions(save, Button(t('common.cancel'), { onClick: back })),
     );
-    shell(Page(Heading(1, t('prompts.title')), Card({ title: prompt ? t('prompts.edit') : t('prompts.new') }, form)));
+    // What members changed in this prompt's proposals sits beside the instructions it should feed.
+    const corrections = prompt && Card({ title: t('prompts.corrections'), badges: [items.length > 0 && Badge(String(items.length))] },
+      Block(Text({ muted: true, small: true }, t('prompts.correctionsHint'))),
+      items.length ? items.map((c) => Remark({ text: c.reason, by: called(c.userName, c.user), meta: `${called(c.userName, c.user)} · ${fmtWhen(c.at)}` })) : Text({ muted: true, small: true }, t('prompts.noCorrections')),
+    );
+    shell(Page(
+      PageHeader({ title: prompt ? t('prompts.edit') : t('prompts.new'), crumbs: [{ label: t('prompts.title'), href: '#/prompts' }] }),
+      corrections ? Columns(Card({}, form), corrections) : Card({ form: true }, form),
+    ));
     name.focus();
+    return;
   }
 
   shell(
     Page(
-      PageHeader(t('prompts.title'), Spacer(), Button(t('prompts.new'), { variant: 'primary', onClick: () => editor(null) })),
-      Block(Text({ muted: true }, t('prompts.intro'))),
-      prompts.map((p) =>
-        Card({ title: p.name, badges: [(p.used ?? 0) > 0 && Badge(t('prompts.usage', { used: p.used ?? 0, edited: p.edited ?? 0 }), 'neutral')] },
-          p.description && Block(Text({ muted: true }, p.description)),
-          Block(Text({ small: true }, p.systemPrompt)),
-          Actions(
-            Button(t('common.edit'), { onClick: () => editor(p) }),
-            ActionButton(t('common.delete'), '…', async () => {
-              if (!(await confirmAction(t('prompts.confirmDelete', { name: p.name }), t('common.delete')))) return;
-              await api('DELETE', `/prompts/${p.id}`);
-              renderPrompts();
-            }, { variant: 'danger' }),
-          ),
-        ),
-      ),
+      PageHeader({ title: t('prompts.title'), intro: t('prompts.intro') }, ButtonLink(t('prompts.new'), { href: '#/prompts/new', variant: 'primary' })),
+      Table({ columns: [t('prompts.column'), t('prompts.usageColumn')], actions: t('common.actions') }, prompts.map((p) => [
+        [Strong(p.name), p.description && Text({ muted: true, small: true }, p.description)],
+        (p.used ?? 0) > 0 ? t('prompts.usage', { used: p.used ?? 0, edited: p.edited ?? 0 }) : Muted(t('prompts.unused')),
+        [
+          ButtonLink(t('common.edit'), { href: `#/prompts/${p.id}` }),
+          ActionButton(t('common.delete'), '…', async () => {
+            if (!(await confirmAction(t('prompts.confirmDelete', { name: p.name }), t('common.delete')))) return;
+            await api('DELETE', `/prompts/${p.id}`);
+            renderPrompts();
+          }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true }),
+        ],
+      ])),
     ),
   );
 });
@@ -578,14 +599,20 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
   const email = Input({ type: 'email', required: true, placeholder: t('users.emailPlaceholder') });
   const role = Select([{ value: 'user', label: t('role.user') }, { value: 'admin', label: t('role.admin') }]);
   const invite = Button(t('users.createLink'), { variant: 'primary', type: 'submit' });
-  const inviteForm = SubmitForm(invite, '…', async () => renderUsers(await api<NewInvitation>('POST', '/invitations', { email: email.value, role: role.value })),
-    FormRow(Field(t('users.email'), email), Field(t('users.role'), role, { size: 'narrow' }), Field(null, invite, { size: 'fit' })),
+  // Inviting is a step, opened on demand, rather than a form that stays on the page.
+  const inviteCard = Card({ title: t('users.invite'), form: true },
+    SubmitForm(invite, '…', async () => renderUsers(await api<NewInvitation>('POST', '/invitations', { email: email.value, role: role.value })),
+      FormRow(Field(t('users.email'), email), Field(t('users.role'), role, { size: 'narrow' })),
+      Actions(invite, Button(t('common.cancel'), { onClick: () => (inviteCard.hidden = true) })),
+    ),
   );
+  inviteCard.hidden = true;
 
   let freshLink: Child = null;
   if (freshInvitation?.link) {
     const link = Input({ readOnly: true, value: freshInvitation.link, onfocus: () => link.select() });
     const copy = Button(t('common.copy'), {
+      icon: 'copy',
       onClick: async () => {
         try {
           await navigator.clipboard.writeText(freshInvitation.link);
@@ -596,102 +623,104 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
         }
       },
     });
-    freshLink = [
-      Block(Notice('ok', tRich('users.linkReady', { email: freshInvitation.email, days: freshInvitation.validDays }, { strong: Strong }))),
-      FormRow(Field(null, link), Field(null, copy, { size: 'fit' })),
-    ];
+    freshLink = Callout('ok', tRich('users.linkReady', { email: freshInvitation.email, days: freshInvitation.validDays }, { strong: Strong }), FormRow(Field(null, link), Field(null, copy, { size: 'fit' })));
   }
 
   shell(
     Page(
-      Heading(1, t('users.title')),
-      Block(Text({ muted: true }, t('users.intro', { organization: me().organization.name }))),
-      Card({ title: t('users.invite') },
-        freshLink,
-        inviteForm,
-        invitations.length > 0 && CardSection(t('users.pending'),
-          invitations.map((i) =>
-            Actions(
-              i.email,
-              Badge(roleLabel(i.role), 'neutral'),
-              i.expired ? Small(t('users.expired')) : Small(Muted(t('users.expiresOn', { date: fmtFull(i.expiresAt) }))),
-              Spacer(),
-              ActionButton(t('users.revoke'), '…', async () => {
-                await api('DELETE', `/invitations/${i.id}`);
-                renderUsers();
-              }, { variant: 'link' }),
-            ),
-          ),
-        ),
-      ),
-      users.map((u) => {
+      PageHeader({ title: t('users.title'), intro: t('users.intro', { organization: me().organization.name }) },
+        Button(t('users.invite'), { variant: 'primary', icon: 'user-plus', onClick: () => {
+          inviteCard.hidden = false;
+          email.focus();
+        } })),
+      freshLink,
+      inviteCard,
+      Table({ columns: [t('users.member'), t('users.role'), t('users.joined'), t('users.mailboxes')], actions: t('common.actions') }, users.map((u) => {
         const admin = u.role === 'admin';
         const self = u.email === me().email;
-        return Card({ title: u.email, badges: [Badge(roleLabel(u.role), admin ? 'accent' : 'neutral'), self && Badge(t('users.you'), 'neutral')] },
-          Block(Text({ muted: true, small: true }, t('users.summary', { date: fmtFull(u.createdAt), count: u.accounts }))),
-          Actions(
+        return [
+          Person({ name: called(u.name, u.email), detail: u.name ? u.email : undefined, tags: [self && Badge(t('users.you'), 'neutral')] }),
+          Badge(roleLabel(u.role), admin ? 'accent' : 'neutral'),
+          fmtDay(u.createdAt),
+          u.accounts || Muted(t('users.noMailbox')),
+          [
             ActionButton(admin ? t('users.demote') : t('users.promote'), '…', async () => {
               await api('PUT', `/users/${u.id}`, { role: admin ? 'user' : 'admin' });
               if (self) return boot();
               renderUsers();
-            }),
+            }, { variant: 'ghost', size: 'small' }),
             !self && ActionButton(t('users.delete'), '…', async () => {
               if (!(await confirmAction(t('users.confirmDelete', { email: u.email }), t('users.delete')))) return;
               await api('DELETE', `/users/${u.id}`);
               renderUsers();
-            }, { variant: 'danger' }),
-          ),
-        );
-      }),
+            }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true }),
+          ],
+        ];
+      })),
+      invitations.length > 0 && Table({ title: t('users.pending'), columns: [t('users.email'), t('users.role'), t('users.expiry')], actions: t('common.actions') }, invitations.map((i) => [
+        i.email,
+        Badge(roleLabel(i.role), i.role === 'admin' ? 'accent' : 'neutral'),
+        i.expired ? Badge(t('users.expired'), 'warn') : fmtDay(i.expiresAt),
+        ActionButton(t('users.revoke'), '…', async () => {
+          await api('DELETE', `/invitations/${i.id}`);
+          renderUsers();
+        }, { variant: 'ghost', size: 'small' }),
+      ])),
     ),
   );
 });
 
 // ---- accounts ---------------------------------------------------------------------------
+/** Kinds of mailbox are product names: the same in every language. */
+const KIND: Record<Account['kind'], string> = { imap: 'IMAP / SMTP', google: 'Google', microsoft: 'Microsoft' };
+/** Getting started is a path: connect, choose the folder, read. */
+const pathSteps = (): string[] => [t('accounts.step1'), t('accounts.step2'), t('accounts.step3')];
+
 /**
- * Lets the user choose the one folder of a mailbox to watch. The folders are asked of the
- * mailbox when the chooser appears, with the inbox first and preselected.
+ * Choosing the one folder of a mailbox to watch. The folders are asked of the mailbox when
+ * the page appears, with the inbox first and preselected.
  */
-function FolderChooser(account: Account): HTMLElement {
-  const select = Select([{ value: '', label: t('accounts.loadingFolders') }], { disabled: true });
+function folderPage(account: Account): void {
+  const fresh = account.folder === null;
+  const folders = Choices({ legend: t('accounts.folders'), name: 'folder', rows: true, options: [{ value: '', title: t('accounts.loadingFolders'), disabled: true }] });
   const confirm = ActionButton(t('accounts.useFolder'), '…', async () => {
-    await api('PUT', `/accounts/${account.id}/folder`, { folder: select.value });
+    await api('PUT', `/accounts/${account.id}/folder`, { folder: folders.value() });
     toast(t('accounts.folderChosen'));
-    void renderAccounts();
-  });
+    // The first choice ends the path: on to the emails. A later change goes back to the list.
+    location.hash = fresh ? '#/inbox' : '#/accounts';
+    if (!fresh) void renderAccounts();
+  }, { variant: 'primary' });
   confirm.disabled = true;
   api<MailFolder[]>('GET', `/accounts/${account.id}/folders`)
-    .then((folders) => {
-      const current = account.folder ?? folders[0]?.id;
-      select.replaceChildren(...Select(folders.map((f) => ({ value: f.id, label: f.name }))).children);
-      // Set once the options are in place: an option moved between lists does not keep its selection.
-      if (current) select.value = current;
-      select.disabled = false;
+    .then((list) => {
+      folders.setOptions(list.map((f) => ({ value: f.id, title: f.name })), account.folder ?? list[0]?.id);
       confirm.disabled = false;
     })
     .catch((e) => toast(messageOf(e), true));
-  return Block(FormRow(Field(t('accounts.folder'), select), Field(null, confirm, { size: 'fit' })));
+  shell(Page(
+    fresh && Steps(pathSteps(), 1),
+    PageHeader({ title: t('accounts.chooseFolderTitle'), intro: t('accounts.chooseFolder'), crumbs: fresh ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
+    fresh && Callout('ok', t('accounts.connectedShort', { email: account.email })),
+    Card({ form: true }, folders.element, Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/accounts' }))),
+  ));
 }
 
-/** Kinds of mailbox are product names: the same in every language. */
-const KIND: Record<Account['kind'], string> = { imap: 'IMAP / SMTP', google: 'Google', microsoft: 'Microsoft' };
-
-const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: string) => {
-  const accounts = await api<Account[]>('GET', '/accounts');
+/** Connecting a mailbox: whose it is, where it is hosted, then what that host asks for. */
+function connectPage(first: boolean, oauthError: Child): void {
   const { oauth } = me();
-
-  // Administrators may connect a mailbox for the whole organisation. The choice applies to
-  // whichever way of connecting is used next.
-  const shared = Checkbox();
-  const oauthLinks: { kind: string; link: HTMLElement }[] = [];
-  const oauthButton = (kind: 'google' | 'microsoft', label: string) => {
-    const link = ButtonLink(label, { href: `/api/oauth/${kind}/start`, disabled: !oauth[kind], title: oauth[kind] ? undefined : t('accounts.oauthUnavailable', { prefix: kind.toUpperCase() }) });
-    oauthLinks.push({ kind, link });
-    return link;
-  };
-  shared.addEventListener('change', () => {
-    for (const { kind, link } of oauthLinks) if (link instanceof HTMLAnchorElement) link.href = `/api/oauth/${kind}/start${shared.checked ? '?shared=1' : ''}`;
-  });
+  const whose = isAdmin()
+    ? Choices({ legend: t('accounts.whose'), name: 'whose', value: 'mine', options: [
+      { value: 'mine', title: t('accounts.mine'), hint: t('accounts.mineHint') },
+      { value: 'shared', title: t('accounts.sharedChoice'), hint: t('accounts.sharedHint', { organization: me().organization.name }) },
+    ], onChange: () => show() })
+    : null;
+  const shared = (): boolean => whose?.value() === 'shared';
+  const unavailable = (kind: 'google' | 'microsoft'): string | undefined => (oauth[kind] ? undefined : t('accounts.oauthUnavailable', { prefix: kind.toUpperCase() }));
+  const host = Choices({ legend: t('accounts.where'), name: 'host', value: oauth.google ? 'google' : oauth.microsoft ? 'microsoft' : 'imap', options: [
+    { value: 'google', title: t('accounts.connectGoogle'), hint: unavailable('google'), disabled: !oauth.google },
+    { value: 'microsoft', title: t('accounts.connectMicrosoft'), hint: unavailable('microsoft'), disabled: !oauth.microsoft },
+    { value: 'imap', title: t('accounts.imapTitle'), hint: t('accounts.imapHint') },
+  ], onChange: () => show() });
 
   const email = Input({ type: 'email', required: true });
   const displayName = Input({ placeholder: t('accounts.namePlaceholder') });
@@ -706,62 +735,85 @@ const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: st
   imapPort.addEventListener('input', () => (imapSecure.checked = imapPort.value === '993'));
   smtpPort.addEventListener('input', () => (smtpSecure.checked = smtpPort.value === '465'));
   const connect = Button(t('accounts.connect'), { variant: 'primary', type: 'submit' });
-  const form = SubmitForm(connect, t('accounts.connecting'), async () => {
+  const imapForm = SubmitForm(connect, t('accounts.connecting'), async () => {
     await api('POST', '/accounts/imap', {
       email: email.value, displayName: displayName.value, username: username.value, password: password.value,
       imapHost: imapHost.value, imapPort: Number(imapPort.value), imapSecure: imapSecure.checked,
       smtpHost: smtpHost.value, smtpPort: Number(smtpPort.value), smtpSecure: smtpSecure.checked,
-      shared: shared.checked,
+      shared: shared(),
     });
     toast(t('accounts.connected'));
-    renderAccounts();
+    location.hash = '#/accounts';
+    void renderAccounts();
   },
-    FormRow(Field(t('accounts.email'), email), Field(t('accounts.name'), displayName)),
-    FormRow(Field(t('accounts.username'), username), Field(t('accounts.password'), password)),
-    FormRow(Field(t('accounts.imapServer'), imapHost), Field(t('accounts.port'), imapPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), imapSecure, { size: 'narrow' })),
-    FormRow(Field(t('accounts.smtpServer'), smtpHost), Field(t('accounts.port'), smtpPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), smtpSecure, { size: 'narrow' })),
-    Block(Text({ muted: true, small: true }, t('accounts.tlsHint'))),
-    connect,
+    FormRow(Field(t('accounts.email'), email), Field(t('accounts.password'), password)),
+    Field(t('accounts.name'), displayName, { hint: t('accounts.passwordHint') }),
+    CardSection(t('accounts.serverSettings'),
+      FormRow(Field(t('accounts.imapServer'), imapHost), Field(t('accounts.port'), imapPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), imapSecure, { size: 'narrow' })),
+      FormRow(Field(t('accounts.smtpServer'), smtpHost), Field(t('accounts.port'), smtpPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), smtpSecure, { size: 'narrow' })),
+      Field(t('accounts.username'), username, { hint: t('accounts.tlsHint') }),
+    ),
+    Actions(connect, Muted(Small(t('accounts.connectHint')))),
   );
+
+  // What the chosen host asks for: a form for IMAP, a trip to the provider for the others.
+  const detail = Card({});
+  function show(): void {
+    const kind = host.value();
+    if (kind === 'imap') return detail.replaceChildren(imapForm);
+    const provider = kind === 'google' ? t('accounts.connectGoogle') : t('accounts.connectMicrosoft');
+    detail.replaceChildren(
+      Block(Text({ muted: true }, t('accounts.oauthIntro'))),
+      ButtonLink(t('accounts.continueAt', { provider }), { href: `/api/oauth/${kind}/start${shared() ? '?shared=1' : ''}`, variant: 'primary' }),
+    );
+  }
+  show();
+
+  shell(Page(
+    first && Steps(pathSteps(), 0),
+    PageHeader({ title: t('accounts.connectTitle'), intro: t('accounts.connectIntro'), crumbs: first ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
+    oauthError,
+    whose && Card({}, whose.element),
+    Card({}, host.element),
+    detail,
+  ));
+}
+
+const renderAccounts = guard(async (part = '', id: number | null = null, oauthError?: string | null, oauthDetail?: string) => {
+  const accounts = await api<Account[]>('GET', '/accounts');
+  const failure = oauthError && Callout('warn', problemText({ code: oauthError, params: { detail: oauthDetail ?? '' }, message: oauthDetail || oauthError }));
+
+  // With no mailbox yet, the page is the first step of the path.
+  if (part === 'connect' || accounts.length === 0) return connectPage(accounts.length === 0, failure);
+  // A mailbox just connected has no folder yet: the page is the second step.
+  const pending = accounts.find((a) => a.canManage && (a.folder === null || (part === 'folder' && a.id === id)));
+  if (pending) return folderPage(pending);
 
   shell(
     Page(
-      Heading(1, t('accounts.title')),
-      oauthError && Block(Notice('danger', problemText({ code: oauthError, params: { detail: oauthDetail ?? '' }, message: oauthDetail || oauthError }))),
-      accounts.length === 0 && Block(Notice('info', t('accounts.none'))),
-      accounts.map((a) =>
-        Card({ title: a.email, badges: [a.shared && Badge(t('accounts.shared')), Badge(KIND[a.kind], 'neutral'), a.todo > 0 && Badge(t('accounts.todo', { count: a.todo }))] },
-          a.folder
-            ? Block(Text({ muted: true, small: true }, t('accounts.watching', { folder: a.folderName }), ' · ', a.lastSyncAt ? t('accounts.lastSync', { date: fmtFull(a.lastSyncAt) }) : t('accounts.neverSynced')))
-            : Block(Notice('info', a.canManage ? t('accounts.chooseFolder') : t('accounts.folderPending'))),
-          a.lastError && a.folder && Block(Notice('danger', problemText(a.lastError))),
-          // A mailbox that has no folder yet opens on the choice; later it is behind a button.
-          a.folder || !a.canManage ? null : FolderChooser(a),
-          Actions(
-            a.folder && a.canManage && Button(t('accounts.changeFolder'), { onClick: (event) => (event.target as HTMLElement).replaceWith(FolderChooser(a)) }),
-            a.folder && ActionButton(t('accounts.syncNow'), t('mailbox.refreshing'), async () => {
-              const r = await api<SyncResult>('POST', `/accounts/${a.id}/sync`);
-              if (r.error) toast(problemText(r.error), true);
-              else toast(t('mailbox.fetched', { count: r.fetched }));
-              renderAccounts();
-            }),
-            a.canManage && ActionButton(t('accounts.disconnect'), '…', async () => {
-              if (!(await confirmAction(t('accounts.confirmDisconnect', { email: a.email }), t('accounts.disconnect')))) return;
-              await api('DELETE', `/accounts/${a.id}`);
-              renderAccounts();
-            }, { variant: 'danger' }),
-          ),
-        ),
-      ),
-      isAdmin() && Card({ title: t('accounts.sharedTitle') },
-        Block(Text({ muted: true }, t('accounts.sharedIntro', { organization: me().organization.name }))),
-        CheckField(t('accounts.sharedCheck'), shared),
-      ),
-      Card({ title: t('accounts.oauthTitle') },
-        Block(Text({ muted: true }, t('accounts.oauthIntro'))),
-        Actions(oauthButton('google', t('accounts.connectGoogle')), oauthButton('microsoft', t('accounts.connectMicrosoft'))),
-      ),
-      Card({ title: t('accounts.imapTitle') }, form),
+      PageHeader({ title: t('accounts.title'), intro: t('accounts.intro') }, ButtonLink(t('accounts.connectTitle'), { href: '#/accounts/connect', variant: 'primary' })),
+      failure,
+      accounts.filter((a) => a.lastError && a.folder).map((a) => Callout('warn', `${a.email}: ${problemText(a.lastError as NonNullable<Account['lastError']>)}`)),
+      Table({ columns: [t('accounts.mailbox'), t('accounts.folderColumn'), t('accounts.lastSyncColumn'), t('box.todo.label')], actions: t('common.actions') }, accounts.map((a) => [
+        Person({ name: a.email, detail: KIND[a.kind], tags: [a.shared && Badge(t('accounts.shared'))], icon: a.shared ? 'users' : 'mail' }),
+        a.folder ? a.folderName : Muted(t('accounts.folderPending')),
+        a.lastSyncAt ? fmtWhen(a.lastSyncAt) : Muted(t('accounts.neverSynced')),
+        a.todo,
+        [
+          a.folder && ActionButton(t('accounts.syncNow'), t('mailbox.refreshing'), async () => {
+            const r = await api<SyncResult>('POST', `/accounts/${a.id}/sync`);
+            if (r.error) toast(problemText(r.error), true);
+            else toast(t('mailbox.fetched', { count: r.fetched }));
+            renderAccounts();
+          }, { size: 'small', icon: 'refresh-cw' }),
+          a.folder && a.canManage && Button(t('accounts.changeFolder'), { variant: 'ghost', size: 'small', icon: 'folder', iconOnly: true, onClick: () => (location.hash = `#/accounts/folder/${a.id}`) }),
+          a.canManage && ActionButton(t('accounts.disconnect'), '…', async () => {
+            if (!(await confirmAction(t('accounts.confirmDisconnect', { email: a.email }), t('accounts.disconnect')))) return;
+            await api('DELETE', `/accounts/${a.id}`);
+            renderAccounts();
+          }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true }),
+        ],
+      ])),
     ),
   );
 });
@@ -791,67 +843,84 @@ function OrganizationSettings(me: Me): Child {
     if (key.value) body.openrouterKey = key.value;
     await api('PUT', '/organization', body);
     toast(t('settings.saved'));
-    void renderSettings();
+    void renderSettings('organisation');
   },
     Field(t('organization.name'), name),
     Field(t('organization.triage'), triage, { hint: t('organization.triageHint') }),
     CheckField(t('organization.skipAutomated'), skipAutomated),
-    Field(t('organization.model'), model, { hint: t('organization.modelHint') }),
-    Field(t('organization.key'), key, { hint: org.hasKey ? t('settings.keyHintOwn') : t('organization.keyHint') }),
+    CardSection(t('settings.aiTitle'),
+      Field(t('organization.model'), model, { hint: t('organization.modelHint') }),
+      Field(t('organization.key'), key, { hint: org.hasKey ? t('settings.keyHintOwn') : t('organization.keyHint') }),
+    ),
     Actions(save, org.hasKey && ActionButton(t('organization.deleteKey'), '…', async () => {
       await api('PUT', '/organization', { openrouterKey: '' });
       toast(t('settings.keyDeleted'));
-      void renderSettings();
+      void renderSettings('organisation');
     }, { variant: 'danger' })),
   );
-  return Card({ title: t('organization.title') }, Block(Text({ muted: true }, t('organization.intro'))), form);
+  return [
+    Card({ form: true }, Block(Text({ muted: true }, t('organization.intro'))), form),
+    Card({ title: t('settings.appearance'), form: true }, Text({}, tRich('settings.appearanceText', {}, { link: (label) => Link(label, '/styleguide.html') }))),
+  ];
 }
 
-const renderSettings = guard(async () => {
+/** Settings, one tab per audience: one's own, the organisation's (administrators), and what the product guarantees. */
+const renderSettings = guard(async (part = '') => {
   const me = (state.me = await api<Me>('GET', '/me'));
+  const tab = part === 'privacy' || (part === 'organisation' && isAdmin()) ? part : 'you';
+  const tabs = Tabs([
+    { label: t('settings.you'), href: '#/settings', current: tab === 'you' },
+    ...(isAdmin() ? [{ label: t('organization.title'), href: '#/settings/organisation', current: tab === 'organisation' }] : []),
+    { label: t('settings.privacy'), href: '#/settings/privacy', current: tab === 'privacy' },
+  ]);
+  const frame = (...content: Child[]): void => shell(Page(PageHeader(t('settings.title')), tabs, content));
+
+  if (tab === 'organisation') return frame(OrganizationSettings(me));
+
+  if (tab === 'privacy') {
+    return frame(
+      Block(Text({ muted: true }, t('settings.privacyIntro', { product: brand.name }))),
+      Features([
+        { icon: 'lock', title: t('settings.guarantee.zdr'), text: t('settings.privacyZdr') },
+        { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: me.organization.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone') },
+        { icon: 'timer', title: t('settings.guarantee.retention'), text: me.retentionDays ? t('settings.privacyRetention', { days: me.retentionDays }) : t('settings.privacyNoRetention') },
+        { icon: 'key', title: t('settings.guarantee.encryption'), text: t('settings.privacyEncryption') },
+        { icon: 'check', title: t('settings.guarantee.validation'), text: t('settings.privacyValidation') },
+        { icon: 'users', title: t('settings.guarantee.reasons'), text: t('settings.privacyReasons') },
+      ]),
+      Callout('warn', [Strong(t('settings.yourPart')), ' ', t('settings.privacyLogging')]),
+      Card({ title: t('settings.technical') }, Text({ small: true }, tRich('settings.privacyPolicy', { policy: `provider: ${JSON.stringify(me.privacy)}` }, { code: Code }))),
+    );
+  }
+
+  const name = Input({ value: me.name, autocomplete: 'name' });
   const model = Input({ value: me.model, placeholder: me.defaultModel });
-  const signature = Textarea({ rows: 4, placeholder: t('settings.signaturePlaceholder'), value: me.signature });
+  const signature = Textarea({ rows: 3, placeholder: t('settings.signaturePlaceholder'), value: me.signature });
   const key = Input({ type: 'password', autocomplete: 'off', placeholder: me.hasOwnKey ? t('settings.keySaved') : me.hasKey ? t('settings.keyServer') : 'sk-or-…' });
   const save = Button(t('common.save'), { variant: 'primary', type: 'submit' });
   const form = SubmitForm(save, '…', async () => {
-    const body: { model: string; signature: string; openrouterKey?: string } = { model: model.value === me.defaultModel ? '' : model.value, signature: signature.value };
+    const body: { name: string; model: string; signature: string; openrouterKey?: string } = { name: name.value, model: model.value === me.defaultModel ? '' : model.value, signature: signature.value };
     if (key.value) body.openrouterKey = key.value;
     await api('PUT', '/settings', body);
     toast(t('settings.saved'));
-    renderSettings();
+    render();
   },
-    Field(t('settings.model'), model, { hint: t('settings.modelHint', { model: me.defaultModel }) }),
+    Field(t('settings.name'), name, { hint: t('settings.nameHint', { organization: me.organization.name }) }),
     Field(t('settings.signature'), signature, { hint: t('settings.signatureHint') }),
-    Field(t('settings.key'), key, { hint: me.hasOwnKey ? t('settings.keyHintOwn') : t('settings.keyHint') }),
+    CardSection(t('settings.aiTitle'),
+      Field(t('settings.model'), model, { hint: t('settings.modelHint', { model: me.defaultModel }) }),
+      Field(t('settings.key'), key, { hint: me.hasOwnKey ? t('settings.keyHintOwn') : t('settings.keyHint') }),
+    ),
     Actions(save, me.hasOwnKey && ActionButton(t('settings.deleteKey'), '…', async () => {
       await api('PUT', '/settings', { openrouterKey: '' });
       toast(t('settings.keyDeleted'));
-      renderSettings();
+      render();
     }, { variant: 'danger' })),
   );
-
-  shell(
-    Page(
-      Heading(1, t('settings.title')),
-      !me.hasKey && Block(Notice('warn', t('settings.noKey'))),
-      Card({ title: t('settings.writing') }, form),
-      languages().length > 1 && Card({ title: t('settings.display') }, LanguagePicker()),
-      isAdmin() && OrganizationSettings(me),
-      Card({ title: t('settings.privacy') },
-        List([
-          tRich('settings.privacyPolicy', { policy: `provider: ${JSON.stringify(me.privacy)}` }, { code: Code }),
-          t('settings.privacyLogging'),
-          me.organization.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone'),
-          me.retentionDays ? t('settings.privacyRetention', { days: me.retentionDays }) : t('settings.privacyNoRetention'),
-          t('settings.privacyEncryption'),
-          t('settings.privacyValidation'),
-          t('settings.privacyReasons'),
-        ]),
-      ),
-      isAdmin() && Card({ title: t('settings.appearance') },
-        Text({}, tRich('settings.appearanceText', {}, { link: (label) => Link(label, '/styleguide.html') })),
-      ),
-    ),
+  frame(
+    !me.hasKey && Callout('warn', t('settings.noKey')),
+    Card({ form: true }, form),
+    languages().length > 1 && Card({ title: t('settings.display'), form: true }, LanguagePicker()),
   );
 });
 

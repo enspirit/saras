@@ -102,6 +102,8 @@ export interface UserRow {
   role: Role;
   /** Language of the interface as the user last used it: what the server writes for them follows it. */
   language: string;
+  /** How the other members see this person; empty until given, the address then stands for it. */
+  name: string;
   model: string | null;
   signature: string;
   openrouter_key_enc: string | null;

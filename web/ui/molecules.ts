@@ -2,7 +2,7 @@
  * MOLECULES — styled by design/molecules.css. A few atoms assembled for one job.
  */
 import Squire from '../vendor/squire.mjs';
-import { Badge, Button, Checkbox, Chip, Heading, Icon, Input } from './atoms.ts';
+import { Avatar, Badge, Button, Checkbox, Chip, Heading, Icon, Input, SrOnly } from './atoms.ts';
 import type { IconName, SelectOption } from './atoms.ts';
 import { cx, h } from './dom.ts';
 import type { Attrs, Child } from './dom.ts';
@@ -47,14 +47,111 @@ export interface CardOptions extends Attrs {
   badges?: Child[];
 }
 
-export function Card({ title, badges = [], ...attrs }: CardOptions = {}, ...children: Child[]): HTMLDivElement {
-  return h('div', { ...attrs, class: 'card' }, title && h('div', { class: 'card__head' }, Heading(2, title), badges), children);
+export function Card({ title, badges = [], form = false, ...attrs }: CardOptions & { form?: boolean } = {}, ...children: Child[]): HTMLDivElement {
+  // A card that holds one form keeps to a readable width.
+  return h('div', { ...attrs, class: cx('card', form && 'card--form') }, title && h('div', { class: 'card__head' }, Heading(2, title), badges), children);
 }
 
 /** A titled sub-part inside a card. */
 export const CardSection = (title: string, ...children: Child[]): HTMLDivElement => h('div', { class: 'card__section' }, Heading(3, title), children);
 
-export const PageHeader = (title: string, ...actions: Child[]): HTMLDivElement => h('div', { class: 'page-head' }, Heading(1, title), actions);
+export interface PageHeaderOptions {
+  title: string;
+  /** What the page is for, in a sentence or two. */
+  intro?: Child;
+  /** The way back: the pages above this one, as label and address. */
+  crumbs?: { label: string; href: string }[];
+}
+
+/** Top of a page: where one is, what it is for, and what can be done there. */
+export function PageHeader(head: string | PageHeaderOptions, ...actions: Child[]): HTMLDivElement {
+  const { title, intro, crumbs = [] } = typeof head === 'string' ? { title: head } : head;
+  return h('div', { class: 'page-head' },
+    h('div', { class: 'page-head__text' },
+      crumbs.length > 0 && h('nav', { class: 'crumbs' }, crumbs.map((c) => [h('a', { href: c.href }, c.label), Icon('chevron-right', { size: 'small' })]), h('span', {}, title)),
+      Heading(1, title),
+      intro && h('p', { class: 'page-head__intro' }, intro),
+    ),
+    h('div', { class: 'page-head__actions' }, actions),
+  );
+}
+
+/** The parts of one page, each with its own address. */
+export const Tabs = (items: { label: string; href: string; current?: boolean }[]): HTMLElement =>
+  h('nav', { class: 'tabs' }, items.map((item) => h('a', { class: 'tabs__tab', href: item.href, 'aria-current': item.current ? 'page' : null }, item.label)));
+
+/** A short path and where one is on it; `current` is the index of the step in progress. */
+export const Steps = (labels: string[], current: number): HTMLOListElement =>
+  h('ol', { class: 'steps' }, labels.map((label, i) =>
+    h('li', { class: cx('steps__step', i < current && 'steps__step--done'), 'aria-current': i === current ? 'step' : null },
+      h('span', { class: 'steps__mark' }, i < current ? Icon('check', { size: 'small' }) : i + 1), label)));
+
+export interface ChoiceOption {
+  value: string;
+  title: string;
+  hint?: string;
+  /** Cannot be chosen; the hint should say why. */
+  disabled?: boolean;
+}
+
+export interface ChoicesHandle {
+  element: HTMLFieldSetElement;
+  value(): string;
+  /** Replaces the options, e.g. once they are known. */
+  setOptions(options: ChoiceOption[], value?: string): void;
+}
+
+/** One among a few, each explained. `rows` lays them out as a list, for names without explanation. */
+export function Choices({ legend, name, options, value, rows = false, onChange }: { legend: string; name: string; options: ChoiceOption[]; value?: string; rows?: boolean; onChange?: (value: string) => void }): ChoicesHandle {
+  const list = h('div', { class: 'choices__list' });
+  const element = h('fieldset', { class: cx('choices', rows && 'choices--rows') }, h('legend', { class: 'choices__legend' }, legend), list);
+  const fill = (items: ChoiceOption[], chosen?: string): void => {
+    list.replaceChildren(...items.map((o) =>
+      h('label', { class: cx('choice', o.disabled && 'choice--disabled') },
+        h('input', { class: 'choice__radio', type: 'radio', name, value: o.value, checked: o.value === chosen, disabled: o.disabled, onchange: () => onChange?.(o.value) }),
+        h('span', { class: 'choice__text' }, h('span', { class: 'choice__title' }, o.title), o.hint && h('span', { class: 'choice__hint' }, o.hint)),
+      )));
+  };
+  fill(options, value);
+  return {
+    element,
+    value: () => element.querySelector<HTMLInputElement>('input:checked')?.value ?? '',
+    setOptions: fill,
+  };
+}
+
+/**
+ * The same facts about several things. Each row is its cells in the order of `columns`; with
+ * `actions` (the accessible name of that column), one more cell holds the row's controls.
+ */
+export function Table({ columns, actions, title }: { columns: string[]; actions?: string; title?: string }, rows: Child[][]): HTMLDivElement {
+  return h('div', { class: 'table-wrap' },
+    title && h('div', { class: 'table-wrap__title' }, Heading(3, title)),
+    h('table', { class: 'table' },
+      h('thead', {}, h('tr', {}, columns.map((c) => h('th', { scope: 'col' }, c)), actions && h('th', { scope: 'col' }, SrOnly(actions)))),
+      h('tbody', {}, rows.map((cells) => h('tr', {}, cells.map((cell, i) => h('td', {}, actions && i === columns.length ? h('div', { class: 'table__actions' }, cell) : cell))))),
+    ),
+  );
+}
+
+/** Who (or which mailbox), and one fact about them. */
+export function Person({ name, detail, tags = [], icon }: { name: string; detail?: Child; tags?: Child[]; icon?: IconName }): HTMLDivElement {
+  return h('div', { class: 'person' }, Avatar(name, { icon }), h('div', { class: 'person__text' }, h('span', { class: 'person__name' }, name, tags), detail && h('span', { class: 'person__detail' }, detail)));
+}
+
+/** What someone said, who and when. */
+export const Remark = ({ text, by, meta }: { text: string; by: string; meta: string }): HTMLDivElement =>
+  h('div', { class: 'remark' }, Avatar(by, { size: 'small' }), h('div', { class: 'remark__text' }, h('span', {}, text), h('span', { class: 'remark__meta' }, meta)));
+
+/** Something that just happened or must be known, with room for a control under it. */
+export function Callout(tone: 'info' | 'ok' | 'warn', lead: Child, ...children: Child[]): HTMLDivElement {
+  const icon: IconName = tone === 'ok' ? 'check' : tone === 'warn' ? 'triangle-alert' : 'info';
+  return h('div', { class: cx('callout', tone !== 'info' && `callout--${tone}`), role: 'status' }, h('div', { class: 'callout__lead' }, Icon(icon), h('span', {}, lead)), children);
+}
+
+/** A few points of equal weight, each with its sign. */
+export const Features = (items: { icon: IconName; title: string; text: Child }[]): HTMLDivElement =>
+  h('div', { class: 'features' }, items.map((item) => h('section', { class: 'feature' }, h('span', { class: 'feature__icon' }, Icon(item.icon, { size: 'large' })), Heading(3, item.title), h('p', { class: 'feature__text' }, item.text))));
 
 export interface EmptyStateOptions {
   icon?: IconName;

@@ -20,6 +20,12 @@
 .icon--bold::before { content: "\e05d"; }
 .icon--check::before { content: "\e06c"; }
 .icon--chevron-down::before { content: "\e06d"; }
+.icon--chevron-right::before { content: "\e06f"; }
+.icon--copy::before { content: "\e09e"; }
+.icon--folder::before { content: "\e0d7"; }
+.icon--key::before { content: "\e4a3"; }
+.icon--shield-check::before { content: "\e1ff"; }
+.icon--user-plus::before { content: "\e1a2"; }
 .icon--circle-alert::before { content: "\e077"; }
 .icon--eye-off::before { content: "\e0bb"; }
 .icon--file-text::before { content: "\e0cc"; }
@@ -202,6 +208,8 @@ textarea.input--tall { min-height: 240px; }
 .text--muted { color: var(--color-text-muted); }
 .text--small { font-size: var(--text-sm); }
 .text--wrap { overflow-wrap: anywhere; }
+/* Present for screen readers, absent for the eye. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .prose {
   margin: 0;
   font-family: inherit;
@@ -233,6 +241,7 @@ textarea.input--tall { min-height: 240px; }
   letter-spacing: 0.02em;
 }
 .avatar--small { width: var(--control-sm); height: var(--control-sm); }
+.avatar--neutral { background: var(--color-surface-sunken); color: var(--color-text-soft); }
 
 /* ---- Chip: one value among several, removable (a recipient) ---- */
 .chip {

@@ -162,26 +162,28 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   const isEmpty = async (): Promise<boolean> => !(await db.one('SELECT 1 FROM users LIMIT 1'));
   const publicInfo = async () => {
     const empty = await isEmpty();
-    return { allowSignup: config.allowSignup || empty, firstAccount: empty };
+    // How long content is kept is public: the sign-in screen says so.
+    return { allowSignup: config.allowSignup || empty, firstAccount: empty, retentionDays: config.retentionDays };
   };
 
   /** Creates a user in an organisation. `on` is the database or a transaction on it. */
-  async function createUser(on: Db, orgId: number, email: string, password: unknown, role: Role, language: string): Promise<number> {
+  async function createUser(on: Db, orgId: number, email: string, password: unknown, role: Role, language: string, name: string): Promise<number> {
     if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
     if (typeof password !== 'string' || password.length < 10) throw new HttpError(400, 'auth.passwordTooShort');
     if (await on.one('SELECT 1 FROM users WHERE email = $1', [email])) throw new HttpError(409, 'auth.emailTaken');
-    const created = await on.one<{ id: number }>('INSERT INTO users (org_id, email, password_hash, role, language) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
+    const created = await on.one<{ id: number }>('INSERT INTO users (org_id, email, password_hash, role, language, name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id', [
       orgId,
       email,
       hashPassword(password),
       role,
       language,
+      name,
     ]);
     return created!.id;
   }
 
   /** Creates an organisation with its administrator and its first prompts, in the administrator's language. */
-  async function createOrganization(on: Db, name: string, email: string, password: unknown, language: string): Promise<number> {
+  async function createOrganization(on: Db, name: string, email: string, password: unknown, language: string, userName: string): Promise<number> {
     // Checked first, so that a refused account leaves no organisation behind even outside a transaction.
     if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
     const org = await on.one<{ id: number }>('INSERT INTO organizations (name, triage_strategy, skip_automated) VALUES ($1, $2, $3) RETURNING id', [
@@ -189,7 +191,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       config.triageStrategy,
       config.skipAutomated,
     ]);
-    const userId = await createUser(on, org!.id, email, password, 'admin', language);
+    const userId = await createUser(on, org!.id, email, password, 'admin', language, userName);
     await seedDefaultPrompts(on, org!.id, userId, language);
     return userId;
   }
@@ -202,7 +204,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const { allowSignup } = await publicInfo();
     if (!allowSignup) throw new HttpError(403, 'auth.signupClosed');
     const id = await db.transaction((tx) =>
-      createOrganization(tx, str(req.body.organization, 120), str(req.body.email, 320).toLowerCase(), req.body.password, languageTag(req.body.language)),
+      createOrganization(tx, str(req.body.organization, 120), str(req.body.email, 320).toLowerCase(), req.body.password, languageTag(req.body.language), str(req.body.name, 120)),
     );
     await openSession(res, id);
     res.status(201).json({ ok: true });
@@ -225,7 +227,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const invitation = await pendingInvitation(req.body.token);
     if (!invitation) throw new HttpError(404, 'invitation.invalid');
     const id = await db.transaction(async (tx) => {
-      const userId = await createUser(tx, invitation.org_id, invitation.email, req.body.password, invitation.role, languageTag(req.body.language));
+      const userId = await createUser(tx, invitation.org_id, invitation.email, req.body.password, invitation.role, languageTag(req.body.language), str(req.body.name, 120));
       await tx.run('DELETE FROM invitations WHERE id = $1', [invitation.id]);
       return userId;
     });
@@ -254,6 +256,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const admin = req.user.role === 'admin';
     res.json({
       email: req.user.email,
+      name: req.user.name,
       organization: {
         name: req.org.name,
         triage: req.org.triage_strategy,
@@ -276,7 +279,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   });
 
   app.put('/api/settings', auth, async (req, res) => {
-    const { model, signature, openrouterKey, language } = req.body;
+    const { model, signature, openrouterKey, language, name } = req.body;
+    if (typeof name === 'string') await db.run('UPDATE users SET name = $1 WHERE id = $2', [str(name, 120), req.user.id]);
     // The language of the interface, which the server needs for what it writes on the user's behalf.
     if (typeof language === 'string') await db.run('UPDATE users SET language = $1 WHERE id = $2', [languageTag(language), req.user.id]);
     if (typeof model === 'string') {
@@ -548,7 +552,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.get('/api/prompts/:id/corrections', auth, adminOnly, async (req, res) => {
     res.json(
       await db.query(
-        `SELECT r.change_reason AS reason, u.email AS "user", r.sent_at AS at
+        `SELECT r.change_reason AS reason, u.email AS "user", u.name AS "userName", r.sent_at AS at
          FROM replies r JOIN users u ON u.id = r.user_id
          WHERE r.prompt_id = $1 AND r.was_edited AND r.change_reason != '' ORDER BY r.id DESC LIMIT 50`,
         [(await promptOf(req)).id],
@@ -560,7 +564,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.get('/api/users', auth, adminOnly, async (req, res) => {
     res.json(
       await db.query(
-        `SELECT u.id, u.email, u.role, u.created_at AS "createdAt", (SELECT count(*)::int FROM accounts a WHERE a.user_id = u.id AND NOT a.shared) AS accounts
+        `SELECT u.id, u.email, u.name, u.role, u.created_at AS "createdAt", (SELECT count(*)::int FROM accounts a WHERE a.user_id = u.id AND NOT a.shared) AS accounts
          FROM users u WHERE u.org_id = $1 ORDER BY u.id`,
         [req.org.id],
       ),
@@ -664,9 +668,9 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     const email = rowToEmail(row);
     // The latest proposal, to resume where the user left off.
     const draft = await db.one<DraftRow>('SELECT * FROM drafts WHERE email_id = $1 ORDER BY id DESC LIMIT 1', [row.id]);
-    const reply = await db.one<{ finalText: string; finalHtml: string; wasEdited: boolean; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: Date; by: string | null }>(
+    const reply = await db.one<{ finalText: string; finalHtml: string; wasEdited: boolean; changeReason: string; mode: ReplyMode; toJson: string; ccJson: string; sentAt: Date; by: string | null; byName: string | null }>(
       `SELECT r.final_text AS "finalText", r.final_html AS "finalHtml", r.was_edited AS "wasEdited", r.change_reason AS "changeReason", r.mode, r.to_json AS "toJson", r.cc_json AS "ccJson",
-              r.sent_at AS "sentAt", u.email AS by
+              r.sent_at AS "sentAt", u.email AS by, u.name AS "byName"
        FROM replies r LEFT JOIN users u ON u.id = r.user_id WHERE r.email_id = $1 ORDER BY r.id DESC LIMIT 1`,
       [row.id],
     );

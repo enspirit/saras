@@ -3,17 +3,30 @@
  * panel, page, mailbox (list + reading pane). Built by public/ui/organisms.js.
  */
 
-/* ---- Auth panel ---- */
-.auth { min-height: 100%; display: grid; place-items: center; padding: var(--space-6) var(--space-4); }
-.auth__panel {
-  width: 100%; max-width: var(--auth-width);
-  padding: var(--space-6);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
+/* ---- Auth: the brand's own ground with what it guarantees, and the form beside it ---- */
+.auth { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(360px, 2fr) 3fr; }
+.auth__brand {
+  display: flex; flex-direction: column; gap: var(--space-7);
+  padding: var(--space-8) calc(var(--space-8) + var(--space-4));
+  background: var(--color-brand-panel);
+  color: var(--color-on-brand-panel);
 }
-.auth__tagline { margin: var(--space-1) 0 var(--space-5); color: var(--color-text-muted); }
-.auth__foot { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-text-muted); }
+.auth__mark { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.auth__mark .brandmark { font-size: var(--text-2xl); }
+.auth__byline { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--color-on-brand-panel-soft); }
+.auth__pitch { display: grid; gap: var(--space-6); margin-block: auto; }
+.auth__tagline { max-width: 16em; font-family: var(--font-heading); font-size: calc(var(--text-2xl) * 1.3); font-weight: var(--weight-heading); line-height: var(--leading-tight); letter-spacing: -0.02em; text-wrap: balance; }
+.auth__points { margin: 0; padding: 0; list-style: none; border-top: var(--border-width) solid var(--color-brand-panel-line); }
+.auth__point { display: flex; align-items: flex-start; gap: var(--space-3); margin: 0; padding: var(--space-3) 0; border-bottom: var(--border-width) solid var(--color-brand-panel-line); color: var(--color-on-brand-panel-soft); }
+.auth__point > .icon { margin-top: 2px; color: var(--color-brand-panel-ok); }
+.auth__point-title { display: block; font-weight: var(--weight-strong); color: var(--color-on-brand-panel); }
+.auth__main { display: flex; flex-direction: column; min-width: 0; padding: var(--space-5) var(--space-6); background: var(--color-surface); }
+.auth__tools { display: flex; justify-content: flex-end; }
+.auth__tools .field { margin: 0; }
+.auth__panel { display: grid; gap: var(--space-4); width: 100%; max-width: var(--auth-width); margin: auto; padding: var(--space-6) 0; }
+.auth__intro { color: var(--color-text-muted); }
+.auth__foot { font-size: var(--text-sm); color: var(--color-text-muted); }
+.auth__credit { text-align: center; font-size: var(--text-xs); color: var(--color-text-muted); }
 
 /* ---- Application shell: the boxes first, configuration quieter, who is signed in last ---- */
 .shell { display: grid; grid-template-columns: var(--nav-width) 1fr; height: 100vh; height: 100dvh; }
@@ -44,10 +57,13 @@
 .shell__org { font-size: var(--text-xs); color: var(--color-text-muted); }
 .shell__main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 
-/* ---- Page: a scrolling column of cards ---- */
-.page { width: 100%; max-width: var(--content-width); padding: var(--space-6); overflow-y: auto; }
-.page > h1 { margin-bottom: var(--space-4); }
-.page > h2 { margin: var(--space-6) 0 var(--space-3); }
+/* ---- Page: a scrolling column, centred, as wide as its content reads well ---- */
+.page { width: 100%; padding: var(--space-6) var(--space-6) var(--space-8); overflow-y: auto; }
+.page__inner { max-width: var(--content-width); margin-inline: auto; }
+.page__inner > h2 { margin: var(--space-6) 0 var(--space-3); }
+
+/* ---- Columns: what one works on, and what informs it beside ---- */
+.columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-5); align-items: start; }
 
 /* ---- Mailbox: list and reading pane ---- */
 .mailbox { display: grid; grid-template-columns: minmax(280px, var(--list-width)) 1fr; flex: 1; min-height: 0; }
@@ -142,6 +158,13 @@
   .mailbox:not(.mailbox--reading) .mailbox__detail { display: none; }
   .mailbox__back { display: block; }
   .page { padding: var(--space-4); }
+  .columns { grid-template-columns: 1fr; }
+  .auth { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth__brand { gap: var(--space-3); padding: var(--space-5) var(--space-4); }
+  .auth__pitch { gap: 0; margin: 0; }
+  .auth__tagline { font-size: var(--text-lg); }
+  .auth__points { display: none; }
+  .auth__main { padding: var(--space-4); }
   .reading-head { padding: var(--space-2) var(--space-4) var(--space-3); }
   .reading__body { padding: var(--space-4); }
   .dock { margin: 0; border-width: var(--border-width) 0 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }

@@ -34,19 +34,125 @@
 /* ---- Card ---- */
 .card {
   --card-bg: var(--color-surface);
-  --card-padding: var(--space-4);
+  --card-padding: var(--space-5);
   margin-bottom: var(--space-4);
   padding: var(--card-padding);
   background: var(--card-bg);
   border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
 }
+.card--form { max-width: var(--form-width); }
 .card__head { display: flex; gap: var(--space-3); align-items: baseline; flex-wrap: wrap; margin-bottom: var(--space-3); }
-.card__section { margin-top: var(--space-4); }
-.card__section > h3 { margin-bottom: var(--space-2); }
+.card__section { margin-top: var(--space-5); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-line); }
+.card__section > h3 { margin-bottom: var(--space-3); }
 
-/* ---- Page header: title and its actions ---- */
-.page-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+/* ---- Page header: where one is (and came from), what the page is for, what can be done ---- */
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-5); }
+.page-head__text { flex: 1 1 320px; display: grid; gap: var(--space-1); }
+.page-head__intro { max-width: 72ch; color: var(--color-text-muted); }
+.page-head__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.crumbs { display: flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); color: var(--color-text-muted); }
+.crumbs a { font-weight: var(--weight-medium); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+
+/* ---- Tabs: the parts of one page, each with its own address ---- */
+.tabs { display: flex; gap: var(--space-5); margin-bottom: var(--space-5); border-bottom: var(--border-width) solid var(--color-border); overflow-x: auto; }
+.tabs__tab {
+  margin-bottom: calc(var(--border-width) * -1);
+  padding: var(--space-2) 0;
+  border-bottom: var(--focus-width) solid transparent;
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tabs__tab:hover { color: var(--color-text); }
+.tabs__tab[aria-current="page"] { border-bottom-color: var(--color-accent); color: var(--color-accent); font-weight: var(--weight-strong); }
+
+/* ---- Steps: a short path, where one is on it ---- */
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); margin: 0 0 var(--space-5); padding: 0; list-style: none; font-size: var(--text-sm); color: var(--color-text-muted); }
+.steps__step { display: flex; align-items: center; gap: var(--space-2); margin: 0; }
+.steps__mark {
+  display: grid; place-items: center;
+  width: var(--space-6); height: var(--space-6);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs); font-weight: var(--weight-strong);
+}
+.steps__step[aria-current="step"] { color: var(--color-text); font-weight: var(--weight-strong); }
+.steps__step[aria-current="step"] .steps__mark { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
+.steps__step--done .steps__mark { background: var(--color-ok); border-color: var(--color-ok); color: var(--color-surface); }
+
+/* ---- Choices: one among a few, each explained ---- */
+.choices { min-width: 0; margin: 0 0 var(--space-4); padding: 0; border: 0; }
+.choices__legend { margin-bottom: var(--space-2); padding: 0; font-family: var(--font-heading); font-weight: var(--weight-strong); }
+.choices__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); }
+.choices--rows .choices__list { grid-template-columns: 1fr; gap: 2px; }
+.choice {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+}
+.choice:hover { border-color: var(--color-border-strong); }
+.choice:has(:checked) { background: var(--color-accent-soft); border-color: var(--color-accent); }
+.choice--disabled, .choice--disabled:hover { background: var(--color-bg); border-color: var(--color-border); cursor: not-allowed; }
+.choice--disabled .choice__title { color: var(--color-text-muted); }
+.choices--rows .choice { align-items: center; border-color: transparent; }
+.choices--rows .choice:hover { background: var(--color-hover); border-color: transparent; }
+.choices--rows .choice:has(:checked) { border-color: transparent; }
+.choice__radio { flex: none; margin: 3px 0 0; accent-color: var(--color-accent); }
+.choices--rows .choice__radio { margin: 0; }
+.choice__text { display: grid; gap: 2px; min-width: 0; }
+.choice__title { font-weight: var(--weight-medium); }
+.choice:has(:checked) .choice__title { font-weight: var(--weight-strong); }
+.choice__hint { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* ---- Table: the same facts about several things ---- */
+.table-wrap { margin-bottom: var(--space-4); background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-1); overflow-x: auto; }
+.table-wrap__title { padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-line); }
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-bg);
+  border-bottom: var(--border-width) solid var(--color-line);
+  font-size: var(--text-xs); font-weight: var(--weight-strong);
+  letter-spacing: 0.04em; text-transform: uppercase; text-align: left; white-space: nowrap;
+  color: var(--color-text-muted);
+}
+.table td { padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-line); vertical-align: middle; }
+.table tr:last-child td { border-bottom: 0; }
+.table__actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
+
+/* ---- Person: who, and one fact about them ---- */
+.person { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.person__text { display: grid; min-width: 0; }
+.person__name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-weight: var(--weight-strong); }
+.person__detail { font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+
+/* ---- Remark: what someone said, who and when ---- */
+.remark { display: flex; gap: var(--space-3); padding: var(--space-3) 0; border-top: var(--border-width) solid var(--color-line); }
+.remark__text { display: grid; gap: 2px; }
+.remark__meta { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* ---- Callout: something that just happened or must be known, with room for a control ---- */
+.callout { display: grid; gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--color-accent-soft); }
+.callout--ok { background: var(--color-ok-soft); }
+.callout--warn { background: var(--color-warn-soft); }
+.callout__lead { display: flex; align-items: flex-start; gap: var(--space-2); }
+.callout--ok .callout__lead { color: var(--color-ok); }
+.callout--warn .callout__lead { color: var(--color-warn); }
+.callout__lead > .icon { margin-top: 2px; }
+
+/* ---- Features: a few points of equal weight, each with its sign ---- */
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
+.feature { display: grid; align-content: start; gap: var(--space-2); padding: var(--space-4) var(--space-5); background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-1); }
+.feature__icon { display: grid; place-items: center; width: var(--control-md); height: var(--control-md); border-radius: var(--radius-md); background: var(--color-ok-soft); color: var(--color-ok); }
+.feature__text { font-size: var(--text-sm); color: var(--color-text-soft); }
 
 /* ---- Empty state ---- */
 .empty {
