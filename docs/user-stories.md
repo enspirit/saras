@@ -1,6 +1,6 @@
 # saras — user stories
 
-One story per feature the application has today, written from the code (`web/app.ts`, `src/app.ts`, `src/sync.ts`, `src/triage/`) and the README. Each story lists the behaviour as built, so it can be used as an acceptance checklist.
+One story per feature the application has today, written from the code (`web/app.ts`, `src/tooling/http/app.ts`, `src/domain/mailboxes/fetch-mailbox.ts`, `src/domain/sorting/`) and the README. Each story lists the behaviour as built, so it can be used as an acceptance checklist.
 
 How the screens are designed and built is in [`design/`](design/README.md).
 

@@ -5,7 +5,7 @@
  */
 import DOMPurify from '../vendor/purify.mjs';
 
-/** The same elements the server keeps (src/html.ts). */
+/** The same elements the server keeps (src/tooling/html.ts). */
 const ALLOWED_TAGS = ['p', 'div', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'a', 'blockquote'];
 
 // A link in a reply opens beside the application, and tells the site it leads to nothing about us.

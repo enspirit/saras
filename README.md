@@ -17,7 +17,7 @@ Everything is in English by default, and the interface is also available in Fren
 
 **One folder per mailbox.** After connecting a mailbox, the user chooses the folder to watch: the inbox, or any other (an IMAP folder, a Gmail label, an Outlook folder). Nothing is fetched before that choice, and only that folder ever is. Watching a folder you fill yourself — by hand or with your mail client's own rules — is the simplest way to decide what deserves a reply.
 
-**The triage gate.** Every fetched email passes through a gate, which answers two questions: is a reply needed, and with which prompt. It is an abstraction (`src/triage/gate.ts`) with interchangeable strategies:
+**The triage gate.** Every fetched email passes through a gate, which answers two questions: is a reply needed, and with which prompt. It is an abstraction (`src/domain/sorting/gate.ts`) with interchangeable strategies:
 
 ```ts
 interface TriageGate {
@@ -35,7 +35,7 @@ interface TriageGate {
 | `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a draft is asked for. |
 | `ai` | An LLM decides and suggests a prompt. It reads the sender, subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
 
-The strategy is chosen **per organisation**, by its administrators; `TRIAGE_STRATEGY` only sets what a new organisation starts with. To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/triage/index.ts`.
+The strategy is chosen **per organisation**, by its administrators; `TRIAGE_STRATEGY` only sets what a new organisation starts with. To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/domain/sorting/index.ts`.
 
 **Before the gate**, header rules set plainly automated mail aside (no-reply senders, mailing lists, automatic replies, bulk mail, and over IMAP what you already answered), so that no strategy spends anything on it. Those emails stay visible under "No reply needed" and can be moved back. An organisation can turn the rules off in its settings.
 
@@ -67,7 +67,7 @@ There is one reply area: a rich-text editor (bold, italic, underline, lists, lin
 
 The proposal replaces your text; "Put my text back" restores it. When you change a proposal made with a prompt, you can say why: that reason is given to your next proposals made with the same prompt.
 
-A reply is sent as HTML with a plain-text alternative, both quoting the original. Only the elements an email needs are allowed (`src/html.ts`): whatever the LLM returns, and whatever is stored or sent, is rebuilt from that list on the server, and the interface sanitises again before displaying anything.
+A reply is sent as HTML with a plain-text alternative, both quoting the original. Only the elements an email needs are allowed (`src/tooling/html.ts`): whatever the LLM returns, and whatever is stored or sent, is rebuilt from that list on the server, and the interface sanitises again before displaying anything.
 
 ## Drafts
 
@@ -111,7 +111,7 @@ In the code, `t('key', params)` returns a string and `tRich('key', params, { lin
 
 ### What the server writes
 
-The server never sends sentences of its own to the interface: errors, triage verdicts made by rules and mailbox problems travel as a code with parameters (`src/messages.ts`, with their English text), which the interface translates under the `server.` keys. A test keeps the English file identical to the server's text and every language complete.
+The server never sends sentences of its own to the interface: errors, triage verdicts made by rules and mailbox problems travel as a code with parameters (`src/tooling/messages.ts`, with their English text), which the interface translates under the `server.` keys. A test keeps the English file identical to the server's text and every language complete.
 
 The server remembers each user's language (sent by the interface) for what it writes on their behalf:
 
@@ -154,7 +154,7 @@ This is the main design constraint.
 
 | Guarantee | How |
 | --- | --- |
-| No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
+| No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/tooling/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
 | No silent fallback | If no provider of the chosen model satisfies both conditions, OpenRouter refuses the request and the application shows the error. |
 | Minimisation | Checking typos and improving style never send the received email to the LLM, only your own text. Only the folder you chose is fetched. By default no email is analysed by the LLM: content leaves the server only when you ask for a draft. An organisation's administrators may choose otherwise: sorting by the AI, and proposals prepared at fetch (the content of each email to handle is then sent without anyone asking). Whatever they choose, nothing is sent to a correspondent without a member's confirmation. Newsletters, mailing lists, `no-reply` addresses and automated messages are set aside by header rules and never reach it. |
 | Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
@@ -221,7 +221,7 @@ The database is PostgreSQL, used in one of two ways with the same schema and que
 
 The embedded mode runs PostgreSQL inside the application's own process: nothing to install, but a single connection and no outside access for backups or monitoring. Use a server for anything real. There is no automatic transfer between the two.
 
-The schema is created at startup (`src/db.ts`). The tests run on the embedded database by default and on a server when `TEST_DATABASE_URL` is set; CI runs both.
+The schema is created at startup (`src/tooling/db.ts`). The tests run on the embedded database by default and on a server when `TEST_DATABASE_URL` is set; CI runs both.
 
 ## Configuration
 
@@ -245,11 +245,11 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               sent in your name, or filed as a draft (SMTP / IMAP / Gmail API / Graph)
 ```
 
-- `src/triage/`: the triage gate, its strategies, and the header rules applied before it.
-- `src/reply.ts`, `src/llm/prompts.ts`: pure decisions (shaping of the reply, prompt construction).
-- `src/llm/openrouter.ts`: OpenRouter client, privacy policy enforced.
-- `src/mail/`: one provider per kind of mailbox, same interface (`verify`, `listFolders`, `listNew`, `send`, `saveDraft`).
-- `src/sync.ts`: fetch and triage; `src/app.ts`: HTTP API; `src/types.ts`: the shapes shared across the server.
+- `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state. [`OPERATIONS.md`](OPERATIONS.md) is the inventory.
+- `src/domain/sorting/`: the triage gate, its strategies, and the header rules applied before it.
+- `src/domain/mailboxes/fetch-mailbox.ts`: fetch, then sort, then prepare proposals.
+- `src/tooling/`: how it is done, with no business rule: `http/app.ts` (the HTTP API), `db.ts`, `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
+- `src/types.ts`: the shapes shared across the server.
 - `web/`: the interface's TypeScript (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
 - Data: PostgreSQL (see "Database").
 
@@ -262,7 +262,7 @@ Everything is TypeScript in strict mode.
 - **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
 - **Browser code** is compiled by `npm run build` from `web/` to `public/js/` (not committed), one ES module per source file, without a bundler. The same command copies the two browser libraries (see "Third-party software") to `public/js/vendor/`.
 - `npm run typecheck` checks both. `npm run dev` rebuilds the browser code and restarts the server on change.
-- `web/api.ts` describes the JSON returned by each route for the interface. It mirrors what `src/app.ts` builds, but the two are not checked against each other.
+- `web/api.ts` describes the JSON returned by each route for the interface. It mirrors what `src/tooling/http/app.ts` builds, but the two are not checked against each other.
 
 ## Tests
 

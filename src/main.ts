@@ -1,13 +1,13 @@
 import { existsSync } from 'node:fs';
-import { createApp } from './app.ts';
-import { loadConfig, loadDotEnv } from './config.ts';
-import { createVault } from './crypto.ts';
-import { openDb, purgeOldContent } from './db.ts';
-import { errorMessage } from './errors.ts';
-import { createOpenRouter } from './llm/openrouter.ts';
-import { createMailService } from './mail/index.ts';
-import { createSync } from './sync.ts';
-import { createTriage } from './triage/index.ts';
+import { createApp } from './tooling/http/app.ts';
+import { loadConfig, loadDotEnv } from './tooling/config.ts';
+import { createVault } from './tooling/crypto.ts';
+import { openDb, purgeOldContent } from './tooling/db.ts';
+import { errorMessage } from './tooling/errors.ts';
+import { createOpenRouter } from './tooling/llm/openrouter.ts';
+import { createMailService } from './tooling/mail/index.ts';
+import { createSync } from './domain/mailboxes/fetch-mailbox.ts';
+import { createTriage } from './domain/sorting/index.ts';
 
 loadDotEnv();
 let config;

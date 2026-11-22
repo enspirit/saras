@@ -1,5 +1,5 @@
 import { htmlToText, parseAddress } from '../text.ts';
-import type { Address, Attachment, Fetch, IncomingEmail, MailFolder, MailProvider, Sender } from '../types.ts';
+import type { Address, Attachment, Fetch, IncomingEmail, MailFolder, MailProvider, Sender } from '../../types.ts';
 import { buildRawReply } from './mime.ts';
 
 const API = 'https://gmail.googleapis.com/gmail/v1/users/me';

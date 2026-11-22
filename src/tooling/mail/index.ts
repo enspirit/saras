@@ -1,7 +1,7 @@
 import type { Config } from '../config.ts';
 import type { Vault } from '../crypto.ts';
 import type { Db } from '../db.ts';
-import type { AccountRow, Fetch, ImapCredentials, MailProvider, OAuthKind, OAuthTokens, Sender } from '../types.ts';
+import type { AccountRow, Fetch, ImapCredentials, MailProvider, OAuthKind, OAuthTokens, Sender } from '../../types.ts';
 import { createGmailProvider } from './gmail.ts';
 import { createGraphProvider } from './graph.ts';
 import { createImapProvider } from './imap.ts';

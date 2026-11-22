@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { contentIsKept, handOverRecord, hasSomethingWritten, mayHandOver, promptToPrepareWith, proposalHtml } from '../src/domain/computations/replying.ts';
 import type { Verdict } from '../src/domain/refusal.ts';
-import type { PromptRow } from '../src/types.ts';
+import type { EmailStatus, PromptRow } from '../src/types.ts';
 
 /** What a verdict comes down to: 'ok', or the kind and code of its refusal. */
 const outcome = (verdict: Verdict<unknown>): string => (verdict.ok ? 'ok' : `${verdict.refusal.kind}: ${verdict.refusal.problem.code}`);
 
-const reply = { status: 'needs_reply' as const, inFlight: false, html: '<p>Hello</p>', to: ['claire@client.example'], cc: [] as string[] };
+const reply = { status: 'needs_reply' as EmailStatus, inFlight: false, html: '<p>Hello</p>', to: ['claire@client.example'], cc: [] as string[] };
 
 test('a reply may be handed over when it has a text, a recipient, valid addresses, and the email is not replied', () => {
-  const cases: [string, Partial<typeof reply> & { status?: string }, string][] = [
+  const cases: [string, Partial<typeof reply>, string][] = [
     ['all clauses hold', {}, 'ok'],
     ['to handle, waiting to be sorted, set aside or ignored: all can be replied', { status: 'pending' }, 'ok'],
     ['set aside', { status: 'no_reply' }, 'ok'],
@@ -24,7 +24,7 @@ test('a reply may be handed over when it has a text, a recipient, valid addresse
     ['DomPre: none on its way', { inFlight: true }, 'conflict: emails.alreadyHandled'],
     ['the request is judged before the state: an empty reply to a replied email is empty', { status: 'sent', html: '' }, 'invalid: reply.empty'],
   ];
-  for (const [name, change, expected] of cases) assert.equal(outcome(mayHandOver({ ...reply, ...change } as typeof reply)), expected, name);
+  for (const [name, change, expected] of cases) assert.equal(outcome(mayHandOver({ ...reply, ...change })), expected, name);
 });
 
 test('what a hand-over records: edited or not, and the reason only if it was', () => {

@@ -1,5 +1,5 @@
 // State: the mailboxes of an organisation.
-import type { Db } from '../../db.ts';
+import type { Db } from '../../tooling/db.ts';
 import type { AccountRow } from '../../types.ts';
 
 /**

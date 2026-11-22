@@ -1,4 +1,4 @@
-import type { Address } from './types.ts';
+import type { Address } from '../types.ts';
 
 /** Small pure text helpers shared by the mail providers and the prompt builders. */
 

@@ -1,5 +1,5 @@
 // State: the prompts of an organisation, and what its members said when correcting their proposals.
-import type { Db } from '../../db.ts';
+import type { Db } from '../../tooling/db.ts';
 import type { PromptRow } from '../../types.ts';
 import { Refusal } from '../refusal.ts';
 

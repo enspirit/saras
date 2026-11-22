@@ -7,8 +7,8 @@
 //            a key is in force (the LLM refuses otherwise)
 //   ReqPost  the email received is not sent to the LLM: only the member's text is
 //            only what a reply may contain is kept of the answer
-import { buildStyleMessages } from '../../llm/prompts.ts';
-import { llmSettings } from '../../llm/settings.ts';
+import { buildStyleMessages } from '../computations/llm-prompts.ts';
+import { llmSettings } from '../computations/key-in-force.ts';
 import { hasSomethingWritten } from '../computations/replying.ts';
 import { accepted } from '../refusal.ts';
 import { emailFor } from '../state/emails.ts';

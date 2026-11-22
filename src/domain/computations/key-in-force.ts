@@ -1,6 +1,6 @@
-import type { Config } from '../config.ts';
-import type { Vault } from '../crypto.ts';
-import type { OrganizationRow, UserRow } from '../types.ts';
+import type { Config } from '../../tooling/config.ts';
+import type { Vault } from '../../tooling/crypto.ts';
+import type { OrganizationRow, UserRow } from '../../types.ts';
 
 /**
  * Which key and model does this user's LLM traffic use? Their own, else their organisation's,

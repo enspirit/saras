@@ -1,5 +1,5 @@
 import type { Config } from '../config.ts';
-import type { Fetch, OAuthKind, OAuthTokens } from '../types.ts';
+import type { Fetch, OAuthKind, OAuthTokens } from '../../types.ts';
 
 /** OAuth 2 authorization-code flow for Google and Microsoft mailboxes. */
 

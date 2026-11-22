@@ -1,6 +1,6 @@
 // What the three kinds of AI help have in common: ask the LLM, keep of its answer only what
 // a reply may contain, and keep the result as a proposal for the email.
-import { sanitizeHtml, stripCodeFence } from '../../html.ts';
+import { sanitizeHtml, stripCodeFence } from '../../tooling/html.ts';
 import type { AssistAction, ChatMessage } from '../../types.ts';
 import { keepProposal } from '../state/proposals.ts';
 import type { World } from '../world.ts';

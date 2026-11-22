@@ -1,5 +1,5 @@
 // State: the proposals the AI wrote, and the replies handed to mailboxes.
-import type { Db } from '../../db.ts';
+import type { Db } from '../../tooling/db.ts';
 import type { AssistAction, DraftRow, ReplyMode } from '../../types.ts';
 
 /** The proposal with this number, when it is one of this email's. */

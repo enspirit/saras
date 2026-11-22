@@ -1,9 +1,9 @@
 // Replies are rich text: what may be in them, and how they become mail.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { isBlankHtml, sanitizeHtml, stripCodeFence, textToHtml } from '../src/html.ts';
-import { composeReplyHtml, wasEdited } from '../src/reply.ts';
-import { htmlToText } from '../src/text.ts';
+import { isBlankHtml, sanitizeHtml, stripCodeFence, textToHtml } from '../src/tooling/html.ts';
+import { composeReplyHtml, wasEdited } from '../src/domain/computations/reply.ts';
+import { htmlToText } from '../src/tooling/text.ts';
 
 test('what an email needs is kept as it is', () => {
   const html = '<p>Bonjour <strong>Claire</strong>,</p><ul><li>un</li><li><em>deux</em></li></ul><p>Voir <a href="https://example.com/a?b=1&amp;c=2">ici</a><br>Merci</p><blockquote>cité</blockquote>';

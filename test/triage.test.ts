@@ -1,10 +1,10 @@
 // The triage gate: its contract, its batching, and its two strategies.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { aiTriage, buildBatchMessages, parseBatchAnswer } from '../src/triage/ai.ts';
-import { TRIAGE_BATCH_SIZE, runGate } from '../src/triage/gate.ts';
-import type { TriageBatch, TriageGate, TriageMail } from '../src/triage/gate.ts';
-import { noTriage } from '../src/triage/none.ts';
+import { aiTriage, buildBatchMessages, parseBatchAnswer } from '../src/domain/sorting/ai.ts';
+import { TRIAGE_BATCH_SIZE, runGate } from '../src/domain/sorting/gate.ts';
+import type { TriageBatch, TriageGate, TriageMail } from '../src/domain/sorting/gate.ts';
+import { noTriage } from '../src/domain/sorting/none.ts';
 import type { ChatRequest } from '../src/types.ts';
 
 const prompts = [

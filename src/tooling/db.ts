@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import pg from 'pg';
-import { defaultPrompts } from './default-prompts.ts';
+import { defaultPrompts } from '../domain/prompts/ready-made-prompts.ts';
 
 /**
  * The database is PostgreSQL, reached in one of two ways behind the same interface:

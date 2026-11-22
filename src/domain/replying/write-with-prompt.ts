@@ -11,9 +11,9 @@
 //   ReqPost  written as the mailbox's address, ending with the member's signature
 //            the member's past corrections on this prompt are taken into account
 //            only what a reply may contain is kept of the answer
-import { buildPromptMessages } from '../../llm/prompts.ts';
-import { llmSettings } from '../../llm/settings.ts';
-import { rowToEmail } from '../../sync.ts';
+import { buildPromptMessages } from '../computations/llm-prompts.ts';
+import { llmSettings } from '../computations/key-in-force.ts';
+import { rowToEmail } from '../mailboxes/fetch-mailbox.ts';
 import { contentIsKept } from '../computations/replying.ts';
 import { accepted } from '../refusal.ts';
 import { emailFor } from '../state/emails.ts';

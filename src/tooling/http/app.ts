@@ -2,40 +2,40 @@ import express from 'express';
 import type { CookieOptions, ErrorRequestHandler, Express, Request, RequestHandler, Response } from 'express';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Config } from './config.ts';
-import { hashPassword, randomToken, tokenHash, verifyPassword } from './crypto.ts';
-import type { Vault } from './crypto.ts';
-import { seedDefaultPrompts } from './db.ts';
-import { defaultPrompts } from './default-prompts.ts';
-import type { Db } from './db.ts';
-import { proposalHtml } from './domain/computations/replying.ts';
-import { Refusal } from './domain/refusal.ts';
-import type { RefusalKind } from './domain/refusal.ts';
-import { checkTypos } from './domain/replying/check-typos.ts';
-import { fileReplyAsDraft } from './domain/replying/file-reply-as-draft.ts';
-import { improveStyle } from './domain/replying/improve-style.ts';
-import { sendReply } from './domain/replying/send-reply.ts';
-import { writeWithPrompt } from './domain/replying/write-with-prompt.ts';
-import { emailFor } from './domain/state/emails.ts';
-import type { OwnedEmailRow } from './domain/state/emails.ts';
-import { mayUse } from './domain/state/mailboxes.ts';
-import { promptOf as organizationPrompt } from './domain/state/prompts.ts';
-import type { Actor, World } from './domain/world.ts';
-import { errorMessage } from './errors.ts';
+import type { Config } from '../config.ts';
+import { hashPassword, randomToken, tokenHash, verifyPassword } from '../crypto.ts';
+import type { Vault } from '../crypto.ts';
+import { seedDefaultPrompts } from '../db.ts';
+import { defaultPrompts } from '../../domain/prompts/ready-made-prompts.ts';
+import type { Db } from '../db.ts';
+import { proposalHtml } from '../../domain/computations/replying.ts';
+import { Refusal } from '../../domain/refusal.ts';
+import type { RefusalKind } from '../../domain/refusal.ts';
+import { checkTypos } from '../../domain/replying/check-typos.ts';
+import { fileReplyAsDraft } from '../../domain/replying/file-reply-as-draft.ts';
+import { improveStyle } from '../../domain/replying/improve-style.ts';
+import { sendReply } from '../../domain/replying/send-reply.ts';
+import { writeWithPrompt } from '../../domain/replying/write-with-prompt.ts';
+import { emailFor } from '../../domain/state/emails.ts';
+import type { OwnedEmailRow } from '../../domain/state/emails.ts';
+import { mayUse } from '../../domain/state/mailboxes.ts';
+import { promptOf as organizationPrompt } from '../../domain/state/prompts.ts';
+import type { Actor, World } from '../../domain/world.ts';
+import { errorMessage } from '../errors.ts';
 import type { SessionUser } from './express.d.ts';
-import { LlmError, PRIVACY } from './llm/openrouter.ts';
-import { decodeProblem, problem, readReason } from './messages.ts';
-import type { MessageCode, MessageParams, Problem } from './messages.ts';
-import type { MailService } from './mail/index.ts';
-import { lookupMailHost } from './mail/lookup.ts';
-import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from './mail/oauth.ts';
-import { replyRecipients } from './reply.ts';
-import { llmSettings } from './llm/settings.ts';
-import { rowToEmail } from './sync.ts';
-import type { Sync } from './sync.ts';
-import { isTriageStrategy } from './triage/index.ts';
-import { isEmailAddress } from './text.ts';
-import { AUTOMATIONS } from './types.ts';
+import { LlmError, PRIVACY } from '../llm/openrouter.ts';
+import { decodeProblem, problem, readReason } from '../messages.ts';
+import type { MessageCode, MessageParams, Problem } from '../messages.ts';
+import type { MailService } from '../mail/index.ts';
+import { lookupMailHost } from '../mail/lookup.ts';
+import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from '../mail/oauth.ts';
+import { replyRecipients } from '../../domain/computations/reply.ts';
+import { llmSettings } from '../../domain/computations/key-in-force.ts';
+import { rowToEmail } from '../../domain/mailboxes/fetch-mailbox.ts';
+import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
+import { isTriageStrategy } from '../../domain/sorting/index.ts';
+import { isEmailAddress } from '../text.ts';
+import { AUTOMATIONS } from '../../types.ts';
 import type {
   AccountKind,
   AccountRow,
@@ -53,10 +53,10 @@ import type {
   Sender,
   ServerCredentials,
   UserRow,
-} from './types.ts';
+} from '../../types.ts';
 
 const SESSION_DAYS = 30;
-const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
+const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
 
 /** A refusal with its HTTP status and a message code the interface can translate. */
 class HttpError extends Error {

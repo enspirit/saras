@@ -6,8 +6,8 @@
 //   ReqPre   the email has someone to reply to
 //   ReqPost  nothing is sent
 //            recorded as not edited: the draft is the proposal
-import { replyRecipients } from '../../reply.ts';
-import { htmlToText } from '../../text.ts';
+import { replyRecipients } from '../computations/reply.ts';
+import { htmlToText } from '../../tooling/text.ts';
 import type { AccountRow, Email, UserRow } from '../../types.ts';
 import { recordReply } from '../state/proposals.ts';
 import type { World } from '../world.ts';

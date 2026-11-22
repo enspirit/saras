@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createVault, hashPassword, verifyPassword } from '../src/crypto.ts';
-import { buildChatRequest, explainError, PRIVACY } from '../src/llm/openrouter.ts';
-import { buildPromptMessages, buildStyleMessages, buildTyposMessages } from '../src/llm/prompts.ts';
-import { gmailToEmail } from '../src/mail/gmail.ts';
-import { graphToEmail, injectReplyHtml } from '../src/mail/graph.ts';
-import { authorizationUrl } from '../src/mail/oauth.ts';
-import { composeReplyBody, replyRecipients, replyReferences, replySubject, wasEdited } from '../src/reply.ts';
-import { htmlToText, parseAddress } from '../src/text.ts';
-import { heuristicTriage } from '../src/triage/rules.ts';
+import { createVault, hashPassword, verifyPassword } from '../src/tooling/crypto.ts';
+import { buildChatRequest, explainError, PRIVACY } from '../src/tooling/llm/openrouter.ts';
+import { buildPromptMessages, buildStyleMessages, buildTyposMessages } from '../src/domain/computations/llm-prompts.ts';
+import { gmailToEmail } from '../src/tooling/mail/gmail.ts';
+import { graphToEmail, injectReplyHtml } from '../src/tooling/mail/graph.ts';
+import { authorizationUrl } from '../src/tooling/mail/oauth.ts';
+import { composeReplyBody, replyRecipients, replyReferences, replySubject, wasEdited } from '../src/domain/computations/reply.ts';
+import { htmlToText, parseAddress } from '../src/tooling/text.ts';
+import { heuristicTriage } from '../src/domain/sorting/rules.ts';
 
 const email = {
   fromName: 'Claire Martin',
@@ -201,7 +201,7 @@ test('OAuth authorization URLs', () => {
 });
 
 test('the host of a mailbox is read from its MX records', async () => {
-  const { classifyMx, domainOf } = await import('../src/mail/lookup.ts');
+  const { classifyMx, domainOf } = await import('../src/tooling/mail/lookup.ts');
   assert.equal(classifyMx(['aspmx.l.google.com', 'alt1.aspmx.l.google.com']).provider, 'google');
   assert.equal(classifyMx(['acme-example.mail.protection.outlook.com.']).provider, 'microsoft');
   assert.deepEqual(classifyMx(['mx1.mail.ovh.net']), { provider: 'other', servers: { imapHost: 'ssl0.ovh.net', imapPort: 993, smtpHost: 'ssl0.ovh.net', smtpPort: 465 } });

@@ -1,5 +1,5 @@
-import { reasonCode } from '../messages.ts';
-import type { IncomingEmail } from '../types.ts';
+import { reasonCode } from '../../tooling/messages.ts';
+import type { IncomingEmail } from '../../types.ts';
 
 /**
  * Header rules applied before the triage gate: mail that is plainly automated (no-reply

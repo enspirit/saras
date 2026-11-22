@@ -1,8 +1,8 @@
 // How an operation says no. A refusal names the clause that failed, as a message code the
 // interface can translate, and its kind: what sort of "no" it is. The domain knows nothing
 // of HTTP; the tooling turns a kind into a status.
-import { problem } from '../messages.ts';
-import type { MessageCode, MessageParams, Problem } from '../messages.ts';
+import { problem } from '../tooling/messages.ts';
+import type { MessageCode, MessageParams, Problem } from '../tooling/messages.ts';
 
 /**
  * invalid:   what was asked makes no sense as asked (a ReqPre on the request itself)

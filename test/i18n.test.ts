@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
-import { MESSAGES } from '../src/messages.ts';
+import { MESSAGES } from '../src/tooling/messages.ts';
 import { flatten, format, formatRich, parameterNames } from '../web/i18n/format.ts';
 
 const root = new URL('../', import.meta.url);

@@ -1,17 +1,17 @@
-import type { Config } from './config.ts';
-import { prepareProposals } from './domain/replying/prepare-proposals.ts';
-import type { Vault } from './crypto.ts';
-import type { Db } from './db.ts';
-import { errorMessage } from './errors.ts';
-import { LlmError } from './llm/openrouter.ts';
-import type { MailService } from './mail/index.ts';
-import { encodeProblem, problem } from './messages.ts';
-import type { Problem } from './messages.ts';
-import { runGate } from './triage/gate.ts';
-import type { TriageMail, TriagePrompt } from './triage/gate.ts';
-import type { Triage } from './triage/index.ts';
-import { heuristicTriage } from './triage/rules.ts';
-import type { AccountRow, Email, EmailRow, IncomingEmail, Llm, OrganizationRow, UserRow } from './types.ts';
+import type { Config } from '../../tooling/config.ts';
+import { prepareProposals } from '../replying/prepare-proposals.ts';
+import type { Vault } from '../../tooling/crypto.ts';
+import type { Db } from '../../tooling/db.ts';
+import { errorMessage } from '../../tooling/errors.ts';
+import { LlmError } from '../../tooling/llm/openrouter.ts';
+import type { MailService } from '../../tooling/mail/index.ts';
+import { encodeProblem, problem } from '../../tooling/messages.ts';
+import type { Problem } from '../../tooling/messages.ts';
+import { runGate } from '../sorting/gate.ts';
+import type { TriageMail, TriagePrompt } from '../sorting/gate.ts';
+import type { Triage } from '../sorting/index.ts';
+import { heuristicTriage } from '../sorting/rules.ts';
+import type { AccountRow, Email, EmailRow, IncomingEmail, Llm, OrganizationRow, UserRow } from '../../types.ts';
 
 const MAX_STORED_BODY = 100_000;
 

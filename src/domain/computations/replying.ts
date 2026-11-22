@@ -1,9 +1,9 @@
 // Pure decisions about replying: what a proposal is, whether a reply may be handed over and
 // what is recorded of it, which prompt writes a proposal nobody asked for. No state is read
 // or written here; every function is a table of inputs and outputs.
-import { isBlankHtml, textToHtml } from '../../html.ts';
-import { wasEdited } from '../../reply.ts';
-import { htmlToText, isEmailAddress } from '../../text.ts';
+import { isBlankHtml, textToHtml } from '../../tooling/html.ts';
+import { wasEdited } from './reply.ts';
+import { htmlToText, isEmailAddress } from '../../tooling/text.ts';
 import type { DraftRow, EmailStatus, PromptRow } from '../../types.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';

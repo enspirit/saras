@@ -3,7 +3,7 @@ import { simpleParser } from 'mailparser';
 import type { AddressObject, ParsedMail } from 'mailparser';
 import nodemailer from 'nodemailer';
 import { htmlToText } from '../text.ts';
-import type { Address, Email, ImapCredentials, IncomingEmail, MailProvider, Sender, ServerCredentials } from '../types.ts';
+import type { Address, Email, ImapCredentials, IncomingEmail, MailProvider, Sender, ServerCredentials } from '../../types.ts';
 import { buildRawReply } from './mime.ts';
 
 /** mailparser gives one address object, several, or none, depending on the header. */

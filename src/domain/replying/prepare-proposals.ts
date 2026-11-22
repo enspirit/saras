@@ -11,13 +11,13 @@
 //            at most MAX_PREPARED per fetch, most recent first
 //            when the way of working says so, each is then filed: FileProposalAsDraft
 //   ReqTrig  part of every fetch, after sorting
-import { errorMessage } from '../../errors.ts';
-import { LlmError } from '../../llm/openrouter.ts';
-import { buildPromptMessages } from '../../llm/prompts.ts';
-import { llmSettings } from '../../llm/settings.ts';
-import { problem } from '../../messages.ts';
-import type { Problem } from '../../messages.ts';
-import { rowToEmail } from '../../sync.ts';
+import { errorMessage } from '../../tooling/errors.ts';
+import { LlmError } from '../../tooling/llm/openrouter.ts';
+import { buildPromptMessages } from '../computations/llm-prompts.ts';
+import { llmSettings } from '../computations/key-in-force.ts';
+import { problem } from '../../tooling/messages.ts';
+import type { Problem } from '../../tooling/messages.ts';
+import { rowToEmail } from '../mailboxes/fetch-mailbox.ts';
 import type { AccountRow, OrganizationRow, UserRow } from '../../types.ts';
 import { promptToPrepareWith } from '../computations/replying.ts';
 import { emailsAwaitingProposal } from '../state/emails.ts';

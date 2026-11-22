@@ -1,6 +1,6 @@
 /**
  * The HTTP API as the browser sees it: one typed call function, and the shape of what each
- * route returns. These shapes mirror the JSON built in src/app.ts.
+ * route returns. These shapes mirror the JSON built in src/tooling/http/app.ts.
  */
 
 import { hasMessage, t } from './i18n.ts';

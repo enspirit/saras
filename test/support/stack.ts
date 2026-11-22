@@ -6,15 +6,15 @@ import { createServer } from 'node:http';
 import type { AddressInfo, Server } from 'node:net';
 import pg from 'pg';
 import { SMTPServer } from 'smtp-server';
-import { createApp } from '../../src/app.ts';
-import { loadConfig } from '../../src/config.ts';
-import { createVault } from '../../src/crypto.ts';
-import { openDb } from '../../src/db.ts';
-import type { Db } from '../../src/db.ts';
-import { createOpenRouter } from '../../src/llm/openrouter.ts';
-import { createMailService } from '../../src/mail/index.ts';
-import { createSync } from '../../src/sync.ts';
-import { createTriage } from '../../src/triage/index.ts';
+import { createApp } from '../../src/tooling/http/app.ts';
+import { loadConfig } from '../../src/tooling/config.ts';
+import { createVault } from '../../src/tooling/crypto.ts';
+import { openDb } from '../../src/tooling/db.ts';
+import type { Db } from '../../src/tooling/db.ts';
+import { createOpenRouter } from '../../src/tooling/llm/openrouter.ts';
+import { createMailService } from '../../src/tooling/mail/index.ts';
+import { createSync } from '../../src/domain/mailboxes/fetch-mailbox.ts';
+import { createTriage } from '../../src/domain/sorting/index.ts';
 import type { ChatMessage } from '../../src/types.ts';
 
 /** Listen on a free local port and return it. */

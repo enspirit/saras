@@ -1,4 +1,4 @@
-import type { Address, Fetch, IncomingEmail, MailProvider, OutgoingReply, Sender } from '../types.ts';
+import type { Address, Fetch, IncomingEmail, MailProvider, OutgoingReply, Sender } from '../../types.ts';
 
 const API = 'https://graph.microsoft.com/v1.0';
 

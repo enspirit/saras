@@ -1,6 +1,6 @@
-import { REPLY_TAGS, isBlankHtml } from '../html.ts';
-import { truncate } from '../text.ts';
-import type { ChatMessage, Email } from '../types.ts';
+import { REPLY_TAGS, isBlankHtml } from '../../tooling/html.ts';
+import { truncate } from '../../tooling/text.ts';
+import type { ChatMessage, Email } from '../../types.ts';
 
 type EmailContent = Pick<Email, 'fromName' | 'fromAddr' | 'to' | 'cc' | 'date' | 'subject' | 'bodyText'> & Partial<Pick<Email, 'attachments'>>;
 
