@@ -25,7 +25,7 @@ export interface MailboxOptions {
 }
 
 /** List of emails on one side, reading pane on the other. */
-export function Mailbox({ title, count, meta, action, items, empty, backHref, backLabel, idle, detail }: MailboxOptions): HTMLDivElement {
+export function MailboxView({ title, count, meta, action, items, empty, backHref, backLabel, idle, detail }: MailboxOptions): HTMLDivElement {
   return h('div', { class: cx('mailbox', Boolean(detail) && 'mailbox--reading') },
     h('section', { class: 'mailbox__list' },
       h('div', { class: 'mailbox__list-head' }, Heading(2, title), count ? h('span', { class: 'mailbox__count' }, count) : null, meta && h('span', { class: 'mailbox__meta' }, meta), action),

@@ -3,6 +3,7 @@
  * for is in ./api/, one file per area of OPERATIONS.md, each function named after its operation.
  */
 
+import type { Problem } from '../shared/problem.ts';
 import { hasMessage, t } from './i18n.ts';
 
 export class ApiError extends Error {
@@ -29,13 +30,6 @@ export async function api<T = unknown>(method: 'GET' | 'POST' | 'PUT' | 'DELETE'
     throw new ApiError(text || t('common.httpError', { status: res.status }), res.status, data.code ?? null);
   }
   return data as T;
-}
-
-/** Something the server reports: a code the translation files may know, and its English text. */
-export interface Problem {
-  code: string;
-  params: Record<string, string | number>;
-  message: string;
 }
 
 /** A server message in the user's language, or its English text when it has no translation. */

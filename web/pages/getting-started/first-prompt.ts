@@ -1,8 +1,8 @@
 // The prompt step of getting started: the prompt an organisation starts with, to read and
 // adjust, and the other ready-made ones beside it.
 
+import type { Prompt } from '../../../shared/prompt.ts';
 import { createPrompt, editPrompt, readPrompts, readPromptTemplates } from '../../api/prompts.ts';
-import type { Prompt } from '../../api/prompts.ts';
 import { t } from '../../i18n.ts';
 import { guard, SubmitForm } from '../actions.ts';
 import { promptFields } from '../edit-prompt.ts';

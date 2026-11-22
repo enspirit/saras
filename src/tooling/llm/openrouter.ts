@@ -1,5 +1,5 @@
 import { problem } from '../messages.ts';
-import type { Problem } from '../messages.ts';
+import type { ServerProblem } from '../messages.ts';
 import type { ChatAnswer, ChatMessage, ChatRequest, Llm } from '../../domain/model/llm.ts';
 import type { Fetch } from '../fetch.ts';
 
@@ -16,9 +16,9 @@ export const PRIVACY = Object.freeze({ zdr: true, data_collection: 'deny' } as c
 
 export class LlmError extends Error {
   status: number;
-  problem: Problem;
+  problem: ServerProblem;
 
-  constructor(described: Problem, status: number) {
+  constructor(described: ServerProblem, status: number) {
     super(described.message);
     this.name = 'LlmError';
     this.status = status;
@@ -46,7 +46,7 @@ export function buildChatRequest({ model, messages, temperature = 0.3, maxTokens
 }
 
 /** Pure: turn an OpenRouter error into a message the user can act on. */
-export function explainError(status: number, body: OpenRouterBody | null, model: string): Problem {
+export function explainError(status: number, body: OpenRouterBody | null, model: string): ServerProblem {
   const detail = body?.error?.message || '';
   if (status === 401) return problem('llm.keyRefused');
   if (status === 402) return problem('llm.noCredit');

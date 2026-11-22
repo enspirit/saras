@@ -15,14 +15,14 @@ import { Form } from '../ui/molecules/form.ts';
 import { Message } from '../ui/molecules/message.ts';
 import { Panel } from '../ui/molecules/panel.ts';
 import { AuthPanel } from '../ui/organisms/auth-panel.ts';
-import { Mailbox } from '../ui/organisms/mailbox.ts';
+import { MailboxView } from '../ui/organisms/mailbox.ts';
 import { Columns } from '../ui/organisms/page.ts';
 import { Reading } from '../ui/organisms/reading.ts';
 import { ClosedDock } from '../ui/organisms/reply-dock.ts';
 
 const mailboxCard = (): HTMLDivElement =>
   Card({ title: t('styleguide.mailbox') },
-    Mailbox({
+    MailboxView({
       title: t('box.todo.label'), count: 2, meta: t('mailbox.fetchedAt', { time: '08:13' }), action: Button(t('mailbox.refresh'), { variant: 'ghost', icon: 'refresh-cw', iconOnly: true }),
       items: [sampleEmail({ current: true }), sampleEmail({ from: 'Marc Dubois', subject: t('styleguide.sample.subject3') })],
       empty: EmptyState(t('box.todo.empty'), { icon: 'mail' }), idle: EmptyState(t('mailbox.select'), { icon: 'mail' }), backHref: '#', backLabel: t('mailbox.back'),

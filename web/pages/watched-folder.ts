@@ -1,9 +1,9 @@
 // Choosing the one folder of a mailbox to watch: the second step of getting started, and
 // later a change made from the list of mailboxes.
 
+import type { Mailbox } from '../../shared/mailbox.ts';
 import { problemText } from '../api.ts';
 import { chooseWatchedFolder, fetchMailbox, readFolders } from '../api/mailboxes.ts';
-import type { Account } from '../api/mailboxes.ts';
 import { t } from '../i18n.ts';
 import { goTo } from '../navigation.ts';
 import { ActionButton, messageOf, toast } from './actions.ts';
@@ -19,7 +19,7 @@ import { PageHeader } from '../ui/molecules/page-header.ts';
 import { Page } from '../ui/organisms/page.ts';
 
 /** ChooseWatchedFolder. A change goes back to the mailboxes; the first choice goes on with the path. */
-async function watchFolder(account: Account, folder: string): Promise<void> {
+async function watchFolder(account: Mailbox, folder: string): Promise<void> {
   await chooseWatchedFolder(account.id, folder);
   if (account.folder !== null) {
     toast(t('accounts.folderChosen'));
@@ -34,7 +34,7 @@ async function watchFolder(account: Account, folder: string): Promise<void> {
 }
 
 /** Asks the mailbox for its folders, and offers them with the watched one (or the first, the inbox) chosen. */
-function offerFolders(account: Account, folders: ChoicesHandle, confirm: HTMLButtonElement): void {
+function offerFolders(account: Mailbox, folders: ChoicesHandle, confirm: HTMLButtonElement): void {
   readFolders(account.id)
     .then((list) => {
       folders.setOptions(list.map((f) => ({ value: f.id, title: f.name })), account.folder ?? list[0]?.id);
@@ -47,7 +47,7 @@ function offerFolders(account: Account, folders: ChoicesHandle, confirm: HTMLBut
  * Choosing the one folder of a mailbox to watch. The folders are asked of the mailbox when
  * the page appears, with the inbox first and preselected.
  */
-export function watchedFolderPage(account: Account): void {
+export function watchedFolderPage(account: Mailbox): void {
   const fresh = account.folder === null;
   const folders = Choices({ legend: t('accounts.folders'), name: 'folder', rows: true, options: [{ value: '', title: t('accounts.loadingFolders'), disabled: true }] });
   const confirm = ActionButton(t('accounts.useFolder'), t('mailbox.refreshing'), () => watchFolder(account, folders.value()), { variant: 'primary' });

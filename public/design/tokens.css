@@ -15,7 +15,7 @@
 /* Icons: Lucide (ISC licence), copied next to the compiled interface by `npm run build`. */
 @font-face {
   font-family: "lucide";
-  src: url("../js/vendor/lucide.woff2") format("woff2");
+  src: url("../js/web/vendor/lucide.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: block;

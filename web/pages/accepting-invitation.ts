@@ -1,7 +1,7 @@
 // Accepting an invitation: the page an invitation link opens.
 
+import type { WhatVisitorsAreTold } from '../../shared/member.ts';
 import { acceptInvitation, checkInvitation } from '../api/access.ts';
-import type { PublicInfo } from '../api/access.ts';
 import { language, t } from '../i18n.ts';
 import { start } from '../navigation.ts';
 import { messageOf, SubmitForm } from './actions.ts';
@@ -22,7 +22,7 @@ const leaveInvitation = (): Promise<void> => {
 };
 
 /** Shown when the link opens nothing: why, and the way to the sign-in page. */
-const refusedInvitation = (info: PublicInfo, problem: unknown): HTMLDivElement => {
+const refusedInvitation = (info: WhatVisitorsAreTold, problem: unknown): HTMLDivElement => {
   const { brand } = session;
   return AuthPanel({ brand, tagline: brand.tagline, points: guarantees(info), title: t('invitation.title') }, Notice('danger', messageOf(problem)), Button(t('invitation.goToSignIn'), { onClick: leaveInvitation }));
 };

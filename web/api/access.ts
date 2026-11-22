@@ -1,16 +1,7 @@
 // Access: creating the organisation, signing in and out, invitations, members and their roles,
 // passwords, and leaving. One function per operation of OPERATIONS.md, and the lists they act on.
+import type { Invitation, Member, NewInvitation, WhatVisitorsAreTold } from '../../shared/member.ts';
 import { api } from '../api.ts';
-
-export type Role = 'admin' | 'user';
-
-export interface PublicInfo {
-  allowSignup: boolean;
-  /** No account exists yet: the next one created administers the installation. */
-  firstAccount?: boolean;
-  /** Days after which email content is erased; 0 or absent when it is kept. */
-  retentionDays?: number;
-}
 
 /** What the sign-in form sends; the organisation and the name count only when one is created. */
 export interface SignInDetails {
@@ -21,34 +12,8 @@ export interface SignInDetails {
   language: string;
 }
 
-export interface User {
-  id: number;
-  email: string;
-  name: string;
-  role: Role;
-  createdAt: string;
-  /** Number of connected mailboxes. */
-  accounts: number;
-}
-
-export interface Invitation {
-  id: number;
-  email: string;
-  role: Role;
-  expiresAt: string;
-  expired: boolean;
-}
-
-/** Returned once, when the invitation is created: the link cannot be shown again. */
-export interface NewInvitation {
-  id: number;
-  email: string;
-  link: string;
-  validDays: number;
-}
-
 /** What the installation says of itself to a visitor. */
-export const readPublicInfo = (): Promise<PublicInfo> => api<PublicInfo>('GET', '/public');
+export const readPublicInfo = (): Promise<WhatVisitorsAreTold> => api<WhatVisitorsAreTold>('GET', '/public');
 export const createOrganization = (details: SignInDetails): Promise<unknown> => api('POST', '/auth/signup', details);
 export const signIn = (details: SignInDetails): Promise<unknown> => api('POST', '/auth/login', details);
 export const signOut = (): Promise<unknown> => api('POST', '/auth/logout');
@@ -61,7 +26,7 @@ export const readInvitations = (): Promise<Invitation[]> => api<Invitation[]>('G
 export const inviteMember = (email: string, role: string): Promise<NewInvitation> => api<NewInvitation>('POST', '/invitations', { email, role });
 export const revokeInvitation = (id: number): Promise<unknown> => api('DELETE', `/invitations/${id}`);
 
-export const readMembers = (): Promise<User[]> => api<User[]>('GET', '/users');
+export const readMembers = (): Promise<Member[]> => api<Member[]>('GET', '/users');
 export const appointAdministrator = (id: number): Promise<unknown> => api('PUT', `/users/${id}`, { role: 'admin' });
 export const removeAdministratorRole = (id: number): Promise<unknown> => api('PUT', `/users/${id}`, { role: 'user' });
 export const deleteMember = (id: number): Promise<unknown> => api('DELETE', `/users/${id}`);

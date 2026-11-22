@@ -1,9 +1,9 @@
 // Settings → You: one's name, signature, model and key, one's password, the language, and
 // deleting one's own account.
 
+import type { Profile } from '../../shared/member.ts';
 import { changePassword, deleteOwnAccount } from '../api/access.ts';
 import { changeOwnSettings, removeOwnKey } from '../api/settings.ts';
-import type { Me } from '../api/settings.ts';
 import { languages, t } from '../i18n.ts';
 import { showPage } from '../navigation.ts';
 import { ActionButton, SubmitForm, toast } from './actions.ts';
@@ -18,7 +18,7 @@ import { Field } from '../ui/molecules/field.ts';
 import { Actions } from '../ui/molecules/form.ts';
 
 /** SetOwnName, SetSignature, ChooseOwnModel and SetOwnKey, in one form; RemoveOwnKey beside it. */
-function ownSettingsForm(who: Me): HTMLFormElement {
+function ownSettingsForm(who: Profile): HTMLFormElement {
   const name = Input({ value: who.name, autocomplete: 'name' });
   const model = Input({ value: who.model, placeholder: who.defaultModel });
   const signature = Textarea({ rows: 3, placeholder: t('settings.signaturePlaceholder'), value: who.signature });
@@ -38,7 +38,7 @@ function ownSettingsForm(who: Me): HTMLFormElement {
   );
 }
 
-const ownAiSection = (who: Me, model: HTMLInputElement, key: HTMLInputElement): HTMLDivElement =>
+const ownAiSection = (who: Profile, model: HTMLInputElement, key: HTMLInputElement): HTMLDivElement =>
   CardSection(t('settings.aiTitle'),
     Field(t('settings.model'), model, { hint: t('settings.modelHint', { model: who.defaultModel }) }),
     Field(t('settings.key'), key, { hint: who.hasOwnKey ? t('settings.keyHintOwn') : t('settings.keyHint') }),
@@ -67,7 +67,7 @@ function passwordForm(): HTMLFormElement {
 }
 
 /** DeleteOwnAccount, behind the password and a confirmation. */
-const deleteAccountForm = (who: Me): Child => LeavingForm({
+const deleteAccountForm = (who: Profile): Child => LeavingForm({
   text: t('settings.deleteAccountText'),
   label: t('settings.deleteAccount'),
   confirm: t('settings.confirmDeleteAccount', { email: who.email }),
@@ -76,7 +76,7 @@ const deleteAccountForm = (who: Me): Child => LeavingForm({
 });
 
 /** One's own settings. */
-export const yourSettings = (who: Me): Child => [
+export const yourSettings = (who: Profile): Child => [
   !who.hasKey && Callout('warn', t('settings.noKey')),
   Card({ form: true }, ownSettingsForm(who)),
   Card({ title: t('settings.passwordTitle'), form: true }, passwordForm()),

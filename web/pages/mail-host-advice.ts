@@ -1,9 +1,9 @@
 // Who really hosts an address is asked of its domain: an address at one's own domain is often
 // at Google or Microsoft, where signing in is the way that works.
 
+import type { MailHost } from '../../shared/mailbox.ts';
+import type { Profile } from '../../shared/member.ts';
 import { readMailHost } from '../api/mailboxes.ts';
-import type { MailHost } from '../api/mailboxes.ts';
-import type { Me } from '../api/settings.ts';
 import { t } from '../i18n.ts';
 import { serversFor } from '../mail-presets.ts';
 import type { MailServers } from '../mail-presets.ts';
@@ -18,7 +18,7 @@ export interface MailHostAdviceHandle {
 }
 
 interface Connecting {
-  oauth: Me['oauth'];
+  oauth: Profile['oauth'];
   /** The choice of where the mailbox is hosted. */
   host: ChoicesHandle;
   propose(servers: MailServers | null): void;

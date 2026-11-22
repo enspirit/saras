@@ -4,7 +4,7 @@ import { Refusal } from '../../domain/refusal.ts';
 import type { RefusalKind } from '../../domain/refusal.ts';
 import { LlmError } from '../llm/openrouter.ts';
 import { problem } from '../messages.ts';
-import type { MessageCode, Problem } from '../messages.ts';
+import type { MessageCode, ServerProblem } from '../messages.ts';
 
 /** The status that says each kind of refusal. */
 const STATUS: Record<RefusalKind, number> = { invalid: 400, unauthenticated: 401, forbidden: 403, notFound: 404, conflict: 409, gone: 410, tooMany: 429, upstream: 502 };
@@ -12,7 +12,7 @@ const STATUS: Record<RefusalKind, number> = { invalid: 400, unauthenticated: 401
 /** A refusal that is HTTP's own, not the domain's: it comes with its status. */
 export class HttpError extends Error {
   status: number;
-  problem: Problem;
+  problem: ServerProblem;
 
   constructor(status: number, code: MessageCode) {
     const described = problem(code);

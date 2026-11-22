@@ -5,7 +5,7 @@ import { signOut } from '../api/access.ts';
 import { t } from '../i18n.ts';
 import { route, start } from '../navigation.ts';
 import { ActionButton } from './actions.ts';
-import { BOXES } from './boxes.ts';
+import { BOXES_ON_SCREEN } from './boxes.ts';
 import { called } from './people.ts';
 import { showScreen } from './screen.ts';
 import { isAdmin, me, session } from '../session.ts';
@@ -44,7 +44,7 @@ export function shell(content: Child): void {
   showScreen(
     AppShell({
       brand: session.brand,
-      boxes: BOXES.map((b) => item(b.path, t(b.label), b.icon, session.counts[b.id])),
+      boxes: BOXES_ON_SCREEN.map((b) => item(b.path, t(b.label), b.icon, session.counts[b.id])),
       pages: { title: t('nav.configuration'), items: pages.map((p) => item(p.path, t(p.label), p.icon)) },
       // On a phone the boxes fill the bar: this entry leads to everything else.
       more: { href: '#/more', label: t('nav.more'), icon: 'settings', current: current === 'more' || pages.some((p) => p.path === current) },

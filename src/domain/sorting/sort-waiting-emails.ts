@@ -12,7 +12,7 @@ import type { Db } from '../../tooling/db.ts';
 import { errorMessage } from '../../tooling/errors.ts';
 import { LlmError } from '../../tooling/llm/openrouter.ts';
 import { problem } from '../../tooling/messages.ts';
-import type { Problem } from '../../tooling/messages.ts';
+import type { ServerProblem } from '../../tooling/messages.ts';
 import type { EmailRow } from '../model/email.ts';
 import type { AccountRow } from '../model/mailbox.ts';
 import { rowToEmail, toTriageMail } from '../computations/emails.ts';
@@ -25,7 +25,7 @@ import type { Triage } from './strategies.ts';
 export interface SortingResult {
   /** Emails the gate decided about. */
   triaged: number;
-  error: Problem | null;
+  error: ServerProblem | null;
 }
 
 type Sorting = { db: Db; triage: Triage };

@@ -9,7 +9,7 @@ import { initI18n, language, t } from './i18n.ts';
 import { invitationToken, route, wireNavigation } from './navigation.ts';
 import { invitationPage } from './pages/accepting-invitation.ts';
 import { messageOf, toast } from './pages/actions.ts';
-import { BOXES } from './pages/boxes.ts';
+import { BOXES_ON_SCREEN } from './pages/boxes.ts';
 import { emailsPage } from './pages/emails.ts';
 import { firstPromptPage } from './pages/getting-started/first-prompt.ts';
 import { organisationKeyPage } from './pages/getting-started/organisation-key.ts';
@@ -55,7 +55,7 @@ function showGettingStarted(part: string): void {
 /** Shows the page of the current URL. Pages report their own failures, so nothing is awaited. */
 function showPageOfAddress(): void {
   const r = route();
-  const box = BOXES.find((b) => b.path === r.page);
+  const box = BOXES_ON_SCREEN.find((b) => b.path === r.page);
   if (box) void emailsPage(box, r.id);
   else if (r.page === 'prompts' && isAdmin()) void promptsPage(r.part === 'new' ? 'new' : r.id);
   else if (r.page === 'users' && isAdmin()) void membersPage();

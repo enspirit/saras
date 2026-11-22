@@ -1,8 +1,8 @@
 // Connecting a mailbox: whose it is, where it is hosted, then what that host asks for. With
 // no mailbox yet, it is the first step of getting started.
 
+import type { Profile } from '../../shared/member.ts';
 import { hostSignInAddress } from '../api/mailboxes.ts';
-import type { Me } from '../api/settings.ts';
 import { t } from '../i18n.ts';
 import { PathSteps } from './getting-started/path.ts';
 import { MailHostAdvice } from './mail-host-advice.ts';
@@ -27,7 +27,7 @@ const whoseChoice = (onChange: () => void): ChoicesHandle =>
   ], onChange });
 
 /** Where the mailbox is hosted. A host the server is not set up for cannot be chosen, and says why. */
-function hostChoice(oauth: Me['oauth'], onChange: () => void): ChoicesHandle {
+function hostChoice(oauth: Profile['oauth'], onChange: () => void): ChoicesHandle {
   const unavailable = (kind: 'google' | 'microsoft'): string | undefined => (oauth[kind] ? undefined : t('accounts.oauthUnavailable', { prefix: kind.toUpperCase() }));
   return Choices({ legend: t('accounts.where'), name: 'host', value: oauth.google ? 'google' : oauth.microsoft ? 'microsoft' : 'imap', options: [
     { value: 'google', title: t('accounts.connectGoogle'), hint: unavailable('google'), disabled: !oauth.google },

@@ -1,8 +1,9 @@
 // Writing a prompt, new or existing: its name, when to use it, its instructions; and beside
 // the instructions, what members changed in the proposals it wrote.
 
+import type { Correction, Prompt } from '../../shared/prompt.ts';
 import { createPrompt, editPrompt, readCorrections } from '../api/prompts.ts';
-import type { Correction, Prompt, PromptContent } from '../api/prompts.ts';
+import type { PromptContent } from '../api/prompts.ts';
 import { t } from '../i18n.ts';
 import { fmtWhen } from '../i18n/dates.ts';
 import { showPage } from '../navigation.ts';

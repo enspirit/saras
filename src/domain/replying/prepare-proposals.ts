@@ -16,7 +16,7 @@ import { LlmError } from '../../tooling/llm/openrouter.ts';
 import { buildPromptMessages } from '../computations/llm-prompts.ts';
 import { llmSettings } from '../computations/key-in-force.ts';
 import { problem } from '../../tooling/messages.ts';
-import type { Problem } from '../../tooling/messages.ts';
+import type { ServerProblem } from '../../tooling/messages.ts';
 import { rowToEmail } from '../computations/emails.ts';
 import type { AccountRow } from '../model/mailbox.ts';
 import type { UserRow } from '../model/member.ts';
@@ -32,7 +32,7 @@ import { writeProposal } from './proposal.ts';
 const MAX_PREPARED = 10;
 
 /** Returns what went wrong, if anything: a fetch records it on the mailbox. */
-export async function prepareProposals(world: Reach, mailbox: AccountRow, organization: OrganizationRow, owner: UserRow): Promise<Problem | null> {
+export async function prepareProposals(world: Reach, mailbox: AccountRow, organization: OrganizationRow, owner: UserRow): Promise<ServerProblem | null> {
   const { db } = world;
   if (organization.automation === 'none') return null;
   const settings = llmSettings(owner, organization, world);

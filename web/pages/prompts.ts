@@ -1,8 +1,8 @@
 // The prompts of the organisation (administrators): the list, how much each is used, and the
 // ready-made ones still to add.
 
+import type { Prompt } from '../../shared/prompt.ts';
 import { deletePrompt, readPrompts, readPromptTemplates } from '../api/prompts.ts';
-import type { Prompt } from '../api/prompts.ts';
 import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard } from './actions.ts';
 import { editPromptPage } from './edit-prompt.ts';

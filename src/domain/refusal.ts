@@ -2,7 +2,7 @@
 // interface can translate, and its kind: what sort of "no" it is. The domain knows nothing
 // of HTTP; the tooling turns a kind into a status.
 import { problem } from '../tooling/messages.ts';
-import type { MessageCode, MessageParams, Problem } from '../tooling/messages.ts';
+import type { MessageCode, MessageParams, ServerProblem } from '../tooling/messages.ts';
 
 /**
  * invalid:         what was asked makes no sense as asked (a ReqPre on the request itself)
@@ -18,7 +18,7 @@ export type RefusalKind = 'invalid' | 'unauthenticated' | 'forbidden' | 'notFoun
 
 export class Refusal extends Error {
   kind: RefusalKind;
-  problem: Problem;
+  problem: ServerProblem;
 
   constructor(kind: RefusalKind, code: MessageCode, params: MessageParams = {}) {
     const described = problem(code, params);

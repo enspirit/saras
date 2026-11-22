@@ -87,23 +87,23 @@ export const MESSAGES = {
 export type MessageCode = keyof typeof MESSAGES;
 export type MessageParams = Record<string, string | number>;
 
-/** A message for the user: its code and parameters, and its default English text. */
-export interface Problem {
+/** A problem as the server words it: its code is one of the server's own. Told to the interface as a shared Problem. */
+export interface ServerProblem {
   code: MessageCode;
   params: MessageParams;
   message: string;
 }
 
-export function problem(code: MessageCode, params: MessageParams = {}): Problem {
+export function problem(code: MessageCode, params: MessageParams = {}): ServerProblem {
   const message = MESSAGES[code].replace(/\{(\w+)\}/g, (_, name: string) => String(params[name] ?? '')).trim();
   return { code, params, message };
 }
 
 /** How a problem is kept in a text column. */
-export const encodeProblem = (p: Problem | null): string | null => (p ? JSON.stringify({ code: p.code, params: p.params }) : null);
+export const encodeProblem = (p: ServerProblem | null): string | null => (p ? JSON.stringify({ code: p.code, params: p.params }) : null);
 
 /** Reads back what `encodeProblem` wrote. Anything else is ignored. */
-export function decodeProblem(stored: string | null): Problem | null {
+export function decodeProblem(stored: string | null): ServerProblem | null {
   if (!stored) return null;
   try {
     const { code, params } = JSON.parse(stored) as { code?: string; params?: MessageParams };

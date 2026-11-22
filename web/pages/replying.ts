@@ -2,8 +2,8 @@
 // a few notes, instructions — then, if they wish, asks the AI for help; then sends the reply,
 // or files it as a draft in the mailbox.
 
-import type { EmailDetail } from '../api/emails.ts';
-import type { Prompt } from '../api/prompts.ts';
+import type { EmailWithItsReply } from '../../shared/email.ts';
+import type { Prompt } from '../../shared/prompt.ts';
 import { fileReplyAsDraft, sendReply } from '../api/replying.ts';
 import type { ReplyToHandOver } from '../api/replying.ts';
 import { t, tRich } from '../i18n.ts';
@@ -26,7 +26,7 @@ import { ReplyDock } from '../ui/organisms/reply-dock.ts';
 type Done = (message: string) => void;
 
 /** The last thing seen before an email leaves: who it goes to, in the interface's own dialog. */
-function confirmSending(email: EmailDetail, reply: ReplyToHandOver): Promise<boolean> {
+function confirmSending(email: EmailWithItsReply, reply: ReplyToHandOver): Promise<boolean> {
   const facts: [string, Child][] = [[t('reply.from'), email.account], [t('composer.to'), reply.to.join(', ')]];
   if (reply.cc.length) facts.push([t('composer.cc'), reply.cc.join(', ')]);
   return confirmDialog({ title: t('composer.confirmSendTitle'), text: [Facts(facts), Text({ muted: true, small: true }, t('composer.confirmSendText'))], confirmLabel: t('composer.send'), cancelLabel: t('common.cancel') });
@@ -47,7 +47,7 @@ const fileAsDraftButton = (reply: ReplyInProgress, done: Done): HTMLButtonElemen
 }, { title: t('composer.saveDraftTitle') });
 
 /** What to know before writing: what to try at the end of the getting-started path, and a missing key. */
-const replyNotices = (email: EmailDetail): Child => [
+const replyNotices = (email: EmailWithItsReply): Child => [
   // Arriving from the getting-started path: say what to try, once.
   route().query.has('welcome') && Block(Notice('info', email.draft ? t('welcome.tryPrepared') : t('welcome.tryIt'))),
   !me().hasKey && Notice('warn', tRich('composer.noKey', {}, { link: (label) => Link(label, '#/settings') })),
@@ -61,7 +61,7 @@ function recipients(reply: ReplyInProgress): Child {
 }
 
 /** The reply area, docked under the email. It opens on the proposal prepared for the email, when there is one. */
-export function replyArea(email: EmailDetail, prompts: Prompt[], done: Done): HTMLElement {
+export function replyArea(email: EmailWithItsReply, prompts: Prompt[], done: Done): HTMLElement {
   const reply = startReply(email);
   const dock = ReplyDock({
     label: t('composer.title'),

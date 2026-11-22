@@ -1,8 +1,9 @@
 // The reply in progress: what the member writes, what the AI last proposed for it, and what
 // surrounds the text to say so. It lives in the page only, and is lost on leaving it.
 
-import type { EmailDetail } from '../api/emails.ts';
-import type { Draft, ReplyToHandOver } from '../api/replying.ts';
+import type { EmailWithItsReply } from '../../shared/email.ts';
+import type { Proposal } from '../../shared/reply.ts';
+import type { ReplyToHandOver } from '../api/replying.ts';
 import { t } from '../i18n.ts';
 import { Button } from '../ui/atoms/button.ts';
 import { Input } from '../ui/atoms/input.ts';
@@ -18,7 +19,7 @@ import type { RichEditorHandle } from '../ui/molecules/rich-editor.ts';
 const TO_COMPLETE = /\[[^[\]\n]{2,80}\]/;
 
 export interface ReplyInProgress {
-  email: EmailDetail;
+  email: EmailWithItsReply;
   editor: RichEditorHandle;
   to: RecipientFieldHandle;
   cc: RecipientFieldHandle;
@@ -30,7 +31,7 @@ export interface ReplyInProgress {
   /** Puts back what the AI replaced. */
   undo: HTMLButtonElement;
   /** The last thing the AI proposed, to tell whether the user changed it since, and how to say it. */
-  proposal: { id: number; action: Draft['action']; text: string; said: string } | null;
+  proposal: { id: number; action: Proposal['action']; text: string; said: string } | null;
   /** What the editor held before the AI last replaced it, for the user to get it back. */
   before: string | null;
   /** Whether the note above the text already says that the proposal was edited. */
@@ -65,7 +66,7 @@ const quietCaution = (): HTMLElement => {
 };
 
 /** An empty reply to this email, addressed to whoever wrote it. */
-export function startReply(email: EmailDetail): ReplyInProgress {
+export function startReply(email: EmailWithItsReply): ReplyInProgress {
   const removeLabel = (address: string): string => t('composer.removeRecipient', { address });
   const reason = Input({ placeholder: t('composer.reasonPlaceholder') });
   const reply: ReplyInProgress = {
@@ -119,7 +120,7 @@ export function syncReply(reply: ReplyInProgress): void {
 }
 
 /** Shows a proposal in the editor and remembers it. `replaced` is what it took the place of. */
-export function showProposal(reply: ReplyInProgress, draft: Draft, replaced: string | null): void {
+export function showProposal(reply: ReplyInProgress, draft: Proposal, replaced: string | null): void {
   reply.before = replaced;
   reply.editor.setHtml(draft.html);
   const by = draft.provider ? t('composer.generatedVia', { model: draft.model, provider: draft.provider }) : t('composer.generatedBy', { model: draft.model });

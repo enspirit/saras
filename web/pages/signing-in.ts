@@ -1,7 +1,7 @@
 // Signing in, or creating the organisation: the first screen a visitor meets.
 
+import type { WhatVisitorsAreTold } from '../../shared/member.ts';
 import { createOrganization, readPublicInfo, signIn } from '../api/access.ts';
-import type { PublicInfo } from '../api/access.ts';
 import { language, t } from '../i18n.ts';
 import { start } from '../navigation.ts';
 import { SubmitForm } from './actions.ts';
@@ -15,7 +15,7 @@ import { Field } from '../ui/molecules/field.ts';
 import { AuthPanel } from '../ui/organisms/auth-panel.ts';
 
 /** What the installation guarantees, said where a visitor first meets it. */
-export const guarantees = (info: PublicInfo) => [
+export const guarantees = (info: WhatVisitorsAreTold) => [
   session.brand.euHosting && { icon: 'shield-check' as const, title: t('auth.pointEuTitle'), text: t('auth.pointEu') },
   { icon: 'lock' as const, text: t('auth.pointZdr') },
   { icon: 'eye-off' as const, text: t('auth.pointMinimal') },
@@ -24,7 +24,7 @@ export const guarantees = (info: PublicInfo) => [
 ].filter((point) => point !== null && point !== false);
 
 /** What the installation says of itself; when it cannot be asked, sign-up is taken as closed. */
-export const publicInfo = (): Promise<PublicInfo> => readPublicInfo().catch((): PublicInfo => ({ allowSignup: false }));
+export const publicInfo = (): Promise<WhatVisitorsAreTold> => readPublicInfo().catch((): WhatVisitorsAreTold => ({ allowSignup: false, firstAccount: false, retentionDays: 0 }));
 
 interface SignInFields {
   email: HTMLInputElement;
@@ -58,7 +58,7 @@ function signInForm(signup: boolean, { email, password, organization, name }: Si
 }
 
 /** Under the form: the way to the other form, or how to get in when sign-up is closed. */
-const otherWay = (info: PublicInfo, signup: boolean, email: HTMLInputElement): Child => (info.allowSignup
+const otherWay = (info: WhatVisitorsAreTold, signup: boolean, email: HTMLInputElement): Child => (info.allowSignup
   ? [signup ? t('auth.haveAccount') : t('auth.noAccountYet'), ' ', Button(signup ? t('auth.signIn') : t('auth.signUp'), { variant: 'link', onClick: () => signingInPage(signup ? 'login' : 'signup', email.value) })]
   : t('auth.askInvitation'));
 

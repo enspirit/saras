@@ -1,6 +1,6 @@
 // How people are named in the interface.
 
-import type { Role } from '../api/access.ts';
+import type { Role } from '../../shared/member.ts';
 import { t } from '../i18n.ts';
 
 /** How a person is shown: by their name when they gave one, by their address otherwise. */

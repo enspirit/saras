@@ -1,7 +1,7 @@
 // The members of the organisation (administrators): who they are, their role, and removing one.
 
+import type { Member, NewInvitation } from '../../shared/member.ts';
 import { appointAdministrator, deleteMember, readInvitations, readMembers, removeAdministratorRole } from '../api/access.ts';
-import type { NewInvitation, User } from '../api/access.ts';
 import { t } from '../i18n.ts';
 import { fmtDay } from '../i18n/dates.ts';
 import { start } from '../navigation.ts';
@@ -20,7 +20,7 @@ import { Table } from '../ui/molecules/table.ts';
 import { Page } from '../ui/organisms/page.ts';
 
 /** AppointAdministrator or RemoveAdministratorRole, whichever applies to this member. */
-const roleButton = (u: User, self: boolean): HTMLButtonElement => {
+const roleButton = (u: Member, self: boolean): HTMLButtonElement => {
   const admin = u.role === 'admin';
   return ActionButton(admin ? t('users.demote') : t('users.promote'), '…', async () => {
     await (admin ? removeAdministratorRole(u.id) : appointAdministrator(u.id));
@@ -31,14 +31,14 @@ const roleButton = (u: User, self: boolean): HTMLButtonElement => {
 };
 
 /** DeleteMember, once confirmed. */
-const deleteButton = (u: User): HTMLButtonElement => ActionButton(t('users.delete'), '…', async () => {
+const deleteButton = (u: Member): HTMLButtonElement => ActionButton(t('users.delete'), '…', async () => {
   if (!(await confirmAction(t('users.confirmDelete', { email: u.email }), t('users.delete')))) return;
   await deleteMember(u.id);
   void membersPage();
 }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true });
 
 /** One member: who, their role, since when, how many mailboxes, and what can be done about them. */
-function memberRow(u: User): Child[] {
+function memberRow(u: Member): Child[] {
   const self = u.email === me().email;
   return [
     Person({ name: called(u.name, u.email), detail: u.name ? u.email : undefined, tags: [self && Badge(t('users.you'), 'neutral')] }),
@@ -49,7 +49,7 @@ function memberRow(u: User): Child[] {
   ];
 }
 
-const membersTable = (users: User[]): HTMLDivElement =>
+const membersTable = (users: Member[]): HTMLDivElement =>
   Table({ columns: [t('users.member'), t('users.role'), t('users.joined'), t('users.mailboxes')], actions: t('common.actions') }, users.map(memberRow));
 
 /** The members and the pending invitations. `freshInvitation` is one just created, whose link is shown once. */

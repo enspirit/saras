@@ -1,7 +1,7 @@
 // Giving saras access to a mailbox again: a new password, or a new trip to its host.
 
+import type { Mailbox } from '../../shared/mailbox.ts';
 import { hostSignInAddress, renewMailboxCredentials } from '../api/mailboxes.ts';
-import type { Account } from '../api/mailboxes.ts';
 import { t } from '../i18n.ts';
 import { goTo } from '../navigation.ts';
 import { SubmitForm, toast } from './actions.ts';
@@ -18,7 +18,7 @@ import { Page } from '../ui/organisms/page.ts';
 const cancel = (): HTMLElement => ButtonLink(t('common.cancel'), { href: '#/accounts' });
 
 /** RenewMailboxCredentials for a mailbox reached by signing in at its host: the way there. */
-function renewByHostSignIn(account: Account): HTMLDivElement {
+function renewByHostSignIn(account: Mailbox): HTMLDivElement {
   const provider = account.kind === 'google' ? t('accounts.connectGoogle') : t('accounts.connectMicrosoft');
   return Card({},
     Block(Text({ muted: true }, t('accounts.oauthIntro'))),
@@ -27,7 +27,7 @@ function renewByHostSignIn(account: Account): HTMLDivElement {
 }
 
 /** RenewMailboxCredentials for a mailbox reached by its servers: its new password. */
-function renewByPassword(account: Account): HTMLDivElement {
+function renewByPassword(account: Mailbox): HTMLDivElement {
   const password = Input({ type: 'password', required: true, autocomplete: 'off' });
   const renew = Button(t('accounts.renew'), { variant: 'primary', type: 'submit' });
   return Card({}, SubmitForm(renew, t('accounts.connecting'), async () => {
@@ -41,7 +41,7 @@ function renewByPassword(account: Account): HTMLDivElement {
 }
 
 /** Giving saras access to a mailbox again: a new password, or a new trip to its host. */
-export function renewMailboxAccessPage(account: Account): void {
+export function renewMailboxAccessPage(account: Mailbox): void {
   const crumbs = [{ label: t('accounts.title'), href: '#/accounts' }];
   const header = PageHeader({ title: t('accounts.renewTitle', { email: account.email }), intro: t('accounts.renewIntro'), crumbs });
   shell(Page(header, account.kind === 'imap' ? renewByPassword(account) : renewByHostSignIn(account)));

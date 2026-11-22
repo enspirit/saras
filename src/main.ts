@@ -21,7 +21,7 @@ try {
 }
 
 // The browser code is compiled from web/ and is not in the repository.
-if (!existsSync(new URL('../public/js/app.js', import.meta.url))) {
+if (!existsSync(new URL('../public/js/web/app.js', import.meta.url))) {
   console.error('The interface has not been built yet. Run: npm run build');
   process.exit(1);
 }

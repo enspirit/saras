@@ -1,9 +1,11 @@
 // Settings → Organisation (administrators): its name, its way of working, its AI, the
 // appearance, and deleting it.
 
+import type { Profile } from '../../shared/member.ts';
+import type { Organization } from '../../shared/organization.ts';
+import { WAYS_OF_WORKING } from '../../shared/organization.ts';
 import { deleteOrganization } from '../api/access.ts';
-import { changeOrganizationSettings, removeOrganizationKey, WAYS } from '../api/settings.ts';
-import type { Me, Organization } from '../api/settings.ts';
+import { changeOrganizationSettings, removeOrganizationKey } from '../api/settings.ts';
 import { t, tRich } from '../i18n.ts';
 import { showPage } from '../navigation.ts';
 import { ActionButton, SubmitForm, toast } from './actions.ts';
@@ -26,7 +28,7 @@ interface OrganisationFields {
 
 const organisationFields = (org: Organization): OrganisationFields => ({
   name: Input({ required: true, value: org.name }),
-  way: Select(WAYS.map((value) => ({ value, label: t(`welcome.${value}`), selected: org.way === value }))),
+  way: Select(WAYS_OF_WORKING.map((value) => ({ value, label: t(`welcome.${value}`), selected: org.way === value }))),
   skipAutomated: Checkbox({ checked: org.skipAutomated }),
   model: Input({ value: org.model ?? '', placeholder: t('organization.modelPlaceholder') }),
   key: Input({ type: 'password', autocomplete: 'off', placeholder: org.hasKey ? t('settings.keySaved') : 'sk-or-…' }),
@@ -79,7 +81,7 @@ const deleteOrganisationForm = (org: Organization): Child => LeavingForm({
 });
 
 /** The organisation's own settings, for its administrators. */
-export const organisationSettings = (who: Me): Child => [
+export const organisationSettings = (who: Profile): Child => [
   Card({ form: true }, Block(Text({ muted: true }, t('organization.intro'))), organisationForm(who.organization)),
   Card({ title: t('settings.appearance'), form: true }, Text({}, tRich('settings.appearanceText', {}, { link: (label) => Link(label, '/styleguide.html') }))),
   Card({ title: t('organization.deleteTitle'), form: true }, deleteOrganisationForm(who.organization)),

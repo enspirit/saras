@@ -20,7 +20,7 @@ import type { Db } from '../../tooling/db.ts';
 import { errorMessage } from '../../tooling/errors.ts';
 import type { MailService } from '../../tooling/mail/mail-service.ts';
 import { problem } from '../../tooling/messages.ts';
-import type { Problem } from '../../tooling/messages.ts';
+import type { ServerProblem } from '../../tooling/messages.ts';
 import { firstStanding } from '../computations/emails.ts';
 import type { Llm } from '../model/llm.ts';
 import type { AccountRow } from '../model/mailbox.ts';
@@ -64,7 +64,7 @@ async function bringIn({ db, mail, config }: Dependencies, account: AccountRow, 
 }
 
 /** The same, a failure being told and not thrown. */
-async function broughtIn(deps: Dependencies, account: AccountRow, folder: string): Promise<{ fetched: number; error: Problem | null }> {
+async function broughtIn(deps: Dependencies, account: AccountRow, folder: string): Promise<{ fetched: number; error: ServerProblem | null }> {
   try {
     return { fetched: await bringIn(deps, account, folder), error: null };
   } catch (e) {
@@ -73,7 +73,7 @@ async function broughtIn(deps: Dependencies, account: AccountRow, folder: string
 }
 
 /** Proposals are prepared last, as the mailbox's owner. */
-const prepared = async (deps: Dependencies, account: AccountRow): Promise<Problem | null> =>
+const prepared = async (deps: Dependencies, account: AccountRow): Promise<ServerProblem | null> =>
   prepareProposals(deps, account, await organizationById(deps.db, account.org_id), await memberById(deps.db, account.user_id));
 
 /** Sorting, then preparing: each only when what came before went well. */

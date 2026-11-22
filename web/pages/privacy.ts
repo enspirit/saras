@@ -1,7 +1,8 @@
 // Settings → Privacy: what the product guarantees about the emails it handles, and what
 // remains the organisation's part.
 
-import type { Me, Way } from '../api/settings.ts';
+import type { Profile } from '../../shared/member.ts';
+import type { WayOfWorking } from '../../shared/organization.ts';
 import { t, tRich } from '../i18n.ts';
 import { session } from '../session.ts';
 import { Code, Strong, Text } from '../ui/atoms/text.ts';
@@ -12,12 +13,12 @@ import { Features } from '../ui/molecules/features.ts';
 import { Block } from '../ui/molecules/field.ts';
 
 /** What the AI is sent, which depends on the organisation's way of working. */
-const whatIsSent = (way: Way): Child => [
+const whatIsSent = (way: WayOfWorking): Child => [
   way === 'manual' ? t('settings.privacyTriageNone') : t('settings.privacyTriageAi'),
   (way === 'draft' || way === 'mailbox') && ` ${t('settings.privacyPrepared')}`,
 ];
 
-const guaranteeFeatures = (who: Me): HTMLDivElement => Features([
+const guaranteeFeatures = (who: Profile): HTMLDivElement => Features([
   { icon: 'lock', title: t('settings.guarantee.zdr'), text: t('settings.privacyZdr') },
   { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: whatIsSent(who.organization.way) },
   { icon: 'timer', title: t('settings.guarantee.retention'), text: who.retentionDays ? t('settings.privacyRetention', { days: who.retentionDays }) : t('settings.privacyNoRetention') },
@@ -27,7 +28,7 @@ const guaranteeFeatures = (who: Me): HTMLDivElement => Features([
 ]);
 
 /** What the product guarantees, what stays the organisation's part, and the technical policy behind it. */
-export const privacy = (who: Me): Child => [
+export const privacy = (who: Profile): Child => [
   Block(Text({ muted: true }, t('settings.privacyIntro', { product: session.brand.name }))),
   guaranteeFeatures(who),
   Callout('warn', [Strong(t('settings.yourPart')), ' ', t('settings.privacyLogging')]),

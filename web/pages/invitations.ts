@@ -1,8 +1,8 @@
 // Invitations (administrators): inviting someone, the link to hand them, and the invitations
 // that still wait for an answer.
 
+import type { Invitation, NewInvitation } from '../../shared/member.ts';
 import { inviteMember, revokeInvitation } from '../api/access.ts';
-import type { Invitation, NewInvitation } from '../api/access.ts';
 import { t, tRich } from '../i18n.ts';
 import { fmtDay } from '../i18n/dates.ts';
 import { ActionButton, SubmitForm, toast } from './actions.ts';

@@ -1,10 +1,10 @@
 // The AI's help with a reply, always optional: check typos, improve the style, or write the
 // reply with one of the organisation's prompts.
 
-import type { EmailDetail } from '../api/emails.ts';
-import type { Prompt } from '../api/prompts.ts';
+import type { EmailWithItsReply } from '../../shared/email.ts';
+import type { Prompt } from '../../shared/prompt.ts';
+import type { Proposal } from '../../shared/reply.ts';
 import { checkTypos, improveStyle, writeWithPrompt } from '../api/replying.ts';
-import type { Draft } from '../api/replying.ts';
 import { t, tRich } from '../i18n.ts';
 import { ActionButton, busy } from './actions.ts';
 import { showProposal } from './reply-in-progress.ts';
@@ -16,10 +16,10 @@ import { AiHelp } from '../ui/molecules/ai-help.ts';
 import { PromptPick } from '../ui/molecules/prompt-pick.ts';
 
 /** A kind of help: what is written goes in, a proposal comes back. */
-type Help = (emailId: number, html: string) => Promise<Draft>;
+type Help = (emailId: number, html: string) => Promise<Proposal>;
 
 /** The choice of the prompt to write with, on the one the AI suggested or last used; none without prompts. */
-function promptPick(email: EmailDetail, prompts: Prompt[]) {
+function promptPick(email: EmailWithItsReply, prompts: Prompt[]) {
   const suggested = email.suggestedPromptId;
   if (!prompts.length) return null;
   return PromptPick({

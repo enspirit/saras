@@ -1,10 +1,11 @@
-# Compile the browser code (web/ -> public/js/).
+# Compile the browser code (web/ and shared/ -> public/js/).
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.base.json tsconfig.web.json ./
 COPY web ./web
+COPY shared ./shared
 COPY scripts ./scripts
 RUN npm run build
 
@@ -15,6 +16,7 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY src ./src
+COPY shared ./shared
 COPY public ./public
 COPY --from=build /app/public/js ./public/js
 # Only used by the embedded database, when no DATABASE_URL is given.

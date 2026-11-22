@@ -1,15 +1,15 @@
 // Reading an email: its header, the decisions about it, its text, and under it the reply
 // that was sent or the place to write one.
 
+import type { EmailWithItsReply } from '../../shared/email.ts';
+import type { Prompt } from '../../shared/prompt.ts';
+import type { Reply } from '../../shared/reply.ts';
 import { problemText } from '../api.ts';
-import type { EmailDetail } from '../api/emails.ts';
-import type { Prompt } from '../api/prompts.ts';
-import type { SentReply } from '../api/replying.ts';
 import { ignoreEmail, markNoReplyNeeded, moveBackToHandle } from '../api/sorting.ts';
 import { t } from '../i18n.ts';
 import { fmtFull, fmtWhen } from '../i18n/dates.ts';
 import { ActionButton, toast } from './actions.ts';
-import type { Box } from './boxes.ts';
+import type { BoxOnScreen } from './boxes.ts';
 import { called } from './people.ts';
 import { replyArea } from './replying.ts';
 import { me } from '../session.ts';
@@ -28,24 +28,24 @@ import { ClosedDock } from '../ui/organisms/reply-dock.ts';
 type Done = (message: string) => void;
 
 /** Who sorted the email, as a badge label. */
-function triageSourceLabel(source: EmailDetail['triageSource']): string {
+function triageSourceLabel(source: EmailWithItsReply['triageSource']): string {
   if (source === 'ai') return t('reading.triage.ai');
   if (source === 'rule') return t('reading.triage.rule');
   if (source === 'user') return t('reading.triage.user');
   return t('reading.triage.unknown');
 }
 
-const isWaiting = (email: EmailDetail): boolean => email.status === 'pending' || email.status === 'needs_reply';
+const isWaiting = (email: EmailWithItsReply): boolean => email.status === 'pending' || email.status === 'needs_reply';
 /** The reply this email got, once it has one. */
-const replyOf = (email: EmailDetail): SentReply | null => (email.status === 'sent' ? email.reply : null);
+const replyOf = (email: EmailWithItsReply): Reply | null => (email.status === 'sent' ? email.reply : null);
 
-const deciding = (decide: (emailId: number) => Promise<unknown>, email: EmailDetail, message: string, done: Done) => async (): Promise<void> => {
+const deciding = (decide: (emailId: number) => Promise<unknown>, email: EmailWithItsReply, message: string, done: Done) => async (): Promise<void> => {
   await decide(email.id);
   done(message);
 };
 
 /** Decisions about the email itself: they sit with the email, not with the reply. */
-function decisions(email: EmailDetail, done: Done): Child {
+function decisions(email: EmailWithItsReply, done: Done): Child {
   if (isWaiting(email)) {
     return [
       ActionButton(t('composer.noReplyNeeded'), '…', deciding(markNoReplyNeeded, email, t('composer.markedNoReply'), done), { variant: 'ghost', size: 'small', icon: 'mail-check' }),
@@ -56,7 +56,7 @@ function decisions(email: EmailDetail, done: Done): Child {
 }
 
 /** The verdict line: who sorted the email, and why. */
-function verdict(email: EmailDetail): Child {
+function verdict(email: EmailWithItsReply): Child {
   const pending = email.status === 'pending';
   return (email.triageReason || pending) && [
     pending ? Badge(t('mailbox.untriaged'), 'neutral') : Badge(triageSourceLabel(email.triageSource), 'neutral'),
@@ -64,7 +64,7 @@ function verdict(email: EmailDetail): Child {
   ];
 }
 
-function emailHeader(email: EmailDetail, done: Done): HTMLElement {
+function emailHeader(email: EmailWithItsReply, done: Done): HTMLElement {
   const names = (list: { name: string; address: string }[]): string => list.map((a) => a.name || a.address).join(', ');
   return ReadingHeader({
     subject: email.subject || t('mailbox.noSubject'),
@@ -79,7 +79,7 @@ function emailHeader(email: EmailDetail, done: Done): HTMLElement {
 }
 
 /** The reply that was sent or filed as a draft: by whom, to whom, and whether the proposal was changed. */
-function sentReply(r: SentReply): Child {
+function sentReply(r: Reply): Child {
   const draft = r.mode === 'draft';
   const author = r.by && r.by !== me().email ? called(r.byName, r.by) : null;
   const facts: [string, Child][] = [[t('composer.to'), r.to.join(', ')]];
@@ -99,7 +99,7 @@ function sentReply(r: SentReply): Child {
 }
 
 /** Set aside: no reply is expected, so the reply area opens only when asked for. */
-function closedReplyArea(email: EmailDetail, prompts: Prompt[], done: Done): HTMLElement {
+function closedReplyArea(email: EmailWithItsReply, prompts: Prompt[], done: Done): HTMLElement {
   const closed: HTMLElement = ClosedDock(
     email.status === 'ignored' ? t('composer.closedIgnored') : t('composer.closedNone'),
     Button(t('composer.replyAnyway'), { size: 'small', icon: 'reply', onClick: () => closed.replaceWith(replyArea(email, prompts, done)) }),
@@ -107,7 +107,7 @@ function closedReplyArea(email: EmailDetail, prompts: Prompt[], done: Done): HTM
   return closed;
 }
 
-export function emailDetail(email: EmailDetail, prompts: Prompt[], box: Box): Child {
+export function emailDetail(email: EmailWithItsReply, prompts: Prompt[], box: BoxOnScreen): Child {
   const done: Done = (message) => {
     toast(message);
     location.hash = `#/${box.path}`;
