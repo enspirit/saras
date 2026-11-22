@@ -6,7 +6,7 @@ import { createServer } from 'node:http';
 import type { AddressInfo, Server } from 'node:net';
 import pg from 'pg';
 import { SMTPServer } from 'smtp-server';
-import { createApp } from '../../src/tooling/http/app.ts';
+import { createApp } from '../../src/tooling/http/server.ts';
 import { loadConfig } from '../../src/tooling/config.ts';
 import { createVault } from '../../src/tooling/crypto.ts';
 import { openDb } from '../../src/tooling/db.ts';

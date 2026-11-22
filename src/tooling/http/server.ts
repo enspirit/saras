@@ -1,0 +1,75 @@
+// The HTTP server: the interface's files, and under /api one route per operation or observation.
+import express from 'express';
+import type { Express, RequestHandler } from 'express';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
+import { createWorld } from '../../domain/world.ts';
+import type { Reach } from '../../domain/world.ts';
+import type { Config } from '../config.ts';
+import type { Fetch } from '../../types.ts';
+import { ACCESS } from './access.ts';
+import { EMAILS } from './emails.ts';
+import { MAILBOXES } from './mailboxes.ts';
+import { MEMBERS } from './members.ts';
+import { PROMPTS } from './prompts.ts';
+import { HttpError, tellRefusal, unknownRoute } from './refusals.ts';
+import { REPLYING } from './replying.ts';
+import type { Http, Route } from './route.ts';
+import { administratorsOnly, membersOnly } from './session.ts';
+import { SETTINGS } from './settings.ts';
+
+const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
+const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING];
+
+const hardened: RequestHandler = (_req, res, next) => {
+  res.set({
+    'content-security-policy': "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'no-referrer',
+  });
+  next();
+};
+
+/** Cross-site forms cannot send JSON: requiring it on writes is our CSRF barrier, with SameSite=Lax. */
+const jsonOnly: RequestHandler = (req, res, next) => {
+  res.set('cache-control', 'no-store');
+  const reads = ['GET', 'HEAD'].includes(req.method);
+  next(reads || req.is('application/json') ? undefined : new HttpError(415, 'request.jsonRequired'));
+};
+
+/** The interface's files. A company's brand folder takes precedence, file by file: what it lacks falls back to the default brand. */
+function serveInterface(app: Express, config: Config): void {
+  if (config.brandDir) app.use('/brand', express.static(resolve(config.brandDir)));
+  app.use(express.static(PUBLIC_DIR));
+}
+
+/** Who a route lets through, before it is handled. */
+function guardsOf(route: Route, http: Http): RequestHandler[] {
+  if (route.for === 'visitors') return [];
+  const members = membersOnly(http.world);
+  return route.for === 'administrators' ? [members, administratorsOnly] : [members];
+}
+
+function serveApi(app: Express, http: Http): void {
+  app.use('/api', jsonOnly);
+  app.use(express.json({ limit: '1mb' }));
+  for (const route of ROUTES) app[route.method](`/api${route.path}`, ...guardsOf(route, http), (req, res) => route.handle(http, req, res));
+  app.use('/api', unknownRoute);
+}
+
+export interface Dependencies extends Reach {
+  sync: Sync;
+  fetchImpl?: Fetch;
+}
+
+export function createApp({ sync, fetchImpl = fetch, ...reach }: Dependencies): Express {
+  const app = express();
+  app.disable('x-powered-by');
+  app.set('trust proxy', 1);
+  app.use(hardened);
+  serveInterface(app, reach.config);
+  serveApi(app, { world: createWorld(reach, sync), fetchImpl });
+  app.use(tellRefusal);
+  return app;
+}

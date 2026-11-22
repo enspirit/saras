@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { createApp } from './tooling/http/app.ts';
+import { createApp } from './tooling/http/server.ts';
 import { loadConfig, loadDotEnv } from './tooling/config.ts';
 import { createVault } from './tooling/crypto.ts';
 import { openDb } from './tooling/db.ts';
