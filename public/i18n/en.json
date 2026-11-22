@@ -264,7 +264,14 @@
     "folders": "Folders",
     "mailbox": "Mailbox",
     "folderColumn": "Folder watched",
-    "lastSyncColumn": "Last fetched"
+    "lastSyncColumn": "Last fetched",
+    "stepKey": "Give the AI its key",
+    "keyTitle": "Give the AI its key",
+    "keyIntro": "Sorting your emails and writing proposals go through OpenRouter, with your organisation’s own key. Without one you can still read and answer by hand.",
+    "keyHint": "Create one in your <link>OpenRouter account</link>. It is encrypted in the database and used by every member who has no key of their own.",
+    "keySave": "Save and read my emails",
+    "keyLater": "Later",
+    "serversProposed": "Filled in from the address. Check them with your mail provider if the connection fails."
   },
   "settings": {
     "title": "Settings",

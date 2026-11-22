@@ -134,7 +134,8 @@ export const Muted = (...children: Child[]): HTMLSpanElement => h('span', { clas
 export const Small = (...children: Child[]): HTMLSpanElement => h('span', { class: 'text--small' }, children);
 export const Strong = (...children: Child[]): HTMLElement => h('strong', {}, children);
 export const Code = (text: string): HTMLElement => h('code', {}, text);
-export const Link = (label: string, href: string): HTMLAnchorElement => h('a', { href }, label);
+/** A link; one to another site opens beside the application, so that what is in progress here is not lost. */
+export const Link = (label: string, href: string): HTMLAnchorElement => (/^https?:/.test(href) ? h('a', { href, target: '_blank', rel: 'noopener noreferrer' }, label) : h('a', { href }, label));
 export const Heading = (level: 1 | 2 | 3, ...children: Child[]): HTMLHeadingElement => h(`h${level}`, {}, children);
 export const List = (items: Child[]): HTMLUListElement => h('ul', {}, items.map((item) => h('li', {}, item)));
 

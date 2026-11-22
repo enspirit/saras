@@ -9,6 +9,7 @@ import type { Brand, ButtonOptions, IconName } from './ui/atoms.ts';
 import type { Child } from './ui/dom.ts';
 import { api, isSignedOut, problemText } from './api.ts';
 import { initI18n, language, languages, locale, setLanguage, t, tRich } from './i18n.ts';
+import { serversFor } from './mail-presets.ts';
 import type { Account, BoxId, MailFolder, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
 
 const root = document.getElementById('app') as HTMLElement;
@@ -675,8 +676,10 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
 // ---- accounts ---------------------------------------------------------------------------
 /** Kinds of mailbox are product names: the same in every language. */
 const KIND: Record<Account['kind'], string> = { imap: 'IMAP / SMTP', google: 'Google', microsoft: 'Microsoft' };
-/** Getting started is a path: connect, choose the folder, read. */
-const pathSteps = (): string[] => [t('accounts.step1'), t('accounts.step2'), t('accounts.step3')];
+/** Whether the path still has to ask for the AI's key: no key is available, and this person may give the organisation's. */
+const needsKey = (): boolean => isAdmin() && !me().hasKey;
+/** Getting started is a path: connect, choose the folder, give the AI its key when there is none, read. */
+const pathSteps = (withKey = needsKey()): string[] => [t('accounts.step1'), t('accounts.step2'), ...(withKey ? [t('accounts.stepKey')] : []), t('accounts.step3')];
 
 /**
  * Choosing the one folder of a mailbox to watch. The folders are asked of the mailbox when
@@ -685,12 +688,19 @@ const pathSteps = (): string[] => [t('accounts.step1'), t('accounts.step2'), t('
 function folderPage(account: Account): void {
   const fresh = account.folder === null;
   const folders = Choices({ legend: t('accounts.folders'), name: 'folder', rows: true, options: [{ value: '', title: t('accounts.loadingFolders'), disabled: true }] });
-  const confirm = ActionButton(t('accounts.useFolder'), '…', async () => {
+  const confirm = ActionButton(t('accounts.useFolder'), t('mailbox.refreshing'), async () => {
     await api('PUT', `/accounts/${account.id}/folder`, { folder: folders.value() });
-    toast(t('accounts.folderChosen'));
-    // The first choice ends the path: on to the emails. A later change goes back to the list.
-    location.hash = fresh ? '#/inbox' : '#/accounts';
-    if (!fresh) void renderAccounts();
+    if (!fresh) {
+      toast(t('accounts.folderChosen'));
+      location.hash = '#/accounts';
+      return void renderAccounts();
+    }
+    // The first choice goes on with the path. The button waits for the first fetch, so that
+    // the newcomer arrives on their emails and not on an empty box.
+    const fetched = await api<SyncResult>('POST', `/accounts/${account.id}/sync`);
+    if (fetched.error) toast(problemText(fetched.error), true);
+    else toast(t('mailbox.fetched', { count: fetched.fetched }));
+    location.hash = needsKey() ? '#/accounts/key' : '#/inbox';
   }, { variant: 'primary' });
   confirm.disabled = true;
   api<MailFolder[]>('GET', `/accounts/${account.id}/folders`)
@@ -705,6 +715,26 @@ function folderPage(account: Account): void {
     fresh && Callout('ok', t('accounts.connectedShort', { email: account.email })),
     Card({ form: true }, folders.element, Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/accounts' }))),
   ));
+}
+
+/** Last step before the emails when no AI key is available: the administrator gives the organisation's, or goes on without. */
+function keyPage(): void {
+  const key = Input({ type: 'password', required: true, autocomplete: 'off', placeholder: 'sk-or-…' });
+  const save = Button(t('accounts.keySave'), { variant: 'primary', type: 'submit' });
+  const form = SubmitForm(save, '…', async () => {
+    await api('PUT', '/organization', { openrouterKey: key.value });
+    state.me = await api<Me>('GET', '/me');
+    location.hash = '#/inbox';
+  },
+    Field(t('organization.key'), key, { hint: tRich('accounts.keyHint', {}, { link: (label) => Link(label, 'https://openrouter.ai/keys') }) }),
+    Actions(save, ButtonLink(t('accounts.keyLater'), { href: '#/inbox', variant: 'link' })),
+  );
+  shell(Page(
+    Steps(pathSteps(true), 2),
+    PageHeader({ title: t('accounts.keyTitle'), intro: t('accounts.keyIntro') }),
+    Card({ form: true }, form),
+  ));
+  key.focus();
 }
 
 /** Connecting a mailbox: whose it is, where it is hosted, then what that host asks for. */
@@ -724,8 +754,9 @@ function connectPage(first: boolean, oauthError: Child): void {
     { value: 'imap', title: t('accounts.imapTitle'), hint: t('accounts.imapHint') },
   ], onChange: () => show() });
 
-  const email = Input({ type: 'email', required: true });
-  const displayName = Input({ placeholder: t('accounts.namePlaceholder') });
+  // A first mailbox is most often one's own: start from what sign-up already knows.
+  const email = Input({ type: 'email', required: true, value: first ? me().email : '' });
+  const displayName = Input({ placeholder: t('accounts.namePlaceholder'), value: first ? me().name : '' });
   const username = Input({ placeholder: t('accounts.usernamePlaceholder'), autocomplete: 'off' });
   const password = Input({ type: 'password', required: true, autocomplete: 'new-password' });
   const imapHost = Input({ required: true, placeholder: t('accounts.imapPlaceholder') });
@@ -736,6 +767,20 @@ function connectPage(first: boolean, oauthError: Child): void {
   const smtpSecure = Checkbox({ checked: true });
   imapPort.addEventListener('input', () => (imapSecure.checked = imapPort.value === '993'));
   smtpPort.addEventListener('input', () => (smtpSecure.checked = smtpPort.value === '465'));
+  // The servers follow the address until the user writes their own.
+  let proposed = '';
+  const propose = (): void => {
+    const servers = serversFor(email.value);
+    if (!servers || (imapHost.value && imapHost.value !== proposed)) return;
+    proposed = imapHost.value = servers.imapHost;
+    smtpHost.value = servers.smtpHost;
+    imapPort.value = String(servers.imapPort);
+    smtpPort.value = String(servers.smtpPort);
+    imapSecure.checked = servers.imapPort === 993;
+    smtpSecure.checked = servers.smtpPort === 465;
+  };
+  email.addEventListener('input', propose);
+  propose();
   const connect = Button(t('accounts.connect'), { variant: 'primary', type: 'submit' });
   const imapForm = SubmitForm(connect, t('accounts.connecting'), async () => {
     await api('POST', '/accounts/imap', {
@@ -751,6 +796,7 @@ function connectPage(first: boolean, oauthError: Child): void {
     FormRow(Field(t('accounts.email'), email), Field(t('accounts.password'), password)),
     Field(t('accounts.name'), displayName, { hint: t('accounts.passwordHint') }),
     CardSection(t('accounts.serverSettings'),
+      Block(Text({ muted: true, small: true }, t('accounts.serversProposed'))),
       FormRow(Field(t('accounts.imapServer'), imapHost), Field(t('accounts.port'), imapPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), imapSecure, { size: 'narrow' })),
       FormRow(Field(t('accounts.smtpServer'), smtpHost), Field(t('accounts.port'), smtpPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), smtpSecure, { size: 'narrow' })),
       Field(t('accounts.username'), username, { hint: t('accounts.tlsHint') }),
@@ -787,6 +833,7 @@ const renderAccounts = guard(async (part = '', id: number | null = null, oauthEr
 
   // With no mailbox yet, the page is the first step of the path.
   if (part === 'connect' || accounts.length === 0) return connectPage(accounts.length === 0, failure);
+  if (part === 'key' && needsKey()) return keyPage();
   // A mailbox just connected has no folder yet: the page is the second step.
   const pending = accounts.find((a) => a.canManage && (a.folder === null || (part === 'folder' && a.id === id)));
   if (pending) return folderPage(pending);

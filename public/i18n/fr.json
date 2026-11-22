@@ -264,7 +264,14 @@
     "folders": "Dossiers",
     "mailbox": "Boîte",
     "folderColumn": "Dossier surveillé",
-    "lastSyncColumn": "Dernier relevé"
+    "lastSyncColumn": "Dernier relevé",
+    "stepKey": "Donner sa clé à l’IA",
+    "keyTitle": "Donner sa clé à l’IA",
+    "keyIntro": "Le tri de vos emails et la rédaction des propositions passent par OpenRouter, avec la clé de votre organisation. Sans clé, vous pouvez toujours lire et répondre à la main.",
+    "keyHint": "Créez-en une dans votre <link>compte OpenRouter</link>. Elle est chiffrée dans la base et sert à chaque membre qui n’a pas sa propre clé.",
+    "keySave": "Enregistrer et lire mes emails",
+    "keyLater": "Plus tard",
+    "serversProposed": "Remplis d’après l’adresse. Vérifiez-les auprès de votre fournisseur si la connexion échoue."
   },
   "settings": {
     "title": "Réglages",

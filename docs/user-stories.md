@@ -89,6 +89,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 **As** a member, **I want** to connect my mailbox with its IMAP and SMTP servers, **so that** saras can read the folder I choose and send in my name.
 
 - I give the address, the name shown to recipients, an optional username, the password, and for each server its host, port and whether TLS is direct.
+- For my first mailbox the address and the name are those I signed up with, and the servers are proposed from the address; I can change all of them.
 - Changing a port sets "Direct TLS" accordingly (993 / 465 direct; otherwise STARTTLS, which is then required).
 - The connection is tested before anything is saved; a failure shows the server's own message.
 - The password is stored encrypted. An address is connected once per organisation.
@@ -112,7 +113,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - Right after connecting, the mailbox asks for its folder; the inbox is first and preselected. Nothing is fetched before that choice.
 - Only that folder is ever fetched (an IMAP folder, a Gmail label, an Outlook folder).
 - I can change it later; what was fetched from the previous folder is kept.
-- Choosing a folder starts a first fetch.
+- Choosing a folder starts a first fetch. The first time, I am taken to my emails once it is done; if no AI key is available and I am an administrator, I am first asked for the organisation's key, which I may give later.
 
 ### US-14 — Connect a shared mailbox
 **As** an administrator, **I want** to connect an address such as contact@ as shared, **so that** every member, present and future, sees its emails and can reply from it.
