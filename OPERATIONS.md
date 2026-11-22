@@ -215,11 +215,27 @@ Recorded, not fixed. Each is a decision for the product's owner.
 11. **Two definitions of "the member edited the proposal"**: the frontend's (`norm`: whitespace collapsed) decides whether the reason is asked; the backend's (`wasEdited`) decides whether it is kept. They can disagree.
 12. **Fetching is done as the mailbox's owner**, including for a shared mailbox: their key, model and language sort it, and their signature and corrections write the prepared proposals, whoever reads them.
 
-### Open questions
+## Decisions
 
-1. Is **RenewMailboxCredentials** an operation in its own right, or should connecting an address already connected be refused and renewal offered on the mailbox?
-2. Should **SortAgainUnsorted** stay a flag on `PUT /organization`, or become an operation with its own entry?
-3. **ChooseSorting** and **ChooseProposals** are two operations today; the interface presents four *ways of working*. Is the way of working the real state variable, with one operation **ChooseWayOfWorking**?
-4. Is the **reply in progress** meant to be lost when the member leaves the page, or should it be state the backend keeps?
-5. `POST /invitations/check` is counted as an observation, yet a wrong token counts towards the lock-out. Is checking a token an operation (**CheckInvitation**) for that reason?
-6. No route lets a member change their password or delete their own account. Missing operations, or out of scope?
+Taken by the product's owner on the questions the inventory raised. The tables above still describe the code as it stands; each decision below that changes behaviour is made as its own change, apart from the moves that only relocate code.
+
+| # | Question | Decision | Changes behaviour? |
+| --- | --- | --- | --- |
+| 1 | Connecting an address already connected renews its credentials. | **RenewMailboxCredentials** becomes an operation of its own, on the mailbox. **ConnectMailbox** refuses an address already connected. | Yes: a second connection is refused where it was accepted. |
+| 2 | Sorting again what the first fetch let through is a flag on the organisation's settings. | **SortAgainUnsorted** becomes an operation of its own, with its own entry. | The route changes; what it does stays. |
+| 3 | Sorting and proposals are two settings; the interface shows four ways of working. | The **way of working** is the state variable, with four values and one operation, **ChooseWayOfWorking**. **ChooseSorting** and **ChooseProposals** go. | Yes: the two combinations outside the four (no sorting, with proposals at fetch) stop being possible. |
+| 4 | The reply in progress is lost when the member leaves the page. | It stays in the browser, as today. Nothing unsent reaches the server. | No. |
+| 5 | Checking an invitation link counts a wrong token towards the lock-out. | **CheckInvitation** is an operation: DomPost, the attempt count of this origin may have grown. | No: a reclassification. |
+| 6 | Nothing changes a password, deletes one's own account, or deletes an organisation. | Three missing operations, to build after the reorganisation: **ChangePassword**, **DeleteOwnAccount**, **DeleteOrganization** (which lets a sole administrator leave, deviation 9). | Yes: new operations. |
+
+### Operations to add or reshape, from these decisions
+
+| Operation | Agent | DomPre → DomPost | Status |
+| --- | --- | --- | --- |
+| **CheckInvitation** | Visitor | Any → the invitation's address and organisation are told; a wrong token counts towards the lock-out | Exists (`POST /invitations/check`); now listed as an operation |
+| **RenewMailboxCredentials** | Member | A mailbox they may manage → the same, with new credentials | To split out of ConnectMailbox |
+| **SortAgainUnsorted** | Administrator | Emails to handle that no strategy sorted and have no proposal → waiting to be sorted | To give its own entry |
+| **ChooseWayOfWorking** | Administrator | → one of: I decide everything; the AI sorts; proposals waiting; drafts in the mailbox | To replace ChooseSorting and ChooseProposals |
+| **ChangePassword** | Member | → the member's password is the new one | To build |
+| **DeleteOwnAccount** | Member | A member → none | To build; its guards (last administrator, shared mailboxes, prompts) are to be decided |
+| **DeleteOrganization** | Administrator | An organisation → none, with its members, mailboxes and everything stored | To build |
