@@ -1,5 +1,7 @@
 // State: the mailboxes of an organisation.
 import type { Db } from '../../tooling/db.ts';
+import { encodeProblem } from '../../tooling/messages.ts';
+import type { Problem } from '../../tooling/messages.ts';
 import type { AccountKind, AccountRow } from '../model/mailbox.ts';
 import { Refusal } from '../refusal.ts';
 import type { Actor } from '../world.ts';
@@ -56,3 +58,7 @@ export const watchFolder = async (db: Db, mailboxId: number, folder: { id: strin
 export const forgetMailbox = async (db: Db, mailboxId: number): Promise<void> => void (await db.run('DELETE FROM accounts WHERE id = $1', [mailboxId]));
 
 export const watchedMailboxes = (db: Db): Promise<AccountRow[]> => db.query<AccountRow>('SELECT * FROM accounts WHERE folder IS NOT NULL');
+
+/** When a mailbox was last fetched, and what went wrong if anything did. */
+export const recordFetch = async (db: Db, mailboxId: number, error: Problem | null): Promise<void> =>
+  void (await db.run(`UPDATE accounts SET last_sync_at = now(), last_error = $1 WHERE id = $2`, [encodeProblem(error), mailboxId]));

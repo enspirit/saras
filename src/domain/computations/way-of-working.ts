@@ -3,7 +3,7 @@
 import type { Automation, OrganizationRow } from '../model/organization.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
-import type { TriageStrategy } from '../sorting/index.ts';
+import type { TriageStrategy } from '../sorting/strategies.ts';
 
 /**
  * The four ways, each one adding to the one before:

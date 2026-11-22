@@ -20,6 +20,8 @@ export async function memberOf(db: Db, organizationId: number, id: unknown): Pro
 
 export const organizationById = async (db: Db, id: number): Promise<OrganizationRow> => (await db.one<OrganizationRow>('SELECT * FROM organizations WHERE id = $1', [id]))!;
 
+export const memberById = async (db: Db, id: number): Promise<UserRow> => (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [id]))!;
+
 export async function administratorsOf(db: Db, organizationId: number): Promise<number> {
   const counted = await db.one<{ n: number }>(`SELECT count(*)::int AS n FROM users WHERE role = 'admin' AND org_id = $1`, [organizationId]);
   return counted!.n;

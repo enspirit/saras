@@ -1,6 +1,9 @@
 // State: the emails saras keeps, and where each stands.
 import type { Db } from '../../tooling/db.ts';
-import type { EmailRow } from '../model/email.ts';
+import { textToKeep } from '../computations/emails.ts';
+import type { Standing } from '../computations/emails.ts';
+import type { EmailRow, IncomingEmail } from '../model/email.ts';
+import type { TriageDecision } from '../sorting/gate.ts';
 import { Refusal } from '../refusal.ts';
 import type { Actor } from '../world.ts';
 import { mayUse } from './mailboxes.ts';
@@ -27,3 +30,51 @@ export const emailsAwaitingProposal = (db: Db, mailboxId: number, limit: number)
      ORDER BY e.date DESC LIMIT $2`,
     [mailboxId, limit],
   );
+
+/** What saras already keeps of a mailbox's folder, by the mailbox's own identifiers. */
+export async function knownIn(db: Db, mailboxId: number, folder: string): Promise<Set<string>> {
+  const stored = await db.query<Pick<EmailRow, 'provider_id'>>('SELECT provider_id FROM emails WHERE account_id = $1 AND folder = $2', [mailboxId, folder]);
+  return new Set(stored.map((row) => row.provider_id));
+}
+
+const whoAndWhat = (email: IncomingEmail): unknown[] => [
+  email.providerId,
+  email.messageId,
+  email.threadId,
+  email.refs || '',
+  email.fromName,
+  email.fromAddr,
+  email.replyTo || '',
+  JSON.stringify(email.to),
+  JSON.stringify(email.cc),
+  email.subject,
+  email.date,
+  textToKeep(email.bodyText),
+  JSON.stringify(email.attachments),
+];
+
+/** Keeps a fetched email where it first stands. One already kept (same mailbox, folder and identifier) is left as it is. */
+export const keepFetched = async (db: Db, mailboxId: number, folder: string, email: IncomingEmail, standing: Standing): Promise<void> =>
+  void (await db.run(
+    `INSERT INTO emails
+       (account_id, folder, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
+        subject, date, body_text, attachments_json, status, triage_source, triage_reason)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+     ON CONFLICT (account_id, folder, provider_id) DO NOTHING`,
+    [mailboxId, folder, ...whoAndWhat(email), standing.status, standing.source, standing.reason],
+  ));
+
+/** The emails of a mailbox that wait to be sorted, most recent first. */
+export const emailsWaiting = (db: Db, mailboxId: number): Promise<EmailRow[]> =>
+  db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [mailboxId]);
+
+/** Records what a gate decided about an email, if it still waits. */
+export const keepVerdict = async (db: Db, gate: string, decision: TriageDecision): Promise<void> =>
+  void (await db.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3, priority = $4, suggested_prompt_id = $5 WHERE id = $6 AND status = 'pending'`, [
+    decision.replyNeeded ? 'needs_reply' : 'no_reply',
+    gate,
+    decision.reason ?? '',
+    decision.priority ?? 'normal',
+    decision.replyNeeded ? decision.promptId : null,
+    decision.mailId,
+  ]));

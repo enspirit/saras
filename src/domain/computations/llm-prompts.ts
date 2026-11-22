@@ -94,30 +94,31 @@ export function buildStyleMessages({ html }: AssistBase): ChatMessage[] {
  * "Apply a response prompt": the administrators' prompt, the received email, and what the user
  * wrote, which may be nothing, a few notes, instructions, or a full draft to rework.
  */
+/** What the model is told about the reply to write, whatever the prompt. */
+const rulesOfReply = (ownAddress: string, signature: string | undefined): string =>
+  [
+    `You are writing, on behalf of ${ownAddress}, the reply to the email below. They will review it before it is sent.`,
+    `Rules:`,
+    `- Write in the language of the email received.`,
+    `- No subject line, no quoting of the original message.`,
+    `- Invent no fact, date, price or commitment. Where information is missing, write a placeholder in square brackets, in the language of the reply, naming what is missing.`,
+    signature ? `- End with this signature, exactly as given, one line per line:\n${signature}` : `- End with a short closing formula, without a signature by name.`,
+  ].join('\n');
+
+/** What the model is told about what the member wrote for this reply, if anything. */
+const whatWasWritten = (ownAddress: string, html: string | undefined): string =>
+  isBlankHtml(html)
+    ? `${ownAddress} wrote nothing yet: write the whole reply.`
+    : `Between the <draft> tags is what ${ownAddress} wrote for this reply. It may be notes, instructions to you, or a text to rework: in every case it is what the reply must say. Build the reply from it, keeping its facts and decisions.`;
+
+const lessonsLearnt = (lessons: string[]): string[] =>
+  lessons.length ? [`They have already corrected earlier proposals for the following reasons. Take them into account:\n${lessons.map((l) => `- ${l}`).join('\n')}`] : [];
+
 export function buildPromptMessages({ email, prompt, ownAddress, signature, lessons = [], html }: PromptInput): ChatMessage[] {
-  const parts = [
-    prompt.systemPrompt,
-    [
-      `You are writing, on behalf of ${ownAddress}, the reply to the email below. They will review it before it is sent.`,
-      `Rules:`,
-      `- Write in the language of the email received.`,
-      `- No subject line, no quoting of the original message.`,
-      `- Invent no fact, date, price or commitment. Where information is missing, write a placeholder in square brackets, in the language of the reply, naming what is missing.`,
-      signature ? `- End with this signature, exactly as given, one line per line:\n${signature}` : `- End with a short closing formula, without a signature by name.`,
-    ].join('\n'),
-    isBlankHtml(html)
-      ? `${ownAddress} wrote nothing yet: write the whole reply.`
-      : `Between the <draft> tags is what ${ownAddress} wrote for this reply. It may be notes, instructions to you, or a text to rework: in every case it is what the reply must say. Build the reply from it, keeping its facts and decisions.`,
-    UNTRUSTED,
-    FORMAT,
-  ];
-  if (lessons.length) {
-    parts.push(`They have already corrected earlier proposals for the following reasons. Take them into account:\n${lessons.map((l) => `- ${l}`).join('\n')}`);
-  }
-  const user = [renderEmail(email, MAX_BODY_DRAFT)];
-  if (!isBlankHtml(html)) user.push(draftBlock(html));
+  const system = [prompt.systemPrompt, rulesOfReply(ownAddress, signature), whatWasWritten(ownAddress, html), UNTRUSTED, FORMAT, ...lessonsLearnt(lessons)];
+  const user = isBlankHtml(html) ? [renderEmail(email, MAX_BODY_DRAFT)] : [renderEmail(email, MAX_BODY_DRAFT), draftBlock(html)];
   return [
-    { role: 'system', content: parts.join('\n\n') },
+    { role: 'system', content: system.join('\n\n') },
     { role: 'user', content: user.join('\n\n') },
   ];
 }

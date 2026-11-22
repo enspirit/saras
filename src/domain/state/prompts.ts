@@ -2,6 +2,7 @@
 import type { Db } from '../../tooling/db.ts';
 import type { PromptRow } from '../model/prompt.ts';
 import { Refusal } from '../refusal.ts';
+import type { TriagePrompt } from '../sorting/gate.ts';
 
 /** The organisation's prompt with this number; refused as not found otherwise. */
 export async function promptOf(db: Db, organizationId: number, id: unknown): Promise<PromptRow> {
@@ -25,3 +26,7 @@ export async function lessonsFor(db: Db, promptId: number, memberId: number): Pr
   );
   return rows.map((r) => r.change_reason);
 }
+
+/** The prompts a gate may suggest: what it is told of each is its name and when to use it. */
+export const promptsToSuggest = (db: Db, organizationId: number): Promise<TriagePrompt[]> =>
+  db.query<TriagePrompt>('SELECT id, name, description FROM prompts WHERE org_id = $1 ORDER BY id', [organizationId]);

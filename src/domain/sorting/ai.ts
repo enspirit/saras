@@ -49,29 +49,33 @@ export function buildBatchMessages({ prompts, mails }: TriageBatch, { ownAddress
  * their mail untriaged rather than guessing.
  */
 export function parseBatchAnswer(answer: string): TriageDecision[] {
+  return listIn(answer).flatMap((entry) => (isWellFormed(entry) ? [decisionOf(entry)] : []));
+}
+
+/** The JSON list the answer contains, or none. */
+function listIn(answer: string): unknown[] {
   const start = answer.indexOf('[');
   const end = answer.lastIndexOf(']');
   if (start === -1 || end <= start) return [];
-  let entries: unknown;
   try {
-    entries = JSON.parse(answer.slice(start, end + 1));
+    const entries: unknown = JSON.parse(answer.slice(start, end + 1));
+    return Array.isArray(entries) ? entries : [];
   } catch {
     return [];
   }
-  if (!Array.isArray(entries)) return [];
-  const decisions: TriageDecision[] = [];
-  for (const entry of entries as Record<string, unknown>[]) {
-    if (!entry || typeof entry !== 'object' || !Number.isInteger(entry.id) || typeof entry.needs_reply !== 'boolean') continue;
-    decisions.push({
-      mailId: entry.id as number,
-      replyNeeded: entry.needs_reply,
-      promptId: entry.needs_reply && Number.isInteger(entry.prompt_id) ? (entry.prompt_id as number) : null,
-      reason: String(entry.reason || '').slice(0, 300),
-      priority: PRIORITIES.find((p) => p === entry.priority) ?? 'normal',
-    });
-  }
-  return decisions;
 }
+
+type Entry = Record<string, unknown> & { id: number; needs_reply: boolean };
+const isWellFormed = (entry: unknown): entry is Entry =>
+  Boolean(entry) && typeof entry === 'object' && Number.isInteger((entry as Entry).id) && typeof (entry as Entry).needs_reply === 'boolean';
+
+const decisionOf = (entry: Entry): TriageDecision => ({
+  mailId: entry.id,
+  replyNeeded: entry.needs_reply,
+  promptId: entry.needs_reply && Number.isInteger(entry.prompt_id) ? (entry.prompt_id as number) : null,
+  reason: String(entry.reason || '').slice(0, 300),
+  priority: PRIORITIES.find((p) => p === entry.priority) ?? 'normal',
+});
 
 export interface AiTriageOptions {
   llm: Llm;

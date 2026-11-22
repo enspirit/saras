@@ -15,12 +15,12 @@ import { problem } from '../../tooling/messages.ts';
 import type { Problem } from '../../tooling/messages.ts';
 import type { EmailRow } from '../model/email.ts';
 import type { AccountRow } from '../model/mailbox.ts';
-import type { UserRow } from '../model/member.ts';
 import { rowToEmail, toTriageMail } from '../computations/emails.ts';
-import { organizationById } from '../state/members.ts';
+import { emailsWaiting, keepVerdict } from '../state/emails.ts';
+import { memberById, organizationById } from '../state/members.ts';
+import { promptsToSuggest } from '../state/prompts.ts';
 import { runGate } from './gate.ts';
-import type { TriagePrompt } from './gate.ts';
-import type { Triage } from './index.ts';
+import type { Triage } from './strategies.ts';
 
 export interface SortingResult {
   /** Emails the gate decided about. */
@@ -28,28 +28,24 @@ export interface SortingResult {
   error: Problem | null;
 }
 
-export async function sortWaitingEmails({ db, triage }: { db: Db; triage: Triage }, account: AccountRow): Promise<SortingResult> {
-  const org = (await organizationById(db, account.org_id))!;
-  const owner = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
-  const pending = await db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [account.id]);
-  if (!pending.length) return { triaged: 0, error: null };
-  const prompts = await db.query<TriagePrompt>('SELECT id, name, description FROM prompts WHERE org_id = $1 ORDER BY id', [org.id]);
-  const gate = triage.gateFor(account, org, owner);
+type Sorting = { db: Db; triage: Triage };
+
+/** Asks the organisation's gate, as the mailbox's owner, about the emails that wait; records what it decided. */
+async function decideAbout({ db, triage }: Sorting, account: AccountRow, waiting: EmailRow[]): Promise<number> {
+  const organization = await organizationById(db, account.org_id);
+  const gate = triage.gateFor(account, organization, await memberById(db, account.user_id));
+  const decisions = await runGate(gate, await promptsToSuggest(db, organization.id), waiting.map((row) => toTriageMail(rowToEmail(row))));
+  await db.transaction(async (tx) => {
+    for (const decision of decisions) await keepVerdict(tx, gate.name, decision);
+  });
+  return decisions.length;
+}
+
+export async function sortWaitingEmails(sorting: Sorting, account: AccountRow): Promise<SortingResult> {
+  const waiting = await emailsWaiting(sorting.db, account.id);
+  if (!waiting.length) return { triaged: 0, error: null };
   try {
-    const decisions = await runGate(gate, prompts, pending.map((row) => toTriageMail(rowToEmail(row))));
-    await db.transaction(async (tx) => {
-      for (const decision of decisions) {
-        await tx.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3, priority = $4, suggested_prompt_id = $5 WHERE id = $6 AND status = 'pending'`, [
-          decision.replyNeeded ? 'needs_reply' : 'no_reply',
-          gate.name,
-          decision.reason ?? '',
-          decision.priority ?? 'normal',
-          decision.replyNeeded ? decision.promptId : null,
-          decision.mailId,
-        ]);
-      }
-    });
-    return { triaged: decisions.length, error: null };
+    return { triaged: await decideAbout(sorting, account, waiting), error: null };
   } catch (e) {
     return { triaged: 0, error: e instanceof LlmError ? e.problem : problem('sync.triageFailed', { detail: errorMessage(e) }) };
   }

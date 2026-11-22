@@ -21,10 +21,11 @@
 import { randomToken } from '../../tooling/crypto.ts';
 import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from '../../tooling/mail/oauth.ts';
 import { answersSignIn, connectsAsShared, isSameMailbox, rememberedSignIn, signInRemembered } from '../computations/mailboxes.ts';
+import type { HostSignIn } from '../computations/mailboxes.ts';
 import { clipped } from '../computations/given.ts';
 import { Refusal, accepted } from '../refusal.ts';
 import { forgetHostSignIn, rememberHostSignIn } from '../state/sessions.ts';
-import type { AccountRow } from '../model/mailbox.ts';
+import type { AccountRow, OAuthKind, OAuthTokens } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 import { connectMailbox } from './connect-mailbox.ts';
 import { mailboxToRenew, renewWith } from './renew-mailbox-credentials.ts';
@@ -51,26 +52,37 @@ export interface HostAnswer {
   error: unknown;
 }
 
-export async function connectMailboxByHostSignIn(world: World, actor: Actor, sessionId: string, answer: HostAnswer, fetchImpl: Fetch): Promise<AccountRow> {
-  const { db, config } = world;
+/** What the host grants and whose mailbox it says it is. ReqPre: lasting access. */
+async function grantedBy({ config }: World, kind: OAuthKind, code: unknown, fetchImpl: Fetch): Promise<{ tokens: OAuthTokens; identity: { email: string; name: string } }> {
+  try {
+    const tokens = await exchangeCode(config, kind, String(code || ''), fetchImpl);
+    if (!tokens.refreshToken) throw new Error('no refresh token received');
+    return { tokens, identity: await fetchIdentity(kind, tokens.accessToken, fetchImpl) };
+  } catch (e) {
+    throw new Refusal('upstream', 'oauth.failed', { detail: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+/** ReqPre of the answer itself: for a host this server is set up for, not a refusal, and to the sign-in the session remembers. */
+function signInAnswered({ config }: World, answer: HostAnswer): { kind: OAuthKind; remembered: HostSignIn } {
   const { kind } = answer;
-  await forgetHostSignIn(db, sessionId);
   if (!isOAuthKind(kind) || !isConfigured(config, kind)) throw new Refusal('notFound', 'oauth.notConfigured');
   if (answer.error) throw new Refusal('forbidden', 'oauth.denied', { detail: clipped(answer.error, 100) });
   const remembered = signInRemembered(answer.remembered);
   accepted(answersSignIn(remembered, kind, answer.state));
-  let tokens, identity;
-  try {
-    tokens = await exchangeCode(config, kind, String(answer.code || ''), fetchImpl);
-    if (!tokens.refreshToken) throw new Error('no refresh token received');
-    identity = await fetchIdentity(kind, tokens.accessToken, fetchImpl);
-  } catch (e) {
-    throw new Refusal('upstream', 'oauth.failed', { detail: e instanceof Error ? e.message : String(e) });
-  }
-  if (remembered.renews) {
-    const mailbox = await mailboxToRenew(world, actor, remembered.renews);
-    accepted(isSameMailbox(mailbox, kind, identity.email));
-    return renewWith(world, mailbox, tokens);
-  }
+  return { kind, remembered };
+}
+
+async function renewByHostSignIn(world: World, actor: Actor, mailboxId: number, kind: OAuthKind, address: string, tokens: OAuthTokens): Promise<AccountRow> {
+  const mailbox = await mailboxToRenew(world, actor, mailboxId);
+  accepted(isSameMailbox(mailbox, kind, address));
+  return renewWith(world, mailbox, tokens);
+}
+
+export async function connectMailboxByHostSignIn(world: World, actor: Actor, sessionId: string, answer: HostAnswer, fetchImpl: Fetch): Promise<AccountRow> {
+  await forgetHostSignIn(world.db, sessionId);
+  const { kind, remembered } = signInAnswered(world, answer);
+  const { tokens, identity } = await grantedBy(world, kind, answer.code, fetchImpl);
+  if (remembered.renews) return renewByHostSignIn(world, actor, remembered.renews, kind, identity.email, tokens);
   return connectMailbox(world, actor, { kind, address: identity.email, displayName: identity.name, shared: connectsAsShared(actor, remembered.shared) }, tokens);
 }

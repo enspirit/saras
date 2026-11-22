@@ -5,48 +5,59 @@ const int = (v: string | undefined, d: number): number => (v === undefined || v 
 /** Build the configuration from an env-like object. Pure, so tests can call it. */
 export type Config = ReturnType<typeof loadConfig>;
 
-export function loadConfig(env: Record<string, string | undefined> = process.env) {
-  const secret = env.APP_SECRET || '';
-  if (secret.length < 32) {
-    throw new Error('APP_SECRET is missing or too short (32 characters minimum). Generate one with: openssl rand -hex 32');
-  }
+type Env = Record<string, string | undefined>;
+
+/** Where this server is reached, and where it keeps its data. */
+function hosting(env: Env) {
   const baseUrl = (env.BASE_URL || `http://localhost:${int(env.PORT, 3000)}`).replace(/\/+$/, '');
   return {
     port: int(env.PORT, 3000),
     baseUrl,
     secureCookies: baseUrl.startsWith('https://'),
-    appSecret: secret,
     dataDir: env.DATA_DIR || './data',
     // A PostgreSQL server. Empty: an embedded PostgreSQL keeps its files in dataDir.
     databaseUrl: env.DATABASE_URL || '',
     // Folder holding a company's theme.css, brand.json, logo and favicon; empty for the default brand.
     brandDir: env.BRAND_DIR || '',
-    // Closed by default: beyond the first account, people join through an administrator's invitation.
-    allowSignup: env.ALLOW_SIGNUP === 'true',
-    invitationDays: int(env.INVITATION_DAYS, 7),
-    // How fetched emails are sorted: 'none' (the watched folder is the filter) or 'ai'.
-    triageStrategy: env.TRIAGE_STRATEGY === 'ai' ? ('ai' as const) : ('none' as const),
-    // Set plainly automated mail aside (newsletters, no-reply…) before any triage.
-    skipAutomated: env.TRIAGE_SKIP_AUTOMATED !== 'false',
-    syncIntervalMinutes: int(env.SYNC_INTERVAL_MINUTES, 10),
-    syncDays: int(env.SYNC_DAYS, 7),
-    syncMaxEmails: int(env.SYNC_MAX_EMAILS, 50),
-    retentionDays: int(env.RETENTION_DAYS, 30),
-    openrouter: {
-      apiKey: env.OPENROUTER_API_KEY || '',
-      model: env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5',
-      baseUrl: (env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''),
-    },
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID || '',
-      clientSecret: env.GOOGLE_CLIENT_SECRET || '',
-    },
-    microsoft: {
-      clientId: env.MICROSOFT_CLIENT_ID || '',
-      clientSecret: env.MICROSOFT_CLIENT_SECRET || '',
-      tenant: env.MICROSOFT_TENANT || 'common',
-    },
   };
+}
+
+/** Who may join, and what a new organisation starts with. */
+const joining = (env: Env) => ({
+  // Closed by default: beyond the first account, people join through an administrator's invitation.
+  allowSignup: env.ALLOW_SIGNUP === 'true',
+  invitationDays: int(env.INVITATION_DAYS, 7),
+  // How fetched emails are sorted: 'none' (the watched folder is the filter) or 'ai'.
+  triageStrategy: env.TRIAGE_STRATEGY === 'ai' ? ('ai' as const) : ('none' as const),
+  // Set plainly automated mail aside (newsletters, no-reply…) before any triage.
+  skipAutomated: env.TRIAGE_SKIP_AUTOMATED !== 'false',
+});
+
+/** How often and how far back mailboxes are fetched, and how long content is kept. */
+const fetching = (env: Env) => ({
+  syncIntervalMinutes: int(env.SYNC_INTERVAL_MINUTES, 10),
+  syncDays: int(env.SYNC_DAYS, 7),
+  syncMaxEmails: int(env.SYNC_MAX_EMAILS, 50),
+  retentionDays: int(env.RETENTION_DAYS, 30),
+});
+
+/** The other hosts this server talks to: the LLM, and the mail hosts members sign in at. */
+const otherHosts = (env: Env) => ({
+  openrouter: {
+    apiKey: env.OPENROUTER_API_KEY || '',
+    model: env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5',
+    baseUrl: (env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''),
+  },
+  google: { clientId: env.GOOGLE_CLIENT_ID || '', clientSecret: env.GOOGLE_CLIENT_SECRET || '' },
+  microsoft: { clientId: env.MICROSOFT_CLIENT_ID || '', clientSecret: env.MICROSOFT_CLIENT_SECRET || '', tenant: env.MICROSOFT_TENANT || 'common' },
+});
+
+export function loadConfig(env: Env = process.env) {
+  const appSecret = env.APP_SECRET || '';
+  if (appSecret.length < 32) {
+    throw new Error('APP_SECRET is missing or too short (32 characters minimum). Generate one with: openssl rand -hex 32');
+  }
+  return { appSecret, ...hosting(env), ...joining(env), ...fetching(env), ...otherHosts(env) };
 }
 
 export function loadDotEnv(path = '.env') {

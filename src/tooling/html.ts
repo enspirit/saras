@@ -35,24 +35,28 @@ export function sanitizeHtml(html: string | null | undefined): string {
     .replace(DROPPED_WITH_CONTENT, '');
   let out = '';
   let last = 0;
-  // A stray "<" in text (one that opens no tag we emit) is escaped: nothing unbalanced gets through.
-  const text = (chunk: string): string => chunk.replace(/</g, '&lt;');
   for (const match of source.matchAll(/<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g)) {
-    out += text(source.slice(last, match.index));
+    out += textOnly(source.slice(last, match.index)) + rewritten(match);
     last = match.index + match[0].length;
-    const [, closing, rawName = '', inside = ''] = match;
-    const name = rawName.toLowerCase();
-    if (!ALLOWED.has(name)) continue;
-    if (closing) {
-      if (!VOID.has(name)) out += `</${name}>`;
-    } else if (name === 'a') {
-      const href = (attribute(` ${inside}`, 'href') ?? '').trim();
-      out += SAFE_LINK.test(href) ? `<a href="${escapeHtml(href.replace(/&amp;/g, '&'))}">` : '<a>';
-    } else {
-      out += `<${name}>`;
-    }
   }
-  return (out + text(source.slice(last))).trim();
+  return (out + textOnly(source.slice(last))).trim();
+}
+
+/** A stray "<" in text (one that opens no tag we emit) is escaped: nothing unbalanced gets through. */
+const textOnly = (chunk: string): string => chunk.replace(/</g, '&lt;');
+
+/** A tag as we write it ourselves; nothing for one a reply may not contain. */
+function rewritten([, closing, rawName = '', inside = '']: RegExpMatchArray): string {
+  const name = rawName.toLowerCase();
+  if (!ALLOWED.has(name)) return '';
+  if (closing) return VOID.has(name) ? '' : `</${name}>`;
+  return name === 'a' ? link(inside) : `<${name}>`;
+}
+
+/** A link keeps its address when it leads to the web or to an address, and nothing else. */
+function link(inside: string): string {
+  const href = (attribute(` ${inside}`, 'href') ?? '').trim();
+  return SAFE_LINK.test(href) ? `<a href="${escapeHtml(href.replace(/&amp;/g, '&'))}">` : '<a>';
 }
 
 /** Plain text typed by a person -> paragraphs. */

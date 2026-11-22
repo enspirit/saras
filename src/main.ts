@@ -9,7 +9,7 @@ import { createMailService } from './tooling/mail/mail-service.ts';
 import { expireSessions } from './domain/access/expire-sessions.ts';
 import { createSync } from './domain/mailboxes/fetch-mailbox.ts';
 import { erasePastRetention } from './domain/retention/erase-past-retention.ts';
-import { createTriage } from './domain/sorting/index.ts';
+import { createTriage } from './domain/sorting/strategies.ts';
 
 loadDotEnv();
 let config;

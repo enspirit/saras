@@ -10,7 +10,9 @@ import { rowToEmail } from '../computations/emails.ts';
 import type { ReplyMode } from '../model/reply.ts';
 import { handOverRecord, mayHandOver } from '../computations/replying.ts';
 import { Refusal, accepted } from '../refusal.ts';
+import type { Email } from '../model/email.ts';
 import { emailFor } from '../state/emails.ts';
+import type { OwnedEmailRow } from '../state/emails.ts';
 import { mailboxById } from '../state/mailboxes.ts';
 import { proposalOf, recordReply } from '../state/proposals.ts';
 import type { Actor, World } from '../world.ts';
@@ -27,26 +29,38 @@ export interface ReplyRequest {
   changeReason: string;
 }
 
+type Reply = { email: Email; to: string[]; cc: string[]; html: string; language: string };
+
+/** Hands the reply to the mailbox: sent, or left in its drafts. A failure of the mailbox is told as such. */
+async function giveToMailbox({ db, mail }: World, mailboxId: number, reply: Reply, mode: ReplyMode): Promise<void> {
+  const provider = mail.providerFor(await mailboxById(db, mailboxId));
+  try {
+    await (mode === 'draft' ? provider.saveDraft(reply) : provider.send(reply));
+  } catch (e) {
+    throw new Refusal('upstream', mode === 'draft' ? 'reply.draftFailed' : 'reply.sendFailed', { detail: errorMessage(e) });
+  }
+}
+
+/** Hands over, then records what was handed over, by whom, and whether the proposal was edited. */
+async function handOverAndRecord(world: World, actor: Actor, row: OwnedEmailRow, request: ReplyRequest, html: string, mode: ReplyMode): Promise<{ wasEdited: boolean }> {
+  const { to, cc } = request;
+  const proposal = request.proposalId ? await proposalOf(world.db, row.id, request.proposalId) : undefined;
+  await giveToMailbox(world, row.account_id, { email: rowToEmail(row), to, cc, html, language: actor.member.language }, mode);
+  const record = handOverRecord(html, proposal, request.changeReason);
+  await recordReply(world.db, { emailId: row.id, memberId: actor.member.id, mode, to, cc, html, ...record });
+  return { wasEdited: record.edited };
+}
+
 export async function handOver(world: World, actor: Actor, request: ReplyRequest, mode: ReplyMode): Promise<{ wasEdited: boolean }> {
   // `handingOver` holds the emails with a hand-over in flight, so that a double click cannot send twice.
-  const { db, mail, handingOver: inFlight } = world;
-  const row = await emailFor(db, actor, request.emailId);
+  const inFlight = world.handingOver;
+  const row = await emailFor(world.db, actor, request.emailId);
   const html = writtenSoFar(request.html);
   // Decided and claimed in the same breath, before anything else is awaited, so that a second request cannot slip in between.
   accepted(mayHandOver({ status: row.status, inFlight: inFlight.has(row.id), html, to: request.to, cc: request.cc }));
   inFlight.add(row.id);
   try {
-    const proposal = request.proposalId ? await proposalOf(db, row.id, request.proposalId) : undefined;
-    const mailbox = await mailboxById(db, row.account_id);
-    const reply = { email: rowToEmail(row), to: request.to, cc: request.cc, html, language: actor.member.language };
-    try {
-      await (mode === 'draft' ? mail.providerFor(mailbox).saveDraft(reply) : mail.providerFor(mailbox).send(reply));
-    } catch (e) {
-      throw new Refusal('upstream', mode === 'draft' ? 'reply.draftFailed' : 'reply.sendFailed', { detail: errorMessage(e) });
-    }
-    const record = handOverRecord(html, proposal, request.changeReason);
-    await recordReply(db, { emailId: row.id, memberId: actor.member.id, mode, to: request.to, cc: request.cc, html, ...record });
-    return { wasEdited: record.edited };
+    return await handOverAndRecord(world, actor, row, request, html, mode);
   } finally {
     inFlight.delete(row.id);
   }
