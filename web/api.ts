@@ -66,10 +66,10 @@ export interface PublicInfo {
 export interface Organization {
   name: string;
   /** Name of the triage strategy its mailboxes go through. */
-  triage: 'none' | 'ai';
+  /** Who sorts what is fetched, when proposals are written, where they wait. */
+  way: 'manual' | 'sort' | 'draft' | 'mailbox';
   skipAutomated: boolean;
   /** What is prepared at fetch for an email that needs a reply: nothing, a proposal to review here, or one filed in the mailbox's drafts. */
-  automation: 'none' | 'draft' | 'mailbox';
   model?: string;
   hasKey?: boolean;
 }

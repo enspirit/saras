@@ -28,7 +28,7 @@ test('signing up creates an organisation and makes its creator the administrator
   assert.equal((await signUp(alice, 'alice@acme.example', 'Acme')).status, 201);
   assert.equal((await signUp(zoe, 'zoe@other.example', '')).status, 201);
   const a = await profile(alice);
-  assert.deepEqual([a.role, a.organization.name, a.organization.triage], ['admin', 'Acme', 'none']);
+  assert.deepEqual([a.role, a.organization.name, a.organization.way], ['admin', 'Acme', 'manual']);
   const z = await profile(zoe);
   assert.deepEqual([z.role, z.organization.name], ['admin', 'other.example'], 'named after the address when no name is given');
   assert.equal((await signUp(client(), 'alice@acme.example', 'Imposter')).status, 409, 'an address has one account');
@@ -166,13 +166,13 @@ test('a correction steers its author only; the administrators see them all', asy
   assert.equal((await zoe('GET', '/prompts')).body[0].used, 0);
 });
 
-test('the triage strategy and the LLM key belong to the organisation', async () => {
-  assert.equal((await bruno('PUT', '/organization', { triage: 'ai' })).status, 403);
-  assert.equal((await alice('PUT', '/organization', { triage: 'magic' })).body.code, 'organization.invalidTriage');
-  assert.equal((await alice('PUT', '/organization', { name: 'Acme SA', triage: 'ai', skipAutomated: false, openrouterKey: 'sk-or-acme' })).status, 200);
+test('the way of working and the LLM key belong to the organisation', async () => {
+  assert.equal((await bruno('PUT', '/organization', { way: 'sort' })).status, 403);
+  assert.equal((await alice('PUT', '/organization', { way: 'magic' })).body.code, 'organization.invalidWay');
+  assert.equal((await alice('PUT', '/organization', { name: 'Acme SA', way: 'sort', skipAutomated: false, openrouterKey: 'sk-or-acme' })).status, 200);
   const a = await profile(alice);
-  assert.deepEqual([a.organization.name, a.organization.triage, a.organization.skipAutomated, a.organization.hasKey], ['Acme SA', 'ai', false, true]);
-  assert.equal((await profile(zoe)).organization.triage, 'none', 'another organisation keeps its own');
+  assert.deepEqual([a.organization.name, a.organization.way, a.organization.skipAutomated, a.organization.hasKey], ['Acme SA', 'sort', false, true]);
+  assert.equal((await profile(zoe)).organization.way, 'manual', 'another organisation keeps its own');
 
   const stored = await stack.db.one<{ k: string }>(`SELECT openrouter_key_enc AS k FROM organizations WHERE name = 'Acme SA'`);
   assert.ok(stored!.k.length > 20 && !stored!.k.includes('sk-or-acme'), 'encrypted at rest');

@@ -37,7 +37,7 @@ let accountId: number;
 
 test('a connected mailbox watches nothing until its folder is chosen', async () => {
   await me('POST', '/auth/signup', { email: 'bob@corp.example', password: 'un-bon-mot-de-passe' });
-  assert.equal((await me('GET', '/me')).body.organization.triage, 'none', 'no AI triage by default');
+  assert.equal((await me('GET', '/me')).body.organization.way, 'manual', 'no AI triage by default');
   assert.equal((await me('POST', '/accounts/imap', stack.imapAccount)).status, 201);
   const [account] = (await me('GET', '/accounts')).body;
   accountId = account.id;

@@ -835,22 +835,15 @@ const promptStep = guard(async () => {
   ));
 });
 
-/** The ready-made ways of working: who sorts, when a proposal is written, and where it waits. Sending is always the member's. */
-const WAYS = {
-  manual: { triage: 'none', automation: 'none' },
-  sort: { triage: 'ai', automation: 'none' },
-  draft: { triage: 'ai', automation: 'draft' },
-  mailbox: { triage: 'ai', automation: 'mailbox' },
-} as const;
-type Way = keyof typeof WAYS;
-const wayOf = (org: Me['organization']): Way => (org.automation === 'mailbox' ? 'mailbox' : org.automation === 'draft' ? 'draft' : org.triage === 'ai' ? 'sort' : 'manual');
+/** The ways of working an administrator chooses between, as the tour and the settings name them. */
+const WAYS = ['manual', 'sort', 'draft', 'mailbox'] as const;
 
 /** Choosing how the tool works for the team, then on to a first email sorted and prepared that way. */
 const workStep = guard(async () => {
   const hasKey = me().hasKey;
   // Without a key the AI can do nothing: only the first way can be chosen, and the others say why.
   const withAi = (hint: string) => ({ hint: hasKey ? hint : t('welcome.needsKey'), disabled: !hasKey });
-  const ways = Choices({ legend: t('welcome.workLegend'), name: 'way', value: hasKey ? wayOf(me().organization) : 'manual', options: [
+  const ways = Choices({ legend: t('welcome.workLegend'), name: 'way', value: hasKey ? me().organization.way : 'manual', options: [
     { value: 'manual', title: t('welcome.manual'), hint: t('welcome.manualHint') },
     { value: 'sort', title: t('welcome.sort'), ...withAi(t('welcome.sortHint')) },
     { value: 'draft', title: t('welcome.draft'), ...withAi(t('welcome.draftHint')) },
@@ -858,7 +851,7 @@ const workStep = guard(async () => {
   ] });
   const finish = ActionButton(t('welcome.finish'), t('mailbox.refreshing'), async () => {
     // What the first fetch let through is sorted again the chosen way, and prepared if asked.
-    await api('PUT', '/organization', WAYS[ways.value() as Way]);
+    await api('PUT', '/organization', { way: ways.value() });
     await api('POST', '/organization/sort-again');
     state.me = await api<Me>('GET', '/me');
     for (const account of await api<Account[]>('GET', '/accounts')) if (account.folder) await api('POST', `/accounts/${account.id}/sync`);
@@ -1045,30 +1038,21 @@ function LanguagePicker(): Child {
 function OrganizationSettings(me: Me): Child {
   const org = me.organization;
   const name = Input({ required: true, value: org.name });
-  const triage = Select([
-    { value: 'none', label: t('organization.triageNone'), selected: org.triage === 'none' },
-    { value: 'ai', label: t('organization.triageAi'), selected: org.triage === 'ai' },
-  ]);
+  const way = Select(WAYS.map((value) => ({ value, label: t(`welcome.${value}`), selected: org.way === value })));
   const skipAutomated = Checkbox({ checked: org.skipAutomated });
-  const automation = Select([
-    { value: 'none', label: t('organization.automationNone'), selected: org.automation === 'none' },
-    { value: 'draft', label: t('organization.automationDraft'), selected: org.automation === 'draft' },
-    { value: 'mailbox', label: t('organization.automationMailbox'), selected: org.automation === 'mailbox' },
-  ]);
   const model = Input({ value: org.model ?? '', placeholder: t('organization.modelPlaceholder') });
   const key = Input({ type: 'password', autocomplete: 'off', placeholder: org.hasKey ? t('settings.keySaved') : 'sk-or-…' });
   const save = Button(t('common.save'), { variant: 'primary', type: 'submit' });
   const form = SubmitForm(save, '…', async () => {
-    const body: Record<string, unknown> = { name: name.value, triage: triage.value, skipAutomated: skipAutomated.checked, automation: automation.value, model: model.value };
+    const body: Record<string, unknown> = { name: name.value, way: way.value, skipAutomated: skipAutomated.checked, model: model.value };
     if (key.value) body.openrouterKey = key.value;
     await api('PUT', '/organization', body);
     toast(t('settings.saved'));
     void renderSettings('organisation');
   },
     Field(t('organization.name'), name),
-    Field(t('organization.triage'), triage, { hint: t('organization.triageHint') }),
+    Field(t('organization.way'), way, { hint: t('organization.wayHint') }),
     CheckField(t('organization.skipAutomated'), skipAutomated),
-    Field(t('organization.automation'), automation, { hint: t('organization.automationHint') }),
     CardSection(t('settings.aiTitle'),
       Field(t('organization.model'), model, { hint: t('organization.modelHint') }),
       Field(t('organization.key'), key, { hint: org.hasKey ? t('settings.keyHintOwn') : t('organization.keyHint') }),
@@ -1103,7 +1087,7 @@ const renderSettings = guard(async (part = '') => {
       Block(Text({ muted: true }, t('settings.privacyIntro', { product: brand.name }))),
       Features([
         { icon: 'lock', title: t('settings.guarantee.zdr'), text: t('settings.privacyZdr') },
-        { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: [me.organization.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone'), me.organization.automation !== 'none' && ` ${t('settings.privacyPrepared')}`] },
+        { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: [me.organization.way === 'manual' ? t('settings.privacyTriageNone') : t('settings.privacyTriageAi'), (me.organization.way === 'draft' || me.organization.way === 'mailbox') && ` ${t('settings.privacyPrepared')}`] },
         { icon: 'timer', title: t('settings.guarantee.retention'), text: me.retentionDays ? t('settings.privacyRetention', { days: me.retentionDays }) : t('settings.privacyNoRetention') },
         { icon: 'key', title: t('settings.guarantee.encryption'), text: t('settings.privacyEncryption') },
         { icon: 'check', title: t('settings.guarantee.validation'), text: t('settings.privacyValidation') },

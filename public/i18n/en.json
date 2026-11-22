@@ -549,8 +549,7 @@
       "bulk": "Bulk mail."
     },
     "organization": {
-      "invalidTriage": "Unknown triage strategy.",
-      "invalidAutomation": "Unknown way of preparing replies."
+      "invalidWay": "Unknown way of working."
     },
     "assist": {
       "nothingWritten": "Write something first: there is nothing to check or improve.",
@@ -561,10 +560,6 @@
     "title": "Organisation",
     "intro": "These settings apply to every member and every mailbox of the organisation.",
     "name": "Name",
-    "triage": "Sorting of fetched emails",
-    "triageNone": "None: every email of the watched folder is to be handled",
-    "triageAi": "By the AI: it decides whether a reply is needed and suggests a prompt",
-    "triageHint": "Sorting by the AI costs one request per 20 emails fetched, and sends it their sender, subject, beginning of text and attachment names.",
     "skipAutomated": "Set plainly automated mail aside first (newsletters, notifications)",
     "model": "Default model",
     "modelPlaceholder": "Server default",
@@ -572,11 +567,8 @@
     "key": "OpenRouter API key of the organisation",
     "keyHint": "Encrypted in the database. Used by every member who has no key of their own.",
     "deleteKey": "Delete the organisation's key",
-    "automation": "Proposals",
-    "automationNone": "On demand: the AI writes only when a member asks",
-    "automationDraft": "Prepared at fetch, to review here",
-    "automationMailbox": "Prepared at fetch and filed in the mailbox’s Drafts folder",
-    "automationHint": "Preparing at fetch sends the content of each email to handle to the AI, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation."
+    "way": "Way of working",
+    "wayHint": "Sorting by the AI costs one request per 20 emails fetched, and sends it their sender, subject, beginning of text and attachment names. Proposals written at fetch send it the content of each email to handle, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation."
   },
   "editor": {
     "bold": "Bold",

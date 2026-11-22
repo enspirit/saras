@@ -33,8 +33,7 @@ import { improveStyle } from '../../domain/replying/improve-style.ts';
 import { sendReply } from '../../domain/replying/send-reply.ts';
 import { chooseLanguage } from '../../domain/settings/choose-language.ts';
 import { chooseOwnModel } from '../../domain/settings/choose-own-model.ts';
-import { chooseProposals } from '../../domain/settings/choose-proposals.ts';
-import { chooseSorting } from '../../domain/settings/choose-sorting.ts';
+import { chooseWayOfWorking } from '../../domain/settings/choose-way-of-working.ts';
 import { renameOrganization } from '../../domain/settings/rename-organization.ts';
 import { setAsideAutomatedFirst } from '../../domain/settings/set-aside-automated-first.ts';
 import { setOrganizationKey } from '../../domain/settings/set-organization-key.ts';
@@ -51,6 +50,7 @@ import { emailFor } from '../../domain/state/emails.ts';
 import type { OwnedEmailRow } from '../../domain/state/emails.ts';
 import { mayUse } from '../../domain/state/mailboxes.ts';
 import { manages } from '../../domain/computations/mailboxes.ts';
+import { wayOf } from '../../domain/computations/way-of-working.ts';
 import { chooseWatchedFolder } from '../../domain/mailboxes/choose-watched-folder.ts';
 import { beginHostSignIn, connectMailboxByHostSignIn } from '../../domain/mailboxes/connect-mailbox-by-host-sign-in.ts';
 import { connectMailboxByServers } from '../../domain/mailboxes/connect-mailbox-by-servers.ts';
@@ -215,9 +215,8 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       name: req.user.name,
       organization: {
         name: req.org.name,
-        triage: req.org.triage_strategy,
+        way: wayOf(req.org),
         skipAutomated: req.org.skip_automated,
-        automation: req.org.automation,
         // What follows is the administrators' business.
         model: admin ? req.org.model || '' : undefined,
         hasKey: admin ? Boolean(req.org.openrouter_key_enc) : undefined,
@@ -250,12 +249,11 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   /** The organisation's own settings, for its administrators: again one operation per field sent. */
   app.put('/api/organization', auth, adminOnly, async (req, res) => {
-    const { name, triage, skipAutomated, automation, model, openrouterKey } = req.body;
+    const { name, way, skipAutomated, model, openrouterKey } = req.body;
     const actor = actorOf(req);
     if (typeof name === 'string') await renameOrganization(world, actor, name);
-    if (triage !== undefined) await chooseSorting(world, actor, triage);
+    if (way !== undefined) await chooseWayOfWorking(world, actor, way);
     if (typeof skipAutomated === 'boolean') await setAsideAutomatedFirst(world, actor, skipAutomated);
-    if (automation !== undefined) await chooseProposals(world, actor, automation);
     if (typeof model === 'string') await setOrganizationModel(world, actor, model);
     if (typeof openrouterKey === 'string') await setOrganizationKey(world, actor, openrouterKey);
     res.json({ ok: true });

@@ -549,8 +549,7 @@
       "bulk": "Envoi en masse."
     },
     "organization": {
-      "invalidTriage": "Stratégie de tri inconnue.",
-      "invalidAutomation": "Façon de préparer les réponses inconnue."
+      "invalidWay": "Façon de travailler inconnue."
     },
     "assist": {
       "nothingWritten": "Écrivez d’abord quelque chose : il n’y a rien à corriger ni à améliorer.",
@@ -561,10 +560,6 @@
     "title": "Organisation",
     "intro": "Ces réglages s’appliquent à tous les membres et à toutes les boîtes de l’organisation.",
     "name": "Nom",
-    "triage": "Tri des emails relevés",
-    "triageNone": "Aucun : tout email du dossier surveillé est à traiter",
-    "triageAi": "Par l’IA : elle décide si une réponse est nécessaire et suggère un prompt",
-    "triageHint": "Le tri par l’IA coûte une requête par 20 emails relevés, et lui transmet leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes.",
     "skipAutomated": "Écarter d’abord le courrier manifestement automatique (newsletters, notifications)",
     "model": "Modèle par défaut",
     "modelPlaceholder": "Modèle du serveur",
@@ -572,11 +567,8 @@
     "key": "Clé API OpenRouter de l’organisation",
     "keyHint": "Chiffrée en base. Utilisée par tout membre qui n’a pas sa propre clé.",
     "deleteKey": "Supprimer la clé de l’organisation",
-    "automation": "Propositions",
-    "automationNone": "À la demande : l’IA n’écrit que lorsqu’un membre le demande",
-    "automationDraft": "Préparées au relevé, à relire ici",
-    "automationMailbox": "Préparées au relevé et rangées dans le dossier Brouillons de la boîte",
-    "automationHint": "Préparer au relevé envoie à l’IA le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre."
+    "way": "Façon de travailler",
+    "wayHint": "Le tri par l’IA coûte une requête par 20 emails relevés, et lui transmet leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes. Les propositions écrites au relevé lui envoient le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre."
   },
   "editor": {
     "bold": "Gras",
