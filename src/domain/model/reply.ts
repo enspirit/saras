@@ -1,11 +1,12 @@
 // A proposal the AI wrote, and a reply handed to the mailbox.
+import type { Assistance } from '../../../shared/reply.ts';
 import type { Email } from './email.ts';
 
-/** What the LLM is asked to do with the text the user wrote in the reply area. */
-export type AssistAction = 'typos' | 'style' | 'prompt';
+export type { ReplyMode } from '../../../shared/reply.ts';
+/** The kind of help a proposal came from. */
+export type AssistAction = Assistance;
 
-/** How a reply was handed to the mailbox. */
-export type ReplyMode = 'sent' | 'draft';
+
 
 export interface DraftRow {
   id: number;

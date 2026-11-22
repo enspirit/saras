@@ -13,6 +13,7 @@
 //   ReqTrig  on the server's clock, for every mailbox that watches a folder
 //            when a member asks, when a folder is chosen, when a mailbox is reconnected
 //   Then     SortWaitingEmails, and PrepareProposals, unless fetching failed
+import type { FetchResult } from '../../../shared/mailbox.ts';
 import type { Config } from '../../tooling/config.ts';
 import type { Vault } from '../../tooling/crypto.ts';
 import type { Db } from '../../tooling/db.ts';
@@ -31,10 +32,8 @@ import { keepFetched, knownIn } from '../state/emails.ts';
 import { recordFetch, watchedMailboxes } from '../state/mailboxes.ts';
 import { memberById, organizationById } from '../state/members.ts';
 
-export interface SyncResult extends SortingResult {
-  /** New emails fetched from the mailbox. */
-  fetched: number;
-}
+/** What a fetch brought in and had sorted, and what went wrong if anything did. */
+export type SyncResult = FetchResult;
 
 export interface Sync {
   syncAccount(account: AccountRow): Promise<SyncResult>;

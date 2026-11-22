@@ -1,17 +1,20 @@
 // Pure: the boxes a member sees their emails in, and where each email stands in them.
-import type { EmailStatus } from '../model/email.ts';
+import { BOXES } from '../../../shared/email.ts';
+import type { Box, EmailStatus } from '../../../shared/email.ts';
 
-/** The boxes, and the statuses each one shows. An email waiting to be sorted is to handle. */
-export const BOXES: Record<string, EmailStatus[]> = { todo: ['needs_reply', 'pending'], none: ['no_reply'], sent: ['sent'], ignored: ['ignored'] };
+const NAMES = Object.keys(BOXES) as Box[];
+const isBox = (box: unknown): box is Box => NAMES.includes(box as Box);
 
 /** The statuses of the box asked for; of the emails to handle when it is not one. */
-export const statusesOf = (box: unknown): EmailStatus[] => BOXES[String(box)] ?? BOXES.todo!;
+export const statusesOf = (box: unknown): readonly EmailStatus[] => BOXES[isBox(box) ? box : 'todo'];
+
+const holds = (box: Box, status: EmailStatus): boolean => (BOXES[box] as readonly EmailStatus[]).includes(status);
 
 /** How many emails each box holds, from how many have each status. */
-export function countsPerBox(perStatus: { status: EmailStatus; n: number }[]): Record<string, number> {
-  const counts = Object.fromEntries(Object.keys(BOXES).map((box) => [box, 0]));
+export function countsPerBox(perStatus: { status: EmailStatus; n: number }[]): Record<Box, number> {
+  const counts = { todo: 0, none: 0, sent: 0, ignored: 0 };
   for (const { status, n } of perStatus) {
-    for (const [box, statuses] of Object.entries(BOXES)) if (statuses.includes(status)) counts[box] = (counts[box] ?? 0) + n;
+    for (const box of NAMES) if (holds(box, status)) counts[box] += n;
   }
   return counts;
 }

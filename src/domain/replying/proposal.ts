@@ -1,5 +1,6 @@
 // What the three kinds of AI help have in common: ask the LLM, keep of its answer only what
 // a reply may contain, and keep the result as a proposal for the email.
+import type { Proposal } from '../../../shared/reply.ts';
 import { sanitizeHtml, stripCodeFence } from '../../tooling/html.ts';
 import type { ChatMessage } from '../model/llm.ts';
 import type { AssistAction } from '../model/reply.ts';
@@ -7,15 +8,7 @@ import { keepProposal } from '../state/proposals.ts';
 import type { Reach } from '../world.ts';
 
 /** A proposal as the member receives it. */
-export interface Proposal {
-  id: number;
-  action: AssistAction;
-  promptId: number | null;
-  model: string;
-  /** The provider the request was routed to, when it is known. */
-  provider: string | null;
-  html: string;
-}
+export type { Proposal } from '../../../shared/reply.ts';
 
 /** What the member wrote, reduced to what a reply may contain, however it arrived. */
 export const writtenSoFar = (html: unknown): string => sanitizeHtml(typeof html === 'string' ? html.slice(0, 200_000) : '');

@@ -1,5 +1,7 @@
 // A member of an organisation, and an invitation to become one.
-export type Role = 'admin' | 'user';
+import type { Role } from '../../../shared/member.ts';
+
+export type { Role } from '../../../shared/member.ts';
 
 export interface UserRow {
   id: number;

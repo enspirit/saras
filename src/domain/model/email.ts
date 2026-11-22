@@ -1,17 +1,7 @@
 // An email, as it arrives from a mailbox and as saras keeps it.
-export interface Address {
-  name: string;
-  address: string;
-}
+import type { Address, Attachment, EmailStatus, Priority } from '../../../shared/email.ts';
 
-/** What we keep of an attachment: never its content. */
-export interface Attachment {
-  name: string;
-  /** MIME type. */
-  type: string;
-  /** In bytes. */
-  size: number;
-}
+export type { Address, Attachment, EmailStatus, Priority } from '../../../shared/email.ts';
 
 /** The few headers triage rules look at. */
 export interface MailHeaders {
@@ -43,10 +33,6 @@ export interface IncomingEmail {
   /** Already answered from the user's own mail client, when the provider can tell. */
   answered: boolean;
 }
-
-export type EmailStatus = 'pending' | 'needs_reply' | 'no_reply' | 'ignored' | 'sent';
-
-export type Priority = 'high' | 'normal' | 'low';
 
 /** Who decided: the header rules, the user, or a triage strategy by its name ('none', 'ai'…). */
 export type TriageSource = string;

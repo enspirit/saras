@@ -1,16 +1,10 @@
 // A mailbox: how it is kept, the credentials that reach it, and what every kind of mailbox knows how to do.
+import type { MailFolder, MailboxKind as AccountKind } from '../../../shared/mailbox.ts';
 import type { IncomingEmail } from './email.ts';
 import type { OutgoingReply } from './reply.ts';
 
-/** A folder of a mailbox that can be watched. */
-export interface MailFolder {
-  /** What the provider identifies it by (IMAP path, Gmail label id, Graph folder id). */
-  id: string;
-  name: string;
-}
-
-export type AccountKind = 'imap' | 'google' | 'microsoft';
-
+/** How a mailbox is reached; a folder of one that can be watched, identified as the provider does (IMAP path, Gmail label id, Graph folder id). */
+export type { MailFolder, MailboxKind as AccountKind } from '../../../shared/mailbox.ts';
 export type OAuthKind = 'google' | 'microsoft';
 
 export interface AccountRow {

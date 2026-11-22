@@ -1,4 +1,6 @@
 // Observation: what a signed-in member is told about themselves, their organisation and this server.
+import type { Profile, WhatVisitorsAreTold } from '../../../shared/member.ts';
+import type { Organization } from '../../../shared/organization.ts';
 import { PRIVACY } from '../../tooling/llm/openrouter.ts';
 import { isConfigured } from '../../tooling/mail/oauth.ts';
 import { signUpIsOpen } from '../computations/access.ts';
@@ -8,7 +10,7 @@ import { installationIsEmpty } from '../state/members.ts';
 import type { Actor, Reach } from '../world.ts';
 
 /** The organisation as a member sees it; its model and whether it has a key are the administrators' business. */
-function organizationSeenBy({ member, organization }: Actor) {
+function organizationSeenBy({ member, organization }: Actor): Organization {
   const admin = member.role === 'admin';
   return {
     name: organization.name,
@@ -32,7 +34,7 @@ function settingsOf({ config, vault }: Pick<Reach, 'config' | 'vault'>, { member
   };
 }
 
-export const profileOf = (reach: Pick<Reach, 'config' | 'vault'>, actor: Actor) => ({
+export const profileOf = (reach: Pick<Reach, 'config' | 'vault'>, actor: Actor): Profile => ({
   email: actor.member.email,
   name: actor.member.name,
   organization: organizationSeenBy(actor),
@@ -48,7 +50,7 @@ export const profileOf = (reach: Pick<Reach, 'config' | 'vault'>, actor: Actor) 
  * strangers may do so is the operator's choice, and an empty installation always accepts its
  * first account. How long content is kept is public: the sign-in screen says so.
  */
-export async function whatVisitorsAreTold({ db, config }: Pick<Reach, 'db' | 'config'>) {
+export async function whatVisitorsAreTold({ db, config }: Pick<Reach, 'db' | 'config'>): Promise<WhatVisitorsAreTold> {
   const empty = await installationIsEmpty(db);
   return { allowSignup: signUpIsOpen(config.allowSignup, empty), firstAccount: empty, retentionDays: config.retentionDays };
 }

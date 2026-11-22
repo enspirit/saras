@@ -1,5 +1,6 @@
 // Who hosts the mail of a domain, read from its MX records: enough to steer a newcomer to
 // the right way of connecting, and to propose the servers of the hosts we know.
+import type { MailHost } from '../../../shared/mailbox.ts';
 import { Resolver } from 'node:dns/promises';
 
 export interface MailServers {
@@ -10,12 +11,6 @@ export interface MailServers {
 }
 
 /** 'google' and 'microsoft' can be connected by signing in at the provider; 'other' goes through IMAP / SMTP. */
-export interface MailHost {
-  provider: 'google' | 'microsoft' | 'other';
-  /** The servers to propose, when the host is one we know. */
-  servers: MailServers | null;
-}
-
 const servers = (imapHost: string, smtpHost: string, smtpPort = 465): MailServers => ({ imapHost, imapPort: 993, smtpHost, smtpPort });
 
 /** Hosts recognised by the end of their MX names. */

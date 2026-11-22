@@ -7,6 +7,7 @@
 //            nobody has this address yet
 //   ReqPost  the link is told once, here: only the hash of its token is kept
 //            saras has no mailbox of its own, so the administrator passes the link on
+import type { NewInvitation } from '../../../shared/member.ts';
 import { randomToken } from '../../tooling/crypto.ts';
 import { addressIsFree, isAdministrator, isAnAddress, roleInvitedAs } from '../computations/access.ts';
 import { addressGiven } from '../computations/given.ts';
@@ -14,14 +15,6 @@ import { accepted } from '../refusal.ts';
 import { keepInvitation } from '../state/invitations.ts';
 import { addressIsTaken } from '../state/members.ts';
 import type { Actor, World } from '../world.ts';
-
-export interface NewInvitation {
-  id: number;
-  email: string;
-  /** The only time the link exists in clear: it cannot be shown again. */
-  link: string;
-  validDays: number;
-}
 
 export async function inviteMember({ db, config }: World, actor: Actor, given: { email?: unknown; role?: unknown }): Promise<NewInvitation> {
   accepted(isAdministrator(actor));
