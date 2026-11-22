@@ -18,7 +18,7 @@ import { revokeInvitation } from '../../domain/access/revoke-invitation.ts';
 import { signIn } from '../../domain/access/sign-in.ts';
 import { signOut } from '../../domain/access/sign-out.ts';
 import { signUpIsOpen } from '../../domain/computations/access.ts';
-import { addressesGiven as addressList, clipped as str, languageGiven as languageTag } from '../../domain/computations/given.ts';
+import { addressesGiven as addressList, clipped as str } from '../../domain/computations/given.ts';
 import { proposalHtml } from '../../domain/computations/replying.ts';
 import { installationIsEmpty, memberOf, organizationById } from '../../domain/state/members.ts';
 import { memberOfSession } from '../../domain/state/sessions.ts';
@@ -32,9 +32,21 @@ import { checkTypos } from '../../domain/replying/check-typos.ts';
 import { fileReplyAsDraft } from '../../domain/replying/file-reply-as-draft.ts';
 import { improveStyle } from '../../domain/replying/improve-style.ts';
 import { sendReply } from '../../domain/replying/send-reply.ts';
+import { chooseLanguage } from '../../domain/settings/choose-language.ts';
+import { chooseOwnModel } from '../../domain/settings/choose-own-model.ts';
+import { chooseProposals } from '../../domain/settings/choose-proposals.ts';
+import { chooseSorting } from '../../domain/settings/choose-sorting.ts';
+import { renameOrganization } from '../../domain/settings/rename-organization.ts';
+import { setAsideAutomatedFirst } from '../../domain/settings/set-aside-automated-first.ts';
+import { setOrganizationKey } from '../../domain/settings/set-organization-key.ts';
+import { setOrganizationModel } from '../../domain/settings/set-organization-model.ts';
+import { setOwnKey } from '../../domain/settings/set-own-key.ts';
+import { setOwnName } from '../../domain/settings/set-own-name.ts';
+import { setSignature } from '../../domain/settings/set-signature.ts';
 import { ignoreEmail } from '../../domain/sorting/ignore-email.ts';
 import { markNoReplyNeeded } from '../../domain/sorting/mark-no-reply-needed.ts';
 import { moveBackToHandle } from '../../domain/sorting/move-back-to-handle.ts';
+import { sortAgainUnsorted } from '../../domain/sorting/sort-again-unsorted.ts';
 import { writeWithPrompt } from '../../domain/replying/write-with-prompt.ts';
 import { emailFor } from '../../domain/state/emails.ts';
 import type { OwnedEmailRow } from '../../domain/state/emails.ts';
@@ -53,9 +65,7 @@ import { replyRecipients } from '../../domain/computations/reply.ts';
 import { llmSettings } from '../../domain/computations/key-in-force.ts';
 import { rowToEmail } from '../../domain/mailboxes/fetch-mailbox.ts';
 import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
-import { isTriageStrategy } from '../../domain/sorting/index.ts';
 import { isEmailAddress } from '../text.ts';
-import { AUTOMATIONS } from '../../types.ts';
 import type {
   AccountKind,
   AccountRow,
@@ -225,58 +235,30 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     });
   });
 
+  // Each field sent is one operation of domain/settings, applied in this order; a field that
+  // is refused stops there, and those before it stay applied.
   app.put('/api/settings', auth, async (req, res) => {
     const { model, signature, openrouterKey, language, name } = req.body;
-    if (typeof name === 'string') await db.run('UPDATE users SET name = $1 WHERE id = $2', [str(name, 120), req.user.id]);
-    // The language of the interface, which the server needs for what it writes on the user's behalf.
-    if (typeof language === 'string') await db.run('UPDATE users SET language = $1 WHERE id = $2', [languageTag(language), req.user.id]);
-    if (typeof model === 'string') {
-      const m = str(model, 200);
-      if (m && !/^[\w.:-]+\/[\w.:-]+$/.test(m)) throw new HttpError(400, 'settings.invalidModel');
-      await db.run('UPDATE users SET model = $1 WHERE id = $2', [m || null, req.user.id]);
-    }
-    if (typeof signature === 'string') await db.run('UPDATE users SET signature = $1 WHERE id = $2', [str(signature, 2000), req.user.id]);
-    if (typeof openrouterKey === 'string') {
-      const key = str(openrouterKey, 500);
-      await db.run('UPDATE users SET openrouter_key_enc = $1 WHERE id = $2', [key ? vault.seal(key) : null, req.user.id]);
-    }
+    const actor = actorOf(req);
+    if (typeof name === 'string') await setOwnName(world, actor, name);
+    if (typeof language === 'string') await chooseLanguage(world, actor, language);
+    if (typeof model === 'string') await chooseOwnModel(world, actor, model);
+    if (typeof signature === 'string') await setSignature(world, actor, signature);
+    if (typeof openrouterKey === 'string') await setOwnKey(world, actor, openrouterKey);
     res.json({ ok: true });
   });
 
-  /** The organisation's own settings, for its administrators. Only the fields sent are changed. */
+  /** The organisation's own settings, for its administrators: again one operation per field sent. */
   app.put('/api/organization', auth, adminOnly, async (req, res) => {
     const { name, triage, skipAutomated, automation, model, openrouterKey, resort } = req.body;
-    const set = (column: string, value: unknown) => db.run(`UPDATE organizations SET ${column} = $1 WHERE id = $2`, [value, req.org.id]);
-    if (typeof name === 'string' && str(name, 120)) await set('name', str(name, 120));
-    if (triage !== undefined) {
-      if (!isTriageStrategy(triage)) throw new HttpError(400, 'organization.invalidTriage');
-      await set('triage_strategy', triage);
-    }
-    if (typeof skipAutomated === 'boolean') await set('skip_automated', skipAutomated);
-    if (automation !== undefined) {
-      if (!AUTOMATIONS.includes(automation)) throw new HttpError(400, 'organization.invalidAutomation');
-      await set('automation', automation);
-    }
-    // Asked when the way of working is chosen after a first fetch: what that fetch let through
-    // unsorted goes back to waiting, so that the next fetch sorts it the new way.
-    if (resort === true) {
-      await db.run(
-        `UPDATE emails e SET status = 'pending', triage_source = NULL, triage_reason = ''
-         FROM accounts a
-         WHERE a.id = e.account_id AND a.org_id = $1 AND e.status = 'needs_reply' AND e.triage_source = 'none'
-           AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.email_id = e.id)`,
-        [req.org.id],
-      );
-    }
-    if (typeof model === 'string') {
-      const m = str(model, 200);
-      if (m && !/^[\w.:-]+\/[\w.:-]+$/.test(m)) throw new HttpError(400, 'settings.invalidModel');
-      await set('model', m || null);
-    }
-    if (typeof openrouterKey === 'string') {
-      const key = str(openrouterKey, 500);
-      await set('openrouter_key_enc', key ? vault.seal(key) : null);
-    }
+    const actor = actorOf(req);
+    if (typeof name === 'string') await renameOrganization(world, actor, name);
+    if (triage !== undefined) await chooseSorting(world, actor, triage);
+    if (typeof skipAutomated === 'boolean') await setAsideAutomatedFirst(world, actor, skipAutomated);
+    if (automation !== undefined) await chooseProposals(world, actor, automation);
+    if (resort === true) await sortAgainUnsorted(world, actor);
+    if (typeof model === 'string') await setOrganizationModel(world, actor, model);
+    if (typeof openrouterKey === 'string') await setOrganizationKey(world, actor, openrouterKey);
     res.json({ ok: true });
   });
 

@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, mayDeleteMember, mayOpenAccount, mayRemoveAdministratorRole, maySignUp, opensNewWindow, organizationNameFor, roleInvitedAs, signUpIsOpen } from '../src/domain/computations/access.ts';
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../src/domain/computations/given.ts';
 import { promptContent } from '../src/domain/computations/prompts.ts';
+import { modelGiven, proposalsGiven, sortingGiven } from '../src/domain/computations/settings.ts';
 import { mayBeSortedAgain } from '../src/domain/computations/sorting.ts';
 import type { Verdict } from '../src/domain/refusal.ts';
 import type { Actor } from '../src/domain/world.ts';
@@ -100,4 +101,19 @@ test('what a client gives is reduced, never refused', () => {
   assert.deepEqual(addressesGiven([' A@b.example ', '', 3, 'c@d.example']), ['a@b.example', 'c@d.example']);
   assert.deepEqual(addressesGiven('a@b.example'), [], 'anything but a list is an empty one');
   assert.deepEqual(['fr', 'en-GB', 'FR', 'français', 42].map(languageGiven), ['fr', 'en-GB', 'en', 'en', 'en']);
+});
+
+test('a model is named "provider/model", or not at all', () => {
+  assert.deepEqual(modelGiven(' openai/gpt-4o-mini '), { ok: true, value: 'openai/gpt-4o-mini' });
+  assert.deepEqual(modelGiven(''), { ok: true, value: null }, 'none: the one above applies');
+  assert.equal(outcome(modelGiven('gpt-4o')), 'invalid: settings.invalidModel');
+  assert.equal(outcome(modelGiven('open ai/gpt')), 'invalid: settings.invalidModel');
+});
+
+test('only the ways of sorting and of preparing replies we know are taken', () => {
+  assert.deepEqual(['none', 'ai'].map((s) => outcome(sortingGiven(s))), ['ok', 'ok']);
+  assert.equal(outcome(sortingGiven('magic')), 'invalid: organization.invalidTriage');
+  assert.deepEqual(['none', 'draft', 'mailbox'].map((a) => outcome(proposalsGiven(a))), ['ok', 'ok', 'ok']);
+  assert.equal(outcome(proposalsGiven('send')), 'invalid: organization.invalidAutomation');
+  assert.equal(outcome(proposalsGiven(undefined)), 'invalid: organization.invalidAutomation');
 });
