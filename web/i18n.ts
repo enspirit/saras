@@ -19,14 +19,12 @@ interface Catalogue {
   /** Language of the keys' source text, and fallback for a missing translation. */
   default: string;
   languages: Language[];
-  /** The sections of the interface: the first part of every key, and the name of its file. */
-  sections: string[];
 }
 
 const STORAGE_KEY = 'saras.language';
 
 // Used only if index.json cannot be read.
-let catalogue: Catalogue = { default: 'en', languages: [{ tag: 'en', name: 'en' }], sections: [] };
+let catalogue: Catalogue = { default: 'en', languages: [{ tag: 'en', name: 'en' }] };
 let current = 'en';
 let messages: Record<string, string> = {};
 let fallback: Record<string, string> = {};
@@ -40,11 +38,8 @@ async function loadJson<T>(path: string): Promise<T | null> {
   }
 }
 
-/** Every message of a language, by its full key: its sections are fetched together. */
-async function loadMessages(tag: string): Promise<Record<string, string>> {
-  const sections = await Promise.all(catalogue.sections.map(async (section) => [section, await loadJson(`/i18n/${tag}/${section}.json`)] as const));
-  return flatten(Object.fromEntries(sections));
-}
+/** Every message of a language, by its full key: `npm run build` gathers its sections into one file. */
+const loadMessages = async (tag: string): Promise<Record<string, string>> => flatten(await loadJson(`/js/i18n/${tag}.json`));
 
 /** The stored choice, else the first browser language we have, else the default. */
 function pickLanguage(): string {

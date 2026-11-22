@@ -1,15 +1,12 @@
 {
-  // Browser code: compiled from web/ and shared/ to public/js/web/ and public/js/shared/, one ES module per source file.
+  // Browser code: web/ and shared/. Only type-checked here; scripts/build.ts bundles it into public/js/.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "module": "ES2022",
     "moduleResolution": "Bundler",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": [],
-    "rootDir": ".",
-    "outDir": "public/js",
-    "rewriteRelativeImportExtensions": true,
-    "allowImportingTsExtensions": true
+    "noEmit": true
   },
   "include": ["web", "shared"]
 }

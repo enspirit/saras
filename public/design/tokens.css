@@ -12,10 +12,10 @@
  * done by overriding tier 1 (or, for fine tuning, any tier 2 token) in brand/theme.css.
  */
 
-/* Icons: Lucide (ISC licence), copied next to the compiled interface by `npm run build`. */
+/* Icons: Lucide (ISC licence), taken from its package and put next to the built interface by `npm run build`. */
 @font-face {
   font-family: "lucide";
-  src: url("../js/web/vendor/lucide.woff2") format("woff2");
+  src: url("../../node_modules/lucide-static/font/lucide.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: block;

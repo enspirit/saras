@@ -1,4 +1,4 @@
-import Squire from '../../vendor/squire.mjs';
+import Squire from 'squire-rte';
 import { Button } from '../atoms/button.ts';
 import type { IconName } from '../atoms/icon.ts';
 import { h } from '../dom.ts';

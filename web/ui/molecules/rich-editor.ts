@@ -1,4 +1,4 @@
-import Squire from '../../vendor/squire.mjs';
+import Squire from 'squire-rte';
 import { h } from '../dom.ts';
 import { EditorToolbar } from './rich-editor-toolbar.ts';
 import type { EditorLabels, EditorToolbarHandle } from './rich-editor-toolbar.ts';

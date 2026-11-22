@@ -3,7 +3,7 @@
  * pasted, what the LLM proposed, what a colleague sent. It is reduced to the few elements a
  * reply may contain, and returned as nodes — nothing here or anywhere else writes innerHTML.
  */
-import DOMPurify from '../vendor/purify.mjs';
+import DOMPurify from 'dompurify';
 
 /** The same elements the server keeps (src/tooling/html.ts). */
 const ALLOWED_TAGS = ['p', 'div', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'a', 'blockquote'];

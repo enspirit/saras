@@ -99,7 +99,7 @@ Every word of the interface comes from a translation file; none is written in th
 - **Files:** `public/i18n/<language>/<section>.json`, one folder per language and one file per section of the interface (`mailboxes`, `members`, `prompts`, `settings`, `server`…), plus `public/i18n/index.json`, which lists the languages and the sections and names the default language. The first part of a key is its section: `mailboxes.connect` is `connect` in `mailboxes.json`. English is the default and the source language; French is provided.
 - **Format:** Tolgee's native JSON — keys nested on dots, values in ICU MessageFormat: `{name}` parameters, `{count, plural, one {…} other {…}}`, `{kind, select, …}`, and `<tag>…</tag>` for a part the interface renders as a link or in bold.
 - **Language shown:** the user's choice (Settings → Language, also on the sign-in page), else the first browser language available, else the default. A missing translation falls back to the default language. Dates follow the reader's regional format.
-- **Adding a language:** add the folder `public/i18n/<tag>/` with the same files, and one line in `index.json`. No rebuild is needed.
+- **Adding a language:** add the folder `public/i18n/<tag>/` with the same files, and one line in `index.json`, then `npm run build`.
 
 In the code, `t('key', params)` returns a string and `tRich('key', params, { link: … })` returns nodes for messages with tags (`web/i18n.ts`). The formatter itself (`web/i18n/format.ts`) is a small dependency-free implementation of the ICU subset above.
 
@@ -260,8 +260,8 @@ The content of a received email is treated as untrusted data: it is delimited in
 Everything is TypeScript in strict mode.
 
 - **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
-- **Browser code** is compiled by `npm run build` from `web/` and `shared/` to `public/js/web/` and `public/js/shared/` (not committed), one ES module per source file, without a bundler. The same command copies the two browser libraries (see "Third-party software") to `public/js/web/vendor/`.
-- `npm run typecheck` checks both. `npm run dev` rebuilds the browser code and restarts the server on change.
+- **Browser code** is bundled by `npm run build` ([esbuild](https://esbuild.github.io), `scripts/build.ts`) into `public/js/` (not committed): the interface from `web/` and `shared/` with the two browser libraries (see "Third-party software"), the design system's style sheets as one file, and the translations as one file per language. A first page load is about ten requests.
+- `npm run typecheck` checks both; the bundler itself does not check types. `npm run dev` rebuilds the bundles and restarts the server on change.
 - **What the server returns is typed once**, in `shared/`: the server's read queries and operations return those types, and `web/api/` reads them. A test (`test/shared-types.test.ts`) keeps either side from declaring a domain object of its own.
 - **Small files, small functions**: no source file (TypeScript, CSS) has more than 200 lines, and no function more than 20. `test/size.test.ts` enforces both, and lists what is over.
 
@@ -286,7 +286,7 @@ GitHub Actions type-checks, builds and runs them on every push and pull request 
 
 ## Third-party software
 
-Two libraries run in the browser, both open source and copied unmodified from their packages at build time:
+Two libraries run in the browser, both open source and bundled unmodified from their packages at build time, their licence notices kept at the end of the bundle:
 
 - [Squire](https://github.com/fastmail/Squire), the rich-text editor Fastmail built for composing email — MIT.
 - [DOMPurify](https://github.com/cure53/DOMPurify), the HTML sanitiser — Apache-2.0 or MPL-2.0.
