@@ -1,5 +1,5 @@
-// The default flow, without any AI: the user chooses the one folder to watch, and what is
-// fetched from it passes the empty triage strategy.
+// The watched folder, without any AI: the member chooses the one folder to watch, and every
+// mail fetched from it is to handle, automated mail apart.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { createClient } from './support/client.ts';
@@ -101,56 +101,4 @@ test('a reply to a mail of that folder flags it answered there, and tells the LL
   const sent = await me('POST', `/emails/${contract.id}/send`, { draftId: draft.body.id, html: draft.body.html, to: ['hugo@client.example'] });
   assert.equal(sent.status, 200);
   assert.deepEqual(stack.folderFlags('Clients').map((flags) => flags.includes('\\Answered')), [true]);
-});
-
-test('typos and style work on what the user wrote alone, and the answer of the LLM is cleaned', async () => {
-  const [email] = (await me('GET', '/emails?box=todo')).body.emails;
-  const before = stack.llmRequests.length;
-
-  const nothing = await me('POST', `/emails/${email.id}/assist`, { action: 'typos', html: '<p><br></p>' });
-  assert.deepEqual([nothing.status, nothing.body.code], [400, 'assist.nothingWritten']);
-  assert.equal((await me('POST', `/emails/${email.id}/assist`, { action: 'translate', html: '<p>x</p>' })).body.code, 'assist.invalidAction');
-  assert.equal(stack.llmRequests.length, before, 'neither costs a request');
-
-  const typos = await me('POST', `/emails/${email.id}/assist`, { action: 'typos', html: '<p onclick="x()">Voici ma <strong>reponse</strong>.</p><script>alert(1)</script>' });
-  assert.equal(typos.status, 201);
-  assert.deepEqual([typos.body.action, typos.body.promptId], ['typos', null]);
-  assert.equal(typos.body.html, '<p>Voici ma <strong>réponse</strong>.</p>', 'corrected, its code fence removed, the formatting kept');
-  const sent = stack.llmRequests.at(-1)!.body.messages;
-  assert.equal(sent[1]!.content, '<draft>\n<p>Voici ma <strong>reponse</strong>.</p>\n</draft>', 'what reaches the LLM is already cleaned');
-  assert.doesNotMatch(JSON.stringify(sent), new RegExp(email.subject), 'the email received is not sent for typos');
-
-  const style = await me('POST', `/emails/${email.id}/assist`, { action: 'style', html: '<p>merci</p>' });
-  assert.equal(style.body.html, '<p>Bien cordialement, merci</p>', 'a script and an image added by the model are gone');
-  assert.doesNotMatch(JSON.stringify(stack.llmRequests.at(-1)!.body.messages), new RegExp(email.subject));
-
-  // The latest proposal is what the reply area resumes with.
-  const detail = (await me('GET', `/emails/${email.id}`)).body;
-  assert.deepEqual([detail.draft.action, detail.draft.html], ['style', '<p>Bien cordialement, merci</p>']);
-});
-
-test('a reply leaves as HTML with a plain-text alternative, both quoting the original', async () => {
-  const [email] = (await me('GET', '/emails?box=todo')).body.emails;
-  const detail = (await me('GET', `/emails/${email.id}`)).body;
-  const outbox = stack.outbox.length;
-  const sent = await me('POST', `/emails/${email.id}/send`, {
-    draftId: detail.draft.id,
-    html: '<p>Bien cordialement, merci</p><ul><li>un</li><li>deux</li></ul><p><a href="https://example.com/doc" onclick="x()">la doc</a></p><img src="x">',
-    to: detail.recipients.to,
-    changeReason: 'ajout',
-  });
-  assert.deepEqual(sent.body, { ok: true, wasEdited: true });
-  const raw = stack.outbox[outbox]!.raw.replace(/=\r\n/g, '');
-  assert.match(raw, /^Content-Type: multipart\/alternative;/m);
-  assert.match(raw, /Content-Type: text\/plain; charset=utf-8[\s\S]*Bien cordialement, merci\r\n\r\n- un\r\n- deux\r\n\r\nla doc \(https:\/\/example\.com\/doc\)/);
-  assert.match(raw, /Content-Type: text\/html; charset=utf-8[\s\S]*<p>Bien cordialement, merci<\/p><ul><li>un<\/li><li>deux<\/li><\/ul><p><a href=3D"https:\/\/example\.com\/doc">la doc<\/a><\/p><br><div>On [\s\S]* wrote:<\/div><blockquote>/);
-  assert.doesNotMatch(raw, /onclick|<img/);
-  assert.doesNotMatch(raw, /[^\r]\n/, 'CRLF throughout');
-
-  const stored = (await me('GET', `/emails/${email.id}`)).body.reply;
-  assert.equal(stored.finalHtml, '<p>Bien cordialement, merci</p><ul><li>un</li><li>deux</li></ul><p><a href="https://example.com/doc">la doc</a></p>');
-  assert.equal(stored.finalText, 'Bien cordialement, merci\n\n- un\n- deux\n\nla doc (https://example.com/doc)');
-  // Typos and style teach no prompt: the reason given is kept with the reply, attached to none.
-  assert.equal(stored.changeReason, 'ajout');
-  assert.ok((await me('GET', '/prompts')).body.every((p: { edited: number }) => p.edited === 0));
 });

@@ -3,6 +3,7 @@
 //   node --test test/size.test.ts
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { test } from 'node:test';
 import { functionsOf, lineCount } from './support/size.ts';
 
@@ -13,7 +14,8 @@ const MAX_FUNCTION_LINES = 20;
 const sources = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', '*.ts', '*.css'], { encoding: 'utf8' })
   .trim()
   .split('\n')
-  .filter((path) => !path.includes('/vendor/'));
+  // A file deleted but not yet committed is still listed: it is no longer a source.
+  .filter((path) => existsSync(path) && !path.includes('/vendor/'));
 
 test(`no source file has more than ${MAX_FILE_LINES} lines`, () => {
   const tooLong = sources.map((path) => ({ path, lines: lineCount(path) })).filter((file) => file.lines > MAX_FILE_LINES);

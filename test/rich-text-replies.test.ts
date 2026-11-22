@@ -55,6 +55,10 @@ test('plain text becomes paragraphs, and back', () => {
   assert.equal(htmlToText('<p>Bonjour,</p><p>Ligne 1<br>Ligne 2</p><p>Fin</p>'), 'Bonjour,\n\nLigne 1\nLigne 2\n\nFin');
 });
 
+test('the plain-text form leaves styles out and reads entities as their characters', () => {
+  assert.equal(htmlToText('<style>p{}</style><p>Bonjour&nbsp;&amp; merci</p><div>Ligne&#233;<br>2</div>'), 'Bonjour & merci\nLigneé\n2');
+});
+
 test('the plain-text form keeps lists and the addresses of links', () => {
   assert.equal(htmlToText('<p>À faire :</p><ul><li>un</li><li><strong>deux</strong></li></ul><p>Fin</p>'), 'À faire :\n\n- un\n- deux\n\nFin');
   assert.equal(htmlToText('<p>Voir <a href="https://example.com/doc">la doc</a>.</p>'), 'Voir la doc (https://example.com/doc).');

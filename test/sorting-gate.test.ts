@@ -5,7 +5,7 @@ import { aiTriage, buildBatchMessages, parseBatchAnswer } from '../src/domain/so
 import { TRIAGE_BATCH_SIZE, runGate } from '../src/domain/sorting/gate.ts';
 import type { TriageBatch, TriageGate, TriageMail } from '../src/domain/sorting/gate.ts';
 import { noTriage } from '../src/domain/sorting/none.ts';
-import type { ChatRequest } from '../src/domain/model/llm.ts';
+import type { ChatRequest, Llm } from '../src/domain/model/llm.ts';
 
 const prompts = [
   { id: 1, name: 'Standard', description: 'general case' },
@@ -110,20 +110,21 @@ test('the AI answer is read strictly: malformed entries leave their mail undecid
   assert.deepEqual(parseBatchAnswer('[{"id": 1, "needs_reply": tru'), []);
 });
 
-test('the AI strategy makes one request per batch and none for an empty one', async () => {
+/** A language model that records what it is asked and always decides about the first mail only. */
+function recordingModel() {
   const requests: ChatRequest[] = [];
-  const gate = aiTriage({
-    llm: {
-      async chat(request) {
-        requests.push(request);
-        return { text: '[{"id": 1, "needs_reply": true, "prompt_id": 1}]', model: request.model, provider: null };
-      },
+  const llm: Llm = {
+    async chat(request) {
+      requests.push(request);
+      return { text: '[{"id": 1, "needs_reply": true, "prompt_id": 1}]', model: request.model, provider: null };
     },
-    apiKey: 'sk',
-    model: 'a/b',
-    ownAddress: 'me@corp.example',
-    language: 'en',
-  });
+  };
+  return { llm, requests };
+}
+
+test('the AI strategy makes one request per batch and none for an empty one', async () => {
+  const { llm, requests } = recordingModel();
+  const gate = aiTriage({ llm, apiKey: 'sk', model: 'a/b', ownAddress: 'me@corp.example', language: 'en' });
   assert.deepEqual(await gate.decide({ prompts, mails: [] }), []);
   assert.equal(requests.length, 0);
   const decisions = await runGate(gate, prompts, Array.from({ length: 21 }, (_, i) => mail(i + 1)));

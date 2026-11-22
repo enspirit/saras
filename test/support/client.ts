@@ -7,6 +7,10 @@ export interface ApiResponse {
 
 export type ApiClient = (method: string, path: string, body?: unknown, headers?: Record<string, string>) => Promise<ApiResponse>;
 
+/** Signs up with the password every test member has; an organisation is created, named as given or after the address. */
+export const signUp = (as: ApiClient, email: string, organization?: string): Promise<ApiResponse> =>
+  as('POST', '/auth/signup', { email, password: 'un-bon-mot-de-passe', organization });
+
 /** Invites an address into the administrator's organisation and accepts the invitation as `guest`. */
 export async function join(admin: ApiClient, guest: ApiClient, email: string, role: 'user' | 'admin' = 'user'): Promise<void> {
   const invitation = await admin('POST', '/invitations', { email, role });
