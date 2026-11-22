@@ -13,7 +13,7 @@
 //            only what a reply may contain is kept of the answer
 import { buildPromptMessages } from '../computations/llm-prompts.ts';
 import { llmSettings } from '../computations/key-in-force.ts';
-import { rowToEmail } from '../mailboxes/fetch-mailbox.ts';
+import { rowToEmail } from '../computations/emails.ts';
 import { contentIsKept } from '../computations/replying.ts';
 import { accepted } from '../refusal.ts';
 import { emailFor } from '../state/emails.ts';

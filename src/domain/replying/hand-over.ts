@@ -6,7 +6,7 @@
 //   execute  the mailbox takes it; what is recorded is worked out   (pure: handOverRecord)
 //            and kept, and the email is replied
 import { errorMessage } from '../../tooling/errors.ts';
-import { rowToEmail } from '../mailboxes/fetch-mailbox.ts';
+import { rowToEmail } from '../computations/emails.ts';
 import type { ReplyMode } from '../../types.ts';
 import { handOverRecord, mayHandOver } from '../computations/replying.ts';
 import { Refusal, accepted } from '../refusal.ts';

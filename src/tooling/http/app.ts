@@ -69,7 +69,7 @@ import { lookupMailHost } from '../mail/lookup.ts';
 import { isConfigured } from '../mail/oauth.ts';
 import { replyRecipients } from '../../domain/computations/reply.ts';
 import { llmSettings } from '../../domain/computations/key-in-force.ts';
-import { rowToEmail } from '../../domain/mailboxes/fetch-mailbox.ts';
+import { rowToEmail } from '../../domain/computations/emails.ts';
 import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
 import type {
   DraftRow,

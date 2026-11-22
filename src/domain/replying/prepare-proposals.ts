@@ -17,7 +17,7 @@ import { buildPromptMessages } from '../computations/llm-prompts.ts';
 import { llmSettings } from '../computations/key-in-force.ts';
 import { problem } from '../../tooling/messages.ts';
 import type { Problem } from '../../tooling/messages.ts';
-import { rowToEmail } from '../mailboxes/fetch-mailbox.ts';
+import { rowToEmail } from '../computations/emails.ts';
 import type { AccountRow, OrganizationRow, UserRow } from '../../types.ts';
 import { promptToPrepareWith } from '../computations/replying.ts';
 import { emailsAwaitingProposal } from '../state/emails.ts';

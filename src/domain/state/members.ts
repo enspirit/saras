@@ -1,5 +1,5 @@
 // State: the members of organisations, and the organisations themselves.
-import { seedDefaultPrompts } from '../../tooling/db.ts';
+import { defaultPrompts } from '../prompts/ready-made-prompts.ts';
 import type { Db } from '../../tooling/db.ts';
 import type { OrganizationRow, Role, UserRow } from '../../types.ts';
 import { Refusal } from '../refusal.ts';
@@ -46,4 +46,10 @@ export async function addMember(db: Db, member: { organizationId: number; addres
 }
 
 /** The prompt an organisation starts with, in its creator's language. */
-export const addFirstPrompt = (db: Db, organizationId: number, memberId: number, language: string): Promise<void> => seedDefaultPrompts(db, organizationId, memberId, language);
+export async function addFirstPrompt(db: Db, organizationId: number, memberId: number, language: string): Promise<void> {
+  // prompts.user_id records who created a prompt. One only, the general case: the others
+  // are ready-made prompts the administrators add when they want them.
+  for (const p of defaultPrompts(language).slice(0, 1)) {
+    await db.run('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5)', [organizationId, memberId, p.name, p.description, p.systemPrompt]);
+  }
+}

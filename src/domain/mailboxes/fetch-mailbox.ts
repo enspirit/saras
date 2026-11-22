@@ -1,67 +1,37 @@
+// FetchMailbox — the backend brings in what arrived in a mailbox's watched folder, then has
+// it sorted, then has proposals prepared where the organisation wants them.
+//
+//   DomPre   a mailbox that watches a folder
+//   DomPost  the emails that arrived in that folder since the last fetch are kept, waiting to
+//            be sorted — or already set aside, for plainly automated mail, when the organisation
+//            wants that done first
+//   ReqPre   (none: a mailbox that watches no folder is not fetched, and says so as its last error)
+//   ReqPost  an email already kept is left as it is
+//            no further back than the days, and no more than the number, this server is set up for
+//            what went wrong, fetching, sorting or preparing, is kept as the mailbox's last error
+//            one fetch at a time per mailbox: whoever asks meanwhile shares the one under way
+//   ReqTrig  on the server's clock, for every mailbox that watches a folder
+//            when a member asks, when a folder is chosen, when a mailbox is reconnected
+//   Then     SortWaitingEmails, and PrepareProposals, unless fetching failed
 import type { Config } from '../../tooling/config.ts';
 import { prepareProposals } from '../replying/prepare-proposals.ts';
 import type { Vault } from '../../tooling/crypto.ts';
 import type { Db } from '../../tooling/db.ts';
 import { errorMessage } from '../../tooling/errors.ts';
-import { LlmError } from '../../tooling/llm/openrouter.ts';
 import type { MailService } from '../../tooling/mail/index.ts';
 import { encodeProblem, problem } from '../../tooling/messages.ts';
 import type { Problem } from '../../tooling/messages.ts';
 import { watchedMailboxes } from '../state/mailboxes.ts';
-import { runGate } from '../sorting/gate.ts';
-import type { TriageMail, TriagePrompt } from '../sorting/gate.ts';
+import { sortWaitingEmails } from '../sorting/sort-waiting-emails.ts';
+import type { SortingResult } from '../sorting/sort-waiting-emails.ts';
+import { organizationById } from '../state/members.ts';
 import type { Triage } from '../sorting/index.ts';
 import { heuristicTriage } from '../sorting/rules.ts';
-import type { AccountRow, Email, EmailRow, IncomingEmail, Llm, OrganizationRow, UserRow } from '../../types.ts';
+import type { AccountRow, EmailRow, IncomingEmail, Llm, OrganizationRow, UserRow } from '../../types.ts';
 
 const MAX_STORED_BODY = 100_000;
 
-export function rowToEmail(row: EmailRow): Email {
-  return {
-    id: row.id,
-    accountId: row.account_id,
-    folder: row.folder,
-    providerId: row.provider_id,
-    messageId: row.message_id,
-    threadId: row.thread_id,
-    refs: row.refs,
-    fromName: row.from_name,
-    fromAddr: row.from_addr,
-    replyTo: row.reply_to,
-    to: JSON.parse(row.to_json),
-    cc: JSON.parse(row.cc_json),
-    subject: row.subject,
-    date: row.date.toISOString(),
-    bodyText: row.body_text,
-    attachments: JSON.parse(row.attachments_json),
-    status: row.status,
-    triageSource: row.triage_source,
-    triageReason: row.triage_reason,
-    priority: row.priority,
-    suggestedPromptId: row.suggested_prompt_id,
-  };
-}
-
-/** Pure: a stored email, as the triage gate is given it. */
-export function toTriageMail(email: Email): TriageMail {
-  return {
-    id: email.id,
-    from: { name: email.fromName, address: email.fromAddr },
-    to: email.to,
-    cc: email.cc,
-    subject: email.subject,
-    body: email.bodyText,
-    attachments: email.attachments,
-  };
-}
-
-export interface TriageResult {
-  /** Emails the gate decided about. */
-  triaged: number;
-  error: Problem | null;
-}
-
-export interface SyncResult extends TriageResult {
+export interface SyncResult extends SortingResult {
   /** New emails fetched from the mailbox. */
   fetched: number;
 }
@@ -71,7 +41,6 @@ export interface Sync {
   /** The same, without waiting for it: what goes wrong is kept with the mailbox, and logged. */
   inBackground(account: AccountRow): void;
   syncAll(): Promise<void>;
-  triagePending(account: AccountRow): Promise<TriageResult>;
 }
 
 interface Dependencies {
@@ -93,7 +62,7 @@ export function createSync({ db, mail, triage, config, llm, vault }: Dependencie
   const running = new Map<number, Promise<SyncResult>>();
 
   const organizationOf = async (account: AccountRow): Promise<OrganizationRow> =>
-    (await db.one<OrganizationRow>('SELECT * FROM organizations WHERE id = $1', [account.org_id]))!;
+    (await organizationById(db, account.org_id))!;
 
   /** Stores what was fetched. A message already known (same account, folder and provider id) is left as it is. */
   async function store(account: AccountRow, org: OrganizationRow, folder: string, emails: IncomingEmail[]): Promise<void> {
@@ -133,37 +102,6 @@ export function createSync({ db, mail, triage, config, llm, vault }: Dependencie
     });
   }
 
-  /**
-   * Passes every email still waiting through the gate. An email the gate says nothing about
-   * stays waiting; if the gate fails, so do all those it had not decided yet.
-   */
-  async function triagePending(account: AccountRow): Promise<TriageResult> {
-    const org = await organizationOf(account);
-    const owner = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
-    const pending = await db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [account.id]);
-    if (!pending.length) return { triaged: 0, error: null };
-    const prompts = await db.query<TriagePrompt>('SELECT id, name, description FROM prompts WHERE org_id = $1 ORDER BY id', [org.id]);
-    const gate = triage.gateFor(account, org, owner);
-    try {
-      const decisions = await runGate(gate, prompts, pending.map((row) => toTriageMail(rowToEmail(row))));
-      await db.transaction(async (tx) => {
-        for (const decision of decisions) {
-          await tx.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3, priority = $4, suggested_prompt_id = $5 WHERE id = $6 AND status = 'pending'`, [
-            decision.replyNeeded ? 'needs_reply' : 'no_reply',
-            gate.name,
-            decision.reason ?? '',
-            decision.priority ?? 'normal',
-            decision.replyNeeded ? decision.promptId : null,
-            decision.mailId,
-          ]);
-        }
-      });
-      return { triaged: decisions.length, error: null };
-    } catch (e) {
-      return { triaged: 0, error: e instanceof LlmError ? e.problem : problem('sync.triageFailed', { detail: errorMessage(e) }) };
-    }
-  }
-
   function syncAccount(account: AccountRow): Promise<SyncResult> {
     let inFlight = running.get(account.id);
     if (!inFlight) {
@@ -189,7 +127,7 @@ export function createSync({ db, mail, triage, config, llm, vault }: Dependencie
     } catch (e) {
       error = problem('sync.fetchFailed', { detail: errorMessage(e) });
     }
-    const outcome: TriageResult = error ? { triaged: 0, error: null } : await triagePending(account);
+    const outcome: SortingResult = error ? { triaged: 0, error: null } : await sortWaitingEmails({ db, triage }, account);
     error = error || outcome.error;
     // Proposals are prepared last, and only once fetching and sorting went well.
     error = error || (await prepareProposals({ db, mail, llm, vault, config }, account, await organizationOf(account), (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!));
@@ -206,5 +144,5 @@ export function createSync({ db, mail, triage, config, llm, vault }: Dependencie
     }
   }
 
-  return { syncAccount, inBackground, syncAll, triagePending };
+  return { syncAccount, inBackground, syncAll };
 }

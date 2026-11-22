@@ -2,7 +2,6 @@ import { PGlite } from '@electric-sql/pglite';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import pg from 'pg';
-import { defaultPrompts } from '../domain/prompts/ready-made-prompts.ts';
 
 /**
  * The database is PostgreSQL, reached in one of two ways behind the same interface:
@@ -261,29 +260,4 @@ export async function openDb({ databaseUrl, dataDir = null }: DbOptions = {}): P
   // a failure then names the statement at fault.
   for (const statement of SCHEMA.split(';').map((s) => s.trim()).filter(Boolean)) await db.run(statement);
   return db;
-}
-
-/**
- * Prompts belong to an organisation; prompts.user_id records who created them. A new
- * organisation starts with one, the general case; the others are templates its
- * administrators add when they want them.
- */
-export async function seedDefaultPrompts(db: Db, orgId: number, userId: number, language: string): Promise<void> {
-  for (const p of defaultPrompts(language).slice(0, 1)) {
-    await db.run('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5)', [orgId, userId, p.name, p.description, p.systemPrompt]);
-  }
-}
-
-/**
- * Drop the content of old emails (bodies, drafts, reply texts) while keeping the
- * triage row, so they are not imported again. Correction reasons are kept: they
- * are the user's own words and feed future drafts.
- */
-export async function purgeOldContent(db: Db, retentionDays: number): Promise<number> {
-  if (!retentionDays) return 0;
-  const old = `(SELECT id FROM emails WHERE date < now() - make_interval(days => $1))`;
-  const days = [Number(retentionDays)];
-  await db.run(`DELETE FROM drafts WHERE email_id IN ${old}`, days);
-  await db.run(`UPDATE replies SET ai_text = NULL, final_text = '', final_html = '' WHERE email_id IN ${old}`, days);
-  return db.run(`UPDATE emails SET body_text = '' WHERE body_text != '' AND date < now() - make_interval(days => $1)`, days);
 }
