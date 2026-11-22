@@ -6,7 +6,8 @@
     "delete": "Supprimer",
     "copy": "Copier",
     "httpError": "Erreur {status}",
-    "actions": "Actions"
+    "actions": "Actions",
+    "loading": "Chargement…"
   },
   "role": {
     "admin": "Administrateur",

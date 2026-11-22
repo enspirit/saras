@@ -2,7 +2,7 @@
 // the design system in ./ui (atoms, molecules, organisms) and every word from the
 // translation files, through t() and tRich(). Tests enforce both.
 import { Badge, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Strong, Text, Textarea, setBusy } from './ui/atoms.ts';
-import { Actions, AiHelp, AiNote, Assurance, Block, Callout, Card, CardSection, Caution, CheckField, Choices, EmailListItem, EmptyState, Facts, Features, Field, Form, FormRow, Message, NavItem, PageHeader, Panel, Person, PromptPick, ReasonField, RecipientField, Remark, RichEditor, Steps, Table, Tabs, confirmDialog, createToast } from './ui/molecules.ts';
+import { Actions, AiHelp, AiNote, Assurance, Block, Callout, Card, CardSection, Caution, CheckField, Choices, EmailListItem, EmptyState, Facts, Features, Field, Form, FormRow, Loading, Message, NavItem, PageHeader, Panel, Person, PromptPick, ReasonField, RecipientField, Remark, RichEditor, Steps, Table, Tabs, confirmDialog, createToast } from './ui/molecules.ts';
 import { AppShell, AuthPanel, ClosedDock, Columns, Mailbox, Page, Reading, ReadingHeader, ReplyDock } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
 import type { Brand, ButtonOptions, IconName } from './ui/atoms.ts';
@@ -120,6 +120,8 @@ const invitationToken = () => location.hash.match(/^#\/invitation\/([\w-]+)$/)?.
 async function boot(): Promise<void> {
   const token = invitationToken();
   if (token) return renderInvitation(token);
+  // Nothing on screen yet: say that something is coming rather than show a blank page.
+  if (!root.hasChildNodes()) root.replaceChildren(Loading(t('common.loading')));
   try {
     state.me = await api<Me>('GET', '/me');
     // The server writes on the user's behalf (triage reasons, reply quoting): keep it told of their language.

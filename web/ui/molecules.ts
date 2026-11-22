@@ -2,7 +2,7 @@
  * MOLECULES — styled by design/molecules.css. A few atoms assembled for one job.
  */
 import Squire from '../vendor/squire.mjs';
-import { Avatar, Badge, Button, Checkbox, Chip, Heading, Icon, Input, SrOnly } from './atoms.ts';
+import { Avatar, Badge, Button, Checkbox, Chip, Heading, Icon, Input, Spinner, SrOnly } from './atoms.ts';
 import type { IconName, SelectOption } from './atoms.ts';
 import { cx, h } from './dom.ts';
 import type { Attrs, Child } from './dom.ts';
@@ -75,6 +75,9 @@ export function PageHeader(head: string | PageHeaderOptions, ...actions: Child[]
     h('div', { class: 'page-head__actions' }, actions),
   );
 }
+
+/** A whole screen is on its way; `label` says so to screen readers. */
+export const Loading = (label: string): HTMLDivElement => h('div', { class: 'loading', role: 'status' }, Spinner(), SrOnly(label));
 
 /** The parts of one page, each with its own address. */
 export const Tabs = (items: { label: string; href: string; current?: boolean }[]): HTMLElement =>
