@@ -97,25 +97,28 @@
 }
 .assurance > .icon { margin-top: 1px; color: var(--color-ok); }
 
-/* ---- Email list item ---- */
+/* ---- Email list item: who and when, what about, how it starts ---- */
 .email-item {
-  display: block; width: 100%;
+  display: grid; gap: 1px; width: 100%;
   padding: var(--space-3) var(--space-4);
   border: 0;
-  border-bottom: var(--border-width) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-line);
   background: none;
   text-align: left;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease);
 }
 .email-item:hover { background: var(--color-hover); }
 .email-item[aria-current="true"] { background: var(--color-accent-soft); }
-.email-item__top { display: flex; justify-content: space-between; gap: var(--space-2); }
+.email-item[aria-current="true"] .email-item__from { color: var(--color-accent); }
+.email-item__top, .email-item__line { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .email-item__from, .email-item__subject, .email-item__snippet { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .email-item__from { font-weight: var(--weight-strong); }
-.email-item__date { font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+.email-item__tags { flex: none; display: flex; gap: var(--space-1); }
+.email-item__date { flex: none; margin-left: auto; font-size: var(--text-xs); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.email-item__subject { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.email-item__shared { flex: none; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); }
 .email-item__snippet { font-size: var(--text-sm); color: var(--color-text-muted); }
-.email-item__badges { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-1); }
-.email-item__badges:empty { display: none; }
 
 /* ---- Message: the body of an email, scrollable when long ---- */
 .message { max-height: 420px; overflow-y: auto; }
@@ -146,6 +149,7 @@
 .dialog::backdrop { background: var(--color-scrim); }
 .dialog__body { display: grid; gap: var(--space-2); padding: var(--space-6) var(--space-6) var(--space-4); }
 .dialog__text { color: var(--color-text-soft); overflow-wrap: anywhere; }
+.dialog__text > * + * { margin-top: var(--space-3); }
 .dialog__field { margin-top: var(--space-2); }
 .dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); padding: 0 var(--space-6) var(--space-5); }
 
@@ -158,7 +162,7 @@
 }
 .recipients__label { color: var(--color-text-muted); }
 .recipients__input {
-  flex: 1 1 140px; min-width: 0;
+  flex: 1 1 var(--space-8); min-width: var(--space-8);
   min-height: var(--space-6);
   padding: 0;
   border: 0;
@@ -178,6 +182,63 @@
 }
 .ai-note > .icon { color: var(--color-accent); }
 .ai-note__text { flex: 1 1 200px; min-width: 0; padding: var(--space-1) 0; }
+
+/* ---- Panel: a record with its facts (a reply that was sent) ---- */
+.panel {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.panel__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-line); }
+.panel__head > .icon { color: var(--color-ok); }
+.panel__meta { font-size: var(--text-sm); color: var(--color-text-muted); }
+.panel__badges { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-left: auto; }
+.panel > .facts { padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-line); }
+.panel__body { padding: var(--space-4); }
+
+/* ---- Facts: label and value, line by line ---- */
+.facts { display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-4); margin: 0; font-size: var(--text-sm); }
+.facts dt { color: var(--color-text-muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+/* ---- AI help: the optional kinds of help, as equals, with what they send ---- */
+.ai-help { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+.ai-help__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.ai-help__label { margin-right: var(--space-1); font-size: var(--text-sm); font-weight: var(--weight-strong); color: var(--color-text-soft); }
+.ai-help__note { display: flex; align-items: flex-start; gap: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); }
+.ai-help__note > .icon { color: var(--color-ok); }
+
+/* ---- Prompt pick: write with a prompt, and choose which ---- */
+.prompt-pick {
+  display: inline-flex; align-items: stretch;
+  max-width: 100%;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.prompt-pick__select {
+  flex: 0 1 auto; min-width: var(--space-8); max-width: 280px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-left: var(--border-width) solid var(--color-border);
+  background: transparent;
+  font-size: var(--text-sm);
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+.prompt-pick__badge { display: inline-flex; align-items: center; padding-right: var(--space-2); }
+
+/* ---- Reason: asked where the edit happened, saying what it is for and who reads it ---- */
+.reason { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--color-ai); border-top: var(--border-width) solid var(--color-ai-border); }
+.reason__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); font-size: var(--text-sm); font-weight: var(--weight-strong); }
+.reason__row > .input { flex: 1 1 240px; min-height: var(--control-sm); padding-block: 0; }
+.reason__hint { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+/* ---- Caution: something to settle before going on, next to the action it concerns ---- */
+.caution { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--color-warn); }
 
 /* ---- Swatch (style guide only) ---- */
 .swatch { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); font-size: var(--text-sm); }
@@ -202,6 +263,8 @@
 }
 .editor__sep { width: var(--border-width); height: var(--space-4); margin: 0 var(--space-1); background: var(--color-line); }
 .editor--proposed .editor__surface { background: var(--color-ai); }
+/* Passages left open by the AI, marked without touching the text that will be sent. */
+::highlight(todo-mark) { background-color: var(--color-warn-soft); color: var(--color-warn); }
 .editor__surface {
   min-height: 240px; max-height: 60vh; overflow-y: auto;
   padding: var(--space-3);

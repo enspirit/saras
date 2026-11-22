@@ -118,6 +118,8 @@
 .btn--link:hover { --btn-bg: transparent; --btn-border: transparent; text-decoration: underline; }
 .btn--icon-only { width: var(--btn-height); padding: 0; }
 .btn--block { width: 100%; }
+/* Flush: part of a joined control, which draws the frame itself. */
+.btn--flush { border: 0; border-radius: 0; }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
 /* Busy: the spinner takes the place of the icon; the label stays, so the button keeps its width. */
 .btn[aria-busy="true"] { opacity: 1; cursor: progress; }
@@ -244,6 +246,7 @@ textarea.input--tall { min-height: 240px; }
   white-space: nowrap;
 }
 .chip--fixed { padding-right: var(--space-3); }
+.chip > .icon { color: var(--color-text-muted); margin-left: calc(var(--space-1) * -1); margin-right: var(--space-1); }
 .chip--invalid { background: var(--color-danger-soft); color: var(--color-danger); }
 .chip__remove {
   display: inline-flex; align-items: center; justify-content: center;

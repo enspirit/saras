@@ -1,11 +1,11 @@
 // Pages of the application. They hold behaviour only: every element on screen comes from
 // the design system in ./ui (atoms, molecules, organisms) and every word from the
 // translation files, through t() and tRich(). Tests enforce both.
-import { Badge, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Strong, Text, Textarea } from './ui/atoms.ts';
-import { Actions, Block, Card, CardSection, CheckField, EmailListItem, Field, Form, FormRow, Message, PageHeader, RichEditor, confirmDialog, createToast } from './ui/molecules.ts';
-import { AppShell, AuthPanel, Mailbox, Page, ReadingHeader } from './ui/organisms.ts';
+import { Badge, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Strong, Text, Textarea, setBusy } from './ui/atoms.ts';
+import { Actions, AiHelp, AiNote, Assurance, Block, Card, CardSection, Caution, CheckField, EmailListItem, EmptyState, Facts, Field, Form, FormRow, Message, NavItem, PageHeader, Panel, PromptPick, ReasonField, RecipientField, RichEditor, confirmDialog, createToast } from './ui/molecules.ts';
+import { AppShell, AuthPanel, ClosedDock, Mailbox, Page, Reading, ReadingHeader, ReplyDock } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
-import type { Brand, ButtonOptions } from './ui/atoms.ts';
+import type { Brand, ButtonOptions, IconName } from './ui/atoms.ts';
 import type { Child } from './ui/dom.ts';
 import { api, isSignedOut, problemText } from './api.ts';
 import { initI18n, language, languages, locale, setLanguage, t, tRich } from './i18n.ts';
@@ -25,17 +25,19 @@ const messageOf = (e: unknown): string => (e instanceof Error ? e.message : Stri
 function busy(button: HTMLButtonElement, label: string, fn: () => unknown) {
   return async (event?: Event): Promise<void> => {
     event?.preventDefault();
-    const original = button.textContent;
-    button.disabled = true;
-    button.textContent = label;
+    // The button keeps its label and its width; a spinner shows the wait, and `label` names it to screen readers.
+    const name = button.getAttribute('aria-label');
+    setBusy(button, true);
+    if (label.length > 1) button.setAttribute('aria-label', label);
     try {
       await fn();
     } catch (e) {
       if (isSignedOut(e)) return boot();
       toast(messageOf(e), true);
     } finally {
-      button.disabled = false;
-      button.textContent = original;
+      setBusy(button, false);
+      if (name === null) button.removeAttribute('aria-label');
+      else button.setAttribute('aria-label', name);
     }
   };
 }
@@ -62,6 +64,11 @@ const fmtDate = (iso: string): string => {
     ? d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
     : d.toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
 };
+/** Day and time, short: for the head of an email or of a reply. */
+const fmtWhen = (iso: string): string => {
+  const d = asDate(iso);
+  return d.toDateString() === new Date().toDateString() ? fmtDate(iso) : d.toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
 const fmtFull = (iso: string): string => asDate(iso).toLocaleString(locale(), { dateStyle: 'full', timeStyle: 'short' });
 const splitAddresses = (s: string): string[] => s.split(/[,;\s]+/).map((a) => a.trim()).filter(Boolean);
 const roleLabel = (role: Role): string => (role === 'admin' ? t('role.admin') : t('role.user'));
@@ -74,20 +81,21 @@ interface Box {
   /** Translation keys of its name and of the text shown when it is empty. */
   label: string;
   empty: string;
+  icon: IconName;
 }
 
 const BOXES: Box[] = [
-  { id: 'todo', path: 'inbox', label: 'box.todo.label', empty: 'box.todo.empty' },
-  { id: 'none', path: 'no-reply', label: 'box.none.label', empty: 'box.none.empty' },
-  { id: 'sent', path: 'replied', label: 'box.sent.label', empty: 'box.sent.empty' },
-  { id: 'ignored', path: 'ignored', label: 'box.ignored.label', empty: 'box.ignored.empty' },
+  { id: 'todo', path: 'inbox', label: 'box.todo.label', empty: 'box.todo.empty', icon: 'mail' },
+  { id: 'none', path: 'no-reply', label: 'box.none.label', empty: 'box.none.empty', icon: 'mail-check' },
+  { id: 'sent', path: 'replied', label: 'box.sent.label', empty: 'box.sent.empty', icon: 'reply' },
+  { id: 'ignored', path: 'ignored', label: 'box.ignored.label', empty: 'box.ignored.empty', icon: 'archive' },
 ];
 /** `label` is a translation key. */
-const PAGES: { path: string; label: string; admin?: boolean }[] = [
-  { path: 'accounts', label: 'nav.accounts' },
-  { path: 'settings', label: 'nav.settings' },
-  { path: 'prompts', label: 'nav.prompts', admin: true },
-  { path: 'users', label: 'nav.users', admin: true },
+const PAGES: { path: string; label: string; icon: IconName; admin?: boolean }[] = [
+  { path: 'accounts', label: 'nav.accounts', icon: 'plug' },
+  { path: 'prompts', label: 'nav.prompts', icon: 'file-text', admin: true },
+  { path: 'users', label: 'nav.users', icon: 'users', admin: true },
+  { path: 'settings', label: 'nav.settings', icon: 'settings' },
 ];
 const isAdmin = (): boolean => state.me?.role === 'admin';
 
@@ -193,27 +201,42 @@ async function renderInvitation(token: string): Promise<void> {
 }
 
 // ---- shell ------------------------------------------------------------------------------
+const pagesOfUser = () => PAGES.filter((p) => !p.admin || isAdmin());
+const assurance = () => ({ text: t('nav.assurance.text'), title: t('nav.assurance.title') });
+const signOut = (options: ButtonOptions): HTMLButtonElement => ActionButton(t('nav.signOut'), '…', async () => {
+  await api('POST', '/auth/logout');
+  location.hash = '';
+  await boot();
+}, options);
+
 function shell(content: Child): void {
   const current = route().page;
-  const item = (path: string, label: string, count?: number) => ({ href: `#/${path}`, label, count, current: current === path });
+  const item = (path: string, label: string, icon: IconName, count?: number) => ({ href: `#/${path}`, label, icon, count, current: current === path });
+  const pages = pagesOfUser();
   root.replaceChildren(
     AppShell({
       brand,
-      sections: [
-        { title: t('nav.emails'), items: BOXES.map((b) => item(b.path, t(b.label), state.counts[b.id])) },
-        { title: t('nav.configuration'), items: PAGES.filter((p) => !p.admin || isAdmin()).map((p) => item(p.path, t(p.label))) },
-      ],
-      assurance: {
-        text: t('nav.assurance.text'),
-        title: t('nav.assurance.title'),
-      },
-      user: t('nav.member', { email: me().email, organization: me().organization.name }),
-      logout: ActionButton(t('nav.signOut'), '…', async () => {
-        await api('POST', '/auth/logout');
-        location.hash = '';
-        await boot();
-      }),
+      boxes: BOXES.map((b) => item(b.path, t(b.label), b.icon, state.counts[b.id])),
+      pages: { title: t('nav.configuration'), items: pages.map((p) => item(p.path, t(p.label), p.icon)) },
+      // On a phone the boxes fill the bar: this entry leads to everything else.
+      more: { href: '#/more', label: t('nav.more'), icon: 'settings', current: current === 'more' || pages.some((p) => p.path === current) },
+      assurance: assurance(),
+      user: { name: me().email, organization: me().organization.name },
+      logout: signOut({ variant: 'ghost', icon: 'log-out', iconOnly: true }),
     }, content),
+  );
+}
+
+/** On a phone: the configuration pages, who is signed in, and the way out. */
+function renderMore(): void {
+  shell(
+    Page(
+      PageHeader(me().organization.name),
+      Block(Text({ muted: true }, me().email)),
+      Card({}, pagesOfUser().map((p) => NavItem({ href: `#/${p.path}`, label: t(p.label), icon: p.icon }))),
+      Block(Assurance(assurance().text, assurance().title)),
+      signOut({ icon: 'log-out' }),
+    ),
   );
 }
 
@@ -226,16 +249,17 @@ function render(): void {
   else if (r.page === 'users' && isAdmin()) void renderUsers();
   else if (r.page === 'accounts') void renderAccounts(r.query.get('error'), r.query.get('detail') ?? '');
   else if (r.page === 'settings') void renderSettings();
+  else if (r.page === 'more') renderMore();
   else location.hash = '#/inbox';
 }
 
 // ---- mailbox ----------------------------------------------------------------------------
 const renderMailbox = guard(async (box: Box, selectedId: number | null) => {
-  const [{ emails, counts }, prompts] = await Promise.all([api<EmailList>('GET', `/emails?box=${box.id}`), api<Prompt[]>('GET', '/prompts')]);
+  const [{ emails, counts }, prompts, accounts] = await Promise.all([api<EmailList>('GET', `/emails?box=${box.id}`), api<Prompt[]>('GET', '/prompts'), api<Account[]>('GET', '/accounts')]);
   state.counts = counts;
+  const lastFetch = accounts.map((a) => a.lastSyncAt ?? '').filter(Boolean).sort().pop();
 
   const refresh = ActionButton(t('mailbox.refresh'), t('mailbox.refreshing'), async () => {
-    const accounts = await api<Account[]>('GET', '/accounts');
     if (!accounts.length) return void (location.hash = '#/accounts');
     let fetched = 0;
     const errors: string[] = [];
@@ -247,18 +271,21 @@ const renderMailbox = guard(async (box: Box, selectedId: number | null) => {
     if (errors.length) toast(errors.join(' — '), true);
     else toast(t('mailbox.fetched', { count: fetched }));
     render();
-  }, { title: t('mailbox.refreshTitle') });
+  }, { variant: 'ghost', icon: 'refresh-cw', iconOnly: true, title: t('mailbox.refreshTitle') });
 
   const detail = selectedId ? emailDetail(await api<EmailDetail>('GET', `/emails/${selectedId}`), prompts, box) : null;
 
   shell(
     Mailbox({
       title: t(box.label),
+      count: emails.length,
+      meta: lastFetch ? t('mailbox.fetchedAt', { time: fmtWhen(lastFetch) }) : undefined,
       action: refresh,
-      empty: t(box.empty),
+      // With no mailbox connected yet, the empty box leads to where one is connected.
+      empty: EmptyState(t(box.empty), { icon: box.icon, action: !accounts.length && ButtonLink(t('nav.accounts'), { href: '#/accounts', variant: 'primary' }) }),
       backHref: `#/${box.path}`,
       backLabel: t('mailbox.back'),
-      selectHint: t('mailbox.select'),
+      idle: emails.length > 0 && EmptyState(t('mailbox.select'), { icon: box.icon, title: t('mailbox.count', { count: emails.length }) }),
       detail,
       items: emails.map((e) =>
         EmailListItem({
@@ -268,13 +295,13 @@ const renderMailbox = guard(async (box: Box, selectedId: number | null) => {
           snippet: e.snippet,
           current: e.id === selectedId,
           onClick: () => (location.hash = `#/${box.path}/${e.id}`),
-          badges: [
-            // In a shared mailbox, say which: several may be shown together.
-            e.shared && Badge(e.account, 'neutral'),
-            e.status === 'pending' && Badge(t('mailbox.untriaged'), 'warn'),
-            e.priority === 'high' && e.status !== 'sent' && Badge(t('mailbox.priority'), 'danger'),
+          tags: [
+            e.priority === 'high' && e.status !== 'sent' && Badge(t('mailbox.priority'), 'warn'),
+            e.status === 'pending' && Badge(t('mailbox.untriaged'), 'neutral'),
             e.replyMode === 'draft' && Badge(t('mailbox.draft'), 'neutral'),
           ],
+          // In a shared mailbox, say which: several may be shown together.
+          shared: e.shared ? { label: e.account.split('@')[0] ?? e.account, title: e.account } : undefined,
         }),
       ),
     }),
@@ -291,59 +318,92 @@ function triageSourceLabel(source: EmailDetail['triageSource']): string {
 
 function emailDetail(email: EmailDetail, prompts: Prompt[], box: Box): Child {
   const pending = email.status === 'pending';
-  const addresses = (list: { address: string }[]): string => list.map((a) => a.address).join(', ');
+  const waiting = pending || email.status === 'needs_reply';
+  const names = (list: { name: string; address: string }[]): string => list.map((a) => a.name || a.address).join(', ');
+  /** After a decision about the email: say so, and go back to the list. */
+  const done = (message: string): void => {
+    toast(message);
+    location.hash = `#/${box.path}`;
+  };
+  const setStatus = (status: string, message: string) => async (): Promise<void> => {
+    await api('POST', `/emails/${email.id}/status`, { status });
+    done(message);
+  };
+  const sent = email.status === 'sent' ? email.reply : null;
+
+  // Decisions about the email itself sit with the email, not with the reply.
+  const decisions = waiting
+    ? [
+      ActionButton(t('composer.noReplyNeeded'), '…', setStatus('no_reply', t('composer.markedNoReply')), { variant: 'ghost', size: 'small', icon: 'mail-check' }),
+      ActionButton(t('composer.ignore'), '…', setStatus('ignored', t('composer.ignored')), { variant: 'ghost', size: 'small', icon: 'archive' }),
+    ]
+    : !sent && ActionButton(t('composer.restore'), '…', setStatus('needs_reply', t('composer.restored')), { size: 'small', icon: 'undo' });
+
   const header = ReadingHeader({
     subject: email.subject || t('mailbox.noSubject'),
-    meta: [
-      tRich('reading.from', { sender: email.fromName ? `${email.fromName} <${email.fromAddr}>` : email.fromAddr, date: fmtFull(email.date) }, { strong: Strong }),
-      email.cc.length
-        ? t('reading.toCc', { to: addresses(email.to) || email.account, cc: addresses(email.cc) })
-        : t('reading.to', { to: addresses(email.to) || email.account }),
-      email.attachments.length > 0 &&
-        t('reading.attachments', { count: email.attachments.length, names: email.attachments.map((a) => a.name || a.type).join(', ') }),
-    ],
+    actions: decisions,
+    sender: { name: email.fromName || email.fromAddr, address: email.fromName ? email.fromAddr : undefined },
+    to: email.cc.length ? t('reading.toCc', { to: names(email.to) || email.account, cc: names(email.cc) }) : t('reading.to', { to: names(email.to) || email.account }),
+    attachments: email.attachments.map((a) => a.name || a.type),
+    date: fmtWhen(email.date),
+    dateTitle: fmtFull(email.date),
     triage: (email.triageReason || pending) && [
-      pending ? Badge(t('mailbox.untriaged'), 'warn') : Badge(triageSourceLabel(email.triageSource), 'neutral'),
-      ' ',
+      pending ? Badge(t('mailbox.untriaged'), 'neutral') : Badge(triageSourceLabel(email.triageSource), 'neutral'),
       pending ? t('reading.pendingTriage') : email.triageReasonCode ? problemText({ code: email.triageReasonCode, params: {}, message: email.triageReason }) : email.triageReason,
     ],
   });
-  const original = Card({}, email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased')));
+  const original = email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased'));
 
-  if (email.status === 'sent' && email.reply) return [header, original, sentReply(email.reply)];
-  return [header, original, composer(email, prompts, box)];
+  if (sent) return Reading({ header }, original, sentReply(sent));
+  if (waiting) return Reading({ header, dock: composer(email, prompts, done) }, original);
+  // Set aside: no reply is expected, so the reply area opens only when asked for.
+  const closed: HTMLElement = ClosedDock(
+    email.status === 'ignored' ? t('composer.closedIgnored') : t('composer.closedNone'),
+    Button(t('composer.replyAnyway'), { size: 'small', icon: 'reply', onClick: () => closed.replaceWith(composer(email, prompts, done)) }),
+  );
+  return Reading({ header, dock: closed }, original);
 }
 
 function sentReply(r: SentReply): Child {
   const draft = r.mode === 'draft';
-  const recipients = { date: fmtFull(r.sentAt), to: r.to.join(', '), cc: r.cc.join(', ') };
   const author = r.by && r.by !== me().email ? r.by : null;
-  return Card({
+  const facts: [string, Child][] = [[t('composer.to'), r.to.join(', ')]];
+  if (r.cc.length) facts.push([t('composer.cc'), r.cc.join(', ')]);
+  if (r.changeReason) facts.push([t('reply.why'), r.changeReason]);
+  return Panel({
+    icon: 'check',
     title: draft ? t('reply.draftTitle') : t('reply.sentTitle'),
-    badges: [Badge(r.wasEdited ? t('reply.edited') : t('reply.unedited'), r.wasEdited ? 'warn' : 'ok')],
+    meta: [author && `${t('reply.by', { user: author })} · `, fmtWhen(r.sentAt)],
+    // An edited proposal is a fact, not a problem.
+    badges: [Badge(r.wasEdited ? t('reply.edited') : t('reply.unedited'), 'neutral')],
+    facts,
   },
-    Block(Text({ muted: true, small: true }, r.cc.length ? t('reply.metaCc', recipients) : t('reply.meta', recipients), author && ` · ${t('reply.by', { user: author })}`)),
-    r.changeReason && Block(Text({ small: true }, tRich('reply.changeReason', { reason: r.changeReason }, { strong: Strong }))),
     draft && Block(Notice('info', t('reply.draftNotice'))),
     Message(r.finalHtml ? RichText(r.finalHtml) : Prose(r.finalText || t('reply.textErased'))),
   );
 }
+
+/** A passage in square brackets: what a prompt leaves for the user to complete. */
+const TO_COMPLETE = /\[[^[\]\n]{2,80}\]/;
 
 /**
  * The reply area. The user writes whatever they want in the one editor — a full reply, a few
  * notes, instructions — then, if they wish, asks the AI to check typos, improve the style, or
  * write the reply with one of the organisation's prompts.
  */
-function composer(email: EmailDetail, prompts: Prompt[], box: Box): Child {
-  /** The last thing the AI proposed, to tell whether the user changed it since. */
-  let proposal: { id: number; action: Draft['action']; text: string } | null = null;
+function composer(email: EmailDetail, prompts: Prompt[], done: (message: string) => void): HTMLElement {
+  /** The last thing the AI proposed, to tell whether the user changed it since, and how to say it. */
+  let proposal: { id: number; action: Draft['action']; text: string; said: string } | null = null;
   /** What the editor held before the AI last replaced it, for the user to get it back. */
   let before: string | null = null;
+  /** Whether the note above the text already says that the proposal was edited. */
+  let notedEdited: boolean | null = null;
   const suggested = email.suggestedPromptId;
   const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
 
   const editor = RichEditor({
     placeholder: t('composer.placeholder'),
+    highlight: TO_COMPLETE,
     labels: {
       bold: t('editor.bold'),
       italic: t('editor.italic'),
@@ -357,101 +417,107 @@ function composer(email: EmailDetail, prompts: Prompt[], box: Box): Child {
       clear: t('editor.clear'),
     },
   });
-  const promptSelect = Select(prompts.map((p) => ({
-    value: p.id,
-    label: p.id === suggested ? t('composer.suggested', { name: p.name }) : p.name,
-    selected: p.id === (email.draft?.promptId ?? suggested),
-  })), { 'aria-label': t('composer.prompt') });
-  const to = Input({ value: email.recipients.to.join(', ') });
-  const cc = Input();
-  const replyAll = Checkbox({ onchange: () => (cc.value = replyAll.checked ? email.recipientsAll.cc.join(', ') : '') });
-  const info = Small('');
+  const pick = prompts.length
+    ? PromptPick({
+      label: t('composer.applyPrompt'),
+      selectLabel: t('composer.prompt'),
+      title: t('composer.applyPromptTitle'),
+      options: prompts.map((p) => ({ value: p.id, label: p.name, selected: p.id === (email.draft?.promptId ?? suggested) })),
+      suggested: suggested ? { value: suggested, label: t('composer.suggestedTag') } : undefined,
+    })
+    : null;
+  const removeLabel = (address: string): string => t('composer.removeRecipient', { address });
+  const to = RecipientField({ label: t('composer.to'), values: email.recipients.to, removeLabel });
+  const cc = RecipientField({ label: t('composer.cc'), removeLabel });
+  const replyAll = Checkbox({ onchange: () => cc.setValues(replyAll.checked ? email.recipientsAll.cc : []) });
   const reason = Input({ placeholder: t('composer.reasonPlaceholder') });
-  const reasonField = Field(t('composer.reason'), reason, { hint: t('composer.reasonHint') });
+  const reasonField = ReasonField(t('composer.reason'), reason, t('composer.reasonHint'));
+  let caution = Caution('');
+  caution.hidden = true;
 
-  // Only a proposal made with a prompt can teach that prompt something.
-  const syncReason = () => (reasonField.hidden = proposal?.action !== 'prompt' || norm(editor.getText()) === norm(proposal.text));
-  editor.onChange(syncReason);
-
-  const undo = Button(t('composer.undo'), { variant: 'link', onClick: () => {
+  const undo = Button(t('composer.undo'), { variant: 'ghost', size: 'small', icon: 'undo', onClick: () => {
     if (before === null) return;
     editor.setHtml(before);
     before = null;
     proposal = null;
-    info.textContent = '';
-    undo.hidden = true;
-    syncReason();
+    sync();
   } });
-  undo.hidden = true;
+
+  /** Brings what surrounds the text in line with it: the AI's note, the "why", what is left to complete. */
+  function sync(): void {
+    const edited = proposal !== null && norm(editor.getText()) !== norm(proposal.text);
+    // Only a proposal made with a prompt can teach that prompt something.
+    reasonField.hidden = proposal?.action !== 'prompt' || !edited;
+    if (!proposal) {
+      editor.setProposal(null);
+      notedEdited = null;
+    } else if (notedEdited !== edited) {
+      notedEdited = edited;
+      editor.setProposal(AiNote([proposal.said, edited && ` ${t('composer.editedByYou')}`], before !== null && undo), !edited);
+    }
+    const open = editor.countHighlights();
+    const next = Caution(open ? t('composer.toComplete', { count: open }) : '');
+    next.hidden = !open;
+    caution.replaceWith(next);
+    caution = next;
+  }
+  editor.onChange(sync);
 
   /** Shows a proposal in the editor and remembers it. */
   const show = (draft: Draft, replaced: string | null): void => {
     before = replaced;
     editor.setHtml(draft.html);
-    proposal = { id: draft.id, action: draft.action, text: editor.getText() };
     const by = draft.provider ? t('composer.generatedVia', { model: draft.model, provider: draft.provider }) : t('composer.generatedBy', { model: draft.model });
-    const done = { typos: t('composer.done.typos'), style: t('composer.done.style'), prompt: t('composer.done.prompt') }[draft.action];
-    info.textContent = `${done} ${by}`;
-    undo.hidden = replaced === null;
-    syncReason();
+    const what = { typos: t('composer.done.typos'), style: t('composer.done.style'), prompt: t('composer.done.prompt') }[draft.action];
+    proposal = { id: draft.id, action: draft.action, text: editor.getText(), said: `${what} ${by}` };
+    notedEdited = null;
+    sync();
   };
-  if (email.draft) show(email.draft, null);
-  else syncReason();
 
   const assist = (action: Draft['action']) => async (): Promise<void> => {
     const html = editor.getHtml();
-    show(await api<Draft>('POST', `/emails/${email.id}/assist`, { action, html, promptId: action === 'prompt' ? Number(promptSelect.value) : undefined }), html);
+    show(await api<Draft>('POST', `/emails/${email.id}/assist`, { action, html, promptId: action === 'prompt' ? Number(pick?.select.value) : undefined }), html);
   };
-  const typos = ActionButton(t('composer.typos'), t('composer.working'), assist('typos'), { title: t('composer.typosTitle') });
-  const style = ActionButton(t('composer.style'), t('composer.working'), assist('style'), { title: t('composer.styleTitle') });
-  const apply = ActionButton(t('composer.applyPrompt'), t('composer.working'), assist('prompt'), { title: t('composer.applyPromptTitle') });
+  const typos = ActionButton(t('composer.typos'), t('composer.working'), assist('typos'), { size: 'small', icon: 'spell-check', title: t('composer.typosTitle') });
+  const style = ActionButton(t('composer.style'), t('composer.working'), assist('style'), { size: 'small', icon: 'pen-line', title: t('composer.styleTitle') });
+  pick?.button.addEventListener('click', busy(pick.button, t('composer.working'), assist('prompt')));
 
   const payload = () => ({
     draftId: proposal?.id,
     html: editor.getHtml(),
-    to: splitAddresses(to.value),
-    cc: splitAddresses(cc.value),
+    to: to.getValues(),
+    cc: cc.getValues(),
     changeReason: reasonField.hidden ? '' : reason.value,
   });
-  const done = (message: string): void => {
-    toast(message);
-    location.hash = `#/${box.path}`;
-  };
   const send = ActionButton(t('composer.send'), t('composer.sending'), async () => {
     const reply = payload();
-    if (!(await confirmAction(t('composer.confirmSend', { account: email.account, recipients: reply.to.join(', ') }), t('composer.send'), false))) return;
+    const facts: [string, Child][] = [[t('reply.from'), email.account], [t('composer.to'), reply.to.join(', ')]];
+    if (reply.cc.length) facts.push([t('composer.cc'), reply.cc.join(', ')]);
+    // The last thing seen before an email leaves: who it goes to, in the interface's own dialog.
+    const confirmed = await confirmDialog({ title: t('composer.confirmSendTitle'), text: [Facts(facts), Text({ muted: true, small: true }, t('composer.confirmSendText'))], confirmLabel: t('composer.send'), cancelLabel: t('common.cancel') });
+    if (!confirmed) return;
     await api('POST', `/emails/${email.id}/send`, reply);
     done(t('composer.sent'));
-  }, { variant: 'primary' });
+  }, { variant: 'primary', icon: 'send' });
   const saveDraft = ActionButton(t('composer.saveDraft'), t('composer.savingDraft'), async () => {
     await api('POST', `/emails/${email.id}/save-draft`, payload());
     done(t('composer.draftSaved', { account: email.account }));
   }, { title: t('composer.saveDraftTitle') });
 
-  const setStatus = (status: string, message: string) => async (): Promise<void> => {
-    await api('POST', `/emails/${email.id}/status`, { status });
-    done(message);
-  };
-  const triageActions = ['needs_reply', 'pending'].includes(email.status)
-    ? [ActionButton(t('composer.noReplyNeeded'), '…', setStatus('no_reply', t('composer.markedNoReply'))), ActionButton(t('composer.ignore'), '…', setStatus('ignored', t('composer.ignored')))]
-    : ActionButton(t('composer.restore'), '…', setStatus('needs_reply', t('composer.restored')));
-
-  return Card({ title: t('composer.title') },
-    !me().hasKey && Block(Notice('warn', tRich('composer.noKey', {}, { link: (label) => Link(label, '#/settings') }))),
-    FormRow(Field(t('composer.to'), to), Field(t('composer.cc'), cc)),
-    email.recipientsAll.cc.length > 0 && CheckField(t('composer.replyAll'), replyAll),
-    Block(editor.element),
-    CardSection(t('composer.help'),
-      Block(Text({ muted: true, small: true }, t('composer.helpText'))),
-      Block(Actions(typos, style)),
-      prompts.length
-        ? FormRow(Field(null, promptSelect), Field(null, apply, { size: 'fit' }))
-        : Notice('warn', isAdmin() ? tRich('composer.noPromptAdmin', {}, { link: (label) => Link(label, '#/prompts') }) : t('composer.noPrompt')),
-      Block(Text({ small: true }, info, ' ', undo)),
+  const dock = ReplyDock({
+    label: t('composer.title'),
+    notice: !me().hasKey && Notice('warn', tRich('composer.noKey', {}, { link: (label) => Link(label, '#/settings') })),
+    recipients: [to.element, cc.element, email.recipientsAll.cc.length > 0 && CheckField(t('composer.replyAll'), replyAll)],
+    write: [editor.element, reasonField],
+    help: AiHelp({ label: t('composer.help'), note: t('composer.helpNote') },
+      typos, style,
+      pick ? pick.element : Notice('warn', isAdmin() ? tRich('composer.noPromptAdmin', {}, { link: (label) => Link(label, '#/prompts') }) : t('composer.noPrompt')),
     ),
-    reasonField,
-    Actions(send, saveDraft, Spacer(), triageActions),
-  );
+    actions: [send, saveDraft, caution],
+  });
+  if (email.draft) show(email.draft, null);
+  else sync();
+  return dock;
 }
 
 // ---- prompts (administrators) -----------------------------------------------------------

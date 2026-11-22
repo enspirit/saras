@@ -12,7 +12,6 @@
     "user": "Utilisateur"
   },
   "nav": {
-    "emails": "Emails",
     "configuration": "Configuration",
     "accounts": "Comptes mail",
     "settings": "Réglages",
@@ -23,7 +22,7 @@
       "text": "IA sans conservation de données (ZDR) : imposé à chaque requête",
       "title": "Chaque appel à l’IA impose zdr=true et data_collection=deny chez OpenRouter."
     },
-    "member": "{email} · {organization}"
+    "more": "Plus"
   },
   "box": {
     "todo": {
@@ -68,15 +67,16 @@
     "refreshTitle": "Relever toutes les boîtes",
     "fetched": "{count, plural, =0 {Aucun nouvel email.} one {# email relevé.} other {# emails relevés.}}",
     "accountError": "{account} : {error}",
-    "back": "← Retour",
+    "back": "Retour à la liste",
     "select": "Sélectionnez un email.",
     "noSubject": "(sans objet)",
     "untriaged": "Non trié",
     "priority": "Prioritaire",
-    "draft": "Brouillon"
+    "draft": "Brouillon",
+    "fetchedAt": "Relevé {time}",
+    "count": "{count, plural, one {# email} other {# emails}}"
   },
   "reading": {
-    "from": "De <strong>{sender}</strong> · {date}",
     "to": "À {to}",
     "toCc": "À {to} · Cc {cc}",
     "triage": {
@@ -86,36 +86,32 @@
       "unknown": "Tri"
     },
     "pendingTriage": "Pas encore trié : il le sera à la prochaine relève.",
-    "erased": "Contenu effacé (durée de conservation dépassée).",
-    "attachments": "{count, plural, one {Pièce jointe} other {Pièces jointes}} : {names}"
+    "erased": "Contenu effacé (durée de conservation dépassée)."
   },
   "reply": {
     "sentTitle": "Réponse envoyée",
     "draftTitle": "Brouillon déposé dans votre boîte",
     "edited": "Proposition modifiée",
     "unedited": "Proposition gardée telle quelle",
-    "meta": "{date} · À {to}",
-    "metaCc": "{date} · À {to} · Cc {cc}",
-    "changeReason": "<strong>Raison de la modification :</strong> {reason}",
     "draftNotice": "Ce message n’est pas parti : il attend dans le dossier Brouillons de votre messagerie, où vous pouvez le compléter et l’envoyer.",
     "textErased": "(texte effacé)",
-    "by": "par {user}"
+    "by": "par {user}",
+    "why": "Raison de la modification",
+    "from": "De"
   },
   "composer": {
     "title": "Votre réponse",
     "prompt": "Prompt de réponse",
-    "suggested": "{name} (suggéré par l’IA)",
     "generatedBy": "Par {model}.",
     "generatedVia": "Par {model} via {provider}.",
     "to": "À",
     "cc": "Cc",
     "replyAll": "Répondre à tous",
-    "reason": "Pourquoi cette modification ? (optionnel)",
+    "reason": "Vous avez modifié la proposition. Pourquoi ?",
     "reasonPlaceholder": "Ex. : trop formel, je tutoie ce client",
-    "reasonHint": "Sera pris en compte dans vos prochaines propositions faites avec ce prompt.",
+    "reasonHint": "Facultatif. Vos prochaines propositions avec ce prompt en tiendront compte ; les administrateurs peuvent le lire pour améliorer le prompt.",
     "send": "Envoyer",
     "sending": "Envoi…",
-    "confirmSend": "Envoyer cette réponse depuis {account} à {recipients} ?",
     "sent": "Réponse envoyée.",
     "saveDraft": "Enregistrer en brouillon",
     "savingDraft": "Enregistrement…",
@@ -132,12 +128,11 @@
     "noPrompt": "Aucun prompt disponible : demandez à un administrateur d’en créer.",
     "placeholder": "Écrivez votre réponse, ou simplement quelques notes sur ce qu’il faut dire.",
     "help": "Aide de l’IA",
-    "helpText": "Facultatif. Elle part de ce que vous avez écrit ci-dessus et le remplace par sa proposition, que vous pouvez modifier ou annuler.",
-    "typos": "Corriger les fautes uniquement",
+    "typos": "Corriger les fautes",
     "typosTitle": "Corrige l’orthographe et la grammaire, sans rien changer d’autre. L’email reçu n’est pas transmis à l’IA.",
     "style": "Améliorer le style",
     "styleTitle": "Reformule pour la clarté et le ton, en gardant le sens. L’email reçu n’est pas transmis à l’IA.",
-    "applyPrompt": "Appliquer ce prompt",
+    "applyPrompt": "Rédiger avec",
     "applyPromptTitle": "Rédige la réponse à partir de l’email reçu et de ce que vous avez écrit, à la manière décrite par ce prompt.",
     "working": "En cours…",
     "undo": "Remettre mon texte",
@@ -145,7 +140,17 @@
       "typos": "Fautes corrigées.",
       "style": "Style amélioré.",
       "prompt": "Réponse rédigée avec le prompt."
-    }
+    },
+    "suggestedTag": "Suggéré",
+    "removeRecipient": "Retirer {address}",
+    "confirmSendTitle": "Envoyer cette réponse ?",
+    "confirmSendText": "Elle part immédiatement de votre boîte et ne peut pas être reprise.",
+    "helpNote": "La correction et le style ne travaillent que sur votre texte : l’email reçu n’est pas envoyé à l’IA.",
+    "editedByYou": "Puis modifié par vous.",
+    "toComplete": "{count, plural, one {# passage entre crochets reste à compléter.} other {# passages entre crochets restent à compléter.}}",
+    "closedNone": "Aucune réponse n’est attendue : la zone de réponse reste fermée tant que vous ne la demandez pas.",
+    "closedIgnored": "Cet email est ignoré : la zone de réponse reste fermée tant que vous ne la demandez pas.",
+    "replyAnyway": "Répondre quand même"
   },
   "prompts": {
     "title": "Prompts",
@@ -337,8 +342,6 @@
     "organisms": "4. Organismes",
     "readingHeader": "En-tête de lecture",
     "mailbox": "Boîte : liste et volet de lecture",
-    "readingPane": "Volet de lecture",
-    "readingPaneText": "Le contenu de l’email ouvert et la réponse.",
     "authPanel": "Panneau de connexion",
     "authFoot": "Pied du panneau.",
     "shellNote": "Le cadre de l’application (navigation latérale) est l’organisme AppShell : il se voit dans l’application elle-même.",

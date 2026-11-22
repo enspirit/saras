@@ -2,8 +2,8 @@
  * MOLECULES — styled by design/molecules.css. A few atoms assembled for one job.
  */
 import Squire from '../vendor/squire.mjs';
-import { Button, Checkbox, Chip, Heading, Icon, Input } from './atoms.ts';
-import type { IconName } from './atoms.ts';
+import { Badge, Button, Checkbox, Chip, Heading, Icon, Input } from './atoms.ts';
+import type { IconName, SelectOption } from './atoms.ts';
 import { cx, h } from './dom.ts';
 import type { Attrs, Child } from './dom.ts';
 import { sanitizeToFragment } from './sanitize.ts';
@@ -210,19 +210,83 @@ export interface EmailListEntry {
   date: string;
   subject: string;
   snippet: string;
-  badges?: Child[];
+  /** Badges shown next to the sender: what to do first. */
+  tags?: Child[];
+  /** Short name of the shared mailbox it arrived in, with its full address as a tooltip. */
+  shared?: { label: string; title: string };
   current?: boolean;
   onClick?: () => void;
 }
 
-export function EmailListItem({ from, date, subject, snippet, badges = [], current, onClick }: EmailListEntry): HTMLButtonElement {
+export function EmailListItem({ from, date, subject, snippet, tags = [], shared, current, onClick }: EmailListEntry): HTMLButtonElement {
   return h('button', { class: 'email-item', type: 'button', 'aria-current': current ? 'true' : null, onclick: onClick },
-    h('div', { class: 'email-item__top' }, h('span', { class: 'email-item__from' }, from), h('span', { class: 'email-item__date' }, date)),
-    h('div', { class: 'email-item__subject' }, subject),
-    h('div', { class: 'email-item__snippet' }, snippet),
-    h('div', { class: 'email-item__badges' }, badges),
+    h('span', { class: 'email-item__top' }, h('span', { class: 'email-item__from' }, from), h('span', { class: 'email-item__tags' }, tags), h('span', { class: 'email-item__date' }, date)),
+    h('span', { class: 'email-item__line' },
+      h('span', { class: 'email-item__subject' }, subject),
+      shared && h('span', { class: 'email-item__shared', title: shared.title }, Icon('users', { size: 'small' }), shared.label),
+    ),
+    h('span', { class: 'email-item__snippet' }, snippet),
   );
 }
+
+export interface PanelOptions {
+  icon?: IconName;
+  title: string;
+  /** Who and when, next to the title. */
+  meta?: Child;
+  badges?: Child[];
+  /** Label and value pairs shown under the head. */
+  facts?: [string, Child][];
+}
+
+/** Label and value, line by line. */
+export const Facts = (rows: [string, Child][]): HTMLElement => h('dl', { class: 'facts' }, rows.map(([label, value]) => [h('dt', {}, label), h('dd', {}, value)]));
+
+/** A record with its facts, e.g. a reply that was sent. */
+export function Panel({ icon, title, meta, badges = [], facts }: PanelOptions, ...children: Child[]): HTMLElement {
+  return h('section', { class: 'panel' },
+    h('div', { class: 'panel__head' }, icon && Icon(icon, { size: 'large' }), Heading(3, title), meta && h('span', { class: 'panel__meta' }, meta), h('span', { class: 'panel__badges' }, badges)),
+    facts && facts.length > 0 && Facts(facts),
+    h('div', { class: 'panel__body' }, children),
+  );
+}
+
+/** The optional kinds of AI help, as equals, with a note on what they send. */
+export function AiHelp({ label, note }: { label: string; note?: Child }, ...actions: Child[]): HTMLDivElement {
+  return h('div', { class: 'ai-help' },
+    h('div', { class: 'ai-help__row' }, h('span', { class: 'ai-help__label' }, label), actions),
+    note && h('div', { class: 'ai-help__note' }, Icon('lock', { size: 'small' }), h('span', {}, note)),
+  );
+}
+
+export interface PromptPickOptions {
+  /** 'Write with'. */
+  label: string;
+  /** Accessible name of the list of prompts. */
+  selectLabel: string;
+  options: SelectOption[];
+  /** The prompt the AI suggested for this email, and the word saying so. */
+  suggested?: { value: string | number; label: string };
+  title?: string;
+}
+
+/** Write with a prompt: the action and the choice of the prompt, as one control. */
+export function PromptPick({ label, selectLabel, options, suggested, title }: PromptPickOptions): { element: HTMLSpanElement; button: HTMLButtonElement; select: HTMLSelectElement } {
+  const button = Button(label, { variant: 'ghost', size: 'small', icon: 'file-text', flush: true, title });
+  const select = h('select', { class: 'prompt-pick__select', 'aria-label': selectLabel }, options.map((o) => h('option', { value: o.value, selected: o.selected }, o.label)));
+  const badge = h('span', { class: 'prompt-pick__badge' }, suggested && Badge(suggested.label));
+  const sync = (): void => void (badge.hidden = !suggested || select.value !== String(suggested.value));
+  select.addEventListener('change', sync);
+  sync();
+  return { element: h('span', { class: 'prompt-pick' }, button, select, badge), button, select };
+}
+
+/** Asked where a proposal was edited: why, with a hint on what the answer is for and who reads it. */
+export const ReasonField = (label: string, input: HTMLInputElement, hint: string): HTMLDivElement =>
+  h('div', { class: 'reason' }, h('label', { class: 'reason__row' }, label, input), h('span', { class: 'reason__hint' }, hint));
+
+/** Something to settle before going on, shown next to the action it concerns. */
+export const Caution = (text: string): HTMLSpanElement => h('span', { class: 'caution', role: 'status' }, Icon('triangle-alert'), text);
 
 /** The body of an email, scrollable when long. */
 export const Message = (prose: Child): HTMLDivElement => h('div', { class: 'message' }, prose);
@@ -252,8 +316,10 @@ export interface RichEditorHandle {
   isEmpty(): boolean;
   onChange(listener: () => void): void;
   focus(): void;
-  /** Shows the content as a proposal of the AI, under `note` (an AiNote); null takes that away. */
-  setProposal(note: Element | null): void;
+  /** Shows the content under `note` (an AiNote), tinted as a proposal of the AI unless `tinted` is false; null takes it away. */
+  setProposal(note: Element | null, tinted?: boolean): void;
+  /** How many passages match `highlight` at the moment. */
+  countHighlights(): number;
 }
 
 /**
@@ -261,7 +327,27 @@ export interface RichEditorHandle {
  * toolbar. Built on Squire, an editor made for email; whatever is pasted or set goes through
  * the sanitiser first.
  */
-export function RichEditor({ labels, placeholder = '' }: { labels: EditorLabels; placeholder?: string }): RichEditorHandle {
+export function RichEditor({ labels, placeholder = '', highlight }: { labels: EditorLabels; placeholder?: string; highlight?: RegExp }): RichEditorHandle {
+  /** Ranges of the passages matching `highlight`, found in the text as it stands. */
+  const matches = (): Range[] => {
+    if (!highlight) return [];
+    const ranges: Range[] = [];
+    const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      for (const match of (node.textContent ?? '').matchAll(new RegExp(highlight.source, 'g'))) {
+        const range = document.createRange();
+        range.setStart(node, match.index);
+        range.setEnd(node, match.index + match[0].length);
+        ranges.push(range);
+      }
+    }
+    return ranges;
+  };
+  /** Marks them through the browser's highlight registry, so the text itself is never changed. */
+  const mark = (): void => {
+    if (!highlight || !('highlights' in CSS)) return;
+    CSS.highlights.set('todo-mark', new Highlight(...matches()));
+  };
   const surface = h('div', { class: 'editor__surface rich', 'data-placeholder': placeholder });
   const squire = new Squire(surface, { blockTag: 'P', sanitizeToDOMFragment: (html: string) => sanitizeToFragment(html) });
   const listeners: (() => void)[] = [];
@@ -301,6 +387,7 @@ export function RichEditor({ labels, placeholder = '' }: { labels: EditorLabels;
   const element = h('div', { class: 'editor' }, toolbar, surface);
   let note: Element | null = null;
   const refresh = (): void => {
+    mark();
     element.classList.toggle('editor--empty', isEmpty());
     for (const button of tools) button.setAttribute('aria-pressed', String(squire.hasFormat(button.dataset.format ?? '')));
   };
@@ -322,12 +409,13 @@ export function RichEditor({ labels, placeholder = '' }: { labels: EditorLabels;
     isEmpty,
     onChange: (listener) => void listeners.push(listener),
     focus: () => void squire.focus(),
-    setProposal(next) {
-      note?.remove();
+    setProposal(next, tinted = true) {
+      if (note !== next) note?.remove();
       note = next;
-      if (note) toolbar.after(note);
-      element.classList.toggle('editor--proposed', Boolean(note));
+      if (note && !note.isConnected) toolbar.after(note);
+      element.classList.toggle('editor--proposed', Boolean(note) && tinted);
     },
+    countHighlights: () => matches().length,
   };
 }
 

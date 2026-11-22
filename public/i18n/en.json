@@ -12,7 +12,6 @@
     "user": "User"
   },
   "nav": {
-    "emails": "Emails",
     "configuration": "Configuration",
     "accounts": "Mailboxes",
     "settings": "Settings",
@@ -23,7 +22,7 @@
       "text": "AI with zero data retention (ZDR): enforced on every request",
       "title": "Every AI call enforces zdr=true and data_collection=deny at OpenRouter."
     },
-    "member": "{email} · {organization}"
+    "more": "More"
   },
   "box": {
     "todo": {
@@ -68,15 +67,16 @@
     "refreshTitle": "Fetch all mailboxes",
     "fetched": "{count, plural, =0 {No new email.} one {# email fetched.} other {# emails fetched.}}",
     "accountError": "{account}: {error}",
-    "back": "← Back",
+    "back": "Back to the list",
     "select": "Select an email.",
     "noSubject": "(no subject)",
     "untriaged": "Not triaged",
     "priority": "Priority",
-    "draft": "Draft"
+    "draft": "Draft",
+    "fetchedAt": "Fetched {time}",
+    "count": "{count, plural, one {# email} other {# emails}}"
   },
   "reading": {
-    "from": "From <strong>{sender}</strong> · {date}",
     "to": "To {to}",
     "toCc": "To {to} · Cc {cc}",
     "triage": {
@@ -86,36 +86,32 @@
       "unknown": "Triage"
     },
     "pendingTriage": "Not sorted yet: it will be at the next fetch.",
-    "erased": "Content erased (retention period exceeded).",
-    "attachments": "{count, plural, one {Attachment} other {Attachments}}: {names}"
+    "erased": "Content erased (retention period exceeded)."
   },
   "reply": {
     "sentTitle": "Reply sent",
     "draftTitle": "Draft filed in your mailbox",
     "edited": "Proposal edited",
     "unedited": "Proposal kept as is",
-    "meta": "{date} · To {to}",
-    "metaCc": "{date} · To {to} · Cc {cc}",
-    "changeReason": "<strong>Reason for the change:</strong> {reason}",
     "draftNotice": "This message has not been sent: it is waiting in the Drafts folder of your mailbox, where you can finish and send it.",
     "textErased": "(text erased)",
-    "by": "by {user}"
+    "by": "by {user}",
+    "why": "Why edited",
+    "from": "From"
   },
   "composer": {
     "title": "Your reply",
     "prompt": "Response prompt",
-    "suggested": "{name} (suggested by the AI)",
     "generatedBy": "By {model}.",
     "generatedVia": "By {model} via {provider}.",
     "to": "To",
     "cc": "Cc",
     "replyAll": "Reply to all",
-    "reason": "Why this change? (optional)",
+    "reason": "You changed the proposal. Why?",
     "reasonPlaceholder": "E.g. too formal, I am on first-name terms with this client",
-    "reasonHint": "Will be taken into account in your next proposals made with this prompt.",
+    "reasonHint": "Optional. Your next proposals with this prompt take it into account; the administrators can read it to improve the prompt.",
     "send": "Send",
     "sending": "Sending…",
-    "confirmSend": "Send this reply from {account} to {recipients}?",
     "sent": "Reply sent.",
     "saveDraft": "Save as draft",
     "savingDraft": "Saving…",
@@ -132,12 +128,11 @@
     "noPrompt": "No prompt available: ask an administrator to create one.",
     "placeholder": "Write your reply, or just a few notes on what to say.",
     "help": "Help from the AI",
-    "helpText": "Optional. It works on what you wrote above and replaces it with its proposal, which you can edit or undo.",
-    "typos": "Just check typos",
+    "typos": "Check typos",
     "typosTitle": "Corrects spelling and grammar, and changes nothing else. The email received is not sent to the AI.",
     "style": "Improve style",
     "styleTitle": "Rewrites for clarity and tone, keeping the meaning. The email received is not sent to the AI.",
-    "applyPrompt": "Apply this prompt",
+    "applyPrompt": "Write with",
     "applyPromptTitle": "Writes the reply from the email received and from what you wrote, in the way this prompt describes.",
     "working": "Working…",
     "undo": "Put my text back",
@@ -145,7 +140,17 @@
       "typos": "Typos checked.",
       "style": "Style improved.",
       "prompt": "Reply written with the prompt."
-    }
+    },
+    "suggestedTag": "Suggested",
+    "removeRecipient": "Remove {address}",
+    "confirmSendTitle": "Send this reply?",
+    "confirmSendText": "It leaves from your mailbox right away and cannot be taken back.",
+    "helpNote": "Typos and style work on your text only: the email received is not sent to the AI.",
+    "editedByYou": "Then edited by you.",
+    "toComplete": "{count, plural, one {# passage in square brackets is still to complete.} other {# passages in square brackets are still to complete.}}",
+    "closedNone": "No reply is expected: the reply area stays closed until you ask for it.",
+    "closedIgnored": "This email is ignored: the reply area stays closed until you ask for it.",
+    "replyAnyway": "Reply anyway"
   },
   "prompts": {
     "title": "Prompts",
@@ -337,8 +342,6 @@
     "organisms": "4. Organisms",
     "readingHeader": "Reading header",
     "mailbox": "Mailbox: list and reading pane",
-    "readingPane": "Reading pane",
-    "readingPaneText": "The content of the open email, and the reply.",
     "authPanel": "Sign-in panel",
     "authFoot": "Foot of the panel.",
     "shellNote": "The frame of the application (side navigation) is the AppShell organism: it is seen in the application itself.",

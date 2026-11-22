@@ -15,24 +15,34 @@
 .auth__tagline { margin: var(--space-1) 0 var(--space-5); color: var(--color-text-muted); }
 .auth__foot { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-text-muted); }
 
-/* ---- Application shell ---- */
-.shell { display: grid; grid-template-columns: var(--nav-width) 1fr; height: 100vh; }
+/* ---- Application shell: the boxes first, configuration quieter, who is signed in last ---- */
+.shell { display: grid; grid-template-columns: var(--nav-width) 1fr; height: 100vh; height: 100dvh; }
 .shell__nav {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: var(--space-4) var(--space-3);
+  display: flex; flex-direction: column; gap: var(--space-5);
+  padding: var(--space-5) var(--space-3) var(--space-3);
+  background: var(--color-surface-sunken);
   border-right: var(--border-width) solid var(--color-border);
   overflow-y: auto;
 }
-.shell__brand { padding: 0 var(--space-3) var(--space-3); }
+.shell__brand { padding: 0 var(--space-3); }
+.shell__group { display: grid; gap: 2px; }
+.shell__group--minor { padding-top: var(--space-3); border-top: var(--border-width) solid var(--color-border); }
+.shell__group--minor .nav-item { min-height: var(--control-sm); padding-block: var(--space-1); font-size: var(--text-sm); }
 .shell__section {
-  padding: var(--space-4) var(--space-3) var(--space-1);
-  font-size: 11px; font-weight: var(--weight-heading);
-  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0 var(--space-3) var(--space-1);
+  font-size: var(--text-xs); font-weight: var(--weight-strong);
+  text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--color-text-muted);
 }
-.shell__foot { display: grid; gap: var(--space-2); margin-top: auto; padding: var(--space-3) var(--space-3) 0; }
-.shell__user { font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
-.shell__main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.shell__nav .nav-item[aria-current="page"] { background: var(--color-surface); box-shadow: var(--shadow-1); }
+.shell__more { display: none; }
+.shell__foot { display: grid; gap: var(--space-3); margin-top: auto; }
+.shell__user { display: flex; align-items: center; gap: var(--space-2); padding-left: var(--space-2); }
+.shell__who { flex: 1; min-width: 0; display: grid; }
+.shell__name, .shell__org { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell__name { font-size: var(--text-sm); font-weight: var(--weight-strong); }
+.shell__org { font-size: var(--text-xs); color: var(--color-text-muted); }
+.shell__main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 
 /* ---- Page: a scrolling column of cards ---- */
 .page { width: 100%; max-width: var(--content-width); padding: var(--space-6); overflow-y: auto; }
@@ -41,40 +51,98 @@
 
 /* ---- Mailbox: list and reading pane ---- */
 .mailbox { display: grid; grid-template-columns: minmax(280px, var(--list-width)) 1fr; flex: 1; min-height: 0; }
-.mailbox__list { overflow-y: auto; background: var(--color-surface); border-right: var(--border-width) solid var(--color-border); }
+.mailbox__list { overflow-y: auto; background: var(--color-surface); border-right: var(--border-width) solid var(--color-line); }
 .mailbox__list-head {
   position: sticky; top: 0; z-index: var(--z-sticky);
   display: flex; align-items: center; gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  min-height: calc(var(--control-lg) + var(--space-4));
+  padding: 0 var(--space-3) 0 var(--space-4);
   background: var(--color-surface);
-  border-bottom: var(--border-width) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-line);
 }
-.mailbox__list-head h2 { flex: 1; }
-.mailbox__detail { min-width: 0; overflow-y: auto; padding: var(--space-5) var(--space-6) var(--space-8); }
-.mailbox__back { display: none; margin-bottom: var(--space-3); }
+.mailbox__count { font-size: var(--text-sm); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.mailbox__meta { margin-left: auto; font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+.mailbox__detail { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.mailbox__detail > .empty { flex: 1; }
+.mailbox__back { display: none; padding: var(--space-2) var(--space-3) 0; background: var(--color-surface); }
 
-/* ---- Reading header: subject, who and when, triage verdict ---- */
-.reading-head { margin-bottom: var(--space-4); }
-.reading-head h1 { margin-bottom: var(--space-2); overflow-wrap: anywhere; }
-.reading-head__meta { font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
-.reading-head__triage { margin-top: var(--space-3); font-size: var(--text-sm); }
+/* ---- Reading: the email's header, its text (scrolling), and what is docked under it ---- */
+.reading { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.reading__body { flex: 1 1 0; min-height: 96px; overflow-y: auto; padding: var(--space-5) var(--space-6); }
+.reading__body > * { max-width: 76ch; }
+.reading__body > * + * { margin-top: var(--space-6); }
+.reading .message { max-height: none; overflow: visible; }
 
-/* ---- Small screens: navigation becomes a top bar, list and detail alternate ---- */
+/* ---- Reading header: subject and decisions, who and when, triage verdict ---- */
+.reading-head {
+  flex: none;
+  display: grid; gap: var(--space-2);
+  padding: var(--space-3) var(--space-5) var(--space-3) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-line);
+}
+.reading-head__top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.reading-head__top > h1 { flex: 1 1 240px; font-size: var(--text-lg); overflow-wrap: anywhere; }
+.reading-head__sender { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.reading-head__who { flex: 1 1 200px; min-width: 0; display: grid; }
+.reading-head__name { font-weight: var(--weight-strong); }
+.reading-head__address, .reading-head__to, .reading-head__date { font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.reading-head__files { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.reading-head__date { white-space: nowrap; }
+.reading-head__triage { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-soft); }
+
+/* ---- Dock: the reply area, kept on screen under the email so that Send never needs scrolling ---- */
+.dock {
+  flex: none;
+  display: flex; flex-direction: column;
+  max-height: 72%;
+  margin: 0 var(--space-5) var(--space-5);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+.dock__notice { padding: var(--space-2) var(--space-3) 0; }
+.dock__recipients { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-3); padding-right: var(--space-3); border-bottom: var(--border-width) solid var(--color-line); }
+.dock__recipients > .recipients { flex: 1 1 220px; }
+.dock__recipients .field { margin: 0; font-size: var(--text-sm); }
+.dock__write { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
+.dock .editor { border: 0; border-radius: 0; }
+.dock .editor:focus-within { outline: none; }
+.dock .editor__surface { min-height: 132px; max-height: none; }
+.dock__help { padding: var(--space-2) var(--space-3); background: var(--color-bg); border-top: var(--border-width) solid var(--color-line); }
+.dock__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3); border-top: var(--border-width) solid var(--color-line); }
+/* Closed: no reply is expected, one line says so and offers to open the reply area. */
+.dock--closed { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); box-shadow: var(--shadow-1); }
+.dock--closed > .icon { color: var(--color-text-muted); }
+.dock__text { flex: 1 1 240px; font-size: var(--text-sm); color: var(--color-text-soft); }
+
+/* ---- Small screens: the boxes become a bar at the bottom, list and detail alternate ---- */
 @media (max-width: 860px) {
-  .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .shell { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .shell__main { order: 1; }
   .shell__nav {
-    flex-direction: row; align-items: center;
-    padding: var(--space-2);
-    border-right: 0; border-bottom: var(--border-width) solid var(--color-border);
-    overflow-x: auto;
+    order: 2;
+    flex-direction: row; gap: 0;
+    padding: var(--space-1);
+    border-right: 0; border-top: var(--border-width) solid var(--color-border);
+    background: var(--color-surface);
+    overflow: visible;
   }
-  .shell__brand { padding: 0 var(--space-2); }
-  .shell__section, .shell__foot .assurance, .shell__user { display: none; }
-  .shell__nav .nav-item { white-space: nowrap; }
-  .shell__foot { margin: 0 0 0 auto; padding: 0; }
+  .shell__brand, .shell__group--minor, .shell__foot { display: none; }
+  .shell__group { flex: 1; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; }
+  .shell__more { display: contents; }
+  .shell__nav .nav-item { flex-direction: column; justify-content: center; gap: 2px; min-height: var(--control-lg); padding: var(--space-1); font-size: var(--text-xs); text-align: center; }
+  .shell__nav .nav-item[aria-current="page"] { background: var(--color-accent-soft); box-shadow: none; }
+  .shell__nav .nav-item__label { flex: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .shell__nav .nav-item__count { display: none; }
   .mailbox { grid-template-columns: 1fr; }
   .mailbox--reading .mailbox__list { display: none; }
   .mailbox:not(.mailbox--reading) .mailbox__detail { display: none; }
-  .mailbox__back { display: inline-flex; }
-  .page, .mailbox__detail { padding: var(--space-4); }
+  .mailbox__back { display: block; }
+  .page { padding: var(--space-4); }
+  .reading-head { padding: var(--space-2) var(--space-4) var(--space-3); }
+  .reading__body { padding: var(--space-4); }
+  .dock { margin: 0; border-width: var(--border-width) 0 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 }

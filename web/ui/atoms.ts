@@ -50,12 +50,14 @@ export interface ButtonOptions {
   type?: 'button' | 'submit';
   /** Takes the full width of its container. */
   block?: boolean;
+  /** Without frame nor rounding: for a button that is one part of a joined control. */
+  flush?: boolean;
   title?: string;
   onClick?: (event: MouseEvent) => void;
 }
 
-export function Button(label: string, { variant = 'default', size = 'medium', icon, iconOnly = false, type = 'button', block = false, title, onClick }: ButtonOptions = {}): HTMLButtonElement {
-  const className = cx('btn', variant !== 'default' && `btn--${variant}`, size !== 'medium' && `btn--${size}`, iconOnly && 'btn--icon-only', block && 'btn--block');
+export function Button(label: string, { variant = 'default', size = 'medium', icon, iconOnly = false, type = 'button', block = false, flush = false, title, onClick }: ButtonOptions = {}): HTMLButtonElement {
+  const className = cx('btn', variant !== 'default' && `btn--${variant}`, size !== 'medium' && `btn--${size}`, iconOnly && 'btn--icon-only', block && 'btn--block', flush && 'btn--flush');
   return h('button', { class: className, type, title: title ?? (iconOnly ? label : undefined), 'aria-label': iconOnly ? label : null, onclick: onClick }, icon && Icon(icon), !iconOnly && label);
 }
 
@@ -153,12 +155,14 @@ export interface ChipOptions {
   /** Accessible name of the remove button. */
   removeLabel?: string;
   invalid?: boolean;
+  /** Shown before the label, e.g. a paperclip for a file. */
+  icon?: IconName;
   title?: string;
 }
 
 /** One value among several, e.g. a recipient. */
-export function Chip(label: string, { onRemove, removeLabel, invalid = false, title }: ChipOptions = {}): HTMLSpanElement {
-  return h('span', { class: cx('chip', !onRemove && 'chip--fixed', invalid && 'chip--invalid'), title }, label,
+export function Chip(label: string, { onRemove, removeLabel, invalid = false, icon, title }: ChipOptions = {}): HTMLSpanElement {
+  return h('span', { class: cx('chip', !onRemove && 'chip--fixed', invalid && 'chip--invalid'), title }, icon && Icon(icon, { size: 'small' }), label,
     onRemove && h('button', { class: 'chip__remove', type: 'button', 'aria-label': removeLabel, title: removeLabel, onclick: onRemove }, Icon('x', { size: 'small' })),
   );
 }

@@ -26,7 +26,4 @@
   --brand-font-body: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --brand-font-heading: var(--brand-font-body);
   --brand-radius: 8px;
-
-  /* Poppins runs wide: one step down keeps the density of the default brand. */
-  --text-md: 14px;
 }

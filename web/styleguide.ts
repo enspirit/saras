@@ -3,8 +3,8 @@
 // reads the token list from design/tokens.css itself, so it cannot drift from the real thing.
 import { Avatar, Badge, BrandMark, Button, ButtonLink, Checkbox, Chip, Code, Heading, Icon, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Spinner, Strong, Text, Textarea, TodoMark, setBusy } from './ui/atoms.ts';
 import type { IconName } from './ui/atoms.ts';
-import { Actions, AiNote, Assurance, Block, Card, CardSection, CheckField, EmailListItem, EmptyState, Field, Form, FormRow, Message, NavItem, PageHeader, RecipientField, RichEditor, Swatch, confirmDialog, createToast, promptDialog } from './ui/molecules.ts';
-import { AuthPanel, Mailbox, Page, ReadingHeader } from './ui/organisms.ts';
+import { Actions, AiHelp, AiNote, Assurance, Block, Card, CardSection, Caution, CheckField, EmailListItem, EmptyState, Field, Form, FormRow, Message, NavItem, PageHeader, Panel, PromptPick, ReasonField, RecipientField, RichEditor, Swatch, confirmDialog, createToast, promptDialog } from './ui/molecules.ts';
+import { AuthPanel, ClosedDock, Mailbox, Page, Reading, ReadingHeader, ReplyDock } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
 import { initI18n, language, locale, t, tRich } from './i18n.ts';
 
@@ -41,6 +41,33 @@ const proposedEditor = (): HTMLElement => {
   editor.setHtml(t('styleguide.sample.rich'));
   editor.setProposal(AiNote(t('styleguide.aiNote'), Button(t('styleguide.undo'), { variant: 'ghost', size: 'small', icon: 'undo', onClick: () => editor.setProposal(null) })));
   return editor.element;
+};
+
+/** The head of an open email, with the decisions about it. */
+const sampleHeader = (): HTMLElement => ReadingHeader({
+  subject: t('styleguide.sample.subject'),
+  actions: [Button(t('composer.noReplyNeeded'), { variant: 'ghost', size: 'small', icon: 'mail-check' }), Button(t('composer.ignore'), { variant: 'ghost', size: 'small', icon: 'archive' })],
+  sender: { name: 'Claire Martin', address: 'claire@client.example' },
+  to: t('reading.to', { to: 'alex@brightwater.example' }),
+  attachments: ['requirements.pdf'],
+  date: new Date(2026, 10, 19, 9, 30).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }),
+  triage: [Badge(t('reading.triage.ai'), 'neutral'), t('styleguide.sample.triage')],
+});
+
+/** The reply area with every part showing: recipients, a proposal, the reason, the help, the actions. */
+const sampleDock = (): HTMLElement => {
+  const editor = RichEditor({ labels: editorLabels, placeholder: t('composer.placeholder'), highlight: /\[[^[\]\n]{2,80}\]/ });
+  editor.setHtml(t('styleguide.sample.rich'));
+  editor.setProposal(AiNote([t('composer.done.prompt'), ' ', t('composer.editedByYou')], Button(t('composer.undo'), { variant: 'ghost', size: 'small', icon: 'undo' })), false);
+  const removeLabel = (address: string): string => t('composer.removeRecipient', { address });
+  const pick = PromptPick({ label: t('composer.applyPrompt'), selectLabel: t('composer.prompt'), options: [{ value: 1, label: t('styleguide.firstOption'), selected: true }, { value: 2, label: t('styleguide.secondOption') }], suggested: { value: 1, label: t('composer.suggestedTag') } });
+  return ReplyDock({
+    label: t('composer.title'),
+    recipients: [RecipientField({ label: t('composer.to'), values: ['claire@client.example'], removeLabel }).element, RecipientField({ label: t('composer.cc'), removeLabel }).element, CheckField(t('composer.replyAll'), Checkbox())],
+    write: [editor.element, ReasonField(t('composer.reason'), Input({ placeholder: t('composer.reasonPlaceholder') }), t('composer.reasonHint'))],
+    help: AiHelp({ label: t('composer.help'), note: t('composer.helpNote') }, Button(t('composer.typos'), { size: 'small', icon: 'spell-check' }), Button(t('composer.style'), { size: 'small', icon: 'pen-line' }), pick.element),
+    actions: [Button(t('composer.send'), { variant: 'primary', icon: 'send' }), Button(t('composer.saveDraft')), Caution(t('composer.toComplete', { count: 1 }))],
+  });
 };
 
 const sampleEmail = (over = {}) =>
@@ -134,8 +161,8 @@ const sampleEmail = (over = {}) =>
       Assurance(t('nav.assurance.text')),
     ),
     Card({ title: t('styleguide.emails') },
-      sampleEmail({ badges: [Badge(t('mailbox.priority'), 'danger')] }),
-      sampleEmail({ current: true, from: 'Sophie Leroy', subject: t('styleguide.sample.subject2'), badges: [Badge(t('mailbox.untriaged'), 'warn'), Badge(t('mailbox.draft'), 'neutral')] }),
+      sampleEmail({ tags: [Badge(t('mailbox.priority'), 'warn')], shared: { label: 'contact', title: 'contact@client.example' } }),
+      sampleEmail({ current: true, from: 'Sophie Leroy', subject: t('styleguide.sample.subject2'), tags: [Badge(t('mailbox.untriaged'), 'neutral'), Badge(t('mailbox.draft'), 'neutral')] }),
       Message(Prose(t('styleguide.sample.body'))),
       EmptyState(t('styleguide.empty')),
       EmptyState(t('styleguide.empty'), { icon: 'mail', title: t('styleguide.emptyTitle'), action: Button(t('styleguide.emptyAction'), { icon: 'refresh-cw' }) }),
@@ -151,11 +178,18 @@ const sampleEmail = (over = {}) =>
     ),
 
     Heading(2, t('styleguide.organisms')),
-    Card({ title: t('styleguide.readingHeader') },
-      ReadingHeader({ subject: t('styleguide.sample.subject'), meta: [tRich('reading.from', { sender: 'Claire Martin <claire@client.example>', date: new Date(2026, 10, 19, 9, 30).toLocaleString(locale(), { dateStyle: 'full', timeStyle: 'short' }) }, { strong: Strong })], triage: [Badge(t('reading.triage.ai'), 'neutral'), ' ', t('styleguide.sample.triage')] }),
-    ),
+    Card({ title: t('styleguide.readingHeader') }, sampleHeader()),
     Card({ title: t('styleguide.mailbox') },
-      Mailbox({ title: t('box.todo.label'), action: Button(t('mailbox.refresh')), items: [sampleEmail({ current: true }), sampleEmail({ from: 'Marc Dubois', subject: t('styleguide.sample.subject3') })], empty: '', backHref: '#', backLabel: t('mailbox.back'), selectHint: t('mailbox.select'), detail: Card({ title: t('styleguide.readingPane') }, Text({ muted: true }, t('styleguide.readingPaneText'))) }),
+      Mailbox({
+        title: t('box.todo.label'), count: 2, meta: t('mailbox.fetchedAt', { time: '08:13' }), action: Button(t('mailbox.refresh'), { variant: 'ghost', icon: 'refresh-cw', iconOnly: true }),
+        items: [sampleEmail({ current: true }), sampleEmail({ from: 'Marc Dubois', subject: t('styleguide.sample.subject3') })],
+        empty: EmptyState(t('box.todo.empty'), { icon: 'mail' }), idle: EmptyState(t('mailbox.select'), { icon: 'mail' }), backHref: '#', backLabel: t('mailbox.back'),
+        detail: Reading({ header: sampleHeader(), dock: sampleDock() },
+          Message(Prose(t('styleguide.sample.body'))),
+          Panel({ icon: 'check', title: t('reply.sentTitle'), meta: '08:13', badges: [Badge(t('reply.edited'), 'neutral')], facts: [[t('composer.to'), 'claire@client.example'], [t('reply.why'), t('composer.reasonPlaceholder')]] }, RichText(t('styleguide.sample.rich'))),
+        ),
+      }),
+      Block(ClosedDock(t('composer.closedNone'), Button(t('composer.replyAnyway'), { size: 'small', icon: 'reply' }))),
     ),
     Card({ title: t('styleguide.authPanel') },
       AuthPanel({ brand, tagline: brand.tagline, foot: t('styleguide.authFoot') }, Form(Field(t('auth.email'), Input({ type: 'email' })), Button(t('auth.signIn'), { variant: 'primary', block: true }))),
