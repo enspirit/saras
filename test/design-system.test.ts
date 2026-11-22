@@ -38,7 +38,7 @@ test('every token a component uses is declared', () => {
 
 test('the brand theme only sets tokens that exist', () => {
   const declared = new Set([...read('design/tokens.css').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
-  const themes = [read('brand/theme.css'), readFileSync(new URL('../brands/example/theme.css', import.meta.url), 'utf8')];
+  const themes = [read('brand/theme.css'), ...['example', 'klaro'].map((brand) => readFileSync(new URL(`../brands/${brand}/theme.css`, import.meta.url), 'utf8'))];
   for (const theme of themes) {
     const set = [...stripComments(theme).matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]);
     assert.ok(set.length > 0);

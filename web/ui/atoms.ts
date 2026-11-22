@@ -6,8 +6,11 @@ import { cx, h } from './dom.ts';
 import type { Attrs, Child } from './dom.ts';
 import { sanitizeToFragment } from './sanitize.ts';
 
-/** 'tool' is a compact button of a toolbar; `pressed` shows it as active. */
-export type ButtonVariant = 'default' | 'primary' | 'danger' | 'link' | 'tool';
+/**
+ * 'danger' marks a destructive action among others; 'destructive' is the same action about to
+ * happen, in a confirmation. 'ghost' has no frame. 'tool' is a compact button of a toolbar.
+ */
+export type ButtonVariant = 'default' | 'primary' | 'danger' | 'destructive' | 'ghost' | 'link' | 'tool';
 export type BadgeTone = 'accent' | 'ok' | 'warn' | 'danger' | 'neutral';
 export type NoticeTone = 'info' | 'ok' | 'warn' | 'danger';
 
@@ -21,8 +24,29 @@ export interface Brand {
   logoDark: string | null;
 }
 
+/** The glyphs of the icon font that the interface uses (see .icon in design/atoms.css). */
+export type IconName =
+  | 'archive' | 'bold' | 'check' | 'chevron-down' | 'circle-alert' | 'eye-off' | 'file-text' | 'globe' | 'inbox' | 'info' | 'italic'
+  | 'link' | 'list' | 'list-ordered' | 'lock' | 'log-out' | 'mail' | 'mail-check' | 'paperclip' | 'pen-line' | 'pencil' | 'plug' | 'plus'
+  | 'refresh-cw' | 'remove-formatting' | 'reply' | 'search' | 'send' | 'settings' | 'spell-check' | 'timer' | 'trash' | 'triangle-alert'
+  | 'underline' | 'undo' | 'users' | 'x';
+export type Size = 'small' | 'medium' | 'large';
+
+/** A decorative glyph: what it means is always said in words next to it, or by its button's label. */
+export function Icon(name: IconName, { size = 'medium' }: { size?: Size } = {}): HTMLElement {
+  return h('i', { class: cx('icon', `icon--${name}`, size !== 'medium' && `icon--${size}`), 'aria-hidden': 'true' });
+}
+
+/** Something is in progress. */
+export const Spinner = (): HTMLSpanElement => h('span', { class: 'spinner', 'aria-hidden': 'true' });
+
 export interface ButtonOptions {
   variant?: ButtonVariant;
+  size?: Size;
+  /** Shown before the label. */
+  icon?: IconName;
+  /** Shows the icon alone; the label becomes the accessible name and the tooltip. */
+  iconOnly?: boolean;
   type?: 'button' | 'submit';
   /** Takes the full width of its container. */
   block?: boolean;
@@ -30,8 +54,18 @@ export interface ButtonOptions {
   onClick?: (event: MouseEvent) => void;
 }
 
-export function Button(label: string, { variant = 'default', type = 'button', block = false, title, onClick }: ButtonOptions = {}): HTMLButtonElement {
-  return h('button', { class: cx('btn', variant !== 'default' && `btn--${variant}`, block && 'btn--block'), type, title, onclick: onClick }, label);
+export function Button(label: string, { variant = 'default', size = 'medium', icon, iconOnly = false, type = 'button', block = false, title, onClick }: ButtonOptions = {}): HTMLButtonElement {
+  const className = cx('btn', variant !== 'default' && `btn--${variant}`, size !== 'medium' && `btn--${size}`, iconOnly && 'btn--icon-only', block && 'btn--block');
+  return h('button', { class: className, type, title: title ?? (iconOnly ? label : undefined), 'aria-label': iconOnly ? label : null, onclick: onClick }, icon && Icon(icon), !iconOnly && label);
+}
+
+/** Puts a button in its busy state (a spinner in place of its icon, no click) or takes it out of it. */
+export function setBusy(button: HTMLButtonElement, busy: boolean): void {
+  button.querySelector(':scope > .spinner')?.remove();
+  if (busy) button.prepend(Spinner());
+  button.disabled = busy;
+  if (busy) button.setAttribute('aria-busy', 'true');
+  else button.removeAttribute('aria-busy');
 }
 
 export interface ButtonLinkOptions {
@@ -105,6 +139,32 @@ export function RichText(html: string): HTMLDivElement {
   el.append(sanitizeToFragment(html));
   return el;
 }
+
+/** A person, as the initials of their name (or of the start of their address). */
+export function Avatar(name: string, { size = 'medium' }: { size?: 'small' | 'medium' } = {}): HTMLSpanElement {
+  const words = name.split('@')[0]?.split(/[\s._-]+/).filter(Boolean) ?? [];
+  const initials = words.slice(0, 2).map((word) => word[0]).join('').toUpperCase();
+  return h('span', { class: cx('avatar', size === 'small' && 'avatar--small'), 'aria-hidden': 'true' }, initials);
+}
+
+export interface ChipOptions {
+  /** Called when its remove button is pressed; without it the chip cannot be removed. */
+  onRemove?: () => void;
+  /** Accessible name of the remove button. */
+  removeLabel?: string;
+  invalid?: boolean;
+  title?: string;
+}
+
+/** One value among several, e.g. a recipient. */
+export function Chip(label: string, { onRemove, removeLabel, invalid = false, title }: ChipOptions = {}): HTMLSpanElement {
+  return h('span', { class: cx('chip', !onRemove && 'chip--fixed', invalid && 'chip--invalid'), title }, label,
+    onRemove && h('button', { class: 'chip__remove', type: 'button', 'aria-label': removeLabel, title: removeLabel, onclick: onRemove }, Icon('x', { size: 'small' })),
+  );
+}
+
+/** A passage the AI left open, to complete before sending. */
+export const TodoMark = (label: string): HTMLElement => h('mark', { class: 'todo-mark' }, Icon('triangle-alert', { size: 'small' }), label);
 
 /** In a row, pushes what follows to the far end. */
 export const Spacer = (): HTMLSpanElement => h('span', { class: 'spacer' });

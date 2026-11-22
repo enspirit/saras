@@ -352,7 +352,38 @@
       "rich": "<p>Hello <strong>Claire</strong>,</p><ul><li>a first point</li><li>a <em>second</em> one</li></ul><p>See <a href=\"https://example.com\">the documentation</a>.</p><blockquote>A quoted line.</blockquote>"
     },
     "editor": "Rich-text editor",
-    "richText": "Rich text, as displayed"
+    "richText": "Rich text, as displayed",
+    "icons": "Icons",
+    "iconsHint": "Lucide, self-hosted. An icon never stands alone without a label or an accessible name.",
+    "small": "Small",
+    "large": "Large",
+    "ghost": "Ghost",
+    "destructive": "Destructive",
+    "withIcon": "With an icon",
+    "busy": "Working",
+    "iconOnly": "Icon alone",
+    "people": "People, chips and marks",
+    "toComplete": "To complete: price per seat",
+    "fieldError": "With an error",
+    "errorText": "This address is not valid.",
+    "dialogs": "Dialogs",
+    "dialogConfirm": "Ask for a confirmation",
+    "dialogDanger": "Confirm a deletion",
+    "dialogPrompt": "Ask for a value",
+    "dialogTitle": "Send this reply?",
+    "dialogText": "It will leave from your mailbox right away.",
+    "dialogDangerTitle": "Delete this prompt?",
+    "dialogDangerText": "The replies already written with it are kept.",
+    "dialogAnswer": "Answer: {answer}",
+    "recipients": "Recipients",
+    "to": "To",
+    "removeRecipient": "Remove {address}",
+    "emptyTitle": "Nothing to handle",
+    "emptyAction": "Fetch new mail",
+    "proposal": "Proposal of the AI",
+    "aiNote": "Written by the AI with a prompt. Read it before you send.",
+    "undo": "Put my text back",
+    "elevation": "Elevation, motion and sizes"
   },
   "server": {
     "request": {
@@ -474,6 +505,7 @@
     "numbers": "Numbered list",
     "link": "Link",
     "linkPrompt": "Address of the link:",
+    "linkInsert": "Insert the link",
     "clear": "Clear formatting"
   }
 }

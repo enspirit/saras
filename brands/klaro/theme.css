@@ -1,0 +1,32 @@
+/*
+ * Klaro Cards brand: saras as commercialised by Klaro Cards. One saturated purple on white,
+ * warm-violet ink (which also tints surfaces, borders and shadows), and Poppins throughout.
+ * Try it with:  BRAND_DIR=./brands/klaro npm start
+ *
+ * Poppins is self-hosted here (SIL Open Font Licence, see poppins-LICENSE.txt): the
+ * Content-Security-Policy allows no font from another site.
+ */
+
+@font-face { font-family: "Poppins"; src: url("poppins-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("poppins-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("poppins-600.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("poppins-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
+:root {
+  --brand-accent: #6d0ae8;
+  --brand-on-accent: #ffffff;
+  --brand-canvas: #faf9fd;
+  --brand-ink: #17172b;
+
+  --brand-accent-dark: #c0adff;
+  --brand-on-accent-dark: #1d0a4a;
+  --brand-canvas-dark: #14122b;
+  --brand-ink-dark: #eceaf6;
+
+  --brand-font-body: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --brand-font-heading: var(--brand-font-body);
+  --brand-radius: 8px;
+
+  /* Poppins runs wide: one step down keeps the density of the default brand. */
+  --text-md: 14px;
+}

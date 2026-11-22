@@ -2,7 +2,8 @@
  * MOLECULES — styled by design/molecules.css. A few atoms assembled for one job.
  */
 import Squire from '../vendor/squire.mjs';
-import { Button, Checkbox, Heading } from './atoms.ts';
+import { Button, Checkbox, Chip, Heading, Icon, Input } from './atoms.ts';
+import type { IconName } from './atoms.ts';
 import { cx, h } from './dom.ts';
 import type { Attrs, Child } from './dom.ts';
 import { sanitizeToFragment } from './sanitize.ts';
@@ -10,11 +11,15 @@ import { sanitizeToFragment } from './sanitize.ts';
 /** 'fill' (default) | 'narrow' (ports, short selects) | 'fit' (a button in a form row) */
 export type FieldSize = 'fill' | 'narrow' | 'fit';
 
-/** A labelled control with an optional hint. Without a label, the control alone keeps the field's rhythm. */
-export function Field(label: string | null, control: Child, { hint, size = 'fill' }: { hint?: Child; size?: FieldSize } = {}): HTMLDivElement {
+/**
+ * A labelled control with an optional hint. Without a label, the control alone keeps the field's
+ * rhythm. An `error` takes the place of the hint, next to the control it is about.
+ */
+export function Field(label: string | null, control: Child, { hint, error, size = 'fill' }: { hint?: Child; error?: string; size?: FieldSize } = {}): HTMLDivElement {
+  if (error && control instanceof Element) control.setAttribute('aria-invalid', 'true');
   return h('div', { class: cx('field', size !== 'fill' && `field--${size}`) },
     label ? h('label', { class: 'field__label' }, label, control) : control,
-    hint && h('p', { class: 'field__hint' }, hint),
+    error ? h('p', { class: 'field__error', role: 'alert' }, Icon('circle-alert', { size: 'small' }), error) : hint && h('p', { class: 'field__hint' }, hint),
   );
 }
 
@@ -50,22 +55,155 @@ export function Card({ title, badges = [], ...attrs }: CardOptions = {}, ...chil
 export const CardSection = (title: string, ...children: Child[]): HTMLDivElement => h('div', { class: 'card__section' }, Heading(3, title), children);
 
 export const PageHeader = (title: string, ...actions: Child[]): HTMLDivElement => h('div', { class: 'page-head' }, Heading(1, title), actions);
-export const EmptyState = (text: string): HTMLDivElement => h('div', { class: 'empty' }, text);
+
+export interface EmptyStateOptions {
+  icon?: IconName;
+  /** What the situation is, in a few words; the text then says what to do about it. */
+  title?: string;
+  /** A button or a link that leads out of the empty state. */
+  action?: Child;
+}
+
+/** What a region shows when it has nothing to show: where one is, and what to do next. */
+export function EmptyState(text: string, { icon, title, action }: EmptyStateOptions = {}): HTMLDivElement {
+  return h('div', { class: 'empty' },
+    icon && h('div', { class: 'empty__icon' }, Icon(icon, { size: 'large' })),
+    title && h('div', { class: 'empty__title' }, title),
+    h('div', { class: 'empty__text' }, text),
+    action && h('div', { class: 'empty__action' }, action),
+  );
+}
 
 export interface NavEntry {
   href: string;
   label: string;
+  icon?: IconName;
   /** Shown at the end of the entry when not zero. */
   count?: number;
   current?: boolean;
 }
 
-export function NavItem({ href, label, count, current }: NavEntry): HTMLAnchorElement {
-  return h('a', { class: 'nav-item', href, 'aria-current': current ? 'page' : null }, h('span', {}, label), count ? h('span', { class: 'nav-item__count' }, count) : null);
+export function NavItem({ href, label, icon, count, current }: NavEntry): HTMLAnchorElement {
+  return h('a', { class: 'nav-item', href, 'aria-current': current ? 'page' : null }, icon && Icon(icon), h('span', { class: 'nav-item__label' }, label), count ? h('span', { class: 'nav-item__count' }, count) : null);
 }
 
 /** A standing guarantee, e.g. the data-retention policy. */
-export const Assurance = (text: string, title?: string): HTMLDivElement => h('div', { class: 'assurance', title }, text);
+export const Assurance = (text: string, title?: string): HTMLDivElement => h('div', { class: 'assurance', title }, Icon('lock'), h('span', {}, text));
+
+export interface DialogOptions {
+  /** The question, in a few words. */
+  title?: string;
+  /** What will happen, in a sentence. */
+  text?: Child;
+  confirmLabel: string;
+  cancelLabel: string;
+  /** The action destroys something: its button says so, and Cancel is the default. */
+  danger?: boolean;
+}
+
+/** Opens a modal dialog and resolves with what was typed in `field` (or '' without one), or null when dismissed. */
+function openDialog({ title, text, confirmLabel, cancelLabel, danger = false }: DialogOptions, field?: { label: string; input: HTMLInputElement }): Promise<string | null> {
+  return new Promise((resolve) => {
+    const confirm = Button(confirmLabel, { variant: danger ? 'destructive' : 'primary', type: 'submit' });
+    confirm.value = 'confirm';
+    const cancel = Button(cancelLabel, { onClick: () => dialog.close() });
+    const heading = title ? Heading(2, title) : null;
+    const dialog = h('dialog', { class: 'dialog' },
+      h('form', { method: 'dialog' },
+        h('div', { class: 'dialog__body' },
+          heading,
+          text && h('div', { class: 'dialog__text' }, text),
+          field && h('label', { class: 'dialog__field field__label' }, field.label, field.input),
+        ),
+        h('div', { class: 'dialog__actions' }, cancel, confirm),
+      ),
+    );
+    dialog.addEventListener('close', () => {
+      dialog.remove();
+      resolve(dialog.returnValue === 'confirm' ? (field?.input.value ?? '') : null);
+    });
+    document.body.append(dialog);
+    dialog.showModal();
+    (field?.input ?? (danger ? cancel : confirm)).focus();
+  });
+}
+
+/** Asks for a confirmation before an action. Resolves to true when confirmed; Escape cancels. */
+export const confirmDialog = async (options: DialogOptions): Promise<boolean> => (await openDialog(options)) !== null;
+
+/** Asks for one value. Resolves to it, or to null when dismissed. */
+export function promptDialog({ label, value = '', ...options }: DialogOptions & { label: string; value?: string }): Promise<string | null> {
+  return openDialog(options, { label, input: Input({ value, required: true }) });
+}
+
+export interface RecipientFieldOptions {
+  /** 'To', 'Cc'. */
+  label: string;
+  values?: string[];
+  /** Accessible name of the button that removes an address. */
+  removeLabel: (address: string) => string;
+}
+
+export interface RecipientFieldHandle {
+  element: HTMLDivElement;
+  getValues(): string[];
+  setValues(values: string[]): void;
+  onChange(listener: () => void): void;
+}
+
+/**
+ * Addresses shown one by one, each removable, with a place to type another: Enter, a comma
+ * or leaving the field adds it; Backspace in the empty field removes the last one.
+ */
+export function RecipientField({ label, values = [], removeLabel }: RecipientFieldOptions): RecipientFieldHandle {
+  let addresses: string[] = [];
+  const listeners: (() => void)[] = [];
+  const input = h('input', { class: 'recipients__input', type: 'email', 'aria-label': label, autocomplete: 'off' });
+  const element = h('div', { class: 'recipients' });
+  const render = (): void => {
+    element.replaceChildren(
+      h('span', { class: 'recipients__label' }, label),
+      ...addresses.map((address) => Chip(address, { invalid: !/^[^@\s]+@[^@\s]+$/.test(address), removeLabel: removeLabel(address), onRemove: () => change(addresses.filter((a) => a !== address)) })),
+      input,
+    );
+  };
+  const change = (next: string[]): void => {
+    addresses = [...new Set(next)];
+    render();
+    for (const listener of listeners) listener();
+  };
+  const commit = (): void => {
+    const typed = input.value.split(/[,;\s]+/).map((a) => a.trim()).filter(Boolean);
+    if (!typed.length) return;
+    input.value = '';
+    change([...addresses, ...typed]);
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      commit();
+      input.focus();
+    } else if (event.key === 'Backspace' && !input.value && addresses.length) {
+      change(addresses.slice(0, -1));
+      input.focus();
+    }
+  });
+  input.addEventListener('blur', commit);
+  addresses = [...new Set(values)];
+  render();
+  return {
+    element,
+    getValues: () => [...addresses],
+    setValues(next) {
+      addresses = [...new Set(next)];
+      render();
+    },
+    onChange: (listener) => void listeners.push(listener),
+  };
+}
+
+/** Says that the text below was written by the AI and with what; `action` usually undoes it. */
+export const AiNote = (text: Child, action?: Child): HTMLDivElement => h('div', { class: 'ai-note' }, Icon('file-text'), h('span', { class: 'ai-note__text' }, text), action);
 
 export interface EmailListEntry {
   from: string;
@@ -97,8 +235,10 @@ export interface EditorLabels {
   bullets: string;
   numbers: string;
   link: string;
-  /** Question asked for the address of a link. */
+  /** Question asked for the address of a link, and the two answers. */
   linkPrompt: string;
+  linkInsert: string;
+  cancel: string;
   clear: string;
 }
 
@@ -112,6 +252,8 @@ export interface RichEditorHandle {
   isEmpty(): boolean;
   onChange(listener: () => void): void;
   focus(): void;
+  /** Shows the content as a proposal of the AI, under `note` (an AiNote); null takes that away. */
+  setProposal(note: Element | null): void;
 }
 
 /**
@@ -128,31 +270,36 @@ export function RichEditor({ labels, placeholder = '' }: { labels: EditorLabels;
   const isEmpty = (): boolean => !text().trim();
 
   /** A toolbar button that turns a format on, or off when the selection already has it. */
-  const tool = (label: string, title: string, tag: string, on: () => unknown, off: () => unknown): HTMLButtonElement => {
-    const button = Button(label, { variant: 'tool', title, onClick: () => {
+  const tool = (icon: IconName, title: string, tag: string, on: () => unknown, off: () => unknown): HTMLButtonElement => {
+    const button = Button(title, { variant: 'tool', icon, iconOnly: true, onClick: () => {
       (squire.hasFormat(tag) ? off : on)();
       squire.focus();
     } });
     button.dataset.format = tag;
     return button;
   };
+  const askLink = async (): Promise<void> => {
+    const url = (await promptDialog({ title: labels.link, label: labels.linkPrompt, value: 'https://', confirmLabel: labels.linkInsert, cancelLabel: labels.cancel }))?.trim();
+    if (url && /^(https?:|mailto:)/i.test(url)) squire.makeLink(url);
+    squire.focus();
+  };
   const tools = [
-    tool('B', labels.bold, 'B', () => squire.bold(), () => squire.removeBold()),
-    tool('I', labels.italic, 'I', () => squire.italic(), () => squire.removeItalic()),
-    tool('U', labels.underline, 'U', () => squire.underline(), () => squire.removeUnderline()),
-    tool('•', labels.bullets, 'UL', () => squire.makeUnorderedList(), () => squire.removeList()),
-    tool('1.', labels.numbers, 'OL', () => squire.makeOrderedList(), () => squire.removeList()),
-    tool(labels.link, labels.link, 'A', () => {
-      const url = window.prompt(labels.linkPrompt, 'https://');
-      if (url && /^(https?:|mailto:)/i.test(url.trim())) squire.makeLink(url.trim());
-    }, () => squire.removeLink()),
+    tool('bold', labels.bold, 'B', () => squire.bold(), () => squire.removeBold()),
+    tool('italic', labels.italic, 'I', () => squire.italic(), () => squire.removeItalic()),
+    tool('underline', labels.underline, 'U', () => squire.underline(), () => squire.removeUnderline()),
+    tool('list', labels.bullets, 'UL', () => squire.makeUnorderedList(), () => squire.removeList()),
+    tool('list-ordered', labels.numbers, 'OL', () => squire.makeOrderedList(), () => squire.removeList()),
+    tool('link', labels.link, 'A', () => void askLink(), () => squire.removeLink()),
   ];
-  const clear = Button(labels.clear, { variant: 'tool', title: labels.clear, onClick: () => {
+  const clear = Button(labels.clear, { variant: 'tool', icon: 'remove-formatting', iconOnly: true, onClick: () => {
     squire.removeAllFormatting();
     squire.focus();
   } });
+  const sep = (): HTMLSpanElement => h('span', { class: 'editor__sep', 'aria-hidden': 'true' });
 
-  const element = h('div', { class: 'editor' }, h('div', { class: 'editor__toolbar', role: 'toolbar' }, tools, clear), surface);
+  const toolbar = h('div', { class: 'editor__toolbar', role: 'toolbar' }, tools.slice(0, 3), sep(), tools.slice(3), sep(), clear);
+  const element = h('div', { class: 'editor' }, toolbar, surface);
+  let note: Element | null = null;
   const refresh = (): void => {
     element.classList.toggle('editor--empty', isEmpty());
     for (const button of tools) button.setAttribute('aria-pressed', String(squire.hasFormat(button.dataset.format ?? '')));
@@ -175,6 +322,12 @@ export function RichEditor({ labels, placeholder = '' }: { labels: EditorLabels;
     isEmpty,
     onChange: (listener) => void listeners.push(listener),
     focus: () => void squire.focus(),
+    setProposal(next) {
+      note?.remove();
+      note = next;
+      if (note) toolbar.after(note);
+      element.classList.toggle('editor--proposed', Boolean(note));
+    },
   };
 }
 

@@ -2,7 +2,7 @@
 // the design system in ./ui (atoms, molecules, organisms) and every word from the
 // translation files, through t() and tRich(). Tests enforce both.
 import { Badge, Button, ButtonLink, Checkbox, Code, Heading, Input, Link, List, Muted, Notice, Prose, RichText, Select, Small, Spacer, Strong, Text, Textarea } from './ui/atoms.ts';
-import { Actions, Block, Card, CardSection, CheckField, EmailListItem, Field, Form, FormRow, Message, PageHeader, RichEditor, createToast } from './ui/molecules.ts';
+import { Actions, Block, Card, CardSection, CheckField, EmailListItem, Field, Form, FormRow, Message, PageHeader, RichEditor, confirmDialog, createToast } from './ui/molecules.ts';
 import { AppShell, AuthPanel, Mailbox, Page, ReadingHeader } from './ui/organisms.ts';
 import { loadBrand } from './ui/brand.ts';
 import type { Brand, ButtonOptions } from './ui/atoms.ts';
@@ -16,6 +16,9 @@ const toast = createToast(document.getElementById('toast') as HTMLElement);
 let brand: Brand = { name: '', tagline: '', logo: null, logoDark: null };
 
 // ---- helpers ----------------------------------------------------------------------------
+/** Asks before an action that cannot be taken back, in the interface's own dialog. */
+const confirmAction = (text: string, confirmLabel: string, danger = true): Promise<boolean> => confirmDialog({ text, confirmLabel, cancelLabel: t('common.cancel'), danger });
+
 const messageOf = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
 /** Run an async action from a button: disables it meanwhile and reports failures. */
@@ -349,6 +352,8 @@ function composer(email: EmailDetail, prompts: Prompt[], box: Box): Child {
       numbers: t('editor.numbers'),
       link: t('editor.link'),
       linkPrompt: t('editor.linkPrompt'),
+      linkInsert: t('editor.linkInsert'),
+      cancel: t('common.cancel'),
       clear: t('editor.clear'),
     },
   });
@@ -414,7 +419,7 @@ function composer(email: EmailDetail, prompts: Prompt[], box: Box): Child {
   };
   const send = ActionButton(t('composer.send'), t('composer.sending'), async () => {
     const reply = payload();
-    if (!confirm(t('composer.confirmSend', { account: email.account, recipients: reply.to.join(', ') }))) return;
+    if (!(await confirmAction(t('composer.confirmSend', { account: email.account, recipients: reply.to.join(', ') }), t('composer.send'), false))) return;
     await api('POST', `/emails/${email.id}/send`, reply);
     done(t('composer.sent'));
   }, { variant: 'primary' });
@@ -489,7 +494,7 @@ const renderPrompts = guard(async () => {
           Actions(
             Button(t('common.edit'), { onClick: () => editor(p) }),
             ActionButton(t('common.delete'), '…', async () => {
-              if (!confirm(t('prompts.confirmDelete', { name: p.name }))) return;
+              if (!(await confirmAction(t('prompts.confirmDelete', { name: p.name }), t('common.delete')))) return;
               await api('DELETE', `/prompts/${p.id}`);
               renderPrompts();
             }, { variant: 'danger' }),
@@ -565,7 +570,7 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
               renderUsers();
             }),
             !self && ActionButton(t('users.delete'), '…', async () => {
-              if (!confirm(t('users.confirmDelete', { email: u.email }))) return;
+              if (!(await confirmAction(t('users.confirmDelete', { email: u.email }), t('users.delete')))) return;
               await api('DELETE', `/users/${u.id}`);
               renderUsers();
             }, { variant: 'danger' }),
@@ -675,7 +680,7 @@ const renderAccounts = guard(async (oauthError?: string | null, oauthDetail?: st
               renderAccounts();
             }),
             a.canManage && ActionButton(t('accounts.disconnect'), '…', async () => {
-              if (!confirm(t('accounts.confirmDisconnect', { email: a.email }))) return;
+              if (!(await confirmAction(t('accounts.confirmDisconnect', { email: a.email }), t('accounts.disconnect')))) return;
               await api('DELETE', `/accounts/${a.id}`);
               renderAccounts();
             }, { variant: 'danger' }),

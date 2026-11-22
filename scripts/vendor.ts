@@ -8,6 +8,8 @@ const LIBRARIES: Record<string, string> = {
   'squire-rte/dist/squire.mjs': 'squire.mjs',
   // HTML sanitiser. MPL-2.0 OR Apache-2.0.
   'dompurify/dist/purify.es.mjs': 'purify.mjs',
+  // Icon font (see .icon in design/atoms.css; its glyph codes are tied to the pinned version). ISC.
+  'lucide-static/font/lucide.woff2': 'lucide.woff2',
 };
 
 const target = new URL('../public/js/vendor/', import.meta.url);

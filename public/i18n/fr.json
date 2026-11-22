@@ -352,7 +352,38 @@
       "rich": "<p>Bonjour <strong>Claire</strong>,</p><ul><li>un premier point</li><li>un <em>second</em></li></ul><p>Voir <a href=\"https://example.com\">la documentation</a>.</p><blockquote>Une ligne citée.</blockquote>"
     },
     "editor": "Éditeur de texte riche",
-    "richText": "Texte riche, tel qu’affiché"
+    "richText": "Texte riche, tel qu’affiché",
+    "icons": "Icônes",
+    "iconsHint": "Lucide, hébergées avec l’application. Une icône n’apparaît jamais seule sans libellé ou nom accessible.",
+    "small": "Petit",
+    "large": "Grand",
+    "ghost": "Discret",
+    "destructive": "Destructif",
+    "withIcon": "Avec une icône",
+    "busy": "En cours",
+    "iconOnly": "Icône seule",
+    "people": "Personnes, pastilles et marques",
+    "toComplete": "À compléter : prix par poste",
+    "fieldError": "Avec une erreur",
+    "errorText": "Cette adresse n’est pas valide.",
+    "dialogs": "Dialogues",
+    "dialogConfirm": "Demander une confirmation",
+    "dialogDanger": "Confirmer une suppression",
+    "dialogPrompt": "Demander une valeur",
+    "dialogTitle": "Envoyer cette réponse ?",
+    "dialogText": "Elle partira immédiatement de votre boîte.",
+    "dialogDangerTitle": "Supprimer ce prompt ?",
+    "dialogDangerText": "Les réponses déjà rédigées avec lui sont conservées.",
+    "dialogAnswer": "Réponse : {answer}",
+    "recipients": "Destinataires",
+    "to": "À",
+    "removeRecipient": "Retirer {address}",
+    "emptyTitle": "Rien à traiter",
+    "emptyAction": "Relever le courrier",
+    "proposal": "Proposition de l’IA",
+    "aiNote": "Rédigé par l’IA avec un prompt. Relisez avant d’envoyer.",
+    "undo": "Reprendre mon texte",
+    "elevation": "Élévation, mouvement et tailles"
   },
   "server": {
     "request": {
@@ -474,6 +505,7 @@
     "numbers": "Liste numérotée",
     "link": "Lien",
     "linkPrompt": "Adresse du lien :",
+    "linkInsert": "Insérer le lien",
     "clear": "Effacer la mise en forme"
   }
 }
