@@ -12,6 +12,8 @@ import { checkInvitation } from '../../domain/access/check-invitation.ts';
 import { createOrganization } from '../../domain/access/create-organization.ts';
 import { deleteMember } from '../../domain/access/delete-member.ts';
 import { changePassword } from '../../domain/access/change-password.ts';
+import { deleteOrganization } from '../../domain/access/delete-organization.ts';
+import { deleteOwnAccount } from '../../domain/access/delete-own-account.ts';
 import { inviteMember } from '../../domain/access/invite-member.ts';
 import { removeAdministratorRole } from '../../domain/access/remove-administrator-role.ts';
 import { revokeInvitation } from '../../domain/access/revoke-invitation.ts';
@@ -209,6 +211,18 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   app.put('/api/auth/password', auth, async (req, res) => {
     await changePassword(world, originOf(req), actorOf(req), req.user.sid, req.body);
+    res.json({ ok: true });
+  });
+
+  app.delete('/api/me', auth, async (req, res) => {
+    await deleteOwnAccount(world, originOf(req), actorOf(req), req.body);
+    res.clearCookie('sid', cookieOptions);
+    res.json({ ok: true });
+  });
+
+  app.delete('/api/organization', auth, async (req, res) => {
+    await deleteOrganization(world, originOf(req), actorOf(req), req.body);
+    res.clearCookie('sid', cookieOptions);
     res.json({ ok: true });
   });
 

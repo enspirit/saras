@@ -335,7 +335,12 @@
     "currentPassword": "Current password",
     "newPassword": "New password",
     "changePassword": "Change password",
-    "passwordChanged": "Password changed. Your other sessions were signed out."
+    "passwordChanged": "Password changed. Your other sessions were signed out.",
+    "deleteAccountTitle": "Delete my account",
+    "deleteAccountText": "Your personal mailboxes are disconnected and what saras kept from them is erased; the mailboxes themselves are not touched. The prompts you created and the shared mailboxes you connected stay with the organisation.",
+    "deleteAccount": "Delete my account",
+    "confirmDeleteAccount": "Delete your account {email}? This cannot be undone.",
+    "accountDeleted": "Your account was deleted."
   },
   "styleguide": {
     "title": "Style guide — {product}",
@@ -486,7 +491,7 @@
     },
     "users": {
       "notFound": "User not found.",
-      "cannotDeleteSelf": "You cannot delete your own account.",
+      "cannotDeleteSelf": "Your own account is deleted from your settings.",
       "invalidRole": "Invalid role.",
       "lastAdmin": "At least one administrator must remain."
     },
@@ -555,7 +560,8 @@
       "bulk": "Bulk mail."
     },
     "organization": {
-      "invalidWay": "Unknown way of working."
+      "invalidWay": "Unknown way of working.",
+      "nameMismatch": "This is not the name of the organisation."
     },
     "assist": {
       "nothingWritten": "Write something first: there is nothing to check or improve.",
@@ -574,7 +580,14 @@
     "keyHint": "Encrypted in the database. Used by every member who has no key of their own.",
     "deleteKey": "Delete the organisation's key",
     "way": "Way of working",
-    "wayHint": "Sorting by the AI costs one request per 20 emails fetched, and sends it their sender, subject, beginning of text and attachment names. Proposals written at fetch send it the content of each email to handle, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation."
+    "wayHint": "Sorting by the AI costs one request per 20 emails fetched, and sends it their sender, subject, beginning of text and attachment names. Proposals written at fetch send it the content of each email to handle, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation.",
+    "deleteTitle": "Delete the organisation",
+    "deleteText": "Every member’s account, every mailbox connection, the prompts and everything saras kept are erased, for everyone. The mailboxes themselves are not touched.",
+    "deleteName": "Name of the organisation, to confirm",
+    "deletePassword": "Your password",
+    "delete": "Delete the organisation",
+    "confirmDelete": "Delete {organization} and everything saras holds for it, for all its members? This cannot be undone.",
+    "deleted": "The organisation was deleted."
   },
   "editor": {
     "bold": "Bold",

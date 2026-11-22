@@ -56,3 +56,21 @@ export async function addFirstPrompt(db: Db, organizationId: number, memberId: n
 
 export const setPassword = async (db: Db, memberId: number, passwordHash: string): Promise<void> =>
   void (await db.run('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, memberId]));
+
+/** The administrator who has been one of the organisation's members the longest, this member aside. */
+export async function longestStandingAdministrator(db: Db, organizationId: number, exceptId: number): Promise<number | undefined> {
+  const found = await db.one<{ id: number }>(`SELECT id FROM users WHERE org_id = $1 AND role = 'admin' AND id <> $2 ORDER BY id LIMIT 1`, [organizationId, exceptId]);
+  return found?.id;
+}
+
+/** The prompts a member created and the shared mailboxes they connected pass to another member. */
+export async function handOverWhatTheyMade(db: Db, fromId: number, toId: number): Promise<void> {
+  await db.run('UPDATE prompts SET user_id = $1 WHERE user_id = $2', [toId, fromId]);
+  await db.run('UPDATE accounts SET user_id = $1 WHERE user_id = $2 AND shared', [toId, fromId]);
+}
+
+/** Forgets a member; what is theirs alone (sessions, personal mailboxes and what was kept from them) goes with them. */
+export const forgetMember = async (db: Db, memberId: number): Promise<void> => void (await db.run('DELETE FROM users WHERE id = $1', [memberId]));
+
+/** Forgets an organisation; everything saras holds for it goes with it. */
+export const forgetOrganization = async (db: Db, organizationId: number): Promise<void> => void (await db.run('DELETE FROM organizations WHERE id = $1', [organizationId]));

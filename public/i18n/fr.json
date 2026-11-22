@@ -335,7 +335,12 @@
     "currentPassword": "Mot de passe actuel",
     "newPassword": "Nouveau mot de passe",
     "changePassword": "Changer le mot de passe",
-    "passwordChanged": "Mot de passe changé. Vos autres sessions ont été fermées."
+    "passwordChanged": "Mot de passe changé. Vos autres sessions ont été fermées.",
+    "deleteAccountTitle": "Supprimer mon compte",
+    "deleteAccountText": "Vos boîtes personnelles sont déconnectées et ce que saras en avait conservé est effacé ; les boîtes elles-mêmes ne sont pas touchées. Les prompts que vous avez créés et les boîtes partagées que vous avez connectées restent à l’organisation.",
+    "deleteAccount": "Supprimer mon compte",
+    "confirmDeleteAccount": "Supprimer votre compte {email} ? Cette action est définitive.",
+    "accountDeleted": "Votre compte a été supprimé."
   },
   "styleguide": {
     "title": "Guide de style — {product}",
@@ -486,7 +491,7 @@
     },
     "users": {
       "notFound": "Utilisateur introuvable.",
-      "cannotDeleteSelf": "Vous ne pouvez pas supprimer votre propre compte.",
+      "cannotDeleteSelf": "Votre propre compte se supprime depuis vos réglages.",
       "invalidRole": "Rôle invalide.",
       "lastAdmin": "Il doit rester au moins un administrateur."
     },
@@ -555,7 +560,8 @@
       "bulk": "Envoi en masse."
     },
     "organization": {
-      "invalidWay": "Façon de travailler inconnue."
+      "invalidWay": "Façon de travailler inconnue.",
+      "nameMismatch": "Ce n’est pas le nom de l’organisation."
     },
     "assist": {
       "nothingWritten": "Écrivez d’abord quelque chose : il n’y a rien à corriger ni à améliorer.",
@@ -574,7 +580,14 @@
     "keyHint": "Chiffrée en base. Utilisée par tout membre qui n’a pas sa propre clé.",
     "deleteKey": "Supprimer la clé de l’organisation",
     "way": "Façon de travailler",
-    "wayHint": "Le tri par l’IA coûte une requête par 20 emails relevés, et lui transmet leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes. Les propositions écrites au relevé lui envoient le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre."
+    "wayHint": "Le tri par l’IA coûte une requête par 20 emails relevés, et lui transmet leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes. Les propositions écrites au relevé lui envoient le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre.",
+    "deleteTitle": "Supprimer l’organisation",
+    "deleteText": "Le compte de chaque membre, chaque connexion de boîte, les prompts et tout ce que saras a conservé sont effacés, pour tout le monde. Les boîtes elles-mêmes ne sont pas touchées.",
+    "deleteName": "Nom de l’organisation, pour confirmer",
+    "deletePassword": "Votre mot de passe",
+    "delete": "Supprimer l’organisation",
+    "confirmDelete": "Supprimer {organization} et tout ce que saras détient pour elle, pour tous ses membres ? Cette action est définitive.",
+    "deleted": "L’organisation a été supprimée."
   },
   "editor": {
     "bold": "Gras",

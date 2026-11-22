@@ -1066,6 +1066,14 @@ function OrganizationSettings(me: Me): Child {
   return [
     Card({ form: true }, Block(Text({ muted: true }, t('organization.intro'))), form),
     Card({ title: t('settings.appearance'), form: true }, Text({}, tRich('settings.appearanceText', {}, { link: (label) => Link(label, '/styleguide.html') }))),
+    Card({ title: t('organization.deleteTitle'), form: true }, LeavingForm({
+      text: t('organization.deleteText'),
+      label: t('organization.delete'),
+      confirm: t('organization.confirmDelete', { organization: org.name }),
+      done: t('organization.deleted'),
+      path: '/organization',
+      nameLabel: t('organization.deleteName'),
+    })),
   ];
 }
 
@@ -1130,7 +1138,8 @@ const renderSettings = guard(async (part = '') => {
     toast(t('settings.passwordChanged'));
     render();
   },
-    FormRow(Field(t('settings.currentPassword'), current), Field(t('settings.newPassword'), next, { hint: t('auth.passwordHint') })),
+    Field(t('settings.currentPassword'), current),
+    Field(t('settings.newPassword'), next, { hint: t('auth.passwordHint') }),
     Actions(change),
   );
   frame(
@@ -1138,8 +1147,34 @@ const renderSettings = guard(async (part = '') => {
     Card({ form: true }, form),
     Card({ title: t('settings.passwordTitle'), form: true }, passwordForm),
     languages().length > 1 && Card({ title: t('settings.display'), form: true }, LanguagePicker()),
+    Card({ title: t('settings.deleteAccountTitle'), form: true }, LeavingForm({
+      text: t('settings.deleteAccountText'),
+      label: t('settings.deleteAccount'),
+      confirm: t('settings.confirmDeleteAccount', { email: me.email }),
+      done: t('settings.accountDeleted'),
+      path: '/me',
+    })),
   );
 });
+
+/** A deletion that ends the session: the password is asked, then a confirmation, then back to the sign-in page. */
+function LeavingForm({ text, label, confirm, done, path, nameLabel }: { text: string; label: string; confirm: string; done: string; path: string; nameLabel?: string }): Child {
+  const name = Input({ required: true, autocomplete: 'off' });
+  const password = Input({ type: 'password', required: true, autocomplete: 'current-password' });
+  const submit = Button(label, { variant: 'danger', type: 'submit' });
+  const passwordField = Field(t('organization.deletePassword'), password);
+  return SubmitForm(submit, '…', async () => {
+    if (!(await confirmAction(confirm, label))) return;
+    await api('DELETE', path, nameLabel ? { password: password.value, name: name.value } : { password: password.value });
+    toast(done);
+    location.hash = '';
+    await boot();
+  },
+    Block(Text({ muted: true }, text)),
+    nameLabel ? FormRow(Field(nameLabel, name), passwordField) : passwordField,
+    Actions(submit),
+  );
+}
 
 // Translations first: the brand's tagline and every screen depend on the language.
 initI18n()

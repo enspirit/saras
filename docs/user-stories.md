@@ -22,7 +22,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 | [C. Triage and the four boxes](#c-triage-and-the-four-boxes) | US-20 – US-25 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
 | [E. Prompts](#e-prompts) | US-50 – US-53 |
-| [F. Settings](#f-settings) | US-60 – US-67 |
+| [F. Settings](#f-settings) | US-60 – US-69 |
 | [G. Privacy guarantees](#g-privacy-guarantees) | US-70 – US-74 |
 | [H. Installation, brand and languages](#h-installation-brand-and-languages) | US-80 – US-86 |
 
@@ -362,6 +362,20 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - In **Settings → You**: my current password, and a new one of at least 10 characters.
 - My other sessions are signed out; the one I am using stays.
 - A wrong current password is refused, and counts towards the lock-out of US-02.
+
+### US-68 — Delete my account
+**As** a member, **I want** to delete my own account, **so that** I can leave saras without asking anyone.
+
+- In **Settings → You**: my password, then a confirmation.
+- My personal mailboxes are disconnected and what saras kept from them is erased; the mailboxes themselves are not touched.
+- The prompts I created and the shared mailboxes I connected stay with the organisation, in the hands of its longest-standing other administrator.
+- The organisation's last administrator cannot: they first appoint another, or delete the organisation (US-69).
+
+### US-69 — Delete the organisation
+**As** an administrator, **I want** to delete my organisation, **so that** nothing of ours is left in saras when we stop using it.
+
+- In **Settings → Organisation**: the organisation's name typed in full and my password, then a confirmation.
+- Every member's account, every mailbox connection, the prompts and everything saras kept are erased; every member is signed out. The mailboxes themselves are not touched.
 
 ### US-64 — See the privacy guarantees in force
 **As** a member, **I want** to read, in the application, what happens to my emails, **so that** I can trust it — and explain it to a client who asks.

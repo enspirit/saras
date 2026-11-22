@@ -92,8 +92,10 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **AcceptInvitation** | Visitor | A pending, unexpired invitation → a member with its role; the invitation is gone | Password of 10+ characters · address not taken meanwhile · not locked out | A session is opened | "Create my account" on the invitation page · `POST /invitations/accept` |
 | **AppointAdministrator** | Administrator | A member with role user → administrator | Administrator · same organisation | | "Make administrator" · `PUT /users/:id` |
 | **RemoveAdministratorRole** | Administrator | An administrator → user | Administrator · not the last administrator | | "Remove the administrator role" · `PUT /users/:id` |
-| **DeleteMember** | Administrator | A member → none | Administrator · not oneself | Their prompts and shared mailboxes pass to whoever deletes them · their personal mailboxes go, with what was stored from them | red bin in Users · `DELETE /users/:id` |
+| **DeleteMember** | Administrator | A member → none | Administrator · not oneself (that is DeleteOwnAccount) | Their prompts and shared mailboxes pass to whoever deletes them · their personal mailboxes go, with what was stored from them | red bin in Users · `DELETE /users/:id` |
 | **ChangePassword** | Member | → the member's password is the new one; their other sessions are closed | The current password is given · the new one has 10+ characters · not locked out | A wrong current password counts as a wrong guess · the session that made the change stays | Settings → You → "Change password" · `PUT /auth/password` |
+| **DeleteOwnAccount** | Member | A member → none, with their sessions | The current password is given · not the organisation's last administrator · not locked out | Their prompts and shared mailboxes pass to the longest-standing other administrator · their personal mailboxes go, with what was stored from them · a wrong password counts as a wrong guess | Settings → You → "Delete my account", then the confirmation · `DELETE /me` |
+| **DeleteOrganization** | Administrator | An organisation → none, with its members, sessions, invitations, prompts, mailboxes and everything kept from them | Administrator · the current password is given · the organisation's name is given, as it is · not locked out | The mailboxes at the providers are untouched · the other members are not told · a wrong password counts as a wrong guess | Settings → Organisation → "Delete the organisation", then the confirmation · `DELETE /organization` |
 | **ExpireSessions** | Backend | Sessions past their date → none | | | ReqTrig: hourly, and at start (`main.ts`) |
 
 ### Settings
@@ -224,7 +226,7 @@ Recorded, not fixed. Each is a decision for the product's owner.
 6. **AI help is not refused on an email already replied.** `POST /emails/:id/assist` has no guard on the status. The interface offers no reply area there.
 7. **"Explicit validation" before sending lives in the frontend only.** The guarantee is a confirmation dialog; the API sends on one call. This is by nature for a human confirmation, but it means the guarantee is a property of the interface, not of the server.
 8. **A ready-made prompt can be added more than once through the API.** "Can be added once" holds because the list of templates hides those already present by name; `POST /prompts` does not check.
-9. **A sole administrator can never leave.** The last administrator cannot be given the user role, nobody can delete their own account, and no operation deletes an organisation. Possibly intended.
+9. *(Settled.)* A sole administrator could never leave. **DeleteOrganization** now lets them; **DeleteOwnAccount** is still refused to the last administrator.
 10. **A proposal prepared at fetch for an email with nobody to reply to is not filed**, and the email stays to handle with its proposal, without any sign of why (`prepare-proposals.ts`, way `mailbox`).
 11. **Two definitions of "the member edited the proposal"**: the frontend's (`norm`: whitespace collapsed) decides whether the reason is asked; the backend's (`wasEdited`) decides whether it is kept. They can disagree.
 12. **Fetching is done as the mailbox's owner**, including for a shared mailbox: their key, model and language sort it, and their signature and corrections write the prepared proposals, whoever reads them.
@@ -242,10 +244,12 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 | 3 | Sorting and proposals were two settings; the interface showed four ways of working. | The **way of working** is the state variable, with four values and one operation, **ChooseWayOfWorking**. | Done. The two combinations outside the four (no sorting, with proposals at fetch) are no longer possible; an organisation kept in one is given sorting by the AI when the server starts. |
 | 4 | The reply in progress is lost when the member leaves the page. | It stays in the browser. Nothing unsent reaches the server. | Nothing to do. |
 | 5 | Checking an invitation link counts a wrong token towards the lock-out. | **CheckInvitation** is an operation. | Done: listed and filed as one. |
-| 6 | Nothing changed a password, deleted one's own account, or deleted an organisation. | Three operations to build: **ChangePassword**, **DeleteOwnAccount**, **DeleteOrganization** (which lets a sole administrator leave, deviation 9). | **ChangePassword** done. The other two wait for the answers below. |
+| 6 | Nothing changed a password, deleted one's own account, or deleted an organisation. | **ChangePassword**, **DeleteOwnAccount** (refused to the last administrator; what the member made passes to the longest-standing other administrator), **DeleteOrganization** (confirmed by the password and the organisation's name). | Done, all three. |
 
 ### Open questions
 
-- **DeleteOwnAccount.** What of the last administrator (refused until another is appointed, or sent to DeleteOrganization)? What becomes of the shared mailboxes and prompts they created (DeleteMember passes them to whoever deletes; here nobody does)?
-- **DeleteOrganization.** Is the organisation's name typed as confirmation enough, or is the password asked again? Are the other members told?
-- Deviations 1 to 14, each of which is a rule to confirm or a behaviour to change.
+- **DeleteOrganization tells nobody.** The other members find themselves signed out. saras sends no email of its own today; telling them would be its first.
+- **A shared mailbox that changes owner changes voice**: it is fetched with its owner's key, model, signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who sorts and writes for it.
+- Deviations 1 to 14 (9 aside), each of which is a rule to confirm or a behaviour to change.
+- The frontend (`web/app.ts`) is still organised by page. Its actions could be named after the operations they ask for, and its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) brought out as pure functions with unit tests.
+- Black-box specifications of the operations (webspicy) are still to write; the HTTP tests in `test/` play that part for now.

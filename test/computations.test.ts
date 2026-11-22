@@ -1,7 +1,7 @@
 // The small decisions of the domain, as pure functions: data in, verdict out.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, mayDeleteMember, mayOpenAccount, mayRemoveAdministratorRole, maySignUp, opensNewWindow, organizationNameFor, roleInvitedAs, signUpIsOpen } from '../src/domain/computations/access.ts';
+import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, mayDeleteMember, mayLeave, mayOpenAccount, namesTheOrganization, mayRemoveAdministratorRole, maySignUp, opensNewWindow, organizationNameFor, roleInvitedAs, signUpIsOpen } from '../src/domain/computations/access.ts';
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../src/domain/computations/given.ts';
 import { addressIsNotConnected, answersSignIn, connectsAsShared, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../src/domain/computations/mailboxes.ts';
 import { promptContent } from '../src/domain/computations/prompts.ts';
@@ -184,4 +184,12 @@ test('an address is connected once; access to it is renewed, for that very mailb
   assert.ok(renewed.ok);
   assert.deepEqual([renewed.value.imap.pass, renewed.value.smtp.pass, renewed.value.imap.host], ['new', 'new', 'i']);
   assert.equal(outcome(withNewPassword(servers, '')), 'invalid: accounts.passwordRequired');
+});
+
+test('the last administrator does not leave; an organisation is deleted by its name', () => {
+  assert.equal(outcome(mayLeave('user', 1)), 'ok');
+  assert.equal(outcome(mayLeave('admin', 2)), 'ok');
+  assert.equal(outcome(mayLeave('admin', 1)), 'conflict: users.lastAdmin');
+  assert.equal(outcome(namesTheOrganization(' acme sa ', 'Acme SA')), 'ok');
+  assert.deepEqual(['Acme', '', undefined].map((n) => outcome(namesTheOrganization(n, 'Acme SA'))), Array(3).fill('invalid: organization.nameMismatch'));
 });

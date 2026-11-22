@@ -43,6 +43,13 @@ export const mayRemoveAdministratorRole = (currentRole: Role, administrators: nu
 /** ReqPre of DeleteMember: not oneself. */
 export const mayDeleteMember = (targetId: number, actorId: number): Verdict<true> => (targetId === actorId ? refuse('conflict', 'users.cannotDeleteSelf') : accept(true));
 
+/** ReqPre of DeleteOwnAccount: an organisation keeps an administrator, so its last one does not leave. */
+export const mayLeave = (role: Role, administrators: number): Verdict<true> => mayRemoveAdministratorRole(role, administrators);
+
+/** ReqPre of DeleteOrganization: the name typed is the organisation's, spaces around and letter case aside. */
+export const namesTheOrganization = (typed: unknown, name: string): Verdict<true> =>
+  typeof typed === 'string' && typed.trim().toLowerCase() === name.trim().toLowerCase() ? accept(true) : refuse('invalid', 'organization.nameMismatch');
+
 // ---- the brake on guessing -------------------------------------------------------------------
 
 /** Wrong guesses from one origin: how many, and until when they count. */

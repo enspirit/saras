@@ -220,3 +220,47 @@ test('a member changes their own password, knowing the current one; their other 
   assert.equal((await elsewhere('POST', '/auth/login', { email: 'bruno@acme.example', password: 'un-bon-mot-de-passe' })).status, 401);
   assert.equal((await elsewhere('POST', '/auth/login', { email: 'bruno@acme.example', password: 'un-autre-mot-de-passe' })).status, 200);
 });
+
+test('a member deletes their own account; the last administrator does not, and what they made stays', async () => {
+  // Bruno is by now Acme's only administrator: he cannot leave it without one.
+  assert.equal((await bruno('DELETE', '/me', { password: 'pas-le-bon-mot' })).body.code, 'auth.wrongPassword');
+  const last = await bruno('DELETE', '/me', { password: 'un-autre-mot-de-passe' });
+  assert.deepEqual([last.status, last.body.code], [409, 'users.lastAdmin']);
+
+  // A user leaves freely: the right password ends their account and their session.
+  const dora = client();
+  await join(bruno, dora, 'dora@acme.example');
+  assert.equal((await dora('DELETE', '/me', { password: 'un-bon-mot-de-passe' })).status, 200);
+  assert.equal((await dora('GET', '/me')).status, 401);
+  assert.ok(!(await bruno('GET', '/users')).body.some((u: { email: string }) => u.email === 'dora@acme.example'));
+
+  // With a second administrator, Bruno can leave; the shared mailbox and the prompts pass to that one.
+  const carl = client();
+  await join(bruno, carl, 'carl@acme.example', 'admin');
+  const before = (await carl('GET', '/accounts')).body.filter((a: { shared: boolean }) => a.shared);
+  const prompts = (await carl('GET', '/prompts')).body.length;
+  assert.ok(before.length > 0 && prompts > 0);
+  assert.equal((await bruno('DELETE', '/me', { password: 'un-autre-mot-de-passe' })).status, 200);
+  assert.equal((await bruno('GET', '/me')).status, 401);
+  const after = (await carl('GET', '/accounts')).body.filter((a: { shared: boolean }) => a.shared);
+  assert.deepEqual(after.map((a: { id: number }) => a.id), before.map((a: { id: number }) => a.id));
+  assert.equal((await carl('GET', '/prompts')).body.length, prompts);
+  assert.equal((await carl('POST', `/accounts/${after[0].id}/sync`)).body.error, null, 'the shared mailbox is still fetched, as its new owner');
+});
+
+test('an administrator deletes the organisation, with their password and its name; it ends for everyone', async () => {
+  const carl = client();
+  assert.equal((await carl('POST', '/auth/login', { email: 'carl@acme.example', password: 'un-bon-mot-de-passe' })).status, 200);
+  const emma = client();
+  await join(carl, emma, 'emma@acme.example');
+  assert.equal((await emma('DELETE', '/organization', { password: 'un-bon-mot-de-passe', name: 'Acme SA' })).status, 403);
+  assert.equal((await carl('DELETE', '/organization', { password: 'pas-le-bon-mot', name: 'Acme SA' })).body.code, 'auth.wrongPassword');
+  assert.equal((await carl('DELETE', '/organization', { password: 'un-bon-mot-de-passe', name: 'Acme' })).body.code, 'organization.nameMismatch');
+  assert.equal((await carl('GET', '/me')).status, 200);
+  assert.equal((await carl('DELETE', '/organization', { password: 'un-bon-mot-de-passe', name: ' acme sa ' })).status, 200);
+  assert.equal((await carl('GET', '/me')).status, 401);
+  assert.equal((await emma('GET', '/me')).status, 401);
+  assert.equal((await zoe('GET', '/me')).status, 200, 'another organisation is untouched');
+  // Nothing is left of it: the address can start again.
+  assert.equal((await client()('POST', '/auth/signup', { email: 'carl@acme.example', password: 'un-bon-mot-de-passe', organization: 'Acme again' })).status, 201);
+});
