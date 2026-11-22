@@ -7,13 +7,16 @@ The code is laid out the same way. Every operation below is one file, named afte
 | Where | What |
 | --- | --- |
 | `src/domain/<area>/<operation>.ts` | One operation: it fetches what it needs, decides with pure functions, then changes the state. |
-| `src/domain/computations/` | The decisions and transformations, pure: no database, no network, no clock of their own. Unit-tested in `test/computations.test.ts`, `test/replying.test.ts`, `test/core.test.ts`. |
-| `src/domain/state/` | Reading and writing the state variables. The only SQL outside the read-only routes. |
+| `src/domain/computations/` | The decisions and transformations, pure: no database, no network, no clock of their own. Unit-tested in `test/computations.test.ts`, `test/replying.test.ts` and the tests named after each subject (`reply-composition`, `automated-mail`, `sorting-gate`, `privacy`…). |
+| `src/domain/state/` | Reading and writing the state variables. |
+| `src/domain/observations/` | What members read: the queries behind the read-only routes, returning the shared types. |
+| `src/domain/model/` | The state as it is kept: rows, credentials, what a mail provider knows how to do. |
+| `shared/` | The domain objects as members see them, declared once for the server and the browser. |
 | `src/domain/refusal.ts`, `world.ts` | A refusal and its kind (invalid, forbidden, not found, conflict…); what an operation acts in (`World`) and on behalf of whom (`Actor`). |
-| `src/tooling/` | What is not the domain: HTTP (`http/app.ts`: routes that call one operation each, and the read-only routes), database driver and schema, mail protocols, the LLM client, sealing, configuration, messages. |
+| `src/tooling/` | What is not the domain: HTTP (`http/server.ts`, and one file of routes per area: each route calls one operation or one observation), database driver and schema, mail protocols, the LLM client, sealing, configuration, messages. |
 | `src/main.ts` | Wiring, and the server's own clock. |
 
-The domain knows nothing of HTTP: an operation refuses with a kind, and `tooling/http/app.ts` turns the kind into a status.
+The domain knows nothing of HTTP: an operation refuses with a kind, and `tooling/http/refusals.ts` turns the kind into a status.
 
 Where the code does not do what its own comments, the documentation or the interface say, it is listed under [Deviations](#deviations-and-open-questions) and left as it is.
 
@@ -66,7 +69,7 @@ Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`),
 | --- | --- | --- |
 | May use a mailbox | It is in the member's organisation, and is theirs or shared. | `mayUse` (a SQL condition), `mailboxFor`, `emailFor` in `state/` |
 | Manages a mailbox | Shared: the member is an administrator. Personal: it is theirs. | `manages` in `computations/mailboxes.ts` |
-| Box | To handle = `needs_reply` or `pending`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `tooling/http/app.ts`, and again in `web/pages/boxes.ts` |
+| Box | To handle = `needs_reply` or `pending`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `shared/email.ts`; `computations/boxes.ts` counts by it |
 | Sign-up is open | The operator allows it, or no account exists yet. | `signUpIsOpen` in `computations/access.ts` |
 | Key in force | The member's own, else the organisation's, else the server's. Same order for the model. | `computations/key-in-force.ts` |
 | Locked out | Ten wrong guesses from one origin within fifteen minutes. | `isLockedOut` in `computations/access.ts` |
@@ -167,7 +170,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 
 ### Observations
 
-Routes that only read state: `GET /public`, `/me`, `/accounts`, `/accounts/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/templates`, `/prompts/:id/corrections`, `/users`, `/invitations`, `/emails`, `/emails/:id`. None changes state. They are written in `tooling/http/app.ts`, as queries.
+Routes that only read state: `GET /public`, `/me`, `/accounts`, `/accounts/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/templates`, `/prompts/:id/corrections`, `/users`, `/invitations`, `/emails`, `/emails/:id`. None changes state. Their queries are in `src/domain/observations/`.
 
 ### Chains
 
@@ -207,10 +210,8 @@ Still buried, in the frontend (`web/pages/`):
 
 | Decision | Buried in |
 | --- | --- |
-| Which box an email is in | `BOXES`, twice: `tooling/http/app.ts` and `web/pages/boxes.ts` |
 | Passages to complete; whether the member edited the proposal | `TO_COMPLETE`, `norm` in `web/pages/reply-in-progress.ts` |
 | Where the tour goes next | `pathOf`, `leaveStep` in `web/pages/getting-started/path.ts` |
-| Which emails a fetch stores, and with which first status | `store` in `mailboxes/fetch-mailbox.ts` (server) |
 
 ## Deviations and open questions
 

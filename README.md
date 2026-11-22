@@ -221,7 +221,7 @@ The database is PostgreSQL, used in one of two ways with the same schema and que
 
 The embedded mode runs PostgreSQL inside the application's own process: nothing to install, but a single connection and no outside access for backups or monitoring. Use a server for anything real. There is no automatic transfer between the two.
 
-The schema is created at startup (`src/tooling/db.ts`). The tests run on the embedded database by default and on a server when `TEST_DATABASE_URL` is set; CI runs both.
+The schema is created at startup (`src/tooling/db/schema.ts`). The tests run on the embedded database by default and on a server when `TEST_DATABASE_URL` is set; CI runs both.
 
 ## Configuration
 
@@ -245,12 +245,12 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               sent in your name, or filed as a draft (SMTP / IMAP / Gmail API / Graph)
 ```
 
-- `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state. [`OPERATIONS.md`](OPERATIONS.md) is the inventory.
+- `shared/`: the domain objects as members see them (mailbox, email, proposal, reply, prompt, member, organisation), declared once for the server and the browser.
+- `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`OPERATIONS.md`](OPERATIONS.md) is the inventory.
 - `src/domain/sorting/`: the triage gate, its strategies, and the header rules applied before it.
 - `src/domain/mailboxes/fetch-mailbox.ts`: fetch, then sort, then prepare proposals.
-- `src/tooling/`: how it is done, with no business rule: `http/app.ts` (the HTTP API), `db.ts`, `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
-- `src/types.ts`: the shapes shared across the server.
-- `web/`: the interface's TypeScript (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
+- `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (driver and schema), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
+- `web/`: the interface's TypeScript, one page file per subject under `pages/` and one function per operation under `api/` (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
 - Data: PostgreSQL (see "Database").
 
 The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
@@ -260,9 +260,10 @@ The content of a received email is treated as untrusted data: it is delimited in
 Everything is TypeScript in strict mode.
 
 - **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
-- **Browser code** is compiled by `npm run build` from `web/` to `public/js/` (not committed), one ES module per source file, without a bundler. The same command copies the two browser libraries (see "Third-party software") to `public/js/vendor/`.
+- **Browser code** is compiled by `npm run build` from `web/` and `shared/` to `public/js/web/` and `public/js/shared/` (not committed), one ES module per source file, without a bundler. The same command copies the two browser libraries (see "Third-party software") to `public/js/web/vendor/`.
 - `npm run typecheck` checks both. `npm run dev` rebuilds the browser code and restarts the server on change.
-- `web/api.ts` describes the JSON returned by each route for the interface. It mirrors what `src/tooling/http/app.ts` builds, but the two are not checked against each other.
+- **What the server returns is typed once**, in `shared/`: the server's read queries and operations return those types, and `web/api/` reads them. A test (`test/shared-types.test.ts`) keeps either side from declaring a domain object of its own.
+- **Small files, small functions**: no source file (TypeScript, CSS) has more than 200 lines, and no function more than 20. `test/size.test.ts` enforces both, and lists what is over.
 
 ## Tests
 
