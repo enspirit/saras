@@ -3,7 +3,6 @@ import type { CookieOptions, ErrorRequestHandler, Express, Request, RequestHandl
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Config } from '../config.ts';
-import { randomToken } from '../crypto.ts';
 import type { Vault } from '../crypto.ts';
 import { defaultPrompts } from '../../domain/prompts/ready-made-prompts.ts';
 import type { Db } from '../db.ts';
@@ -51,6 +50,13 @@ import { writeWithPrompt } from '../../domain/replying/write-with-prompt.ts';
 import { emailFor } from '../../domain/state/emails.ts';
 import type { OwnedEmailRow } from '../../domain/state/emails.ts';
 import { mayUse } from '../../domain/state/mailboxes.ts';
+import { manages } from '../../domain/computations/mailboxes.ts';
+import { chooseWatchedFolder } from '../../domain/mailboxes/choose-watched-folder.ts';
+import { beginHostSignIn, connectMailboxByHostSignIn } from '../../domain/mailboxes/connect-mailbox-by-host-sign-in.ts';
+import { connectMailboxByServers } from '../../domain/mailboxes/connect-mailbox-by-servers.ts';
+import { disconnectMailbox } from '../../domain/mailboxes/disconnect-mailbox.ts';
+import { fetchMailboxNow } from '../../domain/mailboxes/fetch-mailbox-now.ts';
+import { listFolders } from '../../domain/mailboxes/list-folders.ts';
 import { promptOf as organizationPrompt } from '../../domain/state/prompts.ts';
 import { createWorld } from '../../domain/world.ts';
 import type { Actor, World } from '../../domain/world.ts';
@@ -60,25 +66,18 @@ import { decodeProblem, problem, readReason } from '../messages.ts';
 import type { MessageCode, MessageParams, Problem } from '../messages.ts';
 import type { MailService } from '../mail/index.ts';
 import { lookupMailHost } from '../mail/lookup.ts';
-import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from '../mail/oauth.ts';
+import { isConfigured } from '../mail/oauth.ts';
 import { replyRecipients } from '../../domain/computations/reply.ts';
 import { llmSettings } from '../../domain/computations/key-in-force.ts';
 import { rowToEmail } from '../../domain/mailboxes/fetch-mailbox.ts';
 import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
-import { isEmailAddress } from '../text.ts';
 import type {
-  AccountKind,
-  AccountRow,
   DraftRow,
   EmailStatus,
   Fetch,
-  ImapCredentials,
   Llm,
-  OAuthTokens,
   PromptRow,
   ReplyMode,
-  Sender,
-  ServerCredentials,
 } from '../../types.ts';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
@@ -120,7 +119,7 @@ const STATUS: Record<RefusalKind, number> = { invalid: 400, unauthenticated: 401
 
 export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetch }: Dependencies): Express {
   /** What the operations of the domain act in, and on whose behalf. */
-  const world: World = createWorld({ db, mail, llm, vault, config });
+  const world: World = createWorld({ db, mail, llm, vault, config }, sync);
   const actorOf = (req: Request): Actor => ({ member: req.user, organization: req.org });
   const app = express();
   app.disable('x-powered-by');
@@ -263,171 +262,60 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   });
 
   // ---- mail accounts ----------------------------------------------------------------------
-  // A mailbox is reachable by its owner and, when shared, by every member of its organisation.
-  // `a` is the alias of the accounts table; $org and $user are given positions by the caller.
-  const canUse = mayUse;
-
-  const accountOf = async (req: Request): Promise<AccountRow> => {
-    const account = await db.one<AccountRow>(`SELECT a.* FROM accounts a WHERE a.id = $1 AND ${canUse('$2', '$3')}`, [Number(req.params.id) || 0, req.org.id, req.user.id]);
-    if (!account) throw new HttpError(404, 'accounts.notFound');
-    return account;
-  };
-
-  /** Changing or disconnecting a mailbox is for its owner; for a shared one, for administrators. */
-  const canManage = (req: Request, account: Pick<AccountRow, 'shared' | 'user_id'>): boolean =>
-    account.shared ? req.user.role === 'admin' : account.user_id === req.user.id;
-
-  const managedAccountOf = async (req: Request): Promise<AccountRow> => {
-    const account = await accountOf(req);
-    if (!canManage(req, account)) throw new HttpError(403, 'accounts.adminOnly');
-    return account;
-  };
-  const backgroundSync = (account: AccountRow): void => {
-    sync.syncAccount(account).catch((e) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`));
-  };
-
   app.get('/api/accounts', auth, async (req, res) => {
     const rows = await db.query<{ lastError: string | null; shared: boolean; user_id: number }>(
         `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.shared, a.user_id, a.folder, a.folder_name AS "folderName",
                 a.last_sync_at AS "lastSyncAt", a.last_error AS "lastError",
                 (SELECT count(*)::int FROM emails e WHERE e.account_id = a.id AND e.status IN ('needs_reply','pending')) AS todo
-         FROM accounts a WHERE ${canUse('$1', '$2')} ORDER BY a.shared DESC, a.id`,
+         FROM accounts a WHERE ${mayUse('$1', '$2')} ORDER BY a.shared DESC, a.id`,
         [req.org.id, req.user.id],
     );
-    res.json(rows.map(({ user_id, ...row }) => ({ ...row, canManage: canManage(req, { shared: row.shared, user_id }), lastError: decodeProblem(row.lastError) })));
+    res.json(rows.map(({ user_id, ...row }) => ({ ...row, canManage: manages(actorOf(req), { shared: row.shared, user_id }), lastError: decodeProblem(row.lastError) })));
   });
 
   app.post('/api/accounts/imap', auth, async (req, res) => {
-    const b = req.body;
-    const email = str(b.email, 320).toLowerCase();
-    /** A valid TCP port, or 0. */
-    const port = (v: unknown): number => (Number.isInteger(Number(v)) && Number(v) > 0 && Number(v) < 65536 ? Number(v) : 0);
-    const server = (host: unknown, portValue: unknown, secure: unknown): ServerCredentials => ({
-      host: str(host, 255),
-      port: port(portValue),
-      secure: Boolean(secure),
-      user: str(b.username, 320) || email,
-      pass: String(b.password || ''),
-    });
-    const cfg: ImapCredentials = { imap: server(b.imapHost, b.imapPort, b.imapSecure), smtp: server(b.smtpHost, b.smtpPort, b.smtpSecure) };
-    if (!isEmailAddress(email)) throw new HttpError(400, 'auth.invalidEmail');
-    if (!cfg.imap.host || !cfg.smtp.host || !cfg.imap.port || !cfg.smtp.port) throw new HttpError(400, 'accounts.serversRequired');
-    if (!cfg.imap.pass) throw new HttpError(400, 'accounts.passwordRequired');
-    const draft = { kind: 'imap' as const, email, display_name: str(b.displayName, 200), shared: wantsShared(req, b.shared) };
-    try {
-      await mail.imapProvider(draft, cfg).verify();
-    } catch (e) {
-      throw new HttpError(400, 'accounts.connectionFailed', { detail: errorMessage(e) });
-    }
-    // Nothing is fetched yet: the user first chooses the folder to watch.
-    const account = await saveAccount(req, draft, cfg);
-    res.status(201).json({ id: account.id });
+    res.status(201).json({ id: (await connectMailboxByServers(world, actorOf(req), req.body)).id });
   });
-
-  /** Only administrators connect shared mailboxes; anyone else asking for one gets a personal one. */
-  const wantsShared = (req: Request, asked: unknown): boolean => req.user.role === 'admin' && asked === true;
-
-  /**
-   * Connects a mailbox to the organisation, or renews the credentials of one the user manages.
-   * An address is connected once per organisation: nobody takes over someone else's mailbox.
-   */
-  async function saveAccount(req: Request, { kind, email, display_name, shared }: Sender & { kind: AccountKind; shared: boolean }, cfg: ImapCredentials | OAuthTokens): Promise<AccountRow> {
-    const existing = await db.one<AccountRow>('SELECT * FROM accounts WHERE org_id = $1 AND kind = $2 AND email = $3', [req.org.id, kind, email]);
-    if (existing) {
-      if (!canManage(req, existing)) throw new HttpError(409, 'accounts.alreadyConnected');
-      const renewed = await db.one<AccountRow>('UPDATE accounts SET config_enc = $1, display_name = $2, last_error = NULL WHERE id = $3 RETURNING *', [
-        vault.seal(cfg),
-        display_name,
-        existing.id,
-      ]);
-      return renewed!;
-    }
-    const created = await db.one<AccountRow>('INSERT INTO accounts (org_id, user_id, shared, kind, email, display_name, config_enc) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *', [
-      req.org.id,
-      req.user.id,
-      shared,
-      kind,
-      email,
-      display_name,
-      vault.seal(cfg),
-    ]);
-    return created!;
-  }
 
   /** Who hosts the mail of an address, from its domain's MX records: the connection page uses it to propose the right way in. */
   app.get('/api/mail/host', auth, async (req, res) => {
     res.json(await lookupMailHost(str(req.query.email, 320)));
   });
 
-  /** The folders of the mailbox, for the user to choose the one to watch. */
   app.get('/api/accounts/:id/folders', auth, async (req, res) => {
-    const account = await accountOf(req);
-    try {
-      res.json(await mail.providerFor(account).listFolders());
-    } catch (e) {
-      throw new HttpError(502, 'accounts.foldersFailed', { detail: errorMessage(e) });
-    }
+    res.json(await listFolders(world, actorOf(req), req.params.id));
   });
 
-  /** Chooses the one folder to watch. What was fetched from another folder before is kept. */
   app.put('/api/accounts/:id/folder', auth, async (req, res) => {
-    const account = await managedAccountOf(req);
-    const wanted = str(req.body.folder, 1000);
-    let folders;
-    try {
-      folders = await mail.providerFor(account).listFolders();
-    } catch (e) {
-      throw new HttpError(502, 'accounts.foldersFailed', { detail: errorMessage(e) });
-    }
-    const folder = folders.find((f) => f.id === wanted);
-    if (!folder) throw new HttpError(400, 'accounts.unknownFolder');
-    const updated = await db.one<AccountRow>('UPDATE accounts SET folder = $1, folder_name = $2, last_error = NULL WHERE id = $3 RETURNING *', [folder.id, folder.name, account.id]);
-    backgroundSync(updated!);
+    const folder = await chooseWatchedFolder(world, actorOf(req), req.params.id, req.body.folder);
     res.json({ ok: true, folder: folder.id, folderName: folder.name });
   });
 
   app.delete('/api/accounts/:id', auth, async (req, res) => {
-    await db.run('DELETE FROM accounts WHERE id = $1', [(await managedAccountOf(req)).id]);
+    await disconnectMailbox(world, actorOf(req), req.params.id);
     res.json({ ok: true });
   });
 
   app.post('/api/accounts/:id/sync', auth, async (req, res) => {
-    res.json(await sync.syncAccount(await accountOf(req)));
+    res.json(await fetchMailboxNow(world, actorOf(req), req.params.id));
   });
 
-  // ---- OAuth (Google / Microsoft) ---------------------------------------------------------
+  // ---- signing in at the mail host (Google / Microsoft) -------------------------------------
   app.get('/api/oauth/:kind/start', auth, async (req, res) => {
-    const { kind } = req.params;
-    if (!isOAuthKind(kind) || !isConfigured(config, kind)) throw new HttpError(404, 'oauth.notConfigured');
-    const state = randomToken(24);
-    // Whether a shared mailbox was asked for is kept with the state, on our side of the round trip.
-    const scope = wantsShared(req, req.query.shared === '1') ? 'shared' : 'personal';
-    await db.run('UPDATE sessions SET oauth_state = $1 WHERE id = $2', [`${kind}:${state}:${scope}`, req.user.sid]);
-    res.redirect(authorizationUrl(config, kind, state));
+    res.redirect(await beginHostSignIn(world, actorOf(req), req.user.sid, String(req.params.kind), req.query.shared === '1'));
   });
 
+  /** The member comes back from the host: the outcome travels in the URL, as a message code and its technical detail when there is one. */
   app.get('/api/oauth/:kind/callback', auth, async (req, res) => {
-    const { kind } = req.params;
-    // The outcome travels in the URL: a message code, and its technical detail when there is one.
     const back = (code?: MessageCode, detail = '') =>
       res.redirect(`/#/accounts${code ? `?error=${encodeURIComponent(code)}&detail=${encodeURIComponent(detail)}` : ''}`);
-    const expected = req.user.oauth_state;
-    await db.run('UPDATE sessions SET oauth_state = NULL WHERE id = $1', [req.user.sid]);
-    if (!isOAuthKind(kind) || !isConfigured(config, kind)) return back('oauth.notConfigured');
-    if (req.query.error) return back('oauth.denied', str(req.query.error, 100));
-    const [expectedKind, expectedState, scope] = (expected || '').split(':');
-    if (!expectedState || expectedKind !== kind || expectedState !== req.query.state) return back('oauth.expired');
+    const { state, code, error } = req.query;
     try {
-      const tokens = await exchangeCode(config, kind, String(req.query.code || ''), fetchImpl);
-      if (!tokens.refreshToken) throw new Error('no refresh token received');
-      const identity = await fetchIdentity(kind, tokens.accessToken, fetchImpl);
-      const account = await saveAccount(req, { kind, email: identity.email, display_name: identity.name, shared: wantsShared(req, scope === 'shared') }, tokens);
-      // Reconnecting a mailbox that already watches a folder resumes fetching at once.
-      if (account.folder) backgroundSync(account);
+      await connectMailboxByHostSignIn(world, actorOf(req), req.user.sid, { kind: String(req.params.kind), remembered: req.user.oauth_state, state, code, error }, fetchImpl);
       back();
     } catch (e) {
-      if (e instanceof HttpError) return back(e.problem.code);
-      back('oauth.failed', errorMessage(e));
+      if (e instanceof Refusal) back(e.problem.code, String(e.problem.params.detail ?? ''));
+      else back('oauth.failed', errorMessage(e));
     }
   });
 
@@ -541,13 +429,13 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
               e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS account, a.shared,
               (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
        FROM emails e JOIN accounts a ON a.id = e.account_id
-       WHERE ${canUse('$1', '$2')} AND e.status = ANY($3)
+       WHERE ${mayUse('$1', '$2')} AND e.status = ANY($3)
        ORDER BY e.date DESC LIMIT 200`,
       [req.org.id, req.user.id, statuses],
     );
     const counts = Object.fromEntries(Object.keys(BOXES).map((box) => [box, 0]));
     const perStatus = await db.query<{ status: EmailStatus; n: number }>(
-      `SELECT e.status, count(*)::int AS n FROM emails e JOIN accounts a ON a.id = e.account_id WHERE ${canUse('$1', '$2')} GROUP BY e.status`,
+      `SELECT e.status, count(*)::int AS n FROM emails e JOIN accounts a ON a.id = e.account_id WHERE ${mayUse('$1', '$2')} GROUP BY e.status`,
       [req.org.id, req.user.id],
     );
     for (const { status, n } of perStatus) {

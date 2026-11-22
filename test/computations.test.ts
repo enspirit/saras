@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, mayDeleteMember, mayOpenAccount, mayRemoveAdministratorRole, maySignUp, opensNewWindow, organizationNameFor, roleInvitedAs, signUpIsOpen } from '../src/domain/computations/access.ts';
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../src/domain/computations/given.ts';
+import { answersSignIn, connectsAsShared, folderAmong, manages, mayManage, mayRenew, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../src/domain/computations/mailboxes.ts';
 import { promptContent } from '../src/domain/computations/prompts.ts';
 import { modelGiven, proposalsGiven, sortingGiven } from '../src/domain/computations/settings.ts';
 import { mayBeSortedAgain } from '../src/domain/computations/sorting.ts';
@@ -116,4 +117,54 @@ test('only the ways of sorting and of preparing replies we know are taken', () =
   assert.deepEqual(['none', 'draft', 'mailbox'].map((a) => outcome(proposalsGiven(a))), ['ok', 'ok', 'ok']);
   assert.equal(outcome(proposalsGiven('send')), 'invalid: organization.invalidAutomation');
   assert.equal(outcome(proposalsGiven(undefined)), 'invalid: organization.invalidAutomation');
+});
+
+const actorWith = (id: number, role: 'admin' | 'user') => ({ member: { id, role }, organization: { id: 1 } }) as Actor;
+
+test('a mailbox is managed by its owner; a shared one, by the administrators', () => {
+  const personal = { shared: false, user_id: 7 };
+  const shared = { shared: true, user_id: 7 };
+  assert.equal(manages(actorWith(7, 'user'), personal), true);
+  assert.equal(manages(actorWith(8, 'admin'), personal), false, 'not even an administrator manages someone else\'s own mailbox');
+  assert.equal(manages(actorWith(7, 'user'), shared), false, 'sharing it hands it to the administrators');
+  assert.equal(manages(actorWith(8, 'admin'), shared), true);
+  assert.equal(outcome(mayManage(actorWith(8, 'user'), shared)), 'forbidden: accounts.adminOnly');
+  assert.equal(outcome(mayRenew(actorWith(8, 'user'), personal)), 'conflict: accounts.alreadyConnected');
+  assert.equal(outcome(mayRenew(actorWith(7, 'user'), personal)), 'ok');
+});
+
+test('only an administrator connects a shared mailbox', () => {
+  assert.equal(connectsAsShared(actorWith(1, 'admin'), true), true);
+  assert.equal(connectsAsShared(actorWith(1, 'admin'), 'yes'), false);
+  assert.equal(connectsAsShared(actorWith(1, 'user'), true), false);
+});
+
+test('connecting by servers takes an address, both servers with their ports, and a password', () => {
+  const given = { email: ' Alex@Acme.Example ', password: 'secret', imapHost: 'imap.acme.example', imapPort: '993', imapSecure: true, smtpHost: 'smtp.acme.example', smtpPort: 587 };
+  const verdict = serversGiven(given);
+  assert.ok(verdict.ok);
+  assert.equal(verdict.value.email, 'alex@acme.example');
+  assert.deepEqual(verdict.value.credentials.imap, { host: 'imap.acme.example', port: 993, secure: true, user: 'alex@acme.example', pass: 'secret' });
+  assert.equal(verdict.value.credentials.smtp.secure, false);
+  assert.equal(serversGiven({ ...given, username: 'alex' }).ok && 'alex', 'alex');
+  assert.equal(outcome(serversGiven({ ...given, email: 'alex' })), 'invalid: auth.invalidEmail');
+  assert.equal(outcome(serversGiven({ ...given, smtpHost: '' })), 'invalid: accounts.serversRequired');
+  assert.equal(outcome(serversGiven({ ...given, imapPort: 70000 })), 'invalid: accounts.serversRequired');
+  assert.equal(outcome(serversGiven({ ...given, password: '' })), 'invalid: accounts.passwordRequired');
+  assert.deepEqual([993, '25', 0, -1, 65536, 1.5, 'x'].map(portGiven), [993, 25, 0, 0, 0, 0, 0]);
+});
+
+test('the watched folder is one of the mailbox\'s own', () => {
+  const folders = [{ id: 'INBOX', name: 'Inbox' }, { id: 'Support', name: 'Support' }];
+  assert.deepEqual(folderAmong(folders, 'Support'), { ok: true, value: folders[1] });
+  assert.equal(outcome(folderAmong(folders, 'Elsewhere')), 'invalid: accounts.unknownFolder');
+});
+
+test('a sign-in at the mail host is answered once, for the same host, with our secret', () => {
+  const remembered = signInRemembered(rememberedSignIn({ kind: 'google', state: 'abc', shared: true }));
+  assert.deepEqual(remembered, { kind: 'google', state: 'abc', shared: true });
+  assert.equal(outcome(answersSignIn(remembered, 'google', 'abc')), 'ok');
+  assert.equal(outcome(answersSignIn(remembered, 'microsoft', 'abc')), 'gone: oauth.expired');
+  assert.equal(outcome(answersSignIn(remembered, 'google', 'xyz')), 'gone: oauth.expired');
+  assert.equal(outcome(answersSignIn(signInRemembered(null), 'google', '')), 'gone: oauth.expired', 'nothing remembered answers nothing');
 });

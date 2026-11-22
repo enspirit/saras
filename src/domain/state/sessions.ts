@@ -35,3 +35,8 @@ export function countWrongGuess(attempts: Map<string, Attempts>, origin: string,
   if (opensNewWindow(seen, now)) attempts.set(origin, { count: 1, reset: now + LOCK_OUT_MS });
   else seen!.count += 1;
 }
+
+/** A sign-in under way at a mail host, remembered with the session that started it. */
+export const rememberHostSignIn = async (db: Db, sessionId: string, remembered: string): Promise<void> =>
+  void (await db.run('UPDATE sessions SET oauth_state = $1 WHERE id = $2', [remembered, sessionId]));
+export const forgetHostSignIn = async (db: Db, sessionId: string): Promise<void> => void (await db.run('UPDATE sessions SET oauth_state = NULL WHERE id = $1', [sessionId]));

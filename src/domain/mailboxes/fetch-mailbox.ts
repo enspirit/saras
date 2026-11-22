@@ -7,6 +7,7 @@ import { LlmError } from '../../tooling/llm/openrouter.ts';
 import type { MailService } from '../../tooling/mail/index.ts';
 import { encodeProblem, problem } from '../../tooling/messages.ts';
 import type { Problem } from '../../tooling/messages.ts';
+import { watchedMailboxes } from '../state/mailboxes.ts';
 import { runGate } from '../sorting/gate.ts';
 import type { TriageMail, TriagePrompt } from '../sorting/gate.ts';
 import type { Triage } from '../sorting/index.ts';
@@ -67,6 +68,8 @@ export interface SyncResult extends TriageResult {
 
 export interface Sync {
   syncAccount(account: AccountRow): Promise<SyncResult>;
+  /** The same, without waiting for it: what goes wrong is kept with the mailbox, and logged. */
+  inBackground(account: AccountRow): void;
   syncAll(): Promise<void>;
   triagePending(account: AccountRow): Promise<TriageResult>;
 }
@@ -194,11 +197,14 @@ export function createSync({ db, mail, triage, config, llm, vault }: Dependencie
     return { fetched, triaged: outcome.triaged, error };
   }
 
+  const logged = (account: AccountRow) => (e: unknown) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`);
+  const inBackground = (account: AccountRow): void => void syncAccount(account).catch(logged(account));
+
   async function syncAll(): Promise<void> {
-    for (const account of await db.query<AccountRow>('SELECT * FROM accounts WHERE folder IS NOT NULL')) {
-      await syncAccount(account).catch((e) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`));
+    for (const account of await watchedMailboxes(db)) {
+      await syncAccount(account).catch(logged(account));
     }
   }
 
-  return { syncAccount, syncAll, triagePending };
+  return { syncAccount, inBackground, syncAll, triagePending };
 }

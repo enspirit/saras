@@ -5,6 +5,7 @@ import type { Db } from '../tooling/db.ts';
 import type { MailService } from '../tooling/mail/index.ts';
 import type { Llm, OrganizationRow, UserRow } from '../types.ts';
 import type { Attempts } from './computations/access.ts';
+import type { Sync } from './mailboxes/fetch-mailbox.ts';
 
 /** The other agents and the stores an operation may reach: the database, the mailboxes, the LLM. */
 export interface Reach {
@@ -21,9 +22,11 @@ export interface World extends Reach {
   attempts: Map<string, Attempts>;
   /** Emails whose reply is on its way to the mailbox. */
   handingOver: Set<number>;
+  /** The fetching of mailboxes: one at a time per mailbox, whoever asks. */
+  fetching: Sync;
 }
 
-export const createWorld = (reach: Reach): World => ({ ...reach, attempts: new Map(), handingOver: new Set() });
+export const createWorld = (reach: Reach, fetching: Sync): World => ({ ...reach, attempts: new Map(), handingOver: new Set(), fetching });
 
 /** The member an operation is performed by, with their organisation. */
 export interface Actor {
