@@ -1,0 +1,11 @@
+{
+  "sentTitle": "Réponse envoyée",
+  "draftTitle": "Brouillon déposé dans votre boîte",
+  "edited": "Proposition modifiée",
+  "unedited": "Proposition gardée telle quelle",
+  "draftNotice": "Ce message n’est pas parti : il attend dans le dossier Brouillons de votre messagerie, où vous pouvez le compléter et l’envoyer.",
+  "textErased": "(texte effacé)",
+  "by": "par {user}",
+  "why": "Raison de la modification",
+  "from": "De"
+}

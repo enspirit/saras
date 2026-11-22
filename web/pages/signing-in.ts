@@ -46,7 +46,7 @@ function signInForm(signup: boolean, { email, password, organization, name }: Si
   return SubmitForm(submit, '…', async () => {
     const details = { email: email.value, password: password.value, organization: organization.value, name: name.value, language: language() };
     await (signup ? createOrganization(details) : signIn(details));
-    if (signup) location.hash = '#/accounts';
+    if (signup) location.hash = '#/mailboxes';
     await start();
   },
     signup && Field(t('auth.organization'), organization, { hint: t('auth.organizationHint') }),

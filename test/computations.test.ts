@@ -76,10 +76,10 @@ test('an invitation grants the administrator role only when asked for', () => {
 
 test('an organisation keeps one administrator, and nobody deletes themselves', () => {
   assert.equal(outcome(mayRemoveAdministratorRole('admin', 2)), 'ok');
-  assert.equal(outcome(mayRemoveAdministratorRole('admin', 1)), 'conflict: users.lastAdmin');
+  assert.equal(outcome(mayRemoveAdministratorRole('admin', 1)), 'conflict: members.lastAdmin');
   assert.equal(outcome(mayRemoveAdministratorRole('user', 1)), 'ok', 'a user has no role to lose');
   assert.equal(outcome(mayDeleteMember(2, 1)), 'ok');
-  assert.equal(outcome(mayDeleteMember(1, 1)), 'conflict: users.cannotDeleteSelf');
+  assert.equal(outcome(mayDeleteMember(1, 1)), 'conflict: members.cannotDeleteSelf');
 });
 
 test('ten wrong guesses within fifteen minutes lock an origin out; the window then starts again', () => {
@@ -130,7 +130,7 @@ test('a mailbox is managed by its owner; a shared one, by the administrators', (
   assert.equal(manages(actorWith(8, 'admin'), personal), false, 'not even an administrator manages someone else\'s own mailbox');
   assert.equal(manages(actorWith(7, 'user'), shared), false, 'sharing it hands it to the administrators');
   assert.equal(manages(actorWith(8, 'admin'), shared), true);
-  assert.equal(outcome(mayManage(actorWith(8, 'user'), shared)), 'forbidden: accounts.adminOnly');
+  assert.equal(outcome(mayManage(actorWith(8, 'user'), shared)), 'forbidden: mailboxes.adminOnly');
 });
 
 test('only an administrator connects a shared mailbox', () => {
@@ -148,16 +148,16 @@ test('connecting by servers takes an address, both servers with their ports, and
   assert.equal(verdict.value.credentials.smtp.secure, false);
   assert.equal(serversGiven({ ...given, username: 'alex' }).ok && 'alex', 'alex');
   assert.equal(outcome(serversGiven({ ...given, email: 'alex' })), 'invalid: auth.invalidEmail');
-  assert.equal(outcome(serversGiven({ ...given, smtpHost: '' })), 'invalid: accounts.serversRequired');
-  assert.equal(outcome(serversGiven({ ...given, imapPort: 70000 })), 'invalid: accounts.serversRequired');
-  assert.equal(outcome(serversGiven({ ...given, password: '' })), 'invalid: accounts.passwordRequired');
+  assert.equal(outcome(serversGiven({ ...given, smtpHost: '' })), 'invalid: mailboxes.serversRequired');
+  assert.equal(outcome(serversGiven({ ...given, imapPort: 70000 })), 'invalid: mailboxes.serversRequired');
+  assert.equal(outcome(serversGiven({ ...given, password: '' })), 'invalid: mailboxes.passwordRequired');
   assert.deepEqual([993, '25', 0, -1, 65536, 1.5, 'x'].map(portGiven), [993, 25, 0, 0, 0, 0, 0]);
 });
 
 test('the watched folder is one of the mailbox\'s own', () => {
   const folders = [{ id: 'INBOX', name: 'Inbox' }, { id: 'Support', name: 'Support' }];
   assert.deepEqual(folderAmong(folders, 'Support'), { ok: true, value: folders[1] });
-  assert.equal(outcome(folderAmong(folders, 'Elsewhere')), 'invalid: accounts.unknownFolder');
+  assert.equal(outcome(folderAmong(folders, 'Elsewhere')), 'invalid: mailboxes.unknownFolder');
 });
 
 test('a sign-in at the mail host is answered once, for the same host, with our secret', () => {
@@ -172,24 +172,24 @@ test('a sign-in at the mail host is answered once, for the same host, with our s
 
 test('an address is connected once; access to it is renewed, for that very mailbox', () => {
   assert.equal(outcome(addressIsNotConnected(undefined)), 'ok');
-  assert.equal(outcome(addressIsNotConnected({ id: 3 })), 'conflict: accounts.alreadyConnected');
+  assert.equal(outcome(addressIsNotConnected({ id: 3 })), 'conflict: mailboxes.alreadyConnected');
   assert.equal(outcome(isRenewedByPassword({ kind: 'imap' })), 'ok');
-  assert.equal(outcome(isRenewedByPassword({ kind: 'google' })), 'invalid: accounts.renewAtHost');
+  assert.equal(outcome(isRenewedByPassword({ kind: 'google' })), 'invalid: mailboxes.renewAtHost');
   const mailbox = { kind: 'google' as const, email: 'alex@acme.example' };
   assert.equal(outcome(isSameMailbox(mailbox, 'google', 'Alex@Acme.example')), 'ok');
-  assert.equal(outcome(isSameMailbox(mailbox, 'google', 'sam@acme.example')), 'conflict: accounts.otherMailbox');
-  assert.equal(outcome(isSameMailbox(mailbox, 'microsoft', 'alex@acme.example')), 'conflict: accounts.otherMailbox');
+  assert.equal(outcome(isSameMailbox(mailbox, 'google', 'sam@acme.example')), 'conflict: mailboxes.otherMailbox');
+  assert.equal(outcome(isSameMailbox(mailbox, 'microsoft', 'alex@acme.example')), 'conflict: mailboxes.otherMailbox');
   const servers = { imap: { host: 'i', port: 993, secure: true, user: 'u', pass: 'old' }, smtp: { host: 's', port: 587, secure: false, user: 'u', pass: 'old' } };
   const renewed = withNewPassword(servers, 'new');
   assert.ok(renewed.ok);
   assert.deepEqual([renewed.value.imap.pass, renewed.value.smtp.pass, renewed.value.imap.host], ['new', 'new', 'i']);
-  assert.equal(outcome(withNewPassword(servers, '')), 'invalid: accounts.passwordRequired');
+  assert.equal(outcome(withNewPassword(servers, '')), 'invalid: mailboxes.passwordRequired');
 });
 
 test('the last administrator does not leave; an organisation is deleted by its name', () => {
   assert.equal(outcome(mayLeave('user', 1)), 'ok');
   assert.equal(outcome(mayLeave('admin', 2)), 'ok');
-  assert.equal(outcome(mayLeave('admin', 1)), 'conflict: users.lastAdmin');
+  assert.equal(outcome(mayLeave('admin', 1)), 'conflict: members.lastAdmin');
   assert.equal(outcome(namesTheOrganization(' acme sa ', 'Acme SA')), 'ok');
   assert.deepEqual(['Acme', '', undefined].map((n) => outcome(namesTheOrganization(n, 'Acme SA'))), Array(3).fill('invalid: organization.nameMismatch'));
 });

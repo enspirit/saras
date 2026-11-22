@@ -26,7 +26,7 @@ import { Page } from '../ui/organisms/page.ts';
 const KIND: Record<Mailbox['kind'], string> = { imap: 'IMAP / SMTP', google: 'Google', microsoft: 'Microsoft' };
 
 /** FetchMailbox, now: says what came in or what went wrong. */
-const fetchButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('accounts.syncNow'), t('mailbox.refreshing'), async () => {
+const fetchButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('mailboxes.syncNow'), t('mailbox.refreshing'), async () => {
   const r = await fetchMailbox(a.id);
   if (r.error) toast(problemText(r.error), true);
   else toast(t('mailbox.fetched', { count: r.fetched }));
@@ -34,8 +34,8 @@ const fetchButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('accounts.
 }, { size: 'small', icon: 'refresh-cw' });
 
 /** DisconnectMailbox, once confirmed. */
-const disconnectButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('accounts.disconnect'), '…', async () => {
-  if (!(await confirmAction(t('accounts.confirmDisconnect', { email: a.email }), t('accounts.disconnect')))) return;
+const disconnectButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('mailboxes.disconnect'), '…', async () => {
+  if (!(await confirmAction(t('mailboxes.confirmDisconnect', { email: a.email }), t('mailboxes.disconnect')))) return;
   await disconnectMailbox(a.id);
   void mailboxesPage();
 }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true });
@@ -43,41 +43,41 @@ const disconnectButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('acco
 /** What can be done about a mailbox: fetch it, and for who manages it, change its folder, renew its access, disconnect it. */
 const mailboxActions = (a: Mailbox): Child[] => [
   a.folder && fetchButton(a),
-  a.folder && a.canManage && Button(t('accounts.changeFolder'), { variant: 'ghost', size: 'small', icon: 'folder', iconOnly: true, onClick: () => (location.hash = `#/accounts/folder/${a.id}`) }),
-  a.canManage && Button(t('accounts.renew'), { variant: 'ghost', size: 'small', icon: 'key', iconOnly: true, onClick: () => (location.hash = `#/accounts/renew/${a.id}`) }),
+  a.folder && a.canManage && Button(t('mailboxes.changeFolder'), { variant: 'ghost', size: 'small', icon: 'folder', iconOnly: true, onClick: () => (location.hash = `#/mailboxes/folder/${a.id}`) }),
+  a.canManage && Button(t('mailboxes.renew'), { variant: 'ghost', size: 'small', icon: 'key', iconOnly: true, onClick: () => (location.hash = `#/mailboxes/renew/${a.id}`) }),
   a.canManage && disconnectButton(a),
 ];
 
-const mailboxesTable = (accounts: Mailbox[]): HTMLDivElement =>
-  Table({ columns: [t('accounts.mailbox'), t('accounts.folderColumn'), t('accounts.lastSyncColumn'), t('box.todo.label')], actions: t('common.actions') }, accounts.map((a) => [
-    Person({ name: a.email, detail: KIND[a.kind], tags: [a.shared && Badge(t('accounts.shared'))], icon: a.shared ? 'users' : 'mail' }),
-    a.folder ? a.folderName : Muted(t('accounts.folderPending')),
-    a.lastSyncAt ? fmtWhen(a.lastSyncAt) : Muted(t('accounts.neverSynced')),
+const mailboxesTable = (mailboxes: Mailbox[]): HTMLDivElement =>
+  Table({ columns: [t('mailboxes.mailbox'), t('mailboxes.folderColumn'), t('mailboxes.lastSyncColumn'), t('box.todo.label')], actions: t('common.actions') }, mailboxes.map((a) => [
+    Person({ name: a.email, detail: KIND[a.kind], tags: [a.shared && Badge(t('mailboxes.shared'))], icon: a.shared ? 'users' : 'mail' }),
+    a.folder ? a.folderName : Muted(t('mailboxes.folderPending')),
+    a.lastSyncAt ? fmtWhen(a.lastSyncAt) : Muted(t('mailboxes.neverSynced')),
     a.todo,
     mailboxActions(a),
   ]));
 
 /** What went wrong at the last fetch of each mailbox that watches a folder. */
-const fetchFailures = (accounts: Mailbox[]): HTMLDivElement[] =>
-  accounts.filter((a) => a.lastError && a.folder).map((a) => Callout('warn', `${a.email}: ${problemText(a.lastError as NonNullable<Mailbox['lastError']>)}`));
+const fetchFailures = (mailboxes: Mailbox[]): HTMLDivElement[] =>
+  mailboxes.filter((a) => a.lastError && a.folder).map((a) => Callout('warn', `${a.email}: ${problemText(a.lastError as NonNullable<Mailbox['lastError']>)}`));
 
 /** The list of mailboxes, or the page of the `part` asked for: connect, renew/<id>, folder/<id>. */
 export const mailboxesPage = guard(async (part = '', id: number | null = null, oauthError?: string | null, oauthDetail?: string) => {
-  const accounts = await readMailboxes();
+  const mailboxes = await readMailboxes();
   const failure = oauthError && Callout('warn', problemText({ code: oauthError, params: { detail: oauthDetail ?? '' }, message: oauthDetail || oauthError }));
 
   // With no mailbox yet, the page is the first step of the path.
-  if (part === 'connect' || accounts.length === 0) return connectMailboxPage(accounts.length === 0, failure);
-  const renewing = part === 'renew' && accounts.find((a) => a.canManage && a.id === id);
+  if (part === 'connect' || mailboxes.length === 0) return connectMailboxPage(mailboxes.length === 0, failure);
+  const renewing = part === 'renew' && mailboxes.find((a) => a.canManage && a.id === id);
   if (renewing) return renewMailboxAccessPage(renewing);
   // A mailbox just connected has no folder yet: the page is the second step.
-  const pending = accounts.find((a) => a.canManage && (a.folder === null || (part === 'folder' && a.id === id)));
+  const pending = mailboxes.find((a) => a.canManage && (a.folder === null || (part === 'folder' && a.id === id)));
   if (pending) return watchedFolderPage(pending);
 
   shell(Page(
-    PageHeader({ title: t('accounts.title'), intro: t('accounts.intro') }, ButtonLink(t('accounts.connectTitle'), { href: '#/accounts/connect', variant: 'primary' })),
+    PageHeader({ title: t('mailboxes.title'), intro: t('mailboxes.intro') }, ButtonLink(t('mailboxes.connectTitle'), { href: '#/mailboxes/connect', variant: 'primary' })),
     failure,
-    fetchFailures(accounts),
-    mailboxesTable(accounts),
+    fetchFailures(mailboxes),
+    mailboxesTable(mailboxes),
   ));
 });

@@ -38,10 +38,10 @@ export const roleInvitedAs = (asked: unknown): Role => (asked === 'admin' ? 'adm
 
 /** ReqPre of RemoveAdministratorRole: an organisation keeps at least one administrator. */
 export const mayRemoveAdministratorRole = (currentRole: Role, administrators: number): Verdict<true> =>
-  currentRole === 'admin' && administrators === 1 ? refuse('conflict', 'users.lastAdmin') : accept(true);
+  currentRole === 'admin' && administrators === 1 ? refuse('conflict', 'members.lastAdmin') : accept(true);
 
 /** ReqPre of DeleteMember: not oneself. */
-export const mayDeleteMember = (targetId: number, actorId: number): Verdict<true> => (targetId === actorId ? refuse('conflict', 'users.cannotDeleteSelf') : accept(true));
+export const mayDeleteMember = (targetId: number, actorId: number): Verdict<true> => (targetId === actorId ? refuse('conflict', 'members.cannotDeleteSelf') : accept(true));
 
 /** ReqPre of DeleteOwnAccount: an organisation keeps an administrator, so its last one does not leave. */
 export const mayLeave = (role: Role, administrators: number): Verdict<true> => mayRemoveAdministratorRole(role, administrators);

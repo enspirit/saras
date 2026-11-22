@@ -8,8 +8,10 @@ import { flatten, format, formatRich, parameterNames } from '../web/i18n/format.
 
 const root = new URL('../', import.meta.url);
 const readJson = (path: string): unknown => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
-const catalogue = readJson('public/i18n/index.json') as { default: string; languages: { tag: string; name: string }[] };
-const messages = Object.fromEntries(catalogue.languages.map((l) => [l.tag, flatten(readJson(`public/i18n/${l.tag}.json`))]));
+const catalogue = readJson('public/i18n/index.json') as { default: string; languages: { tag: string; name: string }[]; sections: string[] };
+/** Every message of a language, as the interface loads it: one file per section. */
+const messagesOf = (tag: string): Record<string, string> => flatten(Object.fromEntries(catalogue.sections.map((section) => [section, readJson(`public/i18n/${tag}/${section}.json`)])));
+const messages = Object.fromEntries(catalogue.languages.map((l) => [l.tag, messagesOf(l.tag)]));
 const source = messages[catalogue.default] ?? {};
 
 /** Every TypeScript file of the interface, with its content. */
@@ -111,5 +113,12 @@ test('no wording is written in the code: it all comes from the translation files
       const looksLikeProse = /[À-ÿ’«»]/.test(text) || /[A-Za-z]{3,} [a-z]{3,} [a-z]{2,}/.test(text);
       assert.ok(!looksLikeProse, `${file}: ${literal}`);
     }
+  }
+});
+
+test('every language has exactly the sections the index lists, one file each', () => {
+  for (const { tag } of catalogue.languages) {
+    const files = (readdirSync(new URL(`public/i18n/${tag}`, root)) as string[]).map((file) => file.replace(/\.json$/, '')).sort();
+    assert.deepEqual(files, [...catalogue.sections].sort(), `sections of ${tag}`);
   }
 });

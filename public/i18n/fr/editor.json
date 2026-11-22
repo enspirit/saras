@@ -1,0 +1,11 @@
+{
+  "bold": "Gras",
+  "italic": "Italique",
+  "underline": "Souligné",
+  "bullets": "Liste à puces",
+  "numbers": "Liste numérotée",
+  "link": "Lien",
+  "linkPrompt": "Adresse du lien :",
+  "linkInsert": "Insérer le lien",
+  "clear": "Effacer la mise en forme"
+}

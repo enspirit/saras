@@ -27,7 +27,7 @@ type Done = (message: string) => void;
 
 /** The last thing seen before an email leaves: who it goes to, in the interface's own dialog. */
 function confirmSending(email: EmailWithItsReply, reply: ReplyToHandOver): Promise<boolean> {
-  const facts: [string, Child][] = [[t('reply.from'), email.account], [t('composer.to'), reply.to.join(', ')]];
+  const facts: [string, Child][] = [[t('reply.from'), email.mailbox], [t('composer.to'), reply.to.join(', ')]];
   if (reply.cc.length) facts.push([t('composer.cc'), reply.cc.join(', ')]);
   return confirmDialog({ title: t('composer.confirmSendTitle'), text: [Facts(facts), Text({ muted: true, small: true }, t('composer.confirmSendText'))], confirmLabel: t('composer.send'), cancelLabel: t('common.cancel') });
 }
@@ -43,13 +43,13 @@ const sendButton = (reply: ReplyInProgress, done: Done): HTMLButtonElement => Ac
 /** FileReplyAsDraft: nothing is sent, the reply waits in the mailbox's drafts. */
 const fileAsDraftButton = (reply: ReplyInProgress, done: Done): HTMLButtonElement => ActionButton(t('composer.saveDraft'), t('composer.savingDraft'), async () => {
   await fileReplyAsDraft(reply.email.id, replyToHandOver(reply));
-  done(t('composer.draftSaved', { account: reply.email.account }));
+  done(t('composer.draftSaved', { account: reply.email.mailbox }));
 }, { title: t('composer.saveDraftTitle') });
 
 /** What to know before writing: what to try at the end of the getting-started path, and a missing key. */
 const replyNotices = (email: EmailWithItsReply): Child => [
   // Arriving from the getting-started path: say what to try, once.
-  route().query.has('welcome') && Block(Notice('info', email.draft ? t('welcome.tryPrepared') : t('welcome.tryIt'))),
+  route().query.has('welcome') && Block(Notice('info', email.proposal ? t('welcome.tryPrepared') : t('welcome.tryIt'))),
   !me().hasKey && Notice('warn', tRich('composer.noKey', {}, { link: (label) => Link(label, '#/settings') })),
 ];
 
@@ -71,7 +71,7 @@ export function replyArea(email: EmailWithItsReply, prompts: Prompt[], done: Don
     help: replyHelp(reply, prompts),
     actions: [sendButton(reply, done), fileAsDraftButton(reply, done), reply.caution],
   });
-  if (email.draft) showProposal(reply, email.draft, null);
+  if (email.proposal) showProposal(reply, email.proposal, null);
   else syncReply(reply);
   return dock;
 }

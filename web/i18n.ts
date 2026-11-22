@@ -1,14 +1,15 @@
 /**
- * Translations at run time. Messages are JSON files in public/i18n/, one per language, in
- * Tolgee's native format (keys nested on dots, ICU MessageFormat values); public/i18n/index.json
- * lists the languages. Nothing here is specific to this application.
+ * Translations at run time. Messages are JSON files in public/i18n/, one folder per language
+ * and one file per section of the interface, in Tolgee's native format (keys nested on dots,
+ * ICU MessageFormat values); public/i18n/index.json lists the languages and the sections.
+ * Nothing here is specific to this application.
  */
 import { flatten, format, formatRich } from './i18n/format.ts';
 import type { Params } from './i18n/format.ts';
 import type { Child } from './ui/dom.ts';
 
 export interface Language {
-  /** BCP 47 tag, also the name of the JSON file. */
+  /** BCP 47 tag, also the name of its folder. */
   tag: string;
   /** Its own name, as shown in the language picker. */
   name: string;
@@ -18,12 +19,14 @@ interface Catalogue {
   /** Language of the keys' source text, and fallback for a missing translation. */
   default: string;
   languages: Language[];
+  /** The sections of the interface: the first part of every key, and the name of its file. */
+  sections: string[];
 }
 
 const STORAGE_KEY = 'saras.language';
 
 // Used only if index.json cannot be read.
-let catalogue: Catalogue = { default: 'en', languages: [{ tag: 'en', name: 'en' }] };
+let catalogue: Catalogue = { default: 'en', languages: [{ tag: 'en', name: 'en' }], sections: [] };
 let current = 'en';
 let messages: Record<string, string> = {};
 let fallback: Record<string, string> = {};
@@ -35,6 +38,12 @@ async function loadJson<T>(path: string): Promise<T | null> {
   } catch {
     return null;
   }
+}
+
+/** Every message of a language, by its full key: its sections are fetched together. */
+async function loadMessages(tag: string): Promise<Record<string, string>> {
+  const sections = await Promise.all(catalogue.sections.map(async (section) => [section, await loadJson(`/i18n/${tag}/${section}.json`)] as const));
+  return flatten(Object.fromEntries(sections));
 }
 
 /** The stored choice, else the first browser language we have, else the default. */
@@ -55,8 +64,8 @@ function pickLanguage(): string {
 export async function initI18n(): Promise<void> {
   catalogue = (await loadJson<Catalogue>('/i18n/index.json')) ?? catalogue;
   current = pickLanguage();
-  fallback = flatten(await loadJson(`/i18n/${catalogue.default}.json`));
-  messages = current === catalogue.default ? fallback : flatten(await loadJson(`/i18n/${current}.json`));
+  fallback = await loadMessages(catalogue.default);
+  messages = current === catalogue.default ? fallback : await loadMessages(current);
   document.documentElement.lang = current;
 }
 

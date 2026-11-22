@@ -1,0 +1,13 @@
+{
+  "configuration": "Configuration",
+  "mailboxes": "Mailboxes",
+  "settings": "Settings",
+  "prompts": "Prompts",
+  "members": "Users",
+  "signOut": "Sign out",
+  "assurance": {
+    "text": "AI with zero data retention (ZDR): enforced on every request",
+    "title": "Every AI call enforces zdr=true and data_collection=deny at OpenRouter."
+  },
+  "more": "More"
+}

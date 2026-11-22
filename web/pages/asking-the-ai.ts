@@ -26,7 +26,7 @@ function promptPick(email: EmailWithItsReply, prompts: Prompt[]) {
     label: t('composer.applyPrompt'),
     selectLabel: t('composer.prompt'),
     title: t('composer.applyPromptTitle'),
-    options: prompts.map((p) => ({ value: p.id, label: p.name, selected: p.id === (email.draft?.promptId ?? suggested) })),
+    options: prompts.map((p) => ({ value: p.id, label: p.name, selected: p.id === (email.proposal?.promptId ?? suggested) })),
     suggested: suggested ? { value: suggested, label: t('composer.suggestedTag') } : undefined,
   });
 }

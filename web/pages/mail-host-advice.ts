@@ -29,12 +29,12 @@ interface Connecting {
 /** What to say once the host is known: sign in there when that is set up, else that a password will be needed. */
 function adviceFor(found: MailHost, address: string, { oauth, host, onHostChosen }: Connecting): HTMLElement | null {
   if (found.provider === 'other') return null;
-  const provider = found.provider === 'google' ? t('accounts.connectGoogle') : t('accounts.connectMicrosoft');
+  const provider = found.provider === 'google' ? t('mailboxes.connectGoogle') : t('mailboxes.connectMicrosoft');
   if (oauth[found.provider] && host.select(found.provider)) {
     onHostChosen();
-    return Callout('info', t('accounts.hostedSignIn', { address, provider }));
+    return Callout('info', t('mailboxes.hostedSignIn', { address, provider }));
   }
-  return Callout('warn', t('accounts.hostedPassword', { address, provider }));
+  return Callout('warn', t('mailboxes.hostedPassword', { address, provider }));
 }
 
 /** The advice about where an address is hosted, empty until `find` has something to say. */

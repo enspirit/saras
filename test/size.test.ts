@@ -10,8 +10,8 @@ import { functionsOf, lineCount } from './support/size.ts';
 const MAX_FILE_LINES = 200;
 const MAX_FUNCTION_LINES = 20;
 
-/** Every source file of the repository, tracked or about to be: TypeScript and CSS, ours only. */
-const sources = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', '*.ts', '*.css'], { encoding: 'utf8' })
+/** Every source file of the repository, tracked or about to be: TypeScript, CSS and the translations, ours only. */
+const sources = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '--', '*.ts', '*.css', 'public/i18n/*.json'], { encoding: 'utf8' })
   .trim()
   .split('\n')
   // A file deleted but not yet committed is still listed: it is no longer a source.

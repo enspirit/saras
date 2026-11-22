@@ -40,7 +40,7 @@ export async function renewMailboxPassword(world: World, actor: Actor, mailboxId
   try {
     await world.mail.imapProvider(mailbox, credentials).verify();
   } catch (e) {
-    throw new Refusal('invalid', 'accounts.connectionFailed', { detail: errorMessage(e) });
+    throw new Refusal('invalid', 'mailboxes.connectionFailed', { detail: errorMessage(e) });
   }
   return renewWith(world, mailbox, credentials);
 }

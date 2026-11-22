@@ -12,7 +12,7 @@ export async function foldersOf({ mail }: Pick<World, 'mail'>, mailbox: AccountR
   try {
     return await mail.providerFor(mailbox).listFolders();
   } catch (e) {
-    throw new Refusal('upstream', 'accounts.foldersFailed', { detail: errorMessage(e) });
+    throw new Refusal('upstream', 'mailboxes.foldersFailed', { detail: errorMessage(e) });
   }
 }
 

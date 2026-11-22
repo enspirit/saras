@@ -132,7 +132,7 @@ export function showProposal(reply: ReplyInProgress, draft: Proposal, replaced: 
 
 /** The reply as it stands, as the server expects it. */
 export const replyToHandOver = (reply: ReplyInProgress): ReplyToHandOver => ({
-  draftId: reply.proposal?.id,
+  proposalId: reply.proposal?.id,
   html: reply.editor.getHtml(),
   to: reply.to.getValues(),
   cc: reply.cc.getValues(),

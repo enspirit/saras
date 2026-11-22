@@ -17,7 +17,7 @@ type Kept<T, K extends keyof T> = Omit<T, K> & Record<K, Date>;
 const listed = (db: Db, { member, organization }: Actor, statuses: readonly EmailStatus[]): Promise<Kept<EmailSummary, 'date'>[]> =>
   db.query(
     `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status, e.priority,
-            e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS account, a.shared,
+            e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS mailbox, a.shared,
             (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
      FROM emails e JOIN accounts a ON a.id = e.account_id
      WHERE ${mayUse('$1', '$2')} AND e.status = ANY($3)
@@ -65,11 +65,11 @@ export async function emailWithItsReply(db: Db, actor: Actor, id: unknown): Prom
     ...email,
     triageReason: reason.text,
     triageReasonCode: reason.code,
-    account: row.account_email,
+    mailbox: row.account_email,
     shared: row.account_shared,
     recipients: replyRecipients(email, row.account_email, false),
     recipientsAll: replyRecipients(email, row.account_email, true),
-    draft: await latestProposal(db, row.id),
+    proposal: await latestProposal(db, row.id),
     reply: await latestReply(db, row.id),
   };
 }

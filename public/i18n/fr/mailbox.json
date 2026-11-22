@@ -1,0 +1,15 @@
+{
+  "refresh": "Relever",
+  "refreshing": "Relève…",
+  "refreshTitle": "Relever toutes les boîtes",
+  "fetched": "{count, plural, =0 {Aucun nouvel email.} one {# email relevé.} other {# emails relevés.}}",
+  "accountError": "{account} : {error}",
+  "back": "Retour à la liste",
+  "select": "Sélectionnez un email.",
+  "noSubject": "(sans objet)",
+  "untriaged": "Non trié",
+  "priority": "Prioritaire",
+  "draft": "Brouillon",
+  "fetchedAt": "Relevé {time}",
+  "count": "{count, plural, one {# email} other {# emails}}"
+}

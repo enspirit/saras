@@ -1,0 +1,18 @@
+{
+  "todo": {
+    "label": "To handle",
+    "empty": "Nothing to handle. Fetch your mailboxes, or connect one in Mailboxes."
+  },
+  "none": {
+    "label": "No reply needed",
+    "empty": "No email set aside by triage."
+  },
+  "sent": {
+    "label": "Replied",
+    "empty": "No reply sent or saved as a draft yet."
+  },
+  "ignored": {
+    "label": "Ignored",
+    "empty": "No ignored email."
+  }
+}

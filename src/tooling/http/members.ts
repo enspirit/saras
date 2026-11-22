@@ -35,17 +35,17 @@ const changeRole: Handle = async ({ world }, req, res) => {
   if (!change) {
     // A member one may not see is not found, whatever else is wrong with the request.
     await memberOf(world.db, req.org.id, req.params.id);
-    throw new Refusal('invalid', 'users.invalidRole');
+    throw new Refusal('invalid', 'members.invalidRole');
   }
   await change(world, actorOf(req), req.params.id);
   done(res);
 };
 
 export const MEMBERS: Route[] = [
-  { method: 'get', path: '/users', handle: list, for: 'administrators' },
+  { method: 'get', path: '/members', handle: list, for: 'administrators' },
   { method: 'get', path: '/invitations', handle: invitations, for: 'administrators' },
   { method: 'post', path: '/invitations', handle: invite },
   { method: 'delete', path: '/invitations/:id', handle: revoke },
-  { method: 'delete', path: '/users/:id', handle: remove },
-  { method: 'put', path: '/users/:id', handle: changeRole, for: 'administrators' },
+  { method: 'delete', path: '/members/:id', handle: remove },
+  { method: 'put', path: '/members/:id', handle: changeRole, for: 'administrators' },
 ];

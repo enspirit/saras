@@ -1,0 +1,11 @@
+{
+  "bold": "Bold",
+  "italic": "Italic",
+  "underline": "Underline",
+  "bullets": "Bulleted list",
+  "numbers": "Numbered list",
+  "link": "Link",
+  "linkPrompt": "Address of the link:",
+  "linkInsert": "Insert the link",
+  "clear": "Clear formatting"
+}

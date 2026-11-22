@@ -29,38 +29,38 @@ let sharedId: number;
 let quote: { id: number };
 
 test('only an administrator connects a shared mailbox', async () => {
-  const asked = await bruno('POST', '/accounts/imap', { ...stack.imapAccount, shared: true });
+  const asked = await bruno('POST', '/mailboxes/imap', { ...stack.imapAccount, shared: true });
   assert.equal(asked.status, 201);
-  const [personal] = (await bruno('GET', '/accounts')).body;
+  const [personal] = (await bruno('GET', '/mailboxes')).body;
   assert.equal(personal.shared, false, 'a member asking for a shared mailbox gets a personal one');
-  assert.deepEqual((await alice('GET', '/accounts')).body, [], 'which nobody else sees, not even an administrator');
-  assert.equal((await alice('PUT', `/accounts/${personal.id}/folder`, { folder: 'INBOX' })).status, 404);
-  assert.equal((await bruno('DELETE', `/accounts/${personal.id}`)).status, 200);
+  assert.deepEqual((await alice('GET', '/mailboxes')).body, [], 'which nobody else sees, not even an administrator');
+  assert.equal((await alice('PUT', `/mailboxes/${personal.id}/folder`, { folder: 'INBOX' })).status, 404);
+  assert.equal((await bruno('DELETE', `/mailboxes/${personal.id}`)).status, 200);
 
-  assert.equal((await alice('POST', '/accounts/imap', { ...stack.imapAccount, shared: true })).status, 201);
-  const [shared] = (await alice('GET', '/accounts')).body;
+  assert.equal((await alice('POST', '/mailboxes/imap', { ...stack.imapAccount, shared: true })).status, 201);
+  const [shared] = (await alice('GET', '/mailboxes')).body;
   sharedId = shared.id;
   assert.deepEqual([shared.shared, shared.canManage, shared.folder], [true, true, null]);
 });
 
 test('a shared mailbox is there for every member, and managed by administrators only', async () => {
-  const [seen] = (await bruno('GET', '/accounts')).body;
+  const [seen] = (await bruno('GET', '/mailboxes')).body;
   assert.deepEqual([seen.id, seen.shared, seen.canManage], [sharedId, true, false]);
-  assert.equal((await bruno('GET', `/accounts/${sharedId}/folders`)).status, 200, 'a member may look');
-  const refused = await bruno('PUT', `/accounts/${sharedId}/folder`, { folder: 'INBOX' });
+  assert.equal((await bruno('GET', `/mailboxes/${sharedId}/folders`)).status, 200, 'a member may look');
+  const refused = await bruno('PUT', `/mailboxes/${sharedId}/folder`, { folder: 'INBOX' });
   assert.equal(refused.status, 403);
-  assert.equal(refused.body.code, 'accounts.adminOnly');
-  assert.equal((await bruno('DELETE', `/accounts/${sharedId}`)).status, 403);
+  assert.equal(refused.body.code, 'mailboxes.adminOnly');
+  assert.equal((await bruno('DELETE', `/mailboxes/${sharedId}`)).status, 403);
 
-  assert.equal((await alice('PUT', `/accounts/${sharedId}/folder`, { folder: 'INBOX' })).status, 200);
-  assert.equal((await bruno('POST', `/accounts/${sharedId}/sync`)).body.error, null, 'a member may fetch it');
+  assert.equal((await alice('PUT', `/mailboxes/${sharedId}/folder`, { folder: 'INBOX' })).status, 200);
+  assert.equal((await bruno('POST', `/mailboxes/${sharedId}/fetch`)).body.error, null, 'a member may fetch it');
 
   const expected = ['Demande de devis pour 20 licences', 'Merci pour hier', 'Report de notre rendez-vous'];
   assert.deepEqual(await subjects(alice), expected);
   assert.deepEqual(await subjects(bruno), expected);
   assert.deepEqual(await subjects(chloe), expected, 'including someone who joined before it was connected');
   const listed = (await bruno('GET', '/emails?box=todo')).body;
-  assert.deepEqual([listed.emails[0].account, listed.emails[0].shared, listed.counts.todo], ['me@corp.example', true, 3]);
+  assert.deepEqual([listed.emails[0].mailbox, listed.emails[0].shared, listed.counts.todo], ['me@corp.example', true, 3]);
 });
 
 test('a member replies from the shared mailbox; everyone sees it done, and by whom', async () => {
@@ -69,7 +69,7 @@ test('a member replies from the shared mailbox; everyone sees it done, and by wh
   const [prompt] = (await bruno('GET', '/prompts')).body;
   const draft = (await bruno('POST', `/emails/${quote.id}/assist`, { action: 'prompt', promptId: prompt.id })).body;
   const sent = await bruno('POST', `/emails/${quote.id}/send`, {
-    draftId: draft.id,
+    proposalId: draft.id,
     html: draft.html.replace('[À COMPLÉTER : montant]', '1200 euros'),
     to: ['claire@client.example'],
     changeReason: 'Bruno tutoie Claire',
@@ -100,12 +100,12 @@ test('a correction steers its author only; the administrators see them all', asy
 
 test('deleting a member keeps what belongs to the organisation', async () => {
   // Bruno becomes an administrator and connects nothing new; the shared mailbox was Alice's doing.
-  const users = (await alice('GET', '/users')).body as { id: number; email: string }[];
+  const users = (await alice('GET', '/members')).body as { id: number; email: string }[];
   const idOf = (email: string) => users.find((u) => u.email === email)!.id;
-  assert.equal((await alice('PUT', `/users/${idOf('bruno@acme.example')}`, { role: 'admin' })).status, 200);
-  assert.equal((await bruno('DELETE', `/users/${idOf('alice@acme.example')}`)).status, 200);
+  assert.equal((await alice('PUT', `/members/${idOf('bruno@acme.example')}`, { role: 'admin' })).status, 200);
+  assert.equal((await bruno('DELETE', `/members/${idOf('alice@acme.example')}`)).status, 200);
   assert.equal((await alice('GET', '/me')).status, 401);
-  const [stillThere] = (await bruno('GET', '/accounts')).body;
+  const [stillThere] = (await bruno('GET', '/mailboxes')).body;
   assert.deepEqual([stillThere.id, stillThere.shared, stillThere.canManage], [sharedId, true, true], 'the shared mailbox outlives who connected it');
   assert.equal((await bruno('GET', '/prompts')).body.length, 1);
   assert.equal((await subjects(chloe, 'sent')).length, 1);

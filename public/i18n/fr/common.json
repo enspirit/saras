@@ -1,0 +1,10 @@
+{
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "edit": "Modifier",
+  "delete": "Supprimer",
+  "copy": "Copier",
+  "httpError": "Erreur {status}",
+  "actions": "Actions",
+  "loading": "Chargement…"
+}

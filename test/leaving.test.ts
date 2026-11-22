@@ -22,13 +22,13 @@ before(async () => {
 after(() => stack.stop());
 
 const sharedMailboxes = async (): Promise<number[]> =>
-  (await carl('GET', '/accounts')).body.filter((a: { shared: boolean }) => a.shared).map((a: { id: number }) => a.id);
+  (await carl('GET', '/mailboxes')).body.filter((a: { shared: boolean }) => a.shared).map((a: { id: number }) => a.id);
 
 test('the last administrator does not delete their own account', async () => {
   // Bruno is Acme's only administrator: he cannot leave it without one.
   assert.equal((await bruno('DELETE', '/me', { password: 'pas-le-bon-mot' })).body.code, 'auth.wrongPassword');
   const last = await bruno('DELETE', '/me', { password: 'un-bon-mot-de-passe' });
-  assert.deepEqual([last.status, last.body.code], [409, 'users.lastAdmin']);
+  assert.deepEqual([last.status, last.body.code], [409, 'members.lastAdmin']);
 });
 
 test('a member deletes their own account, with their password', async () => {
@@ -37,7 +37,7 @@ test('a member deletes their own account, with their password', async () => {
   await join(bruno, dora, 'dora@acme.example');
   assert.equal((await dora('DELETE', '/me', { password: 'un-bon-mot-de-passe' })).status, 200);
   assert.equal((await dora('GET', '/me')).status, 401);
-  assert.ok(!(await bruno('GET', '/users')).body.some((u: { email: string }) => u.email === 'dora@acme.example'));
+  assert.ok(!(await bruno('GET', '/members')).body.some((u: { email: string }) => u.email === 'dora@acme.example'));
 });
 
 test('an administrator leaves once there is another; what they made stays', async () => {
@@ -51,7 +51,7 @@ test('an administrator leaves once there is another; what they made stays', asyn
   const after = await sharedMailboxes();
   assert.deepEqual(after, before);
   assert.equal((await carl('GET', '/prompts')).body.length, prompts);
-  assert.equal((await carl('POST', `/accounts/${after[0]}/sync`)).body.error, null, 'the shared mailbox is still fetched, as its new owner');
+  assert.equal((await carl('POST', `/mailboxes/${after[0]}/fetch`)).body.error, null, 'the shared mailbox is still fetched, as its new owner');
 });
 
 test('an administrator deletes the organisation, with their password and its name; it ends for everyone', async () => {

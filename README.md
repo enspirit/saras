@@ -96,10 +96,10 @@ A file missing from the folder falls back to the default brand's. `brands/exampl
 
 Every word of the interface comes from a translation file; none is written in the code (a test enforces it).
 
-- **Files:** `public/i18n/<language>.json`, one per language, plus `public/i18n/index.json`, which lists the languages and names the default one. English is the default and the source language; French is provided.
+- **Files:** `public/i18n/<language>/<section>.json`, one folder per language and one file per section of the interface (`mailboxes`, `members`, `prompts`, `settings`, `server`…), plus `public/i18n/index.json`, which lists the languages and the sections and names the default language. The first part of a key is its section: `mailboxes.connect` is `connect` in `mailboxes.json`. English is the default and the source language; French is provided.
 - **Format:** Tolgee's native JSON — keys nested on dots, values in ICU MessageFormat: `{name}` parameters, `{count, plural, one {…} other {…}}`, `{kind, select, …}`, and `<tag>…</tag>` for a part the interface renders as a link or in bold.
 - **Language shown:** the user's choice (Settings → Language, also on the sign-in page), else the first browser language available, else the default. A missing translation falls back to the default language. Dates follow the reader's regional format.
-- **Adding a language:** add `public/i18n/<tag>.json` and one line in `index.json`. No rebuild is needed.
+- **Adding a language:** add the folder `public/i18n/<tag>/` with the same files, and one line in `index.json`. No rebuild is needed.
 
 In the code, `t('key', params)` returns a string and `tRich('key', params, { link: … })` returns nodes for messages with tags (`web/i18n.ts`). The formatter itself (`web/i18n/format.ts`) is a small dependency-free implementation of the ICU subset above.
 
@@ -107,7 +107,7 @@ In the code, `t('key', params)` returns a string and `tRich('key', params, { lin
 
 ### With Tolgee
 
-`.tolgeerc.json` maps the files for the [Tolgee CLI](https://docs.tolgee.io/tolgee-cli): with a project id and an API key (`TOLGEE_API_KEY`), `npx @tolgee/cli push` uploads the keys and `npx @tolgee/cli pull` brings translations back into `public/i18n/`. Tolgee's in-context editing SDK is not integrated.
+`.tolgeerc.json` maps the files for the [Tolgee CLI](https://docs.tolgee.io/tolgee-cli): with a project id and an API key (`TOLGEE_API_KEY`), `npx @tolgee/cli push` uploads the keys and `npx @tolgee/cli pull` brings translations back into `public/i18n/`, each section of the interface being a Tolgee namespace. Tolgee's in-context editing SDK is not integrated.
 
 ### What the server writes
 

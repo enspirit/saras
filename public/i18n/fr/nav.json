@@ -1,0 +1,13 @@
+{
+  "configuration": "Configuration",
+  "mailboxes": "Comptes mail",
+  "settings": "Réglages",
+  "prompts": "Prompts",
+  "members": "Utilisateurs",
+  "signOut": "Déconnexion",
+  "assurance": {
+    "text": "IA sans conservation de données (ZDR) : imposé à chaque requête",
+    "title": "Chaque appel à l’IA impose zdr=true et data_collection=deny chez OpenRouter."
+  },
+  "more": "Plus"
+}

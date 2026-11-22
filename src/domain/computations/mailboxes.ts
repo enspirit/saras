@@ -12,27 +12,27 @@ export const manages = ({ member }: Actor, mailbox: Pick<AccountRow, 'shared' | 
 
 /** ReqPre of changing or disconnecting a mailbox. */
 export const mayManage = (actor: Actor, mailbox: Pick<AccountRow, 'shared' | 'user_id'>): Verdict<true> =>
-  manages(actor, mailbox) ? accept(true) : refuse('forbidden', 'accounts.adminOnly');
+  manages(actor, mailbox) ? accept(true) : refuse('forbidden', 'mailboxes.adminOnly');
 
 /** Only administrators connect shared mailboxes; anyone else asking for one gets a personal one. */
 export const connectsAsShared = ({ member }: Actor, asked: unknown): boolean => member.role === 'admin' && asked === true;
 
 /** DomPre of ConnectMailbox: an address is connected once per organisation. */
-export const addressIsNotConnected = (existing: unknown): Verdict<true> => (existing ? refuse('conflict', 'accounts.alreadyConnected') : accept(true));
+export const addressIsNotConnected = (existing: unknown): Verdict<true> => (existing ? refuse('conflict', 'mailboxes.alreadyConnected') : accept(true));
 
 /** ReqPre of renewing by password: the mailbox is one reached by its servers. */
-export const isRenewedByPassword = (mailbox: Pick<AccountRow, 'kind'>): Verdict<true> => (mailbox.kind === 'imap' ? accept(true) : refuse('invalid', 'accounts.renewAtHost'));
+export const isRenewedByPassword = (mailbox: Pick<AccountRow, 'kind'>): Verdict<true> => (mailbox.kind === 'imap' ? accept(true) : refuse('invalid', 'mailboxes.renewAtHost'));
 
 /** The same servers and user, with a new password. ReqPre: there is one. */
 export function withNewPassword(credentials: ImapCredentials, password: unknown): Verdict<ImapCredentials> {
   const pass = String(password || '');
-  if (!pass) return refuse('invalid', 'accounts.passwordRequired');
+  if (!pass) return refuse('invalid', 'mailboxes.passwordRequired');
   return accept({ imap: { ...credentials.imap, pass }, smtp: { ...credentials.smtp, pass } });
 }
 
 /** ReqPre of renewing by sign-in at the host: the member signed in to that very mailbox. */
 export const isSameMailbox = (mailbox: Pick<AccountRow, 'kind' | 'email'>, kind: string, address: string): Verdict<true> =>
-  mailbox.kind === kind && mailbox.email.toLowerCase() === address.toLowerCase() ? accept(true) : refuse('conflict', 'accounts.otherMailbox');
+  mailbox.kind === kind && mailbox.email.toLowerCase() === address.toLowerCase() ? accept(true) : refuse('conflict', 'mailboxes.otherMailbox');
 
 /** A valid TCP port, or 0. */
 export const portGiven = (value: unknown): number => (Number.isInteger(Number(value)) && Number(value) > 0 && Number(value) < 65536 ? Number(value) : 0);
@@ -70,15 +70,15 @@ export function serversGiven(given: ServersGiven): Verdict<ServersToConnect> {
   });
   const credentials: ImapCredentials = { imap: server(given.imapHost, given.imapPort, given.imapSecure), smtp: server(given.smtpHost, given.smtpPort, given.smtpSecure) };
   if (!isEmailAddress(email)) return refuse('invalid', 'auth.invalidEmail');
-  if (!credentials.imap.host || !credentials.smtp.host || !credentials.imap.port || !credentials.smtp.port) return refuse('invalid', 'accounts.serversRequired');
-  if (!credentials.imap.pass) return refuse('invalid', 'accounts.passwordRequired');
+  if (!credentials.imap.host || !credentials.smtp.host || !credentials.imap.port || !credentials.smtp.port) return refuse('invalid', 'mailboxes.serversRequired');
+  if (!credentials.imap.pass) return refuse('invalid', 'mailboxes.passwordRequired');
   return accept({ email, displayName: clipped(given.displayName, 200), credentials });
 }
 
 /** ReqPre of ChooseWatchedFolder: the folder is one of the mailbox's. */
 export function folderAmong<F extends Pick<MailFolder, 'id'>>(folders: F[], wanted: string): Verdict<F> {
   const folder = folders.find((f) => f.id === wanted);
-  return folder ? accept(folder) : refuse('invalid', 'accounts.unknownFolder');
+  return folder ? accept(folder) : refuse('invalid', 'mailboxes.unknownFolder');
 }
 
 /** What we remember, on our side, of a sign-in under way at a mail host: to connect a mailbox, or to renew one. */

@@ -26,10 +26,10 @@ export const readInvitations = (): Promise<Invitation[]> => api<Invitation[]>('G
 export const inviteMember = (email: string, role: string): Promise<NewInvitation> => api<NewInvitation>('POST', '/invitations', { email, role });
 export const revokeInvitation = (id: number): Promise<unknown> => api('DELETE', `/invitations/${id}`);
 
-export const readMembers = (): Promise<Member[]> => api<Member[]>('GET', '/users');
-export const appointAdministrator = (id: number): Promise<unknown> => api('PUT', `/users/${id}`, { role: 'admin' });
-export const removeAdministratorRole = (id: number): Promise<unknown> => api('PUT', `/users/${id}`, { role: 'user' });
-export const deleteMember = (id: number): Promise<unknown> => api('DELETE', `/users/${id}`);
+export const readMembers = (): Promise<Member[]> => api<Member[]>('GET', '/members');
+export const appointAdministrator = (id: number): Promise<unknown> => api('PUT', `/members/${id}`, { role: 'admin' });
+export const removeAdministratorRole = (id: number): Promise<unknown> => api('PUT', `/members/${id}`, { role: 'user' });
+export const deleteMember = (id: number): Promise<unknown> => api('DELETE', `/members/${id}`);
 
 export const changePassword = (current: string, next: string): Promise<unknown> => api('PUT', '/auth/password', { current, next });
 export const deleteOwnAccount = (password: string): Promise<unknown> => api('DELETE', '/me', { password });

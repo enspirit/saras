@@ -18,14 +18,14 @@ import { Page } from '../../ui/organisms/page.ts';
 
 /** SetOrganizationKey, then on with the path. */
 function keyForm(key: HTMLInputElement): HTMLFormElement {
-  const save = Button(t('accounts.keySave'), { variant: 'primary', type: 'submit' });
+  const save = Button(t('mailboxes.keySave'), { variant: 'primary', type: 'submit' });
   return SubmitForm(save, '…', async () => {
     await setOrganizationKey(key.value);
     await refreshMe();
     leaveStep('key');
   },
-    Field(t('organization.key'), key, { hint: tRich('accounts.keyHint', {}, { link: (label) => Link(label, 'https://openrouter.ai/keys') }) }),
-    Actions(save, Button(t('accounts.keyLater'), { variant: 'link', onClick: () => leaveStep('key') })),
+    Field(t('organization.key'), key, { hint: tRich('mailboxes.keyHint', {}, { link: (label) => Link(label, 'https://openrouter.ai/keys') }) }),
+    Actions(save, Button(t('mailboxes.keyLater'), { variant: 'link', onClick: () => leaveStep('key') })),
   );
 }
 
@@ -34,7 +34,7 @@ export function organisationKeyPage(): void {
   const key = Input({ type: 'password', required: true, autocomplete: 'off', placeholder: 'sk-or-…' });
   shell(Page(
     PathSteps('key'),
-    PageHeader({ title: t('accounts.keyTitle'), intro: t('accounts.keyIntro') }),
+    PageHeader({ title: t('mailboxes.keyTitle'), intro: t('mailboxes.keyIntro') }),
     Card({ form: true }, keyForm(key)),
   ));
   key.focus();

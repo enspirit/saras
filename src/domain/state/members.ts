@@ -14,7 +14,7 @@ export const memberByAddress = (db: Db, address: string): Promise<UserRow | unde
 /** The member of this organisation with this number; refused as not found otherwise. */
 export async function memberOf(db: Db, organizationId: number, id: unknown): Promise<UserRow> {
   const member = await db.one<UserRow>('SELECT * FROM users WHERE id = $1 AND org_id = $2', [Number(id) || 0, organizationId]);
-  if (!member) throw new Refusal('notFound', 'users.notFound');
+  if (!member) throw new Refusal('notFound', 'members.notFound');
   return member;
 }
 

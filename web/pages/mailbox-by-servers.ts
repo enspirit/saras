@@ -33,13 +33,13 @@ interface ServerFields {
 function serverFields(first: boolean): ServerFields {
   const fields: ServerFields = {
     email: Input({ type: 'email', required: true, value: first ? me().email : '' }),
-    displayName: Input({ placeholder: t('accounts.namePlaceholder'), value: first ? me().name : '' }),
-    username: Input({ placeholder: t('accounts.usernamePlaceholder'), autocomplete: 'off' }),
+    displayName: Input({ placeholder: t('mailboxes.namePlaceholder'), value: first ? me().name : '' }),
+    username: Input({ placeholder: t('mailboxes.usernamePlaceholder'), autocomplete: 'off' }),
     password: Input({ type: 'password', required: true, autocomplete: 'new-password' }),
-    imapHost: Input({ required: true, placeholder: t('accounts.imapPlaceholder') }),
+    imapHost: Input({ required: true, placeholder: t('mailboxes.imapPlaceholder') }),
     imapPort: Input({ type: 'number', required: true, value: 993, min: 1, max: 65535 }),
     imapSecure: Checkbox({ checked: true }),
-    smtpHost: Input({ required: true, placeholder: t('accounts.smtpPlaceholder') }),
+    smtpHost: Input({ required: true, placeholder: t('mailboxes.smtpPlaceholder') }),
     smtpPort: Input({ type: 'number', required: true, value: 465, min: 1, max: 65535 }),
     smtpSecure: Checkbox({ checked: true }),
   };
@@ -72,25 +72,25 @@ const written = (f: ServerFields, shared: boolean): MailboxByServers => ({
 
 /** The servers, proposed and open to correction. */
 const serverSettings = (f: ServerFields): HTMLDivElement =>
-  CardSection(t('accounts.serverSettings'),
-    Block(Text({ muted: true, small: true }, t('accounts.serversProposed'))),
-    FormRow(Field(t('accounts.imapServer'), f.imapHost), Field(t('accounts.port'), f.imapPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), f.imapSecure, { size: 'narrow' })),
-    FormRow(Field(t('accounts.smtpServer'), f.smtpHost), Field(t('accounts.port'), f.smtpPort, { size: 'narrow' }), CheckField(t('accounts.directTls'), f.smtpSecure, { size: 'narrow' })),
-    Field(t('accounts.username'), f.username, { hint: t('accounts.tlsHint') }),
+  CardSection(t('mailboxes.serverSettings'),
+    Block(Text({ muted: true, small: true }, t('mailboxes.serversProposed'))),
+    FormRow(Field(t('mailboxes.imapServer'), f.imapHost), Field(t('mailboxes.port'), f.imapPort, { size: 'narrow' }), CheckField(t('mailboxes.directTls'), f.imapSecure, { size: 'narrow' })),
+    FormRow(Field(t('mailboxes.smtpServer'), f.smtpHost), Field(t('mailboxes.port'), f.smtpPort, { size: 'narrow' }), CheckField(t('mailboxes.directTls'), f.smtpSecure, { size: 'narrow' })),
+    Field(t('mailboxes.username'), f.username, { hint: t('mailboxes.tlsHint') }),
   );
 
 /** ConnectMailbox by its servers: tested, then connected, then on to its folder. */
 function serversForm(f: ServerFields, shared: () => boolean): HTMLFormElement {
-  const connect = Button(t('accounts.connect'), { variant: 'primary', type: 'submit' });
-  return SubmitForm(connect, t('accounts.connecting'), async () => {
+  const connect = Button(t('mailboxes.connect'), { variant: 'primary', type: 'submit' });
+  return SubmitForm(connect, t('mailboxes.connecting'), async () => {
     await connectMailboxByServers(written(f, shared()));
-    toast(t('accounts.connected'));
-    goTo('#/accounts');
+    toast(t('mailboxes.connected'));
+    goTo('#/mailboxes');
   },
-    FormRow(Field(t('accounts.email'), f.email), Field(t('accounts.password'), f.password)),
-    Field(t('accounts.name'), f.displayName, { hint: t('accounts.passwordHint') }),
+    FormRow(Field(t('mailboxes.email'), f.email), Field(t('mailboxes.password'), f.password)),
+    Field(t('mailboxes.name'), f.displayName, { hint: t('mailboxes.passwordHint') }),
     serverSettings(f),
-    Actions(connect, Muted(Small(t('accounts.connectHint')))),
+    Actions(connect, Muted(Small(t('mailboxes.connectHint')))),
   );
 }
 

@@ -19,7 +19,7 @@ interface PromptView {
 interface EmailDetail {
   id: number;
   messageId: string;
-  draft: { id: number; html: string };
+  proposal: { id: number; html: string };
   recipients: { to: string[] };
 }
 
@@ -66,7 +66,7 @@ test('a proposal is written with the chosen prompt, from the email and from what
 test('the proposal, edited, is sent with the reason of the change', async () => {
   const finalText = draft.body.html.replace('[À COMPLÉTER : montant]', '1200 euros HT');
   const sent = await me('POST', `/emails/${todo[0]!.id}/send`, {
-    draftId: draft.body.id,
+    proposalId: draft.body.id,
     html: finalText,
     to: ['claire@client.example'],
     cc: ['paul@client.example'],
@@ -123,8 +123,8 @@ test('the administrator sees who corrected what', async () => {
 test('sending the proposal untouched is recorded as not edited, and the original is flagged answered', async () => {
   const detail = (await me('GET', `/emails/${todo[1]!.id}`)).body;
   const sent = await me('POST', `/emails/${todo[1]!.id}/send`, {
-    draftId: detail.draft.id,
-    html: detail.draft.html,
+    proposalId: detail.proposal.id,
+    html: detail.proposal.html,
     to: detail.recipients.to,
     changeReason: 'ignored because nothing changed',
   });
@@ -147,9 +147,9 @@ let filed: EmailDetail;
 test('saving as a draft files the reply in the mailbox without sending it', async () => {
   filed = await anotherEmailWithItsProposal();
   const sentBefore = stack.outbox.length;
-  const saved = await me('POST', `/emails/${filed.id}/save-draft`, {
-    draftId: filed.draft.id,
-    html: `${filed.draft.html}<p>PS : à finir dans ma messagerie.</p>`,
+  const saved = await me('POST', `/emails/${filed.id}/file-as-draft`, {
+    proposalId: filed.proposal.id,
+    html: `${filed.proposal.html}<p>PS : à finir dans ma messagerie.</p>`,
     to: filed.recipients.to,
     changeReason: 'Ajout d’un post-scriptum',
   });

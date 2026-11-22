@@ -45,7 +45,7 @@ const signInAtHost: Handle = async ({ world }, req, res) =>
   res.redirect(await beginHostSignIn(world, actorOf(req), req.user.sid, String(req.params.kind), req.query.shared === '1', req.query.renew));
 
 /** Where the member lands after the host: the outcome travels in the URL, as a message code and its technical detail when there is one. */
-const backToMailboxes = (code?: MessageCode, detail = ''): string => `/#/accounts${code ? `?error=${encodeURIComponent(code)}&detail=${encodeURIComponent(detail)}` : ''}`;
+const backToMailboxes = (code?: MessageCode, detail = ''): string => `/#/mailboxes${code ? `?error=${encodeURIComponent(code)}&detail=${encodeURIComponent(detail)}` : ''}`;
 
 const backFromHost: Handle = async ({ world, fetchImpl }, req, res) => {
   const { state, code, error } = req.query;
@@ -59,14 +59,14 @@ const backFromHost: Handle = async ({ world, fetchImpl }, req, res) => {
 };
 
 export const MAILBOXES: Route[] = [
-  { method: 'get', path: '/accounts', handle: list },
-  { method: 'post', path: '/accounts/imap', handle: connectByServers },
+  { method: 'get', path: '/mailboxes', handle: list },
+  { method: 'post', path: '/mailboxes/imap', handle: connectByServers },
   { method: 'get', path: '/mail/host', handle: mailHost },
-  { method: 'get', path: '/accounts/:id/folders', handle: folders },
-  { method: 'put', path: '/accounts/:id/folder', handle: watchFolder },
-  { method: 'put', path: '/accounts/:id/password', handle: renewByPassword },
-  { method: 'delete', path: '/accounts/:id', handle: disconnect },
-  { method: 'post', path: '/accounts/:id/sync', handle: fetchNow },
+  { method: 'get', path: '/mailboxes/:id/folders', handle: folders },
+  { method: 'put', path: '/mailboxes/:id/folder', handle: watchFolder },
+  { method: 'put', path: '/mailboxes/:id/password', handle: renewByPassword },
+  { method: 'delete', path: '/mailboxes/:id', handle: disconnect },
+  { method: 'post', path: '/mailboxes/:id/fetch', handle: fetchNow },
   { method: 'get', path: '/oauth/:kind/start', handle: signInAtHost },
   { method: 'get', path: '/oauth/:kind/callback', handle: backFromHost },
 ];

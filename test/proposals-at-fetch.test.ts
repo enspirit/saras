@@ -28,10 +28,10 @@ const proposals = () => stack.llmRequests.filter((r) => !r.body.messages[0]?.con
 async function start(as: ApiClient, email: string, organization: unknown = {}): Promise<number> {
   assert.equal((await as('POST', '/auth/signup', { email, password: 'un-bon-mot-de-passe', organization: email })).status, 201);
   assert.equal((await as('PUT', '/organization', organization)).status, 200);
-  const account = await as('POST', '/accounts/imap', stack.imapAccount);
+  const account = await as('POST', '/mailboxes/imap', stack.imapAccount);
   assert.equal(account.status, 201);
-  assert.equal((await as('PUT', `/accounts/${account.body.id}/folder`, { folder: 'INBOX' })).status, 200);
-  await as('POST', `/accounts/${account.body.id}/sync`);
+  assert.equal((await as('PUT', `/mailboxes/${account.body.id}/folder`, { folder: 'INBOX' })).status, 200);
+  await as('POST', `/mailboxes/${account.body.id}/fetch`);
   return account.body.id;
 }
 
@@ -43,7 +43,7 @@ test('by default nothing is written at fetch: proposals are on demand', async ()
   const todo = await box(alice, 'todo');
   assert.equal(todo.length, 3);
   assert.equal(proposals().length, 0);
-  assert.equal((await alice('GET', `/emails/${todo[0]!.id}`)).body.draft, null);
+  assert.equal((await alice('GET', `/emails/${todo[0]!.id}`)).body.proposal, null);
 });
 
 test('an unknown way of working is refused: nothing sends by itself', async () => {
@@ -56,18 +56,18 @@ test('"draft" prepares a proposal for each email to handle, to review in the app
   // Chosen after the first fetch, with AI sorting: what was let through unsorted is sorted again.
   assert.equal((await alice('PUT', '/organization', { way: 'draft' })).status, 200);
   assert.equal((await alice('POST', '/organization/sort-again')).status, 200);
-  await alice('POST', `/accounts/${mailbox}/sync`);
+  await alice('POST', `/mailboxes/${mailbox}/fetch`);
   const todo = await box(alice, 'todo');
   assert.deepEqual(todo.map((e) => e.subject).sort(), ['Demande de devis pour 20 licences', 'Report de notre rendez-vous'], 'the thank-you note was set aside by the AI');
   assert.equal(proposals().length, 2);
   for (const email of todo) {
-    const { draft, status } = (await alice('GET', `/emails/${email.id}`)).body;
+    const { proposal: draft, status } = (await alice('GET', `/emails/${email.id}`)).body;
     assert.equal(draft.action, 'prompt');
     assert.match(draft.html, /Voici notre proposition/);
     assert.equal(status, 'needs_reply', 'it still waits for its reader');
   }
   // A later fetch does not write them again.
-  await alice('POST', `/accounts/${mailbox}/sync`);
+  await alice('POST', `/mailboxes/${mailbox}/fetch`);
   assert.equal(proposals().length, 2);
   assert.equal(stack.draftsFolder().length, 0);
   assert.equal(stack.outbox.length, 0);

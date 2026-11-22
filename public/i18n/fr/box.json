@@ -1,0 +1,18 @@
+{
+  "todo": {
+    "label": "À traiter",
+    "empty": "Rien à traiter. Relevez vos boîtes, ou connectez-en une dans Comptes mail."
+  },
+  "none": {
+    "label": "Sans réponse requise",
+    "empty": "Aucun email écarté par le tri."
+  },
+  "sent": {
+    "label": "Répondus",
+    "empty": "Aucune réponse envoyée ni mise en brouillon pour l’instant."
+  },
+  "ignored": {
+    "label": "Ignorés",
+    "empty": "Aucun email ignoré."
+  }
+}

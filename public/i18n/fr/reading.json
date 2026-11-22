@@ -1,0 +1,12 @@
+{
+  "to": "À {to}",
+  "toCc": "À {to} · Cc {cc}",
+  "triage": {
+    "ai": "Tri IA",
+    "rule": "Règle",
+    "user": "Vous",
+    "unknown": "Tri"
+  },
+  "pendingTriage": "Pas encore trié : il le sera à la prochaine relève.",
+  "erased": "Contenu effacé (durée de conservation dépassée)."
+}

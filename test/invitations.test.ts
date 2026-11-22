@@ -82,15 +82,15 @@ test('an invitation can grant the administrator role, be revoked, or expire', as
 });
 
 test('an administrator deletes an account; shared prompts survive their author', async () => {
-  const users = (await admin('GET', '/users')).body;
+  const users = (await admin('GET', '/members')).body;
   const boss = users.find((u: { id: number; email: string }) => u.email === 'boss@corp.example');
   const lea = users.find((u: { id: number; email: string }) => u.email === 'lea@corp.example');
   await stack.db.run('UPDATE prompts SET user_id = $1 WHERE id = (SELECT min(id) FROM prompts)', [boss.id]);
-  assert.equal((await admin('DELETE', `/users/${users[0].id}`)).status, 409, 'not oneself');
-  assert.equal((await admin('DELETE', `/users/${boss.id}`)).status, 200);
-  assert.equal((await admin('DELETE', `/users/${lea.id}`)).status, 200);
+  assert.equal((await admin('DELETE', `/members/${users[0].id}`)).status, 409, 'not oneself');
+  assert.equal((await admin('DELETE', `/members/${boss.id}`)).status, 200);
+  assert.equal((await admin('DELETE', `/members/${lea.id}`)).status, 200);
   assert.equal((await admin('GET', '/prompts')).body.length, 1);
-  assert.deepEqual((await admin('GET', '/users')).body.map((u: { id: number; email: string }) => u.email), ['admin@corp.example']);
+  assert.deepEqual((await admin('GET', '/members')).body.map((u: { id: number; email: string }) => u.email), ['admin@corp.example']);
   assert.equal((await client()('POST', '/auth/login', { email: 'lea@corp.example', password: 'le-mot-de-passe-de-lea' })).status, 401);
 });
 

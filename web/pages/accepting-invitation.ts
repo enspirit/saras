@@ -32,7 +32,7 @@ function acceptForm(token: string, address: string, name: HTMLInputElement, pass
   const submit = Button(t('auth.createAccount'), { variant: 'primary', size: 'large', type: 'submit', block: true });
   return SubmitForm(submit, '…', async () => {
     await acceptInvitation({ token, password: password.value, name: name.value, language: language() });
-    history.replaceState(null, '', '/#/accounts');
+    history.replaceState(null, '', '/#/mailboxes');
     await start();
   },
     Field(t('auth.email'), Input({ type: 'email', value: address, disabled: true, autocomplete: 'username' })),

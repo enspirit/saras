@@ -35,7 +35,7 @@ test('a member has a name, which the administrators see in place of the address'
   assert.equal((await profile(alice)).name, '', 'none until given');
   assert.equal((await alice('PUT', '/settings', { name: 'Alice Martin' })).status, 200);
   assert.equal((await profile(alice)).name, 'Alice Martin');
-  const listed = (await alice('GET', '/users')).body;
+  const listed = (await alice('GET', '/members')).body;
   assert.deepEqual(listed.map((u: { email: string; name: string }) => [u.email, u.name]), [['alice@acme.example', 'Alice Martin']]);
   const named = client();
   assert.equal((await named('POST', '/auth/signup', { email: 'yann@third.example', password: 'un-bon-mot-de-passe', organization: 'Third', name: 'Yann Leroy' })).status, 201);

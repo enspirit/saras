@@ -209,7 +209,7 @@ Fonts of a brand live in its folder and are declared with `@font-face` in its `t
 - **A component:** the function in `web/ui/<tier>/<component>.ts`, its style in `public/design/<tier>/<component>.css` (listed in `public/design/index.css`), an example in `web/styleguide/<tier>.ts`.
 - **An icon:** its name in the `IconName` type and its glyph code in `atoms/icon.css`, taken from the pinned Lucide version.
 - **A token:** in `tokens.css`, derived from the brand inputs where it is a colour.
-- **Wording:** a key in `public/i18n/en.json` and `fr.json`; the tests check that both have it and that it is used.
+- **Wording:** a key in the section's file under `public/i18n/en/` and `public/i18n/fr/`; the tests check that both have it and that it is used.
 
 ## 9. Known limits
 

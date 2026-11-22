@@ -19,7 +19,7 @@ export async function connectMailboxByServers(world: World, actor: Actor, given:
   try {
     await world.mail.imapProvider({ email, display_name: displayName }, credentials).verify();
   } catch (e) {
-    throw new Refusal('invalid', 'accounts.connectionFailed', { detail: errorMessage(e) });
+    throw new Refusal('invalid', 'mailboxes.connectionFailed', { detail: errorMessage(e) });
   }
   return connectMailbox(world, actor, { kind: 'imap', address: email, displayName, shared }, credentials);
 }

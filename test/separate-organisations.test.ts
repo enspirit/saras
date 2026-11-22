@@ -40,14 +40,14 @@ test('each organisation has its own prompts', async () => {
 test('each organisation has its own members', async () => {
   await join(alice, bruno, 'bruno@acme.example');
   await join(alice, chloe, 'chloe@acme.example');
-  assert.deepEqual((await alice('GET', '/users')).body.map((u: { email: string }) => u.email), ['alice@acme.example', 'bruno@acme.example', 'chloe@acme.example']);
-  assert.deepEqual((await zoe('GET', '/users')).body.map((u: { email: string }) => u.email), ['zoe@other.example']);
+  assert.deepEqual((await alice('GET', '/members')).body.map((u: { email: string }) => u.email), ['alice@acme.example', 'bruno@acme.example', 'chloe@acme.example']);
+  assert.deepEqual((await zoe('GET', '/members')).body.map((u: { email: string }) => u.email), ['zoe@other.example']);
   assert.equal((await profile(bruno)).organization.name, 'Acme');
   assert.equal((await profile(bruno)).organization.hasKey, undefined, 'the organisation key is the administrators\' business');
 
-  const bid = (await alice('GET', '/users')).body[1].id;
-  assert.equal((await zoe('PUT', `/users/${bid}`, { role: 'admin' })).status, 404);
-  assert.equal((await zoe('DELETE', `/users/${bid}`)).status, 404);
+  const bid = (await alice('GET', '/members')).body[1].id;
+  assert.equal((await zoe('PUT', `/members/${bid}`, { role: 'admin' })).status, 404);
+  assert.equal((await zoe('DELETE', `/members/${bid}`)).status, 404);
 });
 
 test('each organisation has its own invitations', async () => {
@@ -62,7 +62,7 @@ test('each organisation has its own invitations', async () => {
 
 test('nothing of an organisation is reachable from another', async () => {
   const sharedId = await connectInbox(alice, stack.imapAccount, true);
-  assert.deepEqual((await zoe('GET', '/accounts')).body, []);
+  assert.deepEqual((await zoe('GET', '/mailboxes')).body, []);
   assert.deepEqual(await subjects(zoe), []);
   assert.deepEqual((await zoe('GET', '/emails?box=todo')).body.counts, { todo: 0, none: 0, sent: 0, ignored: 0 });
   const [email] = (await alice('GET', '/emails?box=todo')).body.emails;
@@ -71,10 +71,10 @@ test('nothing of an organisation is reachable from another', async () => {
   assert.equal((await zoe('POST', `/emails/${email.id}/status`, { status: 'ignored' })).status, 404);
   assert.equal((await zoe('POST', `/emails/${email.id}/assist`, { action: 'prompt', promptId: prompt.id })).status, 404);
   assert.equal((await zoe('POST', `/emails/${email.id}/send`, { html: '<p>x</p>', to: ['a@b.example'] })).status, 404);
-  assert.equal((await zoe('POST', `/accounts/${sharedId}/sync`)).status, 404);
-  assert.equal((await zoe('GET', `/accounts/${sharedId}/folders`)).status, 404);
+  assert.equal((await zoe('POST', `/mailboxes/${sharedId}/fetch`)).status, 404);
+  assert.equal((await zoe('GET', `/mailboxes/${sharedId}/folders`)).status, 404);
   // A member cannot use a prompt of another organisation on their own email either.
   assert.equal((await bruno('POST', `/emails/${email.id}/assist`, { action: 'prompt', promptId: prompt.id })).status, 404);
   // The same mailbox may be connected by another organisation: they are separate worlds.
-  assert.equal((await zoe('POST', '/accounts/imap', stack.imapAccount)).status, 201);
+  assert.equal((await zoe('POST', '/mailboxes/imap', stack.imapAccount)).status, 201);
 });

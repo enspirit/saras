@@ -1,14 +1,14 @@
 {
   "$schema": "https://docs.tolgee.io/cli-schema.json",
   "format": "JSON_TOLGEE",
-  "patterns": ["./web/**/*.ts"],
+  "patterns": [
+    "./web/**/*.ts"
+  ],
   "push": {
-    "files": [
-      { "path": "./public/i18n/fr.json", "language": "fr" },
-      { "path": "./public/i18n/en.json", "language": "en" }
-    ]
+    "filesTemplate": "./public/i18n/{languageTag}/{namespace}.json"
   },
   "pull": {
-    "path": "./public/i18n"
+    "path": "./public/i18n",
+    "fileStructureTemplate": "{languageTag}/{namespace}.{extension}"
   }
 }

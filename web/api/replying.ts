@@ -5,7 +5,7 @@ import { api } from '../api.ts';
 
 /** A reply as it is handed over: what was written, to whom, and why the proposal was changed. */
 export interface ReplyToHandOver {
-  draftId: number | undefined;
+  proposalId: number | undefined;
   html: string;
   to: string[];
   cc: string[];
@@ -17,4 +17,4 @@ export const improveStyle = (emailId: number, html: string): Promise<Proposal> =
 export const writeWithPrompt = (emailId: number, html: string, promptId: number): Promise<Proposal> =>
   api<Proposal>('POST', `/emails/${emailId}/assist`, { action: 'prompt', html, promptId });
 export const sendReply = (emailId: number, reply: ReplyToHandOver): Promise<unknown> => api('POST', `/emails/${emailId}/send`, reply);
-export const fileReplyAsDraft = (emailId: number, reply: ReplyToHandOver): Promise<unknown> => api('POST', `/emails/${emailId}/save-draft`, reply);
+export const fileReplyAsDraft = (emailId: number, reply: ReplyToHandOver): Promise<unknown> => api('POST', `/emails/${emailId}/file-as-draft`, reply);

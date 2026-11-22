@@ -36,7 +36,7 @@ const formsCard = (): HTMLDivElement =>
   );
 
 const cardCard = (): HTMLDivElement =>
-  Card({ title: t('styleguide.card'), badges: [Badge(t('styleguide.withBadge'), 'neutral'), Badge(t('accounts.todo', { count: 3 }))] },
+  Card({ title: t('styleguide.card'), badges: [Badge(t('styleguide.withBadge'), 'neutral'), Badge(t('mailboxes.todo', { count: 3 }))] },
     Block(Text({ muted: true }, t('styleguide.cardText'))),
     CardSection(t('styleguide.cardSection'), Text({ small: true }, t('styleguide.cardSectionText'))),
   );
@@ -52,23 +52,23 @@ const dialogsCard = (): HTMLDivElement =>
 
 const pagePartsCard = (): HTMLDivElement =>
   Card({ title: t('styleguide.pageParts') },
-    Block(Steps([t('accounts.step1'), t('accounts.step2'), t('accounts.step3')], 1)),
+    Block(Steps([t('mailboxes.step1'), t('mailboxes.step2'), t('mailboxes.step3')], 1)),
     Tabs([{ label: t('settings.you'), href: '#', current: true }, { label: t('organization.title'), href: '#' }, { label: t('settings.privacy'), href: '#' }]),
-    Callout('ok', t('accounts.connectedShort', { email: 'claire@client.example' })),
+    Callout('ok', t('mailboxes.connectedShort', { email: 'claire@client.example' })),
     Callout('warn', [Strong(t('settings.yourPart')), ' ', t('settings.privacyLogging')]),
   );
 
 const choicesCard = (): HTMLDivElement =>
   Card({ title: t('styleguide.choices') },
-    Choices({ legend: t('accounts.whose'), name: 'sample-whose', value: 'mine', options: [{ value: 'mine', title: t('accounts.mine'), hint: t('accounts.mineHint') }, { value: 'shared', title: t('accounts.sharedChoice'), hint: t('accounts.imapHint') }, { value: 'off', title: t('accounts.connectGoogle'), hint: t('styleguide.unavailableWhy'), disabled: true }] }).element,
-    Choices({ legend: t('accounts.folders'), name: 'sample-folder', rows: true, value: 'a', options: [{ value: 'a', title: t('styleguide.firstOption') }, { value: 'b', title: t('styleguide.secondOption') }] }).element,
+    Choices({ legend: t('mailboxes.whose'), name: 'sample-whose', value: 'mine', options: [{ value: 'mine', title: t('mailboxes.mine'), hint: t('mailboxes.mineHint') }, { value: 'shared', title: t('mailboxes.sharedChoice'), hint: t('mailboxes.imapHint') }, { value: 'off', title: t('mailboxes.connectGoogle'), hint: t('styleguide.unavailableWhy'), disabled: true }] }).element,
+    Choices({ legend: t('mailboxes.folders'), name: 'sample-folder', rows: true, value: 'a', options: [{ value: 'a', title: t('styleguide.firstOption') }, { value: 'b', title: t('styleguide.secondOption') }] }).element,
   );
 
 const tablesCard = (): HTMLDivElement =>
   Card({ title: t('styleguide.tables') },
-    Table({ columns: [t('users.member'), t('users.role'), t('users.joined')], actions: t('common.actions') }, [
-      [Person({ name: 'Claire Martin', detail: 'claire@client.example', tags: [Badge(t('users.you'), 'neutral')] }), Badge(t('role.admin')), '22 Nov 2026', [Button(t('users.demote'), { variant: 'ghost', size: 'small' })]],
-      [Person({ name: 'contact@client.example', detail: 'IMAP / SMTP', icon: 'users' }), Badge(t('role.user'), 'neutral'), '22 Nov 2026', [Button(t('users.promote'), { variant: 'ghost', size: 'small' }), Button(t('users.delete'), { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true })]],
+    Table({ columns: [t('members.member'), t('members.role'), t('members.joined')], actions: t('common.actions') }, [
+      [Person({ name: 'Claire Martin', detail: 'claire@client.example', tags: [Badge(t('members.you'), 'neutral')] }), Badge(t('role.admin')), '22 Nov 2026', [Button(t('members.demote'), { variant: 'ghost', size: 'small' })]],
+      [Person({ name: 'contact@client.example', detail: 'IMAP / SMTP', icon: 'users' }), Badge(t('role.user'), 'neutral'), '22 Nov 2026', [Button(t('members.promote'), { variant: 'ghost', size: 'small' }), Button(t('members.delete'), { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true })]],
     ]),
     Remark({ text: t('composer.reasonPlaceholder'), by: 'Claire Martin', meta: 'Claire Martin · 08:13' }),
   );

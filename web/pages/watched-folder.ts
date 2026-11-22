@@ -22,8 +22,8 @@ import { Page } from '../ui/organisms/page.ts';
 async function watchFolder(account: Mailbox, folder: string): Promise<void> {
   await chooseWatchedFolder(account.id, folder);
   if (account.folder !== null) {
-    toast(t('accounts.folderChosen'));
-    return goTo('#/accounts');
+    toast(t('mailboxes.folderChosen'));
+    return goTo('#/mailboxes');
   }
   // The first choice goes on with the path. The button waits for the first fetch, so that
   // the newcomer arrives on their emails and not on an empty box.
@@ -49,14 +49,14 @@ function offerFolders(account: Mailbox, folders: ChoicesHandle, confirm: HTMLBut
  */
 export function watchedFolderPage(account: Mailbox): void {
   const fresh = account.folder === null;
-  const folders = Choices({ legend: t('accounts.folders'), name: 'folder', rows: true, options: [{ value: '', title: t('accounts.loadingFolders'), disabled: true }] });
-  const confirm = ActionButton(t('accounts.useFolder'), t('mailbox.refreshing'), () => watchFolder(account, folders.value()), { variant: 'primary' });
+  const folders = Choices({ legend: t('mailboxes.folders'), name: 'folder', rows: true, options: [{ value: '', title: t('mailboxes.loadingFolders'), disabled: true }] });
+  const confirm = ActionButton(t('mailboxes.useFolder'), t('mailbox.refreshing'), () => watchFolder(account, folders.value()), { variant: 'primary' });
   confirm.disabled = true;
   offerFolders(account, folders, confirm);
   shell(Page(
     fresh && PathSteps('folder'),
-    PageHeader({ title: t('accounts.chooseFolderTitle'), intro: t('accounts.chooseFolder'), crumbs: fresh ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
-    fresh && Callout('ok', t('accounts.connectedShort', { email: account.email })),
-    Card({ form: true }, folders.element, Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/accounts' }))),
+    PageHeader({ title: t('mailboxes.chooseFolderTitle'), intro: t('mailboxes.chooseFolder'), crumbs: fresh ? [] : [{ label: t('mailboxes.title'), href: '#/mailboxes' }] }),
+    fresh && Callout('ok', t('mailboxes.connectedShort', { email: account.email })),
+    Card({ form: true }, folders.element, Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/mailboxes' }))),
   ));
 }

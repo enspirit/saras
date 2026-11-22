@@ -1,0 +1,11 @@
+{
+  "sentTitle": "Reply sent",
+  "draftTitle": "Draft filed in your mailbox",
+  "edited": "Proposal edited",
+  "unedited": "Proposal kept as is",
+  "draftNotice": "This message has not been sent: it is waiting in the Drafts folder of your mailbox, where you can finish and send it.",
+  "textErased": "(text erased)",
+  "by": "by {user}",
+  "why": "Why edited",
+  "from": "From"
+}

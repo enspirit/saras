@@ -48,14 +48,14 @@ test('style works on what the user wrote alone too; the latest proposal is what 
 
   // The latest proposal is what the reply area resumes with.
   const detail = (await me('GET', `/emails/${email.id}`)).body;
-  assert.deepEqual([detail.draft.action, detail.draft.html], ['style', '<p>Bien cordialement, merci</p>']);
+  assert.deepEqual([detail.proposal.action, detail.proposal.html], ['style', '<p>Bien cordialement, merci</p>']);
 });
 
 test('a reply leaves as HTML with a plain-text alternative, both quoting the original', async () => {
   const detail = (await me('GET', `/emails/${email.id}`)).body;
   const outbox = stack.outbox.length;
   const sent = await me('POST', `/emails/${email.id}/send`, {
-    draftId: detail.draft.id,
+    proposalId: detail.proposal.id,
     html: '<p>Bien cordialement, merci</p><ul><li>un</li><li>deux</li></ul><p><a href="https://example.com/doc" onclick="x()">la doc</a></p><img src="x">',
     to: detail.recipients.to,
     changeReason: 'ajout',

@@ -21,27 +21,27 @@ import { Page } from '../ui/organisms/page.ts';
 
 /** Whose the mailbox will be: an administrator may connect one for the whole organisation. */
 const whoseChoice = (onChange: () => void): ChoicesHandle =>
-  Choices({ legend: t('accounts.whose'), name: 'whose', value: 'mine', options: [
-    { value: 'mine', title: t('accounts.mine'), hint: t('accounts.mineHint') },
-    { value: 'shared', title: t('accounts.sharedChoice'), hint: t('accounts.sharedHint', { organization: me().organization.name }) },
+  Choices({ legend: t('mailboxes.whose'), name: 'whose', value: 'mine', options: [
+    { value: 'mine', title: t('mailboxes.mine'), hint: t('mailboxes.mineHint') },
+    { value: 'shared', title: t('mailboxes.sharedChoice'), hint: t('mailboxes.sharedHint', { organization: me().organization.name }) },
   ], onChange });
 
 /** Where the mailbox is hosted. A host the server is not set up for cannot be chosen, and says why. */
 function hostChoice(oauth: Profile['oauth'], onChange: () => void): ChoicesHandle {
-  const unavailable = (kind: 'google' | 'microsoft'): string | undefined => (oauth[kind] ? undefined : t('accounts.oauthUnavailable', { prefix: kind.toUpperCase() }));
-  return Choices({ legend: t('accounts.where'), name: 'host', value: oauth.google ? 'google' : oauth.microsoft ? 'microsoft' : 'imap', options: [
-    { value: 'google', title: t('accounts.connectGoogle'), hint: unavailable('google'), disabled: !oauth.google },
-    { value: 'microsoft', title: t('accounts.connectMicrosoft'), hint: unavailable('microsoft'), disabled: !oauth.microsoft },
-    { value: 'imap', title: t('accounts.imapTitle'), hint: t('accounts.imapHint') },
+  const unavailable = (kind: 'google' | 'microsoft'): string | undefined => (oauth[kind] ? undefined : t('mailboxes.oauthUnavailable', { prefix: kind.toUpperCase() }));
+  return Choices({ legend: t('mailboxes.where'), name: 'host', value: oauth.google ? 'google' : oauth.microsoft ? 'microsoft' : 'imap', options: [
+    { value: 'google', title: t('mailboxes.connectGoogle'), hint: unavailable('google'), disabled: !oauth.google },
+    { value: 'microsoft', title: t('mailboxes.connectMicrosoft'), hint: unavailable('microsoft'), disabled: !oauth.microsoft },
+    { value: 'imap', title: t('mailboxes.imapTitle'), hint: t('mailboxes.imapHint') },
   ], onChange });
 }
 
 /** ConnectMailbox by signing in at its host: the way there. */
 function hostSignIn(kind: string, shared: boolean): HTMLElement[] {
-  const provider = kind === 'google' ? t('accounts.connectGoogle') : t('accounts.connectMicrosoft');
+  const provider = kind === 'google' ? t('mailboxes.connectGoogle') : t('mailboxes.connectMicrosoft');
   return [
-    Block(Text({ muted: true }, t('accounts.oauthIntro'))),
-    ButtonLink(t('accounts.continueAt', { provider }), { href: hostSignInAddress(kind, shared ? '?shared=1' : ''), variant: 'primary' }),
+    Block(Text({ muted: true }, t('mailboxes.oauthIntro'))),
+    ButtonLink(t('mailboxes.continueAt', { provider }), { href: hostSignInAddress(kind, shared ? '?shared=1' : ''), variant: 'primary' }),
   ];
 }
 
@@ -65,7 +65,7 @@ export function connectMailboxPage(first: boolean, oauthError: Child): void {
   showDetail();
   shell(Page(
     first && PathSteps('connect'),
-    PageHeader({ title: t('accounts.connectTitle'), intro: t('accounts.connectIntro'), crumbs: first ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
+    PageHeader({ title: t('mailboxes.connectTitle'), intro: t('mailboxes.connectIntro'), crumbs: first ? [] : [{ label: t('mailboxes.title'), href: '#/mailboxes' }] }),
     oauthError,
     byServers.advice.element,
     whose && Card({}, whose.element),

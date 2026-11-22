@@ -9,5 +9,26 @@
       "tag": "fr",
       "name": "Français"
     }
+  ],
+  "sections": [
+    "common",
+    "role",
+    "nav",
+    "box",
+    "auth",
+    "invitation",
+    "mailbox",
+    "reading",
+    "reply",
+    "composer",
+    "prompts",
+    "members",
+    "mailboxes",
+    "settings",
+    "styleguide",
+    "server",
+    "organization",
+    "editor",
+    "welcome"
   ]
 }

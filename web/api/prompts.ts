@@ -11,7 +11,7 @@ export interface PromptContent {
 }
 
 export const readPrompts = (): Promise<Prompt[]> => api<Prompt[]>('GET', '/prompts');
-export const readPromptTemplates = (): Promise<ReadyMadePrompt[]> => api<ReadyMadePrompt[]>('GET', '/prompts/templates');
+export const readPromptTemplates = (): Promise<ReadyMadePrompt[]> => api<ReadyMadePrompt[]>('GET', '/prompts/ready-made');
 /** What members changed in the proposals written with this prompt, and why. */
 export const readCorrections = (promptId: number): Promise<Correction[]> => api<Correction[]>('GET', `/prompts/${promptId}/corrections`);
 export const createPrompt = (prompt: PromptContent): Promise<unknown> => api('POST', '/prompts', prompt);

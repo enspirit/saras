@@ -70,7 +70,7 @@ function emailHeader(email: EmailWithItsReply, done: Done): HTMLElement {
     subject: email.subject || t('mailbox.noSubject'),
     actions: decisions(email, done),
     sender: { name: email.fromName || email.fromAddr, address: email.fromName ? email.fromAddr : undefined },
-    to: email.cc.length ? t('reading.toCc', { to: names(email.to) || email.account, cc: names(email.cc) }) : t('reading.to', { to: names(email.to) || email.account }),
+    to: email.cc.length ? t('reading.toCc', { to: names(email.to) || email.mailbox, cc: names(email.cc) }) : t('reading.to', { to: names(email.to) || email.mailbox }),
     attachments: email.attachments.map((a) => a.name || a.type),
     date: fmtWhen(email.date),
     dateTitle: fmtFull(email.date),

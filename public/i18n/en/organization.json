@@ -1,0 +1,21 @@
+{
+  "title": "Organisation",
+  "intro": "These settings apply to every member and every mailbox of the organisation.",
+  "name": "Name",
+  "skipAutomated": "Set plainly automated mail aside first (newsletters, notifications)",
+  "model": "Default model",
+  "modelPlaceholder": "Server default",
+  "modelHint": "Used by members who have not chosen their own. Leave empty for the server's.",
+  "key": "OpenRouter API key of the organisation",
+  "keyHint": "Encrypted in the database. Used by every member who has no key of their own.",
+  "deleteKey": "Delete the organisation's key",
+  "way": "Way of working",
+  "wayHint": "Sorting by the AI costs one request per 20 emails fetched, and sends it their sender, subject, beginning of text and attachment names. Proposals written at fetch send it the content of each email to handle, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation.",
+  "deleteTitle": "Delete the organisation",
+  "deleteText": "Every member’s account, every mailbox connection, the prompts and everything saras kept are erased, for everyone. The mailboxes themselves are not touched.",
+  "deleteName": "Name of the organisation, to confirm",
+  "deletePassword": "Your password",
+  "delete": "Delete the organisation",
+  "confirmDelete": "Delete {organization} and everything saras holds for it, for all its members? This cannot be undone.",
+  "deleted": "The organisation was deleted."
+}

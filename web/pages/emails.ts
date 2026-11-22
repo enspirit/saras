@@ -21,11 +21,11 @@ import { EmptyState } from '../ui/molecules/empty-state.ts';
 import { MailboxView } from '../ui/organisms/mailbox.ts';
 
 /** FetchMailbox, for every mailbox in turn: says what came in, or what went wrong where. */
-async function fetchMailboxes(accounts: Mailbox[]): Promise<void> {
-  if (!accounts.length) return void (location.hash = '#/accounts');
+async function fetchMailboxes(mailboxes: Mailbox[]): Promise<void> {
+  if (!mailboxes.length) return void (location.hash = '#/mailboxes');
   let fetched = 0;
   const errors: string[] = [];
-  for (const a of accounts) {
+  for (const a of mailboxes) {
     const r = await fetchMailbox(a.id);
     fetched += r.fetched;
     if (r.error) errors.push(t('mailbox.accountError', { account: a.email, error: problemText(r.error) }));
@@ -35,8 +35,8 @@ async function fetchMailboxes(accounts: Mailbox[]): Promise<void> {
   showPage();
 }
 
-const fetchButton = (accounts: Mailbox[]): HTMLButtonElement =>
-  ActionButton(t('mailbox.refresh'), t('mailbox.refreshing'), () => fetchMailboxes(accounts), { variant: 'ghost', icon: 'refresh-cw', iconOnly: true, title: t('mailbox.refreshTitle') });
+const fetchButton = (mailboxes: Mailbox[]): HTMLButtonElement =>
+  ActionButton(t('mailbox.refresh'), t('mailbox.refreshing'), () => fetchMailboxes(mailboxes), { variant: 'ghost', icon: 'refresh-cw', iconOnly: true, title: t('mailbox.refreshTitle') });
 
 /** One email of the list: who and when, what about, and what to know first. */
 const emailItem = (e: EmailSummary, box: BoxOnScreen, selectedId: number | null): HTMLButtonElement =>
@@ -53,27 +53,27 @@ const emailItem = (e: EmailSummary, box: BoxOnScreen, selectedId: number | null)
       e.replyMode === 'draft' && Badge(t('mailbox.draft'), 'neutral'),
     ],
     // In a shared mailbox, say which: several may be shown together.
-    shared: e.shared ? { label: e.account.split('@')[0] ?? e.account, title: e.account } : undefined,
+    shared: e.shared ? { label: e.mailbox.split('@')[0] ?? e.mailbox, title: e.mailbox } : undefined,
   });
 
 /** What the list shows when the box is empty. With no mailbox connected yet, it leads to where one is connected. */
-const emptyBox = (box: BoxOnScreen, accounts: Mailbox[]): HTMLDivElement =>
-  EmptyState(t(box.empty), { icon: box.icon, action: !accounts.length && ButtonLink(t('nav.accounts'), { href: '#/accounts', variant: 'primary' }) });
+const emptyBox = (box: BoxOnScreen, mailboxes: Mailbox[]): HTMLDivElement =>
+  EmptyState(t(box.empty), { icon: box.icon, action: !mailboxes.length && ButtonLink(t('nav.mailboxes'), { href: '#/mailboxes', variant: 'primary' }) });
 
 /** When mail was last fetched, whichever mailbox it was. */
-const lastFetchOf = (accounts: Mailbox[]): string | undefined => accounts.map((a) => a.lastSyncAt ?? '').filter(Boolean).sort().pop();
+const lastFetchOf = (mailboxes: Mailbox[]): string | undefined => mailboxes.map((a) => a.lastSyncAt ?? '').filter(Boolean).sort().pop();
 
 export const emailsPage = guard(async (box: BoxOnScreen, selectedId: number | null) => {
-  const [{ emails, counts }, prompts, accounts] = await Promise.all([readBox(box.id), readPrompts(), readMailboxes()]);
+  const [{ emails, counts }, prompts, mailboxes] = await Promise.all([readBox(box.id), readPrompts(), readMailboxes()]);
   session.counts = counts;
-  const lastFetch = lastFetchOf(accounts);
+  const lastFetch = lastFetchOf(mailboxes);
   const detail = selectedId ? emailDetail(await readEmail(selectedId), prompts, box) : null;
   shell(MailboxView({
     title: t(box.label),
     count: emails.length,
     meta: lastFetch ? t('mailbox.fetchedAt', { time: fmtWhen(lastFetch) }) : undefined,
-    action: fetchButton(accounts),
-    empty: emptyBox(box, accounts),
+    action: fetchButton(mailboxes),
+    empty: emptyBox(box, mailboxes),
     backHref: `#/${box.path}`,
     backLabel: t('mailbox.back'),
     idle: emails.length > 0 && EmptyState(t('mailbox.select'), { icon: box.icon, title: t('mailbox.count', { count: emails.length }) }),

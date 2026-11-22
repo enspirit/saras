@@ -59,8 +59,8 @@ test('members draft with the key of the organisation, unless they have their own
 });
 
 test('an organisation without a key falls back to the server\'s', async () => {
-  const [zoeAccount] = (await zoe('GET', '/accounts')).body;
-  await zoe('PUT', `/accounts/${zoeAccount.id}/folder`, { folder: 'INBOX' });
-  await zoe('POST', `/accounts/${zoeAccount.id}/sync`);
+  const [zoeAccount] = (await zoe('GET', '/mailboxes')).body;
+  await zoe('PUT', `/mailboxes/${zoeAccount.id}/folder`, { folder: 'INBOX' });
+  await zoe('POST', `/mailboxes/${zoeAccount.id}/fetch`);
   assert.equal(await keyUsedBy(zoe), 'Bearer sk-or-test', 'an organisation without a key falls back to the server\'s');
 });

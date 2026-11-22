@@ -26,11 +26,11 @@ test('an organisation starts with one prompt; each ready-made prompt can be adde
   prompts = (await me('GET', '/prompts')).body;
   assert.deepEqual(prompts.map((p) => p.name), ['Standard professional reply'], 'an organisation starts with one prompt');
   // The others are templates, added on demand; each can be added once.
-  assert.equal((await me('GET', '/prompts/templates')).body.length, 4);
+  assert.equal((await me('GET', '/prompts/ready-made')).body.length, 4);
   await installTemplates(me);
   prompts = (await me('GET', '/prompts')).body;
   assert.equal(prompts.length, 5);
-  assert.deepEqual((await me('GET', '/prompts/templates')).body, []);
+  assert.deepEqual((await me('GET', '/prompts/ready-made')).body, []);
 });
 
 test('prompts belong to the organisation: a member sees the catalogue, without the instructions', async () => {
@@ -51,18 +51,18 @@ test('only the administrators of the organisation manage its prompts and its mem
   assert.equal((await eve('POST', '/prompts', { name: 'x', systemPrompt: 'y' })).status, 403);
   assert.equal((await eve('DELETE', `/prompts/${support.id}`)).status, 403);
   assert.equal((await eve('GET', `/prompts/${support.id}/corrections`)).status, 403);
-  assert.equal((await eve('GET', '/users')).status, 403);
-  assert.equal((await eve('PUT', '/users/1', { role: 'admin' })).status, 403);
+  assert.equal((await eve('GET', '/members')).status, 403);
+  assert.equal((await eve('PUT', '/members/1', { role: 'admin' })).status, 403);
 });
 
 test('roles can be handed over, but one administrator always remains', async () => {
-  const users = (await me('GET', '/users')).body;
+  const users = (await me('GET', '/members')).body;
   assert.deepEqual(users.map((u: { email: string; role: string }) => [u.email, u.role]), [['bob@corp.example', 'admin'], ['eve@corp.example', 'user']]);
   const [bob, evie] = users as { id: number }[];
-  assert.equal((await me('PUT', `/users/${bob!.id}`, { role: 'user' })).status, 409);
-  assert.equal((await me('PUT', `/users/${evie!.id}`, { role: 'admin' })).status, 200);
+  assert.equal((await me('PUT', `/members/${bob!.id}`, { role: 'user' })).status, 409);
+  assert.equal((await me('PUT', `/members/${evie!.id}`, { role: 'admin' })).status, 200);
   assert.equal((await eve('POST', '/prompts', { name: 'Nouveau', systemPrompt: 'S' })).status, 201);
-  assert.equal((await me('PUT', `/users/${bob!.id}`, { role: 'user' })).status, 200);
+  assert.equal((await me('PUT', `/members/${bob!.id}`, { role: 'user' })).status, 200);
   assert.equal((await me('GET', `/prompts/${prompts[0]!.id}/corrections`)).status, 403);
-  assert.equal((await eve('PUT', `/users/${evie!.id}`, { role: 'user' })).status, 409);
+  assert.equal((await eve('PUT', `/members/${evie!.id}`, { role: 'user' })).status, 409);
 });

@@ -30,7 +30,7 @@ const replyGiven = (req: Request) => ({
   html: req.body.html,
   to: addressesGiven(req.body.to),
   cc: addressesGiven(req.body.cc),
-  proposalId: Number(req.body.draftId) || 0,
+  proposalId: Number(req.body.proposalId) || 0,
   changeReason: clipped(req.body.changeReason, 1000),
 });
 
@@ -41,5 +41,5 @@ const fileAsDraft: Handle = async ({ world }, req, res) => void res.json({ ok: t
 export const REPLYING: Route[] = [
   { method: 'post', path: '/emails/:id/assist', handle: assist },
   { method: 'post', path: '/emails/:id/send', handle: send },
-  { method: 'post', path: '/emails/:id/save-draft', handle: fileAsDraft },
+  { method: 'post', path: '/emails/:id/file-as-draft', handle: fileAsDraft },
 ];

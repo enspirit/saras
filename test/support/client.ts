@@ -21,7 +21,7 @@ export async function join(admin: ApiClient, guest: ApiClient, email: string, ro
 
 /** Adds every ready-made prompt the organisation does not have yet, as its administrator would one by one. */
 export async function installTemplates(admin: ApiClient): Promise<void> {
-  for (const template of (await admin('GET', '/prompts/templates')).body) {
+  for (const template of (await admin('GET', '/prompts/ready-made')).body) {
     const created = await admin('POST', '/prompts', template);
     if (created.status !== 201) throw new Error(`could not add the template: ${JSON.stringify(created.body)}`);
   }

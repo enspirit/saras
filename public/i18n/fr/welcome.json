@@ -1,0 +1,23 @@
+{
+  "stepPrompt": "Lire votre prompt",
+  "stepWork": "Choisir le fonctionnement",
+  "promptTitle": "Lire votre prompt",
+  "promptIntro": "Un prompt dit à l’IA comment votre organisation répond : son ton, ses règles. Un prompt est prêt. Lisez-le, adaptez-le, et ajoutez-en d’autres maintenant ou plus tard dans Prompts.",
+  "continue": "Enregistrer et continuer",
+  "workTitle": "Choisir le fonctionnement",
+  "workIntro": "Ce que l’IA fait avant que vous n’ouvriez un email. Quel que soit votre choix, rien n’est envoyé sans la confirmation de quelqu’un.",
+  "workLegend": "Pour tous les membres de l’organisation",
+  "manual": "Je décide de tout",
+  "manualHint": "Chaque email du dossier surveillé est à traiter. L’IA n’écrit que si je le demande. Rien ne lui est envoyé d’ici là.",
+  "sort": "L’IA trie, j’écris",
+  "sortHint": "L’IA écarte ce qui n’appelle pas de réponse et suggère un prompt. Elle lit l’expéditeur, l’objet, le début du texte et le nom des pièces jointes.",
+  "draft": "Des propositions m’attendent",
+  "draftHint": "Comme ci-dessus, et une proposition est rédigée au relevé pour chaque email à traiter. Leur contenu est envoyé à l’IA sans que personne ne le demande.",
+  "mailbox": "Des brouillons dans ma boîte",
+  "mailboxHint": "Comme ci-dessus, et chaque proposition est rangée dans le dossier Brouillons de la boîte, à finir et envoyer depuis mon logiciel de messagerie.",
+  "needsKey": "Nécessite une clé pour l’IA, qui n’a pas été donnée.",
+  "workLater": "Ce choix se modifie à tout moment dans Réglages → Organisation.",
+  "finish": "Appliquer et ouvrir un premier email",
+  "tryIt": "Voici votre premier email ici. Écrivez quelques mots sur ce qu’il faut répondre, ou rien du tout, puis « Rédiger avec ». Rien n’est envoyé sans votre confirmation.",
+  "tryPrepared": "Voici votre premier email ici, avec la proposition préparée pour lui. Lisez-la, modifiez ce que vous voulez, puis Envoyer. Rien n’est envoyé sans votre confirmation."
+}

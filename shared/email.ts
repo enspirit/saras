@@ -34,7 +34,7 @@ export interface EmailSummary {
   triageSource: string | null;
   snippet: string;
   /** Address of the mailbox it arrived in, and whether that mailbox is shared. */
-  account: string;
+  mailbox: string;
   shared: boolean;
   /** How it was replied to, when it was. */
   replyMode: ReplyMode | null;
@@ -55,7 +55,8 @@ export interface Recipients {
 /** One email as its reader sees it: its content, why it was sorted so, who a reply would go to, its proposal and its reply. */
 export interface EmailWithItsReply {
   id: number;
-  account: string;
+  /** Address of the mailbox it arrived in, and whether that mailbox is shared. */
+  mailbox: string;
   shared: boolean;
   fromName: string;
   fromAddr: string;
@@ -76,6 +77,6 @@ export interface EmailWithItsReply {
   /** Recipients of a reply to all. */
   recipientsAll: Recipients;
   /** The latest proposal, to resume where the member left off. */
-  draft: Proposal | null;
+  proposal: Proposal | null;
   reply: Reply | null;
 }

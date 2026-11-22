@@ -22,7 +22,7 @@ import { Page } from '../ui/organisms/page.ts';
 /** AppointAdministrator or RemoveAdministratorRole, whichever applies to this member. */
 const roleButton = (u: Member, self: boolean): HTMLButtonElement => {
   const admin = u.role === 'admin';
-  return ActionButton(admin ? t('users.demote') : t('users.promote'), '…', async () => {
+  return ActionButton(admin ? t('members.demote') : t('members.promote'), '…', async () => {
     await (admin ? removeAdministratorRole(u.id) : appointAdministrator(u.id));
     // One's own role decides what the application shows: start over.
     if (self) return start();
@@ -31,8 +31,8 @@ const roleButton = (u: Member, self: boolean): HTMLButtonElement => {
 };
 
 /** DeleteMember, once confirmed. */
-const deleteButton = (u: Member): HTMLButtonElement => ActionButton(t('users.delete'), '…', async () => {
-  if (!(await confirmAction(t('users.confirmDelete', { email: u.email }), t('users.delete')))) return;
+const deleteButton = (u: Member): HTMLButtonElement => ActionButton(t('members.delete'), '…', async () => {
+  if (!(await confirmAction(t('members.confirmDelete', { email: u.email }), t('members.delete')))) return;
   await deleteMember(u.id);
   void membersPage();
 }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true });
@@ -41,16 +41,16 @@ const deleteButton = (u: Member): HTMLButtonElement => ActionButton(t('users.del
 function memberRow(u: Member): Child[] {
   const self = u.email === me().email;
   return [
-    Person({ name: called(u.name, u.email), detail: u.name ? u.email : undefined, tags: [self && Badge(t('users.you'), 'neutral')] }),
+    Person({ name: called(u.name, u.email), detail: u.name ? u.email : undefined, tags: [self && Badge(t('members.you'), 'neutral')] }),
     Badge(roleLabel(u.role), u.role === 'admin' ? 'accent' : 'neutral'),
     fmtDay(u.createdAt),
-    u.accounts || Muted(t('users.noMailbox')),
+    u.mailboxes || Muted(t('members.noMailbox')),
     [roleButton(u, self), !self && deleteButton(u)],
   ];
 }
 
 const membersTable = (users: Member[]): HTMLDivElement =>
-  Table({ columns: [t('users.member'), t('users.role'), t('users.joined'), t('users.mailboxes')], actions: t('common.actions') }, users.map(memberRow));
+  Table({ columns: [t('members.member'), t('members.role'), t('members.joined'), t('members.mailboxes')], actions: t('common.actions') }, users.map(memberRow));
 
 /** The members and the pending invitations. `freshInvitation` is one just created, whose link is shown once. */
 export const membersPage = guard(async (freshInvitation?: NewInvitation) => {
@@ -58,8 +58,8 @@ export const membersPage = guard(async (freshInvitation?: NewInvitation) => {
   const invite = InviteCard((invitation) => membersPage(invitation));
   shell(
     Page(
-      PageHeader({ title: t('users.title'), intro: t('users.intro', { organization: me().organization.name }) },
-        Button(t('users.invite'), { variant: 'primary', icon: 'user-plus', onClick: invite.open })),
+      PageHeader({ title: t('members.title'), intro: t('members.intro', { organization: me().organization.name }) },
+        Button(t('members.invite'), { variant: 'primary', icon: 'user-plus', onClick: invite.open })),
       freshInvitation?.link ? InvitationLink(freshInvitation) : null,
       invite.element,
       membersTable(users),

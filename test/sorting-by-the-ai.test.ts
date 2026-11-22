@@ -32,10 +32,10 @@ after(() => stack.stop());
 const sortings = () => sortingRequests(stack.llmRequests);
 
 test('choosing the watched folder fetches it and sorts it', async () => {
-  const [account] = (await me('GET', '/accounts')).body;
+  const [account] = (await me('GET', '/mailboxes')).body;
   assert.equal(account.folder, null, 'nothing is watched until a folder is chosen');
   await watchFolder(me, accountId, 'INBOX');
-  const result = (await me('POST', `/accounts/${accountId}/sync`)).body;
+  const result = (await me('POST', `/mailboxes/${accountId}/fetch`)).body;
   assert.deepEqual(result, { fetched: 0, triaged: 0, error: null }, 'choosing the folder already fetched and triaged it');
 });
 
@@ -61,7 +61,7 @@ test('what needs a reply is to handle, the urgent first; the rest is set aside, 
 });
 
 test('fetching again imports nothing twice and asks the LLM nothing more', async () => {
-  assert.deepEqual((await me('POST', `/accounts/${accountId}/sync`)).body, { fetched: 0, triaged: 0, error: null });
+  assert.deepEqual((await me('POST', `/mailboxes/${accountId}/fetch`)).body, { fetched: 0, triaged: 0, error: null });
   assert.equal(sortings().length, 1);
 });
 

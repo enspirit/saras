@@ -10,7 +10,7 @@ import { Steps } from '../../ui/molecules/steps.ts';
 
 export type PathStep = 'connect' | 'folder' | 'key' | 'prompt' | 'work' | 'read';
 
-const STEP_LABEL: Record<PathStep, string> = { connect: 'accounts.step1', folder: 'accounts.step2', key: 'accounts.stepKey', prompt: 'welcome.stepPrompt', work: 'welcome.stepWork', read: 'accounts.step3' };
+const STEP_LABEL: Record<PathStep, string> = { connect: 'mailboxes.step1', folder: 'mailboxes.step2', key: 'mailboxes.stepKey', prompt: 'welcome.stepPrompt', work: 'welcome.stepWork', read: 'mailboxes.step3' };
 const pathOf = (withKey: boolean): PathStep[] => ['connect', 'folder', ...(withKey ? (['key'] as const) : []), ...(isAdmin() ? (['prompt', 'work'] as const) : []), 'read'];
 
 /** The path as shown at the top of each of its pages. */

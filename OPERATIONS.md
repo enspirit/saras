@@ -93,9 +93,9 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **RevokeInvitation** | Administrator | A pending invitation → none | Administrator · of their organisation | | "Revoke" · `DELETE /invitations/:id` |
 | **CheckInvitation** | Visitor | Any → the same; the attempt count of this origin may have grown | Not locked out · the link opens a pending, unexpired invitation | Tells the address and the organisation · a link that opens nothing counts as a wrong guess | opening an invitation link · `POST /invitations/check` |
 | **AcceptInvitation** | Visitor | A pending, unexpired invitation → a member with its role; the invitation is gone | Password of 10+ characters · address not taken meanwhile · not locked out | A session is opened | "Create my account" on the invitation page · `POST /invitations/accept` |
-| **AppointAdministrator** | Administrator | A member with role user → administrator | Administrator · same organisation | | "Make administrator" · `PUT /users/:id` |
-| **RemoveAdministratorRole** | Administrator | An administrator → user | Administrator · not the last administrator | | "Remove the administrator role" · `PUT /users/:id` |
-| **DeleteMember** | Administrator | A member → none | Administrator · not oneself (that is DeleteOwnAccount) | Their prompts and shared mailboxes pass to whoever deletes them · their personal mailboxes go, with what was stored from them | red bin in Users · `DELETE /users/:id` |
+| **AppointAdministrator** | Administrator | A member with role user → administrator | Administrator · same organisation | | "Make administrator" · `PUT /members/:id` |
+| **RemoveAdministratorRole** | Administrator | An administrator → user | Administrator · not the last administrator | | "Remove the administrator role" · `PUT /members/:id` |
+| **DeleteMember** | Administrator | A member → none | Administrator · not oneself (that is DeleteOwnAccount) | Their prompts and shared mailboxes pass to whoever deletes them · their personal mailboxes go, with what was stored from them | red bin in Users · `DELETE /members/:id` |
 | **ChangePassword** | Member | → the member's password is the new one; their other sessions are closed | The current password is given · the new one has 10+ characters · not locked out | A wrong current password counts as a wrong guess · the session that made the change stays | Settings → You → "Change password" · `PUT /auth/password` |
 | **DeleteOwnAccount** | Member | A member → none, with their sessions | The current password is given · not the organisation's last administrator · not locked out | Their prompts and shared mailboxes pass to the longest-standing other administrator · their personal mailboxes go, with what was stored from them · a wrong password counts as a wrong guess | Settings → You → "Delete my account", then the confirmation · `DELETE /me` |
 | **DeleteOrganization** | Administrator | An organisation → none, with its members, sessions, invitations, prompts, mailboxes and everything kept from them | Administrator · the current password is given · the organisation's name is given, as it is · not locked out | The mailboxes at the providers are untouched · the other members are not told · a wrong password counts as a wrong guess | Settings → Organisation → "Delete the organisation", then the confirmation · `DELETE /organization` |
@@ -123,12 +123,12 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
 | **ConnectMailbox** | Member | This address (of this kind) is not connected in the organisation → a mailbox, personal or shared, with no watched folder | Credentials just seen to work, by one of the two ways below | Shared only when asked by an administrator, personal otherwise · credentials sealed · nothing is fetched yet | the common end of the two below (`connect-mailbox.ts`) |
-| — **ByServers** | Member | as above | Address valid · both servers, their ports and a password given · the incoming server lets us in | | "Test and connect" · `POST /accounts/imap` |
+| — **ByServers** | Member | as above | Address valid · both servers, their ports and a password given · the incoming server lets us in | | "Test and connect" · `POST /mailboxes/imap` |
 | — **ByHostSignIn** | Member | as above; the session no longer remembers a sign-in under way | The server is set up for that host · the host reported no refusal · the answer is to the sign-in this session began · the host grants lasting access | | "Continue at …" · `GET /oauth/:kind/start` (BeginHostSignIn), then `/callback` |
-| **RenewMailboxCredentials** | Member | A mailbox → the same, with new credentials; its last error is forgotten | Manages it · the new credentials were just seen to work, for that very mailbox | Folder watched, emails kept and owner unchanged · credentials sealed · ReqTrig: a mailbox that watches a folder is fetched at once | key button in Mailboxes, then "Renew access" · `PUT /accounts/:id/password` (a mailbox reached by its servers) or `GET /oauth/:kind/start?renew=:id` (the others) |
-| **ChooseWatchedFolder** | Member | A mailbox → it watches this folder | Manages it · the folder exists at the provider | Its last error is forgotten · what was fetched from another folder is kept · ReqTrig: a fetch is started | "Watch this folder" · `PUT /accounts/:id/folder` |
-| **DisconnectMailbox** | Member | A mailbox → none | Manages it | Its emails, proposals and replies go with it · the mailbox at the provider is untouched | red bin in Mailboxes · `DELETE /accounts/:id` |
-| **FetchMailbox** | Member, Backend | A mailbox with a watched folder → the folder's new messages of the last days are stored as emails, each waiting to be sorted | May use it (when a member asks) · at most a set number per fetch · a message already known is left as it is | When asked for, plainly automated mail is set aside at once, by rule · then **SortWaitingEmails**, then **PrepareProposals** · the time and any failure are recorded · one fetch at a time per mailbox | "Fetch", "Fetch now" · `POST /accounts/:id/sync`. ReqTrig: every `SYNC_INTERVAL_MINUTES`, for every mailbox with a folder; after ChooseWatchedFolder; after RenewMailboxCredentials |
+| **RenewMailboxCredentials** | Member | A mailbox → the same, with new credentials; its last error is forgotten | Manages it · the new credentials were just seen to work, for that very mailbox | Folder watched, emails kept and owner unchanged · credentials sealed · ReqTrig: a mailbox that watches a folder is fetched at once | key button in Mailboxes, then "Renew access" · `PUT /mailboxes/:id/password` (a mailbox reached by its servers) or `GET /oauth/:kind/start?renew=:id` (the others) |
+| **ChooseWatchedFolder** | Member | A mailbox → it watches this folder | Manages it · the folder exists at the provider | Its last error is forgotten · what was fetched from another folder is kept · ReqTrig: a fetch is started | "Watch this folder" · `PUT /mailboxes/:id/folder` |
+| **DisconnectMailbox** | Member | A mailbox → none | Manages it | Its emails, proposals and replies go with it · the mailbox at the provider is untouched | red bin in Mailboxes · `DELETE /mailboxes/:id` |
+| **FetchMailbox** | Member, Backend | A mailbox with a watched folder → the folder's new messages of the last days are stored as emails, each waiting to be sorted | May use it (when a member asks) · at most a set number per fetch · a message already known is left as it is | When asked for, plainly automated mail is set aside at once, by rule · then **SortWaitingEmails**, then **PrepareProposals** · the time and any failure are recorded · one fetch at a time per mailbox | "Fetch", "Fetch now" · `POST /mailboxes/:id/fetch`. ReqTrig: every `SYNC_INTERVAL_MINUTES`, for every mailbox with a folder; after ChooseWatchedFolder; after RenewMailboxCredentials |
 
 ### Sorting
 
@@ -151,14 +151,14 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **FileProposalAsDraft** | Backend | A proposal just prepared → a draft in the mailbox; the email is replied, as a draft, by the mailbox's owner | The organisation's way is `mailbox` · the email has someone to reply to | Recorded as not edited | part of PrepareProposals |
 | **PutMyTextBack** | Member (Frontend) | A proposal shown, with the text it replaced → that text again | | | "Put my text back"; frontend only |
 | **SendReply** | Member | An email not replied, with none of its replies in flight → replied: the reply is sent from the mailbox | May use the mailbox · the reply is not empty · at least one recipient · every address valid · the member confirmed (frontend) | Quoted and threaded on the original, HTML with a text alternative · flagged answered over IMAP · whether the proposal was edited, and the reason only if it was, are recorded with who replied | "Send", then the confirmation · `POST /emails/:id/send` |
-| **FileReplyAsDraft** | Member | The same → replied, as a draft: the reply is in the mailbox's Drafts folder | The same, without the confirmation | Nothing is sent · the same record | "Save as draft" · `POST /emails/:id/save-draft` |
+| **FileReplyAsDraft** | Member | The same → replied, as a draft: the reply is in the mailbox's Drafts folder | The same, without the confirmation | Nothing is sent · the same record | "Save as draft" · `POST /emails/:id/file-as-draft` |
 
 ### Prompts
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
 | **CreatePrompt** | Administrator | → a prompt of the organisation | Administrator · a name and instructions | | "Create the prompt" · `POST /prompts` |
-| **AddReadyMadePrompt** | Administrator | A template the organisation does not have → a prompt with its content | same | | "Add" · `GET /prompts/templates` then `POST /prompts` |
+| **AddReadyMadePrompt** | Administrator | A template the organisation does not have → a prompt with its content | same | | "Add" · `GET /prompts/ready-made` then `POST /prompts` |
 | **EditPrompt** | Administrator | A prompt → with a new name, description, instructions | same · of their organisation | | "Save" · `PUT /prompts/:id` |
 | **DeletePrompt** | Administrator | A prompt → none | Administrator · of their organisation | Emails, proposals and replies that named it keep going without it | red bin · `DELETE /prompts/:id` |
 
@@ -170,7 +170,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 
 ### Observations
 
-Routes that only read state: `GET /public`, `/me`, `/accounts`, `/accounts/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/templates`, `/prompts/:id/corrections`, `/users`, `/invitations`, `/emails`, `/emails/:id`. None changes state. Their queries are in `src/domain/observations/`.
+Routes that only read state: `GET /public`, `/me`, `/mailboxes`, `/mailboxes/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/ready-made`, `/prompts/:id/corrections`, `/members`, `/invitations`, `/emails`, `/emails/:id`. None changes state. Their queries are in `src/domain/observations/`.
 
 ### Chains
 

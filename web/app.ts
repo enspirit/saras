@@ -58,8 +58,8 @@ function showPageOfAddress(): void {
   const box = BOXES_ON_SCREEN.find((b) => b.path === r.page);
   if (box) void emailsPage(box, r.id);
   else if (r.page === 'prompts' && isAdmin()) void promptsPage(r.part === 'new' ? 'new' : r.id);
-  else if (r.page === 'users' && isAdmin()) void membersPage();
-  else if (r.page === 'accounts') void mailboxesPage(r.part, r.id, r.query.get('error'), r.query.get('detail') ?? '');
+  else if (r.page === 'members' && isAdmin()) void membersPage();
+  else if (r.page === 'mailboxes') void mailboxesPage(r.part, r.id, r.query.get('error'), r.query.get('detail') ?? '');
   else if (r.page === 'settings') void settingsPage(r.part);
   else if (r.page === 'more') morePage();
   else if (r.page === 'welcome') showGettingStarted(r.part);

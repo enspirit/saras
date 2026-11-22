@@ -22,9 +22,9 @@ import { Page } from '../ui/organisms/page.ts';
 
 /** `label` is a translation key. */
 const CONFIGURATION: { path: string; label: string; icon: IconName; admin?: boolean }[] = [
-  { path: 'accounts', label: 'nav.accounts', icon: 'plug' },
+  { path: 'mailboxes', label: 'nav.mailboxes', icon: 'plug' },
   { path: 'prompts', label: 'nav.prompts', icon: 'file-text', admin: true },
-  { path: 'users', label: 'nav.users', icon: 'users', admin: true },
+  { path: 'members', label: 'nav.members', icon: 'users', admin: true },
   { path: 'settings', label: 'nav.settings', icon: 'settings' },
 ];
 

@@ -38,27 +38,27 @@ let accountId: number;
 test('a connected mailbox watches nothing until its folder is chosen', async () => {
   await me('POST', '/auth/signup', { email: 'bob@corp.example', password: 'un-bon-mot-de-passe' });
   assert.equal((await me('GET', '/me')).body.organization.way, 'manual', 'no AI triage by default');
-  assert.equal((await me('POST', '/accounts/imap', stack.imapAccount)).status, 201);
-  const [account] = (await me('GET', '/accounts')).body;
+  assert.equal((await me('POST', '/mailboxes/imap', stack.imapAccount)).status, 201);
+  const [account] = (await me('GET', '/mailboxes')).body;
   accountId = account.id;
   assert.equal(account.folder, null);
-  const sync = (await me('POST', `/accounts/${accountId}/sync`)).body;
+  const sync = (await me('POST', `/mailboxes/${accountId}/fetch`)).body;
   assert.equal(sync.fetched, 0);
-  assert.equal(sync.error.code, 'accounts.folderRequired');
+  assert.equal(sync.error.code, 'mailboxes.folderRequired');
   assert.deepEqual((await me('GET', '/emails?box=todo')).body.emails, []);
 });
 
 test('the folders of the mailbox are offered, the inbox first', async () => {
-  const folders = (await me('GET', `/accounts/${accountId}/folders`)).body;
+  const folders = (await me('GET', `/mailboxes/${accountId}/folders`)).body;
   assert.deepEqual(folders.map((f: { id: string }) => f.id), ['INBOX', 'Clients', 'Drafts', 'Sent']);
-  const unknown = await me('PUT', `/accounts/${accountId}/folder`, { folder: 'Nope' });
+  const unknown = await me('PUT', `/mailboxes/${accountId}/folder`, { folder: 'Nope' });
   assert.equal(unknown.status, 400);
-  assert.equal(unknown.body.code, 'accounts.unknownFolder');
+  assert.equal(unknown.body.code, 'mailboxes.unknownFolder');
 });
 
 test('without AI, every mail of the watched folder is to be handled, automated mail apart', async () => {
-  assert.deepEqual((await me('PUT', `/accounts/${accountId}/folder`, { folder: 'INBOX' })).body, { ok: true, folder: 'INBOX', folderName: 'Inbox' });
-  await me('POST', `/accounts/${accountId}/sync`);
+  assert.deepEqual((await me('PUT', `/mailboxes/${accountId}/folder`, { folder: 'INBOX' })).body, { ok: true, folder: 'INBOX', folderName: 'Inbox' });
+  await me('POST', `/mailboxes/${accountId}/fetch`);
 
   const inbox = (await me('GET', '/emails?box=todo')).body;
   assert.deepEqual(
@@ -74,12 +74,12 @@ test('without AI, every mail of the watched folder is to be handled, automated m
   assert.equal(detail.suggestedPromptId, null, 'the user picks the prompt');
   assert.equal(detail.folder, 'INBOX');
   assert.equal(stack.llmRequests.length, 0, 'fetching and sorting cost no LLM request');
-  assert.equal((await me('GET', '/accounts')).body[0].folderName, 'Inbox');
+  assert.equal((await me('GET', '/mailboxes')).body[0].folderName, 'Inbox');
 });
 
 test('another folder can be watched instead; what was fetched before is kept', async () => {
-  assert.equal((await me('PUT', `/accounts/${accountId}/folder`, { folder: 'Clients' })).status, 200);
-  const sync = (await me('POST', `/accounts/${accountId}/sync`)).body;
+  assert.equal((await me('PUT', `/mailboxes/${accountId}/folder`, { folder: 'Clients' })).status, 200);
+  const sync = (await me('POST', `/mailboxes/${accountId}/fetch`)).body;
   assert.equal(sync.error, null);
   const todo = (await me('GET', '/emails?box=todo')).body.emails;
   assert.equal(todo.length, 4);
@@ -98,7 +98,7 @@ test('a reply to a mail of that folder flags it answered there, and tells the LL
   assert.equal(draft.status, 201);
   assert.equal(stack.llmRequests.length, 1, 'the only LLM request is the draft that was asked for');
   assert.match(stack.llmRequests[0]!.body.messages[1]!.content, /Attachments: contrat\.pdf/);
-  const sent = await me('POST', `/emails/${contract.id}/send`, { draftId: draft.body.id, html: draft.body.html, to: ['hugo@client.example'] });
+  const sent = await me('POST', `/emails/${contract.id}/send`, { proposalId: draft.body.id, html: draft.body.html, to: ['hugo@client.example'] });
   assert.equal(sent.status, 200);
   assert.deepEqual(stack.folderFlags('Clients').map((flags) => flags.includes('\\Answered')), [true]);
 });

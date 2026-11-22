@@ -85,7 +85,7 @@ async function sortedAndPrepared(deps: Dependencies, account: AccountRow): Promi
 async function fetchMailbox(deps: Dependencies, account: AccountRow): Promise<SyncResult> {
   const { folder } = account;
   // Nothing is fetched until the user has said which folder to watch.
-  if (!folder) return { fetched: 0, triaged: 0, error: problem('accounts.folderRequired') };
+  if (!folder) return { fetched: 0, triaged: 0, error: problem('mailboxes.folderRequired') };
   const { fetched, error } = await broughtIn(deps, account, folder);
   const after: SortingResult = error ? { triaged: 0, error } : await sortedAndPrepared(deps, account);
   await recordFetch(deps.db, account.id, after.error);

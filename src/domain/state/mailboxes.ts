@@ -18,7 +18,7 @@ export const mailboxById = async (db: Db, id: number): Promise<AccountRow> => (a
 /** The mailbox with this number, if the member may use it. Refused as not found otherwise: what one may not see does not exist. */
 export async function mailboxFor(db: Db, { member, organization }: Actor, id: unknown): Promise<AccountRow> {
   const mailbox = await db.one<AccountRow>(`SELECT a.* FROM accounts a WHERE a.id = $1 AND ${mayUse('$2', '$3')}`, [Number(id) || 0, organization.id, member.id]);
-  if (!mailbox) throw new Refusal('notFound', 'accounts.notFound');
+  if (!mailbox) throw new Refusal('notFound', 'mailboxes.notFound');
   return mailbox;
 }
 

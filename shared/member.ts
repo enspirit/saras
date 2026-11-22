@@ -12,7 +12,7 @@ export interface Member {
   role: Role;
   createdAt: string;
   /** Number of personal mailboxes they connected. */
-  accounts: number;
+  mailboxes: number;
 }
 
 export interface Invitation {

@@ -18,15 +18,15 @@ export interface MailboxByServers {
   shared: boolean;
 }
 
-export const readMailboxes = (): Promise<Mailbox[]> => api<Mailbox[]>('GET', '/accounts');
+export const readMailboxes = (): Promise<Mailbox[]> => api<Mailbox[]>('GET', '/mailboxes');
 /** The folders of a mailbox, asked of its provider. */
-export const readFolders = (id: number): Promise<MailFolder[]> => api<MailFolder[]>('GET', `/accounts/${id}/folders`);
+export const readFolders = (id: number): Promise<MailFolder[]> => api<MailFolder[]>('GET', `/mailboxes/${id}/folders`);
 /** Who hosts the mail of an address, asked of its domain. */
 export const readMailHost = (address: string): Promise<MailHost> => api<MailHost>('GET', `/mail/host?email=${encodeURIComponent(address)}`);
-export const connectMailboxByServers = (mailbox: MailboxByServers): Promise<unknown> => api('POST', '/accounts/imap', mailbox);
+export const connectMailboxByServers = (mailbox: MailboxByServers): Promise<unknown> => api('POST', '/mailboxes/imap', mailbox);
 /** Where the browser goes to connect a mailbox by signing in at its host, or with `renew` to give one access again. */
 export const hostSignInAddress = (kind: string, query = ''): string => `/api/oauth/${kind}/start${query}`;
-export const renewMailboxCredentials = (id: number, password: string): Promise<unknown> => api('PUT', `/accounts/${id}/password`, { password });
-export const chooseWatchedFolder = (id: number, folder: string): Promise<unknown> => api('PUT', `/accounts/${id}/folder`, { folder });
-export const disconnectMailbox = (id: number): Promise<unknown> => api('DELETE', `/accounts/${id}`);
-export const fetchMailbox = (id: number): Promise<FetchResult> => api<FetchResult>('POST', `/accounts/${id}/sync`);
+export const renewMailboxCredentials = (id: number, password: string): Promise<unknown> => api('PUT', `/mailboxes/${id}/password`, { password });
+export const chooseWatchedFolder = (id: number, folder: string): Promise<unknown> => api('PUT', `/mailboxes/${id}/folder`, { folder });
+export const disconnectMailbox = (id: number): Promise<unknown> => api('DELETE', `/mailboxes/${id}`);
+export const fetchMailbox = (id: number): Promise<FetchResult> => api<FetchResult>('POST', `/mailboxes/${id}/fetch`);

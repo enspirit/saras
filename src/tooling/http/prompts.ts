@@ -27,7 +27,7 @@ const corrections: Handle = async ({ world }, req, res) => void res.json(await c
 
 export const PROMPTS: Route[] = [
   { method: 'get', path: '/prompts', handle: list },
-  { method: 'get', path: '/prompts/templates', handle: readyMade, for: 'administrators' },
+  { method: 'get', path: '/prompts/ready-made', handle: readyMade, for: 'administrators' },
   { method: 'post', path: '/prompts', handle: create },
   { method: 'put', path: '/prompts/:id', handle: edit },
   { method: 'delete', path: '/prompts/:id', handle: remove },
