@@ -330,7 +330,12 @@
     "privacyZdr": "Chaque requête à l’IA exige un fournisseur qui ne conserve rien et n’entraîne rien. Si aucun ne peut le garantir, la requête échoue au lieu d’être routée ailleurs.",
     "yourPart": "Votre part.",
     "technical": "Pour les plus techniques",
-    "privacyPrepared": "Une proposition est préparée au relevé pour chaque email à traiter : son contenu est alors envoyé à l’IA sans que personne ne le demande."
+    "privacyPrepared": "Une proposition est préparée au relevé pour chaque email à traiter : son contenu est alors envoyé à l’IA sans que personne ne le demande.",
+    "passwordTitle": "Mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "changePassword": "Changer le mot de passe",
+    "passwordChanged": "Mot de passe changé. Vos autres sessions ont été fermées."
   },
   "styleguide": {
     "title": "Guide de style — {product}",
@@ -473,7 +478,8 @@
       "invalidEmail": "Adresse email invalide.",
       "passwordTooShort": "Mot de passe : 10 caractères minimum.",
       "emailTaken": "Un compte existe déjà avec cette adresse.",
-      "signupClosed": "Les inscriptions sont fermées : demandez une invitation à un administrateur."
+      "signupClosed": "Les inscriptions sont fermées : demandez une invitation à un administrateur.",
+      "wrongPassword": "Ce n’est pas votre mot de passe actuel."
     },
     "invitation": {
       "invalid": "Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur."

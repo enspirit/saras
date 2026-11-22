@@ -11,6 +11,7 @@ import { appointAdministrator } from '../../domain/access/appoint-administrator.
 import { checkInvitation } from '../../domain/access/check-invitation.ts';
 import { createOrganization } from '../../domain/access/create-organization.ts';
 import { deleteMember } from '../../domain/access/delete-member.ts';
+import { changePassword } from '../../domain/access/change-password.ts';
 import { inviteMember } from '../../domain/access/invite-member.ts';
 import { removeAdministratorRole } from '../../domain/access/remove-administrator-role.ts';
 import { revokeInvitation } from '../../domain/access/revoke-invitation.ts';
@@ -203,6 +204,11 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   app.post('/api/auth/logout', auth, async (req, res) => {
     await signOut(world, req.user.sid);
     res.clearCookie('sid', cookieOptions);
+    res.json({ ok: true });
+  });
+
+  app.put('/api/auth/password', auth, async (req, res) => {
+    await changePassword(world, originOf(req), actorOf(req), req.user.sid, req.body);
     res.json({ ok: true });
   });
 

@@ -14,6 +14,7 @@ export const MESSAGES = {
   'auth.signedOut': 'Not signed in.',
   'auth.adminOnly': 'Reserved for administrators.',
   'auth.invalidCredentials': 'Wrong email or password.',
+  'auth.wrongPassword': 'This is not your current password.',
   'auth.invalidEmail': 'Invalid email address.',
   'auth.passwordTooShort': 'Password: 10 characters minimum.',
   'auth.emailTaken': 'An account already exists with this address.',

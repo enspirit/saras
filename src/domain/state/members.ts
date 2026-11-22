@@ -53,3 +53,6 @@ export async function addFirstPrompt(db: Db, organizationId: number, memberId: n
     await db.run('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5)', [organizationId, memberId, p.name, p.description, p.systemPrompt]);
   }
 }
+
+export const setPassword = async (db: Db, memberId: number, passwordHash: string): Promise<void> =>
+  void (await db.run('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, memberId]));

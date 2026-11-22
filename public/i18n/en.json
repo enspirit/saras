@@ -330,7 +330,12 @@
     "privacyZdr": "Every AI request requires a provider that keeps nothing and trains on nothing. If none can guarantee it, the request fails instead of being routed elsewhere.",
     "yourPart": "Your part.",
     "technical": "For the technically minded",
-    "privacyPrepared": "A proposal is prepared at fetch for each email to handle: its content is then sent to the AI without anyone asking."
+    "privacyPrepared": "A proposal is prepared at fetch for each email to handle: its content is then sent to the AI without anyone asking.",
+    "passwordTitle": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed. Your other sessions were signed out."
   },
   "styleguide": {
     "title": "Style guide — {product}",
@@ -473,7 +478,8 @@
       "invalidEmail": "Invalid email address.",
       "passwordTooShort": "Password: 10 characters minimum.",
       "emailTaken": "An account already exists with this address.",
-      "signupClosed": "Sign-up is closed: ask an administrator for an invitation."
+      "signupClosed": "Sign-up is closed: ask an administrator for an invitation.",
+      "wrongPassword": "This is not your current password."
     },
     "invitation": {
       "invalid": "Invalid or expired invitation. Ask your administrator for a new one."

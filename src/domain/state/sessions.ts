@@ -21,6 +21,9 @@ export async function openSession(db: Db, memberId: number): Promise<Session> {
 
 export const closeSession = (db: Db, id: string): Promise<number> => db.run('DELETE FROM sessions WHERE id = $1', [id]);
 
+/** Closes every session of a member but this one. */
+export const closeOtherSessions = (db: Db, memberId: number, keptId: string): Promise<number> => db.run('DELETE FROM sessions WHERE user_id = $1 AND id <> $2', [memberId, keptId]);
+
 /** A member as their session shows them: with the session's own number, and the OAuth round trip in progress. */
 export type SessionMember = UserRow & { sid: string; oauth_state: string | null };
 

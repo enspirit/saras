@@ -206,3 +206,17 @@ test('deleting a member keeps what belongs to the organisation', async () => {
   assert.equal((await bruno('GET', '/prompts')).body.length, 1);
   assert.equal((await subjects(chloe, 'sent')).length, 1);
 });
+
+test('a member changes their own password, knowing the current one; their other sessions are closed', async () => {
+  const elsewhere = createClient(() => stack.url);
+  assert.equal((await elsewhere('POST', '/auth/login', { email: 'bruno@acme.example', password: 'un-bon-mot-de-passe' })).status, 200);
+  const wrong = await bruno('PUT', '/auth/password', { current: 'pas-le-bon-mot', next: 'un-autre-mot-de-passe' });
+  assert.deepEqual([wrong.status, wrong.body.code], [401, 'auth.wrongPassword']);
+  assert.equal((await bruno('GET', '/me')).status, 200, 'a wrong password is not a signed-out session');
+  assert.equal((await bruno('PUT', '/auth/password', { current: 'un-bon-mot-de-passe', next: 'court' })).body.code, 'auth.passwordTooShort');
+  assert.equal((await bruno('PUT', '/auth/password', { current: 'un-bon-mot-de-passe', next: 'un-autre-mot-de-passe' })).status, 200);
+  assert.equal((await bruno('GET', '/me')).status, 200, 'the session that made the change stays');
+  assert.equal((await elsewhere('GET', '/me')).status, 401);
+  assert.equal((await elsewhere('POST', '/auth/login', { email: 'bruno@acme.example', password: 'un-bon-mot-de-passe' })).status, 401);
+  assert.equal((await elsewhere('POST', '/auth/login', { email: 'bruno@acme.example', password: 'un-autre-mot-de-passe' })).status, 200);
+});

@@ -1122,9 +1122,21 @@ const renderSettings = guard(async (part = '') => {
       render();
     }, { variant: 'danger' })),
   );
+  const current = Input({ type: 'password', required: true, autocomplete: 'current-password' });
+  const next = Input({ type: 'password', required: true, minLength: 10, autocomplete: 'new-password' });
+  const change = Button(t('settings.changePassword'), { type: 'submit' });
+  const passwordForm = SubmitForm(change, '…', async () => {
+    await api('PUT', '/auth/password', { current: current.value, next: next.value });
+    toast(t('settings.passwordChanged'));
+    render();
+  },
+    FormRow(Field(t('settings.currentPassword'), current), Field(t('settings.newPassword'), next, { hint: t('auth.passwordHint') })),
+    Actions(change),
+  );
   frame(
     !me.hasKey && Callout('warn', t('settings.noKey')),
     Card({ form: true }, form),
+    Card({ title: t('settings.passwordTitle'), form: true }, passwordForm),
     languages().length > 1 && Card({ title: t('settings.display'), form: true }, LanguagePicker()),
   );
 });

@@ -17,11 +17,14 @@ export const maySignUp = (open: boolean): Verdict<true> => (open ? accept(true) 
 /** ReqPre wherever an address is given for an account or an invitation: it is one. */
 export const isAnAddress = (address: string): Verdict<true> => (isEmailAddress(address) ? accept(true) : refuse('invalid', 'auth.invalidEmail'));
 
+/** A password has ten characters or more. */
+export const isLongEnough = (password: unknown): Verdict<string> =>
+  typeof password === 'string' && password.length >= 10 ? accept(password) : refuse('invalid', 'auth.passwordTooShort');
+
 /** ReqPre of opening an account: a valid address, and a password of ten characters or more. */
 export function mayOpenAccount(address: string, password: unknown): Verdict<string> {
   if (!isEmailAddress(address)) return refuse('invalid', 'auth.invalidEmail');
-  if (typeof password !== 'string' || password.length < 10) return refuse('invalid', 'auth.passwordTooShort');
-  return accept(password);
+  return isLongEnough(password);
 }
 
 /** ReqPre of opening an account and of inviting: nobody has this address yet. */
