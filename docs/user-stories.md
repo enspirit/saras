@@ -18,11 +18,11 @@ How the screens are designed and built is in [`design/`](design/README.md).
 | Area | Stories |
 | --- | --- |
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-07 |
-| [B. Mailboxes](#b-mailboxes) | US-10 – US-16 |
+| [B. Mailboxes](#b-mailboxes) | US-10 – US-17 |
 | [C. Triage and the four boxes](#c-triage-and-the-four-boxes) | US-20 – US-25 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
 | [E. Prompts](#e-prompts) | US-50 – US-53 |
-| [F. Settings](#f-settings) | US-60 – US-66 |
+| [F. Settings](#f-settings) | US-60 – US-67 |
 | [G. Privacy guarantees](#g-privacy-guarantees) | US-70 – US-74 |
 | [H. Installation, brand and languages](#h-installation-brand-and-languages) | US-80 – US-86 |
 
@@ -101,7 +101,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - saras looks up who hosts my address's domain. When it is Google or Microsoft, I am pointed to signing in there (US-11, US-12), or told that my usual password will probably be refused when that is not set up.
 - Changing a port sets "Direct TLS" accordingly (993 / 465 direct; otherwise STARTTLS, which is then required).
 - The connection is tested before anything is saved; a failure shows the server's own message.
-- The password is stored encrypted. An address is connected once per organisation.
+- The password is stored encrypted. An address is connected once per organisation: connecting it again is refused (see US-17 to renew its access).
 
 ### US-11 — Connect Gmail / Google Workspace
 **As** a member, **I want** to connect my Google mailbox by granting access at Google, **so that** I never type its password into saras.
@@ -144,6 +144,13 @@ How the screens are designed and built is in [`design/`](design/README.md).
 
 - A confirmation states that the emails and replies stored in saras are deleted and the mailbox itself is not touched.
 - For a shared mailbox, only administrators can.
+
+### US-17 — Renew access to a mailbox
+**As** a member, **I want** to give saras access to my mailbox again after I changed its password, or after the access I granted was withdrawn or ran out, **so that** fetching resumes without losing anything.
+
+- From **Mailboxes**, the key button of a mailbox I manage: a new password for a mailbox connected by its servers; a new sign-in at Google or Microsoft for the others.
+- The new access is tested before it is saved. Signing in to another mailbox than the one being renewed is refused.
+- The folder watched and the emails kept do not change; the mailbox's last error is cleared and it is fetched at once.
 
 ---
 
@@ -335,18 +342,26 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - The reply itself is always in the language of the email received.
 
 ### US-63 — Configure the organisation
-**As** an administrator, **I want** to set my organisation's name, how fetched emails are sorted, and its own model and key, **so that** every member works the same way at the organisation's expense.
+**As** an administrator, **I want** to set my organisation's name, its way of working, and its own model and key, **so that** every member works the same way at the organisation's expense.
 
-- Name; triage strategy (none, or by the AI — with its cost and what it reads stated); whether automated mail is set aside first; default model; the organisation's OpenRouter key (encrypted, removable).
+- Name; way of working (US-66 — with the cost of AI sorting and what the AI is sent stated); whether automated mail is set aside first; default model; the organisation's OpenRouter key (encrypted, removable).
 
 ### US-66 — Choose how the tool works for the team
 **As** an administrator, **I want** to choose among a few ready-made ways of working, **so that** the AI does as much, or as little, before a member opens an email as suits us.
 
 - Four ways, shown when getting started: *I decide everything* (no AI sorting, proposals on demand); *The AI sorts, I write*; *Proposals waiting for me* (a proposal is written at fetch for each email to handle, to review in saras); *Drafts in my mailbox* (that proposal is also filed in the mailbox's Drafts folder, and the email moves to **Replied** as a draft).
 - Each says what the AI is sent. The ways that need the AI cannot be chosen without a key.
-- The same choices are in **Settings → Organisation**, as the sorting and the proposals settings.
+- The same four ways are in **Settings → Organisation**, as one setting.
+- At the end of getting started, what the first fetch let through unsorted is sorted again the chosen way.
 - A proposal prepared at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at triage or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
+
+### US-67 — Change my password
+**As** a member, **I want** to change the password I sign in with, **so that** I can replace one I no longer trust.
+
+- In **Settings → You**: my current password, and a new one of at least 10 characters.
+- My other sessions are signed out; the one I am using stays.
+- A wrong current password is refused, and counts towards the lock-out of US-02.
 
 ### US-64 — See the privacy guarantees in force
 **As** a member, **I want** to read, in the application, what happens to my emails, **so that** I can trust it — and explain it to a client who asks.
