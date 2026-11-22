@@ -1,0 +1,72 @@
+/* ---- Button: three sizes, an optional icon, a busy state ---- */
+.btn {
+  --btn-bg: var(--color-surface);
+  --btn-text: var(--color-text);
+  --btn-border: var(--color-border);
+  --btn-height: var(--control-md);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: var(--btn-height);
+  padding: 0 var(--space-4);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: var(--border-width) solid var(--btn-border);
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+.btn:hover { --btn-bg: var(--color-hover); --btn-border: var(--color-border-strong); }
+.btn:active { transform: translateY(1px); }
+.btn--small { --btn-height: var(--control-sm); padding: 0 var(--space-3); font-size: var(--text-sm); }
+.btn--large { --btn-height: var(--control-lg); padding: 0 var(--space-5); }
+.btn--primary {
+  --btn-bg: var(--color-accent);
+  --btn-text: var(--color-on-accent);
+  --btn-border: var(--color-accent);
+  font-weight: var(--weight-strong);
+}
+.btn--primary:hover { --btn-bg: var(--color-accent); --btn-border: var(--color-accent); filter: brightness(0.92); }
+/* Danger: a destructive action at rest, among others. Destructive: the same, about to happen (in a dialog). */
+.btn--danger { --btn-text: var(--color-danger); }
+.btn--destructive {
+  --btn-bg: var(--color-danger);
+  --btn-text: var(--color-on-danger);
+  --btn-border: var(--color-danger);
+  font-weight: var(--weight-strong);
+}
+.btn--destructive:hover { --btn-bg: var(--color-danger); --btn-border: var(--color-danger); filter: brightness(0.92); }
+.btn--ghost { --btn-bg: transparent; --btn-text: var(--color-text-soft); --btn-border: transparent; }
+.btn--ghost:hover { --btn-bg: var(--color-hover); --btn-text: var(--color-text); --btn-border: transparent; }
+.btn--link {
+  --btn-bg: transparent;
+  --btn-text: var(--color-accent);
+  --btn-border: transparent;
+  min-height: 0;
+  padding: var(--space-1) var(--space-2);
+}
+.btn--link:hover { --btn-bg: transparent; --btn-border: transparent; text-decoration: underline; }
+.btn--icon-only { width: var(--btn-height); padding: 0; }
+.btn--block { width: 100%; }
+/* Flush: part of a joined control, which draws the frame itself. */
+.btn--flush { border: 0; border-radius: 0; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
+/* Busy: the spinner takes the place of the icon; the label stays, so the button keeps its width. */
+.btn[aria-busy="true"] { opacity: 1; cursor: progress; }
+.btn[aria-busy="true"] > .icon { display: none; }
+
+/* ---- Tool button: compact, for toolbars; pressed when its format is active ---- */
+.btn--tool {
+  --btn-bg: transparent;
+  --btn-border: transparent;
+  --btn-text: var(--color-text-soft);
+  --btn-height: var(--control-sm);
+  min-width: var(--control-sm);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+.btn--tool:hover { --btn-bg: var(--color-hover); --btn-text: var(--color-text); --btn-border: transparent; }
+.btn--tool[aria-pressed="true"] { --btn-bg: var(--color-accent-soft); --btn-text: var(--color-accent); }

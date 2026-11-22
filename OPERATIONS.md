@@ -41,7 +41,7 @@ Essential state only: what another agent can observe.
 | Way of working | One of four: `manual` (every fetched email is to handle, the AI writes on demand), `sort` (the AI sorts), `draft` (and proposals are written at fetch), `mailbox` (and filed in the mailbox's drafts). | Backend | Members | `organizations.triage_strategy` and `.automation` together (`computations/way-of-working.ts`); `Me.organization.way` in the frontend |
 | Automated mail first | Whether plainly automated mail is set aside by rule before anything else. | Backend | Members | `organizations.skip_automated` |
 | Organisation's AI | Its default model and its own key. | Backend | Administrators (key: presence only) | `organizations.model`, `.openrouter_key_enc` |
-| Member | A person's account in one organisation: address, name, role, password. | Backend | Administrators, the member | `users.*`; `state.me` in the frontend |
+| Member | A person's account in one organisation: address, name, role, password. | Backend | Administrators, the member | `users.*`; `session.me` in the frontend |
 | Member's settings | Language, signature, own model, own key. | Backend (language also Frontend) | The member | `users.language`, `.signature`, `.model`, `.openrouter_key_enc`; `localStorage` (language) |
 | Session | That a browser is signed in as a member, until when. | Backend | Frontend | `sessions`; the `sid` cookie |
 | Attempt count | Wrong guesses of a password or an invitation token from one origin, in the last fifteen minutes. | Backend | Visitors (as a refusal) | in memory (`World.attempts`) |
@@ -66,12 +66,12 @@ Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`),
 | --- | --- | --- |
 | May use a mailbox | It is in the member's organisation, and is theirs or shared. | `mayUse` (a SQL condition), `mailboxFor`, `emailFor` in `state/` |
 | Manages a mailbox | Shared: the member is an administrator. Personal: it is theirs. | `manages` in `computations/mailboxes.ts` |
-| Box | To handle = `needs_reply` or `pending`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `tooling/http/app.ts`, and again in `web/app.ts` |
+| Box | To handle = `needs_reply` or `pending`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `tooling/http/app.ts`, and again in `web/pages/boxes.ts` |
 | Sign-up is open | The operator allows it, or no account exists yet. | `signUpIsOpen` in `computations/access.ts` |
 | Key in force | The member's own, else the organisation's, else the server's. Same order for the model. | `computations/key-in-force.ts` |
 | Locked out | Ten wrong guesses from one origin within fifteen minutes. | `isLockedOut` in `computations/access.ts` |
-| Proposal was edited | The final text differs from the proposed one, whitespace aside. | `wasEdited` in `computations/reply.ts`; a second version in `web/app.ts` (`norm`) |
-| Passage to complete | A passage in square brackets of 2 to 80 characters. | `TO_COMPLETE` in `web/app.ts` only |
+| Proposal was edited | The final text differs from the proposed one, whitespace aside. | `wasEdited` in `computations/reply.ts`; a second version in `web/pages/reply-in-progress.ts` (`norm`) |
+| Passage to complete | A passage in square brackets of 2 to 80 characters. | `TO_COMPLETE` in `web/pages/reply-in-progress.ts` only |
 | Sorting, proposals | What a way of working means for a fetch: who sorts, and whether proposals are written and filed. | `WAYS` in `computations/way-of-working.ts` |
 | Automated mail | Mailing-list headers, `no-reply` senders, bulk precedence. | `sorting/rules.ts` |
 
@@ -203,13 +203,13 @@ Pure, in `src/domain/computations/` unless said otherwise.
 | `tooling/mail/lookup.ts` (`classifyMx`, `domainOf`), `gmail.ts`, `graph.ts` | MX names → who hosts the mail; a provider's message → an email. |
 | `web/mail-presets.ts` (`serversFor`) | An address → servers to propose. |
 
-Still buried, in the frontend (`web/app.ts`), which this reorganisation did not reach:
+Still buried, in the frontend (`web/pages/`):
 
 | Decision | Buried in |
 | --- | --- |
-| Which box an email is in | `BOXES`, twice: `tooling/http/app.ts` and `web/app.ts` |
-| Passages to complete; whether the member edited the proposal | `TO_COMPLETE`, `norm` |
-| Where the tour goes next | `pathOf`, `leave` |
+| Which box an email is in | `BOXES`, twice: `tooling/http/app.ts` and `web/pages/boxes.ts` |
+| Passages to complete; whether the member edited the proposal | `TO_COMPLETE`, `norm` in `web/pages/reply-in-progress.ts` |
+| Where the tour goes next | `pathOf`, `leaveStep` in `web/pages/getting-started/path.ts` |
 | Which emails a fetch stores, and with which first status | `store` in `mailboxes/fetch-mailbox.ts` (server) |
 
 ## Deviations and open questions
@@ -251,5 +251,5 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 - **DeleteOrganization tells nobody.** The other members find themselves signed out. saras sends no email of its own today; telling them would be its first.
 - **A shared mailbox that changes owner changes voice**: it is fetched with its owner's key, model, signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who sorts and writes for it.
 - Deviations 1 to 14 (9 aside), each of which is a rule to confirm or a behaviour to change.
-- The frontend (`web/app.ts`) is still organised by page. Its actions could be named after the operations they ask for, and its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) brought out as pure functions with unit tests.
+- The frontend asks for each operation through a function named after it (`web/api/`), and its pages are named after what a person does (`web/pages/`). Its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) could still be brought out as pure functions with unit tests.
 - Black-box specifications of the operations (webspicy) are still to write; the HTTP tests in `test/` play that part for now.

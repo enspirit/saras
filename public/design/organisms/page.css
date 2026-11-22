@@ -1,0 +1,7 @@
+/* ---- Page: a scrolling column, centred, as wide as its content reads well ---- */
+.page { width: 100%; padding: var(--space-6) var(--space-6) var(--space-8); overflow-y: auto; }
+.page__inner { max-width: var(--content-width); margin-inline: auto; }
+.page__inner > h2 { margin: var(--space-6) 0 var(--space-3); }
+
+/* ---- Columns: what one works on, and what informs it beside ---- */
+.columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-5); align-items: start; }

@@ -1,0 +1,5 @@
+/* ---- Features: a few points of equal weight, each with its sign ---- */
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
+.feature { display: grid; align-content: start; gap: var(--space-2); padding: var(--space-4) var(--space-5); background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-1); }
+.feature__icon { display: grid; place-items: center; width: var(--control-md); height: var(--control-md); border-radius: var(--radius-md); background: var(--color-ok-soft); color: var(--color-ok); }
+.feature__text { font-size: var(--text-sm); color: var(--color-text-soft); }

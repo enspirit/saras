@@ -1,0 +1,2 @@
+/* ---- Loading: a whole region is on its way ---- */
+.loading { display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; color: var(--color-text-muted); }

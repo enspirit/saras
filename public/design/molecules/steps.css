@@ -1,0 +1,13 @@
+/* ---- Steps: a short path, where one is on it ---- */
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); margin: 0 0 var(--space-5); padding: 0; list-style: none; font-size: var(--text-sm); color: var(--color-text-muted); }
+.steps__step { display: flex; align-items: center; gap: var(--space-2); margin: 0; }
+.steps__mark {
+  display: grid; place-items: center;
+  width: var(--space-6); height: var(--space-6);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs); font-weight: var(--weight-strong);
+}
+.steps__step[aria-current="step"] { color: var(--color-text); font-weight: var(--weight-strong); }
+.steps__step[aria-current="step"] .steps__mark { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
+.steps__step--done .steps__mark { background: var(--color-ok); border-color: var(--color-ok); color: var(--color-surface); }

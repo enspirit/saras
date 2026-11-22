@@ -1,0 +1,62 @@
+// Choosing the one folder of a mailbox to watch: the second step of getting started, and
+// later a change made from the list of mailboxes.
+
+import { problemText } from '../api.ts';
+import { chooseWatchedFolder, fetchMailbox, readFolders } from '../api/mailboxes.ts';
+import type { Account } from '../api/mailboxes.ts';
+import { t } from '../i18n.ts';
+import { goTo } from '../navigation.ts';
+import { ActionButton, messageOf, toast } from './actions.ts';
+import { leaveStep, PathSteps } from './getting-started/path.ts';
+import { shell } from './shell.ts';
+import { ButtonLink } from '../ui/atoms/button.ts';
+import { Callout } from '../ui/molecules/callout.ts';
+import { Card } from '../ui/molecules/card.ts';
+import { Choices } from '../ui/molecules/choices.ts';
+import type { ChoicesHandle } from '../ui/molecules/choices.ts';
+import { Actions } from '../ui/molecules/form.ts';
+import { PageHeader } from '../ui/molecules/page-header.ts';
+import { Page } from '../ui/organisms/page.ts';
+
+/** ChooseWatchedFolder. A change goes back to the mailboxes; the first choice goes on with the path. */
+async function watchFolder(account: Account, folder: string): Promise<void> {
+  await chooseWatchedFolder(account.id, folder);
+  if (account.folder !== null) {
+    toast(t('accounts.folderChosen'));
+    return goTo('#/accounts');
+  }
+  // The first choice goes on with the path. The button waits for the first fetch, so that
+  // the newcomer arrives on their emails and not on an empty box.
+  const fetched = await fetchMailbox(account.id);
+  if (fetched.error) toast(problemText(fetched.error), true);
+  else toast(t('mailbox.fetched', { count: fetched.fetched }));
+  leaveStep('folder');
+}
+
+/** Asks the mailbox for its folders, and offers them with the watched one (or the first, the inbox) chosen. */
+function offerFolders(account: Account, folders: ChoicesHandle, confirm: HTMLButtonElement): void {
+  readFolders(account.id)
+    .then((list) => {
+      folders.setOptions(list.map((f) => ({ value: f.id, title: f.name })), account.folder ?? list[0]?.id);
+      confirm.disabled = false;
+    })
+    .catch((e) => toast(messageOf(e), true));
+}
+
+/**
+ * Choosing the one folder of a mailbox to watch. The folders are asked of the mailbox when
+ * the page appears, with the inbox first and preselected.
+ */
+export function watchedFolderPage(account: Account): void {
+  const fresh = account.folder === null;
+  const folders = Choices({ legend: t('accounts.folders'), name: 'folder', rows: true, options: [{ value: '', title: t('accounts.loadingFolders'), disabled: true }] });
+  const confirm = ActionButton(t('accounts.useFolder'), t('mailbox.refreshing'), () => watchFolder(account, folders.value()), { variant: 'primary' });
+  confirm.disabled = true;
+  offerFolders(account, folders, confirm);
+  shell(Page(
+    fresh && PathSteps('folder'),
+    PageHeader({ title: t('accounts.chooseFolderTitle'), intro: t('accounts.chooseFolder'), crumbs: fresh ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
+    fresh && Callout('ok', t('accounts.connectedShort', { email: account.email })),
+    Card({ form: true }, folders.element, Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/accounts' }))),
+  ));
+}

@@ -1,0 +1,24 @@
+/* ---- Reading: the email's header, its text (scrolling), and what is docked under it ---- */
+.reading { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.reading__body { flex: 1 0 96px; min-height: 0; overflow-y: auto; padding: var(--space-5) var(--space-6); }
+.reading__body > * { max-width: 76ch; }
+.reading__body > * + * { margin-top: var(--space-6); }
+.reading .message { max-height: none; overflow: visible; }
+
+/* ---- Reading header: subject and decisions, who and when, triage verdict ---- */
+.reading-head {
+  flex: none;
+  display: grid; gap: var(--space-2);
+  padding: var(--space-3) var(--space-5) var(--space-3) var(--space-6);
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-line);
+}
+.reading-head__top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.reading-head__top > h1 { flex: 1 1 240px; font-size: var(--text-lg); overflow-wrap: anywhere; }
+.reading-head__sender { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.reading-head__who { flex: 1 1 200px; min-width: 0; display: grid; }
+.reading-head__name { font-weight: var(--weight-strong); }
+.reading-head__address, .reading-head__to, .reading-head__date { font-size: var(--text-sm); color: var(--color-text-muted); overflow-wrap: anywhere; }
+.reading-head__files { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.reading-head__date { white-space: nowrap; }
+.reading-head__triage { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-soft); }

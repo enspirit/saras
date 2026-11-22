@@ -1,0 +1,13 @@
+/* ---- Notice ---- */
+.notice {
+  --notice-bg: var(--color-accent-soft);
+  --notice-text: var(--color-text);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--notice-bg);
+  color: var(--notice-text);
+  font-size: var(--text-sm);
+}
+.notice--ok { --notice-bg: var(--color-ok-soft); --notice-text: var(--color-ok); }
+.notice--warn { --notice-bg: var(--color-warn-soft); --notice-text: var(--color-warn); }
+.notice--danger { --notice-bg: var(--color-danger-soft); --notice-text: var(--color-danger); }

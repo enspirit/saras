@@ -1,0 +1,4 @@
+/* ---- Remark: what someone said, who and when ---- */
+.remark { display: flex; gap: var(--space-3); padding: var(--space-3) 0; border-top: var(--border-width) solid var(--color-line); }
+.remark__text { display: grid; gap: 2px; }
+.remark__meta { font-size: var(--text-sm); color: var(--color-text-muted); }

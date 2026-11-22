@@ -1,0 +1,20 @@
+/* ---- Prompt pick: write with a prompt, and choose which ---- */
+.prompt-pick {
+  display: inline-flex; align-items: stretch;
+  max-width: 100%;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.prompt-pick__select {
+  flex: 0 1 auto; min-width: var(--space-8); max-width: 280px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-left: var(--border-width) solid var(--color-border);
+  background: transparent;
+  font-size: var(--text-sm);
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+.prompt-pick__badge { display: inline-flex; align-items: center; padding-right: var(--space-2); }

@@ -51,6 +51,23 @@ function choose(kind: string, value: string | number | undefined, options: Recor
   return format(options[String(value)] ?? options.other ?? '', params, locale);
 }
 
+/** Reads what the apostrophe at `i` opens: a literal apostrophe, a quoted section, or just itself. `end` is the index of its last character. */
+function quoted(message: string, i: number): { text: string; end: number } {
+  const next = message[i + 1];
+  if (next === "'") return { text: "'", end: i + 1 };
+  if (next !== '{' && next !== '}') return { text: "'", end: i };
+  const close = message.indexOf("'", i + 2);
+  const stop = close === -1 ? message.length : close;
+  return { text: message.slice(i + 1, stop), end: stop };
+}
+
+/** What stands between two braces, formatted: a parameter, or a choice on one. */
+function argument(inner: string, params: Params, locale: string): string {
+  const [name = '', kind, ...rest] = inner.split(',');
+  const value = params[name.trim()];
+  return kind ? choose(kind.trim(), value, parseOptions(rest.join(',')), params, locale) : String(value ?? `{${name.trim()}}`);
+}
+
 /**
  * @param hash what `#` expands to, inside a plural branch
  */
@@ -59,22 +76,13 @@ export function format(message: string, params: Params = {}, locale = 'en', hash
   for (let i = 0; i < message.length; i++) {
     const c = message[i];
     if (c === "'") {
-      const next = message[i + 1];
-      if (next === "'") {
-        out += "'";
-        i++;
-      } else if (next === '{' || next === '}') {
-        const end = message.indexOf("'", i + 2);
-        const stop = end === -1 ? message.length : end;
-        out += message.slice(i + 1, stop);
-        i = stop;
-      } else out += c;
+      const { text, end } = quoted(message, i);
+      out += text;
+      i = end;
     } else if (c === '{') {
       const close = closingBrace(message, i);
       if (close === -1) return out + message.slice(i);
-      const [name = '', kind, ...rest] = message.slice(i + 1, close).split(',');
-      const value = params[name.trim()];
-      out += kind ? choose(kind.trim(), value, parseOptions(rest.join(',')), params, locale) : String(value ?? `{${name.trim()}}`);
+      out += argument(message.slice(i + 1, close), params, locale);
       i = close;
     } else if (c === '#' && hash !== undefined) out += hash;
     else out += c;

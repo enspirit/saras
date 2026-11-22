@@ -1,0 +1,24 @@
+/* ---- Text ---- */
+.text--muted { color: var(--color-text-muted); }
+.text--small { font-size: var(--text-sm); }
+.text--wrap { overflow-wrap: anywhere; }
+/* Present for screen readers, absent for the eye. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.prose {
+  margin: 0;
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Rich text: a reply as it will be read ---- */
+.rich { overflow-wrap: anywhere; }
+.rich p, .rich div { margin: 0 0 var(--space-3); }
+.rich > :last-child { margin-bottom: 0; }
+.rich ul, .rich ol { margin: 0 0 var(--space-3); }
+.rich blockquote {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-muted);
+}

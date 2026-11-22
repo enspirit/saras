@@ -1,0 +1,14 @@
+/* ---- Avatar: a person, as initials ---- */
+.avatar {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--control-md); height: var(--control-md);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.02em;
+}
+.avatar--small { width: var(--control-sm); height: var(--control-sm); }
+.avatar--neutral { background: var(--color-surface-sunken); color: var(--color-text-soft); }

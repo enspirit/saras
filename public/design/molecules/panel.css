@@ -1,0 +1,14 @@
+/* ---- Panel: a record with its facts (a reply that was sent) ---- */
+.panel {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.panel__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-line); }
+.panel__head > .icon { color: var(--color-ok); }
+.panel__meta { font-size: var(--text-sm); color: var(--color-text-muted); }
+.panel__badges { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-left: auto; }
+.panel > .facts { padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--color-line); }
+.panel__body { padding: var(--space-4); }

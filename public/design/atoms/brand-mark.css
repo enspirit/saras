@@ -1,0 +1,10 @@
+/* ---- Brand mark ---- */
+.brandmark {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-heading);
+  letter-spacing: -0.02em;
+}
+.brandmark__logo { height: var(--logo-height); width: auto; display: block; }
+.brandmark--large { font-size: var(--text-xl); }

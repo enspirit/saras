@@ -1,0 +1,11 @@
+/* ---- AI note: says that the text below was written by the AI, with what, and how to undo it ---- */
+.ai-note {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  background: var(--color-ai);
+  border-bottom: var(--border-width) solid var(--color-ai-border);
+  color: var(--color-text-soft);
+  font-size: var(--text-sm);
+}
+.ai-note > .icon { color: var(--color-accent); }
+.ai-note__text { flex: 1 1 200px; min-width: 0; padding: var(--space-1) 0; }

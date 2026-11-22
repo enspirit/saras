@@ -2,7 +2,22 @@
  * The brand of this installation: its name, tagline and logo, read from /brand/brand.json.
  * Colours and fonts are in /brand/theme.css, loaded by the page itself.
  */
-import type { Brand } from './atoms.ts';
+
+/** Name, logo and tagline of the installation, as loadBrand returns them. */
+export interface Brand {
+  name: string;
+  tagline: string;
+  /** URL of the logo, when the brand has one. */
+  logo: string | null;
+  /** URL of the variant used in dark mode. */
+  logoDark: string | null;
+  /** Who offers this installation, shown next to the name on the sign-in screen ("by …"). */
+  byline: string;
+  /** Small print under the sign-in form ("Engineered by …"). */
+  credit: string;
+  /** The installation and the AI it calls are hosted in Europe: the sign-in screen may say so. */
+  euHosting: boolean;
+}
 
 /** brand.json as written by a company: file names, not URLs. */
 interface BrandFile {

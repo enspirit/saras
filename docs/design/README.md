@@ -42,13 +42,14 @@ Principles that follow:
 ```
 public/design/                      web/ui/
   index.css      @layer order         dom.ts        h(): the one element-creation function
-  tokens.css     every literal        atoms.ts
-  base.css       element defaults     molecules.ts
-  atoms.css                           organisms.ts
-  molecules.css                       brand.ts      loads name, tagline, logo, sign-in extras
-  organisms.css                       sanitize.ts
+  tokens.css     every literal        atoms/        one file per component
+  base.css       element defaults     molecules/
+  atoms/         one sheet per        organisms/
+  molecules/     component            brand.ts      loads name, tagline, logo, sign-in extras
+  organisms/                          sanitize.ts
 public/brand/                       web/
-  theme.css      the brand inputs       app.ts        every screen of the application
+  theme.css      the brand inputs       app.ts        starts the application, shows the page of each address
+                                        pages/        one file per thing a person does
   brand.json     name, tagline, logos   styleguide.ts the living style guide
 brands/
   example/       a fictitious firm: green accent, serif headings, 2 px radius
@@ -79,7 +80,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 
 ## 5. Components
 
-### Atoms (`atoms.ts`, `atoms.css`)
+### Atoms (`atoms/*.ts`, `atoms/*.css`)
 
 | Component | What it is |
 | --- | --- |
@@ -94,7 +95,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `Text`, `Muted`, `Small`, `Strong`, `Code`, `Link`, `Heading`, `List`, `Prose`, `RichText`, `SrOnly` | Text. `Prose` is a plain-text mail body; `RichText` is sanitised HTML. |
 | `BrandMark`, `Spacer` | The brand's name or logo; a push to the end of a row. |
 
-### Molecules (`molecules.ts`, `molecules.css`)
+### Molecules (`molecules/*.ts`, `molecules/*.css`)
 
 | Component | What it is |
 | --- | --- |
@@ -113,7 +114,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `Panel`, `Message` | A record with its facts; a mail body. |
 | Toast (`createToast`), `Swatch` | One message at a time, at the top, clear of the reply area; a colour token in the style guide. |
 
-### Organisms (`organisms.ts`, `organisms.css`)
+### Organisms (`organisms/*.ts`, `organisms/*.css`)
 
 | Component | What it is |
 | --- | --- |
@@ -205,8 +206,8 @@ Fonts of a brand live in its folder and are declared with `@font-face` in its `t
 
 ## 8. Adding to the design
 
-- **A component:** the function in `web/ui/<tier>.ts`, its style in `public/design/<tier>.css`, an example in `web/styleguide.ts`.
-- **An icon:** its name in the `IconName` type and its glyph code in `atoms.css`, taken from the pinned Lucide version.
+- **A component:** the function in `web/ui/<tier>/<component>.ts`, its style in `public/design/<tier>/<component>.css` (listed in `public/design/index.css`), an example in `web/styleguide/<tier>.ts`.
+- **An icon:** its name in the `IconName` type and its glyph code in `atoms/icon.css`, taken from the pinned Lucide version.
 - **A token:** in `tokens.css`, derived from the brand inputs where it is a colour.
 - **Wording:** a key in `public/i18n/en.json` and `fr.json`; the tests check that both have it and that it is used.
 

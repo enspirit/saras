@@ -1,6 +1,7 @@
 /*
  * Design system entry point. Cascade layers make the hierarchy explicit: a later layer
- * always wins over an earlier one, whatever the selectors.
+ * always wins over an earlier one, whatever the selectors. Each component has its own sheet,
+ * in the folder of its tier.
  *
  * brand/theme.css is loaded after this file, outside any layer, so a brand override
  * always wins without !important.
@@ -9,6 +10,68 @@
 
 @import url("tokens.css") layer(tokens);
 @import url("base.css") layer(base);
-@import url("atoms.css") layer(atoms);
-@import url("molecules.css") layer(molecules);
-@import url("organisms.css") layer(organisms);
+
+/*
+ * ATOMS — the smallest parts, meaningless to split further: button, badge, input, notice,
+ * text styles, brand mark. Built by web/ui/atoms/. They know nothing of each other.
+ */
+@import url("atoms/icon.css") layer(atoms);
+@import url("atoms/spinner.css") layer(atoms);
+@import url("atoms/button.css") layer(atoms);
+@import url("atoms/input.css") layer(atoms);
+@import url("atoms/badge.css") layer(atoms);
+@import url("atoms/notice.css") layer(atoms);
+@import url("atoms/text.css") layer(atoms);
+@import url("atoms/brand-mark.css") layer(atoms);
+@import url("atoms/avatar.css") layer(atoms);
+@import url("atoms/chip.css") layer(atoms);
+@import url("atoms/todo-mark.css") layer(atoms);
+@import url("atoms/spacer.css") layer(atoms);
+
+/*
+ * MOLECULES — a few atoms assembled for one job: a labelled field, a card, a row of actions,
+ * a line of the email list, a navigation entry. Built by web/ui/molecules/.
+ */
+@import url("molecules/field.css") layer(molecules);
+@import url("molecules/form.css") layer(molecules);
+@import url("molecules/card.css") layer(molecules);
+@import url("molecules/page-header.css") layer(molecules);
+@import url("molecules/tabs.css") layer(molecules);
+@import url("molecules/steps.css") layer(molecules);
+@import url("molecules/choices.css") layer(molecules);
+@import url("molecules/table.css") layer(molecules);
+@import url("molecules/person.css") layer(molecules);
+@import url("molecules/remark.css") layer(molecules);
+@import url("molecules/callout.css") layer(molecules);
+@import url("molecules/features.css") layer(molecules);
+@import url("molecules/empty-state.css") layer(molecules);
+@import url("molecules/loading.css") layer(molecules);
+@import url("molecules/nav-item.css") layer(molecules);
+@import url("molecules/assurance.css") layer(molecules);
+@import url("molecules/email-list-item.css") layer(molecules);
+@import url("molecules/message.css") layer(molecules);
+@import url("molecules/toast.css") layer(molecules);
+@import url("molecules/dialog.css") layer(molecules);
+@import url("molecules/recipient-field.css") layer(molecules);
+@import url("molecules/ai-note.css") layer(molecules);
+@import url("molecules/panel.css") layer(molecules);
+@import url("molecules/facts.css") layer(molecules);
+@import url("molecules/ai-help.css") layer(molecules);
+@import url("molecules/prompt-pick.css") layer(molecules);
+@import url("molecules/reason-field.css") layer(molecules);
+@import url("molecules/caution.css") layer(molecules);
+@import url("molecules/swatch.css") layer(molecules);
+@import url("molecules/rich-editor.css") layer(molecules);
+
+/*
+ * ORGANISMS — the large regions of a screen, made of molecules: application shell, sign-in
+ * panel, page, mailbox (list + reading pane). Built by web/ui/organisms/. The sheet for small
+ * screens comes last: it adjusts the others.
+ */
+@import url("organisms/auth-panel.css") layer(organisms);
+@import url("organisms/app-shell.css") layer(organisms);
+@import url("organisms/page.css") layer(organisms);
+@import url("organisms/mailbox.css") layer(organisms);
+@import url("organisms/reading.css") layer(organisms);
+@import url("organisms/reply-dock.css") layer(organisms);
+@import url("organisms/small-screens.css") layer(organisms);

@@ -1,0 +1,12 @@
+/* ---- Spinner: something is in progress ---- */
+.spinner {
+  flex: none;
+  display: inline-block;
+  width: var(--icon-md); height: var(--icon-md);
+  border: var(--focus-width) solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-pill);
+  animation: spinner-turn var(--duration-spin) linear infinite;
+}
+@keyframes spinner-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: calc(var(--duration-spin) * 4); } }

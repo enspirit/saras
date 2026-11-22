@@ -123,16 +123,16 @@ The prompts sent to the LLM are in English. The reply itself is always drafted i
 
 ## Design system
 
-The interface follows the hierarchy tokens → atoms → molecules → organisms → pages, one layer per file, in CSS and in JavaScript alike:
+The interface follows the hierarchy tokens → atoms → molecules → organisms → pages, one folder per tier and one file per component, in CSS and in TypeScript alike:
 
 | Tier | Styles (`public/design/`) | Components (`web/ui/`) | Content |
 | --- | --- | --- | --- |
 | Tokens | `tokens.css` | — | Brand inputs `--brand-*`, then semantic tokens `--color-*`, `--font-*`, `--space-*`, `--radius-*`… |
 | Base | `base.css` | `dom.ts` | HTML element defaults; the single element-creation function. |
-| Atoms | `atoms.css` | `atoms.ts` | `Icon`, `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Avatar`, `Chip`, `Text`, `BrandMark`… |
-| Molecules | `molecules.css` | `molecules.ts` | `Field`, `Card`, `PageHeader`, `Tabs`, `Table`, `Choices`, dialogs, `NavItem`, `EmailListItem`, `RichEditor`, `RecipientField`, toast… |
-| Organisms | `organisms.css` | `organisms.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `Reading`, `ReadingHeader`, `ReplyDock`. |
-| Pages | — | `app.ts`, `styleguide.ts` | Behaviour only, assembled from components; wording comes from the translation files. |
+| Atoms | `atoms/*.css` | `atoms/*.ts` | `Icon`, `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Avatar`, `Chip`, `Text`, `BrandMark`… |
+| Molecules | `molecules/*.css` | `molecules/*.ts` | `Field`, `Card`, `PageHeader`, `Tabs`, `Table`, `Choices`, dialogs, `NavItem`, `EmailListItem`, `RichEditor`, `RecipientField`, toast… |
+| Organisms | `organisms/*.css` | `organisms/*.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `Reading`, `ReadingHeader`, `ReplyDock`. |
+| Pages | — | `web/app.ts`, `web/pages/`, `web/styleguide.ts` | Behaviour only, assembled from components; wording comes from the translation files. |
 
 Rules, enforced by `test/design-system.test.ts`:
 
@@ -144,7 +144,7 @@ Rules, enforced by `test/design-system.test.ts`:
 
 CSS cascade layers (`@layer`) make the hierarchy effective: a molecule always wins over an atom, and `theme.css`, loaded outside any layer, wins over everything without `!important`.
 
-To add a component: the function in `web/ui/<tier>.ts`, its style in `public/design/<tier>.css`, an example in `web/styleguide.ts`.
+To add a component: the function in `web/ui/<tier>/<component>.ts`, its style in `public/design/<tier>/<component>.css` (listed in `public/design/index.css`), an example in `web/styleguide/<tier>.ts`.
 
 The aims of the design, its tokens and components, and how each screen is put together are in [`docs/design/`](docs/design/README.md).
 

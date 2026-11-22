@@ -1,0 +1,18 @@
+/* ---- Field: label + control + hint ---- */
+.field { margin-bottom: var(--space-3); }
+.field__label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+.field__hint { margin-top: var(--space-1); font-size: var(--text-sm); color: var(--color-text-muted); }
+.field__error { display: flex; align-items: center; gap: var(--space-1); margin-top: var(--space-1); font-size: var(--text-sm); color: var(--color-danger); }
+.field--check .field__label {
+  display: flex; align-items: center; gap: var(--space-2);
+  margin: 0;
+  font-weight: var(--weight-regular);
+}
+
+/* ---- Stack item: gives any block the vertical rhythm of a field ---- */
+.block { margin-bottom: var(--space-3); }

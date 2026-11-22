@@ -1,0 +1,22 @@
+/* ---- Email list item: who and when, what about, how it starts ---- */
+.email-item {
+  display: grid; gap: 1px; width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-bottom: var(--border-width) solid var(--color-line);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+.email-item:hover { background: var(--color-hover); }
+.email-item[aria-current="true"] { background: var(--color-accent-soft); }
+.email-item[aria-current="true"] .email-item__from { color: var(--color-accent); }
+.email-item__top, .email-item__line { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.email-item__from, .email-item__subject, .email-item__snippet { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-item__from { font-weight: var(--weight-strong); }
+.email-item__tags { flex: none; display: flex; gap: var(--space-1); }
+.email-item__date { flex: none; margin-left: auto; font-size: var(--text-xs); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.email-item__subject { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.email-item__shared { flex: none; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); }
+.email-item__snippet { font-size: var(--text-sm); color: var(--color-text-muted); }

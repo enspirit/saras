@@ -1,0 +1,27 @@
+/* ---- Editor: a toolbar over a writing surface ---- */
+.editor {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.editor:focus-within { outline: var(--focus-width) solid var(--color-focus); outline-offset: 1px; }
+.editor__toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: var(--border-width) solid var(--color-line);
+}
+.editor__sep { width: var(--border-width); height: var(--space-4); margin: 0 var(--space-1); background: var(--color-line); }
+.editor--proposed .editor__surface { background: var(--color-ai); }
+/* Passages left open by the AI, marked without touching the text that will be sent. */
+::highlight(todo-mark) { background-color: var(--color-warn-soft); color: var(--color-warn); }
+.editor__surface {
+  min-height: 240px; max-height: 60vh; overflow-y: auto;
+  padding: var(--space-3);
+  outline: none;
+}
+.editor--empty .editor__surface::before {
+  content: attr(data-placeholder);
+  float: left; height: 0;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}

@@ -1,0 +1,8 @@
+/* ---- Swatch (style guide only) ---- */
+.swatch { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); font-size: var(--text-sm); }
+.swatch__chip {
+  flex: 0 0 auto; width: 44px; height: 28px;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.swatch__name { font-family: var(--font-mono); }

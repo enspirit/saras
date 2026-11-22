@@ -1,0 +1,8 @@
+/* ---- Form row: fields side by side, wrapping on small screens ---- */
+.form-row { display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; }
+.form-row > .field { flex: 1 1 160px; }
+.form-row > .field--narrow { flex: 0 0 110px; }
+.form-row > .field--fit { flex: 0 0 auto; }
+
+/* ---- Actions: a row of buttons and inline items ---- */
+.actions { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }

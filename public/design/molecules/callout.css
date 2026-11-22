@@ -1,0 +1,8 @@
+/* ---- Callout: something that just happened or must be known, with room for a control ---- */
+.callout { display: grid; gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--color-accent-soft); }
+.callout--ok { background: var(--color-ok-soft); }
+.callout--warn { background: var(--color-warn-soft); }
+.callout__lead { display: flex; align-items: flex-start; gap: var(--space-2); }
+.callout--ok .callout__lead { color: var(--color-ok); }
+.callout--warn .callout__lead { color: var(--color-warn); }
+.callout__lead > .icon { margin-top: 2px; }

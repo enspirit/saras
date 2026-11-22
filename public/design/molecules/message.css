@@ -1,0 +1,2 @@
+/* ---- Message: the body of an email, scrollable when long ---- */
+.message { max-height: 420px; overflow-y: auto; }

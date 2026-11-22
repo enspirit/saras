@@ -1,0 +1,13 @@
+/* ---- Toast ---- */
+.toast {
+  /* At the top, clear of the reply area and its buttons. */
+  position: fixed; left: 50%; top: var(--space-4); transform: translateX(-50%);
+  z-index: var(--z-overlay);
+  max-width: min(560px, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-overlay-bg);
+  color: var(--color-overlay-text);
+  box-shadow: var(--shadow-overlay);
+}
+.toast--error { background: var(--color-danger); color: var(--color-on-danger); }

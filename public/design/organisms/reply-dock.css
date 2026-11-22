@@ -1,0 +1,27 @@
+/* ---- Dock: the reply area, kept on screen under the email so that Send never needs scrolling ---- */
+.dock {
+  /* It gives way before the email does: when room is short, the writing area scrolls and Send stays in view. */
+  flex: 0 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+  margin: 0 var(--space-5) var(--space-5);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+.dock__notice, .dock__recipients, .dock__help, .dock__actions { flex: none; }
+.dock__notice { padding: var(--space-2) var(--space-3) 0; }
+.dock__recipients { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-3); padding-right: var(--space-3); border-bottom: var(--border-width) solid var(--color-line); }
+.dock__recipients > .recipients { flex: 1 1 220px; }
+.dock__recipients .field { margin: 0; font-size: var(--text-sm); }
+.dock__write { flex: 1 1 auto; min-height: var(--space-8); display: flex; flex-direction: column; overflow-y: auto; }
+.dock .editor { border: 0; border-radius: 0; }
+.dock .editor:focus-within { outline: none; }
+.dock .editor__surface { min-height: 132px; max-height: none; }
+.dock__help { padding: var(--space-2) var(--space-3); background: var(--color-bg); border-top: var(--border-width) solid var(--color-line); }
+.dock__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3); border-top: var(--border-width) solid var(--color-line); }
+/* Closed: no reply is expected, one line says so and offers to open the reply area. */
+.dock--closed { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); box-shadow: var(--shadow-1); }
+.dock--closed > .icon { color: var(--color-text-muted); }
+.dock__text { flex: 1 1 240px; font-size: var(--text-sm); color: var(--color-text-soft); }

@@ -1,0 +1,56 @@
+/* ---- Icon: one glyph of the Lucide font. The codes belong to the version pinned in package.json. ---- */
+.icon {
+  flex: none;
+  display: inline-block;
+  font-family: var(--font-icon);
+  font-size: var(--icon-md);
+  font-style: normal;
+  font-weight: var(--weight-regular);
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+}
+.icon--small { font-size: var(--icon-sm); }
+.icon--large { font-size: var(--icon-lg); }
+.icon--archive::before { content: "\e041"; }
+.icon--bold::before { content: "\e05d"; }
+.icon--check::before { content: "\e06c"; }
+.icon--chevron-down::before { content: "\e06d"; }
+.icon--chevron-right::before { content: "\e06f"; }
+.icon--copy::before { content: "\e09e"; }
+.icon--folder::before { content: "\e0d7"; }
+.icon--key::before { content: "\e4a3"; }
+.icon--shield-check::before { content: "\e1ff"; }
+.icon--user-plus::before { content: "\e1a2"; }
+.icon--circle-alert::before { content: "\e077"; }
+.icon--eye-off::before { content: "\e0bb"; }
+.icon--file-text::before { content: "\e0cc"; }
+.icon--globe::before { content: "\e0e8"; }
+.icon--inbox::before { content: "\e0f7"; }
+.icon--info::before { content: "\e0f9"; }
+.icon--italic::before { content: "\e0fb"; }
+.icon--link::before { content: "\e102"; }
+.icon--list::before { content: "\e106"; }
+.icon--list-ordered::before { content: "\e1d1"; }
+.icon--lock::before { content: "\e10b"; }
+.icon--log-out::before { content: "\e10e"; }
+.icon--mail::before { content: "\e10f"; }
+.icon--mail-check::before { content: "\e361"; }
+.icon--paperclip::before { content: "\e12d"; }
+.icon--pen-line::before { content: "\e130"; }
+.icon--pencil::before { content: "\e1f9"; }
+.icon--plug::before { content: "\e37f"; }
+.icon--plus::before { content: "\e13d"; }
+.icon--refresh-cw::before { content: "\e145"; }
+.icon--remove-formatting::before { content: "\e3b3"; }
+.icon--reply::before { content: "\e22a"; }
+.icon--search::before { content: "\e151"; }
+.icon--send::before { content: "\e152"; }
+.icon--settings::before { content: "\e154"; }
+.icon--spell-check::before { content: "\e49a"; }
+.icon--timer::before { content: "\e1e0"; }
+.icon--trash::before { content: "\e18e"; }
+.icon--triangle-alert::before { content: "\e193"; }
+.icon--underline::before { content: "\e19a"; }
+.icon--undo::before { content: "\e2a1"; }
+.icon--users::before { content: "\e1a4"; }
+.icon--x::before { content: "\e1b2"; }
