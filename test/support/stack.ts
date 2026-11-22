@@ -218,7 +218,7 @@ export async function startStack({ messages = INBOX, folders = {}, env = {} }: S
   const mail = createMailService({ db, vault, config });
   const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
   const triage = createTriage({ config, vault, llm });
-  const sync = createSync({ db, mail, triage, config });
+  const sync = createSync({ db, mail, triage, config, llm, vault });
   const http = createApp({ config, db, vault, mail, llm, sync }).listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => http.once('listening', () => resolve()));
 

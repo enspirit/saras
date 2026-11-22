@@ -15,6 +15,14 @@ export async function join(admin: ApiClient, guest: ApiClient, email: string, ro
   if (accepted.status !== 201) throw new Error(`could not join: ${JSON.stringify(accepted.body)}`);
 }
 
+/** Adds every ready-made prompt the organisation does not have yet, as its administrator would one by one. */
+export async function installTemplates(admin: ApiClient): Promise<void> {
+  for (const template of (await admin('GET', '/prompts/templates')).body) {
+    const created = await admin('POST', '/prompts', template);
+    if (created.status !== 201) throw new Error(`could not add the template: ${JSON.stringify(created.body)}`);
+  }
+}
+
 /** A browser-like API client: it keeps the session cookie between calls. */
 export function createClient(baseUrl: () => string): ApiClient {
   let cookie = '';

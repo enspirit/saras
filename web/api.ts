@@ -68,6 +68,8 @@ export interface Organization {
   /** Name of the triage strategy its mailboxes go through. */
   triage: 'none' | 'ai';
   skipAutomated: boolean;
+  /** What is prepared at fetch for an email that needs a reply: nothing, a proposal to review here, or one filed in the mailbox's drafts. */
+  automation: 'none' | 'draft' | 'mailbox';
   model?: string;
   hasKey?: boolean;
 }
@@ -134,6 +136,13 @@ export interface Prompt {
   systemPrompt?: string;
   used?: number;
   edited?: number;
+}
+
+/** A ready-made prompt the organisation does not have yet. */
+export interface PromptTemplate {
+  name: string;
+  description: string;
+  systemPrompt: string;
 }
 
 export interface Correction {

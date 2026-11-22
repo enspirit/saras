@@ -6,6 +6,7 @@ import type { Config } from './config.ts';
 import { hashPassword, randomToken, tokenHash, verifyPassword } from './crypto.ts';
 import type { Vault } from './crypto.ts';
 import { seedDefaultPrompts } from './db.ts';
+import { defaultPrompts } from './default-prompts.ts';
 import type { Db } from './db.ts';
 import { errorMessage } from './errors.ts';
 import type { SessionUser } from './express.d.ts';
@@ -23,6 +24,7 @@ import { rowToEmail } from './sync.ts';
 import type { Sync } from './sync.ts';
 import { isTriageStrategy } from './triage/index.ts';
 import { htmlToText, isEmailAddress } from './text.ts';
+import { AUTOMATIONS } from './types.ts';
 import type {
   AccountKind,
   AccountRow,
@@ -262,6 +264,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
         name: req.org.name,
         triage: req.org.triage_strategy,
         skipAutomated: req.org.skip_automated,
+        automation: req.org.automation,
         // What follows is the administrators' business.
         model: admin ? req.org.model || '' : undefined,
         hasKey: admin ? Boolean(req.org.openrouter_key_enc) : undefined,
@@ -299,7 +302,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   /** The organisation's own settings, for its administrators. Only the fields sent are changed. */
   app.put('/api/organization', auth, adminOnly, async (req, res) => {
-    const { name, triage, skipAutomated, model, openrouterKey } = req.body;
+    const { name, triage, skipAutomated, automation, model, openrouterKey, resort } = req.body;
     const set = (column: string, value: unknown) => db.run(`UPDATE organizations SET ${column} = $1 WHERE id = $2`, [value, req.org.id]);
     if (typeof name === 'string' && str(name, 120)) await set('name', str(name, 120));
     if (triage !== undefined) {
@@ -307,6 +310,21 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
       await set('triage_strategy', triage);
     }
     if (typeof skipAutomated === 'boolean') await set('skip_automated', skipAutomated);
+    if (automation !== undefined) {
+      if (!AUTOMATIONS.includes(automation)) throw new HttpError(400, 'organization.invalidAutomation');
+      await set('automation', automation);
+    }
+    // Asked when the way of working is chosen after a first fetch: what that fetch let through
+    // unsorted goes back to waiting, so that the next fetch sorts it the new way.
+    if (resort === true) {
+      await db.run(
+        `UPDATE emails e SET status = 'pending', triage_source = NULL, triage_reason = ''
+         FROM accounts a
+         WHERE a.id = e.account_id AND a.org_id = $1 AND e.status = 'needs_reply' AND e.triage_source = 'none'
+           AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.email_id = e.id)`,
+        [req.org.id],
+      );
+    }
     if (typeof model === 'string') {
       const m = str(model, 200);
       if (m && !/^[\w.:-]+\/[\w.:-]+$/.test(m)) throw new HttpError(400, 'settings.invalidModel');
@@ -515,6 +533,12 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
         [req.org.id],
       ),
     );
+  });
+
+  /** Ready-made prompts the organisation does not have yet, in the administrator's language. */
+  app.get('/api/prompts/templates', auth, adminOnly, async (req, res) => {
+    const taken = new Set((await db.query<{ name: string }>('SELECT name FROM prompts WHERE org_id = $1', [req.org.id])).map((p) => p.name));
+    res.json(defaultPrompts(req.user.language).filter((p) => !taken.has(p.name)));
   });
 
   app.post('/api/prompts', auth, adminOnly, async (req, res) => {

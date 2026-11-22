@@ -29,7 +29,7 @@ const vault = createVault(config.appSecret);
 const mail = createMailService({ db, vault, config });
 const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
 const triage = createTriage({ config, vault, llm });
-const sync = createSync({ db, mail, triage, config });
+const sync = createSync({ db, mail, triage, config, llm, vault });
 
 createApp({ config, db, vault, mail, llm, sync }).listen(config.port, () => {
   const database = config.databaseUrl ? 'PostgreSQL server' : `embedded PostgreSQL in ${config.dataDir}`;

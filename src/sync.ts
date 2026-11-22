@@ -1,15 +1,21 @@
 import type { Config } from './config.ts';
+import type { Vault } from './crypto.ts';
 import type { Db } from './db.ts';
 import { errorMessage } from './errors.ts';
+import { sanitizeHtml, stripCodeFence } from './html.ts';
 import { LlmError } from './llm/openrouter.ts';
+import { buildPromptMessages } from './llm/prompts.ts';
+import { llmSettings } from './llm/settings.ts';
 import type { MailService } from './mail/index.ts';
 import { encodeProblem, problem } from './messages.ts';
+import { replyRecipients } from './reply.ts';
+import { htmlToText } from './text.ts';
 import type { Problem } from './messages.ts';
 import { runGate } from './triage/gate.ts';
 import type { TriageMail, TriagePrompt } from './triage/gate.ts';
 import type { Triage } from './triage/index.ts';
 import { heuristicTriage } from './triage/rules.ts';
-import type { AccountRow, Email, EmailRow, IncomingEmail, OrganizationRow, UserRow } from './types.ts';
+import type { AccountRow, Email, EmailRow, IncomingEmail, Llm, OrganizationRow, PromptRow, UserRow } from './types.ts';
 
 const MAX_STORED_BODY = 100_000;
 
@@ -74,13 +80,18 @@ interface Dependencies {
   mail: MailService;
   triage: Triage;
   config: Config;
+  llm: Llm;
+  vault: Vault;
 }
+
+/** At most this many proposals are prepared per fetch of a mailbox, most recent first: a full folder is not drafted in one go. */
+const MAX_PREPARED = 10;
 
 /**
  * Fetches the new emails of a mailbox's watched folder, then passes them through the triage
  * gate, which sorts them into "a reply is needed" or not.
  */
-export function createSync({ db, mail, triage, config }: Dependencies): Sync {
+export function createSync({ db, mail, triage, config, llm, vault }: Dependencies): Sync {
   /** account id -> sync in flight; concurrent callers share it instead of fetching twice. */
   const running = new Map<number, Promise<SyncResult>>();
 
@@ -156,6 +167,64 @@ export function createSync({ db, mail, triage, config }: Dependencies): Sync {
     }
   }
 
+  /**
+   * When the organisation asked for it, writes a proposal for each email that needs a reply
+   * and has none yet, with the prompt suggested at triage (or the organisation's first).
+   * It is written as the mailbox's owner: their key, model, signature and past corrections.
+   * With 'mailbox' the proposal is also filed in the mailbox's Drafts folder, and the email
+   * moves to the replied box as a draft. Nothing is sent, here or there.
+   */
+  async function prepareProposals(account: AccountRow): Promise<Problem | null> {
+    const org = await organizationOf(account);
+    if (org.automation === 'none') return null;
+    const owner = (await db.one<UserRow>('SELECT * FROM users WHERE id = $1', [account.user_id]))!;
+    const { apiKey, model } = llmSettings(owner, org, { config, vault });
+    const prompts = await db.query<PromptRow>('SELECT * FROM prompts WHERE org_id = $1 ORDER BY id', [org.id]);
+    if (!apiKey || !prompts.length) return null;
+    const waiting = await db.query<EmailRow>(
+      `SELECT e.* FROM emails e
+       WHERE e.account_id = $1 AND e.status = 'needs_reply' AND e.body_text != ''
+         AND NOT EXISTS (SELECT 1 FROM drafts d WHERE d.email_id = e.id)
+       ORDER BY e.date DESC LIMIT $2`,
+      [account.id, MAX_PREPARED],
+    );
+    try {
+      for (const row of waiting) {
+        const email = rowToEmail(row);
+        const prompt = prompts.find((p) => p.id === row.suggested_prompt_id) ?? prompts[0]!;
+        const lessons = await db.query<{ change_reason: string }>(
+          `SELECT change_reason FROM replies WHERE prompt_id = $1 AND user_id = $2 AND was_edited AND change_reason != '' ORDER BY id DESC LIMIT 8`,
+          [prompt.id, owner.id],
+        );
+        const answer = await llm.chat({
+          apiKey,
+          model,
+          messages: buildPromptMessages({ email, prompt: { systemPrompt: prompt.system_prompt }, ownAddress: account.email, signature: owner.signature, lessons: lessons.map((l) => l.change_reason), html: '' }),
+          maxTokens: 3000,
+        });
+        // Whatever the model returned, only the elements a reply may contain are kept.
+        const html = sanitizeHtml(stripCodeFence(answer.text));
+        await db.run('INSERT INTO drafts (email_id, action, prompt_id, model, ai_text) VALUES ($1, $2, $3, $4, $5)', [row.id, 'prompt', prompt.id, answer.model, html]);
+        if (org.automation !== 'mailbox') continue;
+        const { to, cc } = replyRecipients(email, account.email, false);
+        if (!to.length) continue;
+        await mail.providerFor(account).saveDraft({ email, to, cc, html, language: owner.language });
+        const text = htmlToText(html);
+        await db.transaction(async (tx) => {
+          await tx.run(
+            `INSERT INTO replies (email_id, user_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json, final_html)
+             VALUES ($1, $2, $3, $4, $4, false, '', 'draft', $5, $6, $7)`,
+            [row.id, owner.id, prompt.id, text, JSON.stringify(to), JSON.stringify(cc), html],
+          );
+          await tx.run(`UPDATE emails SET status = 'sent' WHERE id = $1 AND status = 'needs_reply'`, [row.id]);
+        });
+      }
+      return null;
+    } catch (e) {
+      return e instanceof LlmError ? e.problem : problem('sync.prepareFailed', { detail: errorMessage(e) });
+    }
+  }
+
   function syncAccount(account: AccountRow): Promise<SyncResult> {
     let inFlight = running.get(account.id);
     if (!inFlight) {
@@ -183,6 +252,8 @@ export function createSync({ db, mail, triage, config }: Dependencies): Sync {
     }
     const outcome: TriageResult = error ? { triaged: 0, error: null } : await triagePending(account);
     error = error || outcome.error;
+    // Proposals are prepared last, and only once fetching and sorting went well.
+    error = error || (await prepareProposals(account));
     await db.run(`UPDATE accounts SET last_sync_at = now(), last_error = $1 WHERE id = $2`, [encodeProblem(error), account.id]);
     return { fetched, triaged: outcome.triaged, error };
   }

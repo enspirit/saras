@@ -180,7 +180,11 @@
     "column": "Prompt",
     "usageColumn": "Utilisation",
     "unused": "Pas encore utilisé",
-    "noCorrections": "Aucune correction pour l’instant."
+    "noCorrections": "Aucune correction pour l’instant.",
+    "templates": "Prompts prêts à l’emploi",
+    "templatesHint": "D’autres façons de répondre, prêtes à ajouter. Une fois ajoutés, ils sont à vous de modifier.",
+    "addTemplate": "Ajouter",
+    "added": "Ajouté"
   },
   "users": {
     "title": "Utilisateurs",
@@ -245,7 +249,7 @@
     "intro": "Chaque boîte surveille un dossier. Une boîte partagée sert à tous les membres ; seuls les administrateurs en connectent, modifient ou déconnectent une.",
     "step1": "Connecter une boîte",
     "step2": "Choisir le dossier à surveiller",
-    "step3": "Lire vos premiers emails",
+    "step3": "Essayer sur un premier email",
     "connectTitle": "Connecter une boîte",
     "connectIntro": "Les emails du dossier que vous choisissez sont relevés, et vos réponses partent de la même adresse. Rien d’autre n’est lu dans la boîte.",
     "whose": "À qui est cette boîte ?",
@@ -320,7 +324,8 @@
     },
     "privacyZdr": "Chaque requête à l’IA exige un fournisseur qui ne conserve rien et n’entraîne rien. Si aucun ne peut le garantir, la requête échoue au lieu d’être routée ailleurs.",
     "yourPart": "Votre part.",
-    "technical": "Pour les plus techniques"
+    "technical": "Pour les plus techniques",
+    "privacyPrepared": "Une proposition est préparée au relevé pour chaque email à traiter : son contenu est alors envoyé à l’IA sans que personne ne le demande."
   },
   "styleguide": {
     "title": "Guide de style — {product}",
@@ -496,7 +501,8 @@
     },
     "sync": {
       "fetchFailed": "Lecture de la boîte impossible : {detail}",
-      "triageFailed": "Échec du tri : {detail}"
+      "triageFailed": "Échec du tri : {detail}",
+      "prepareFailed": "Impossible de préparer une proposition : {detail}"
     },
     "prompts": {
       "notFound": "Prompt introuvable.",
@@ -536,7 +542,8 @@
       "bulk": "Envoi en masse."
     },
     "organization": {
-      "invalidTriage": "Stratégie de tri inconnue."
+      "invalidTriage": "Stratégie de tri inconnue.",
+      "invalidAutomation": "Façon de préparer les réponses inconnue."
     },
     "assist": {
       "nothingWritten": "Écrivez d’abord quelque chose : il n’y a rien à corriger ni à améliorer.",
@@ -557,7 +564,12 @@
     "modelHint": "Utilisé par les membres qui n’ont pas choisi le leur. Laisser vide pour celui du serveur.",
     "key": "Clé API OpenRouter de l’organisation",
     "keyHint": "Chiffrée en base. Utilisée par tout membre qui n’a pas sa propre clé.",
-    "deleteKey": "Supprimer la clé de l’organisation"
+    "deleteKey": "Supprimer la clé de l’organisation",
+    "automation": "Propositions",
+    "automationNone": "À la demande : l’IA n’écrit que lorsqu’un membre le demande",
+    "automationDraft": "Préparées au relevé, à relire ici",
+    "automationMailbox": "Préparées au relevé et rangées dans le dossier Brouillons de la boîte",
+    "automationHint": "Préparer au relevé envoie à l’IA le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre."
   },
   "editor": {
     "bold": "Gras",
@@ -569,5 +581,28 @@
     "linkPrompt": "Adresse du lien :",
     "linkInsert": "Insérer le lien",
     "clear": "Effacer la mise en forme"
+  },
+  "welcome": {
+    "stepPrompt": "Lire votre prompt",
+    "stepWork": "Choisir le fonctionnement",
+    "promptTitle": "Lire votre prompt",
+    "promptIntro": "Un prompt dit à l’IA comment votre organisation répond : son ton, ses règles. Un prompt est prêt. Lisez-le, adaptez-le, et ajoutez-en d’autres maintenant ou plus tard dans Prompts.",
+    "continue": "Enregistrer et continuer",
+    "workTitle": "Choisir le fonctionnement",
+    "workIntro": "Ce que l’IA fait avant que vous n’ouvriez un email. Quel que soit votre choix, rien n’est envoyé sans la confirmation de quelqu’un.",
+    "workLegend": "Pour tous les membres de l’organisation",
+    "manual": "Je décide de tout",
+    "manualHint": "Chaque email du dossier surveillé est à traiter. L’IA n’écrit que si je le demande. Rien ne lui est envoyé d’ici là.",
+    "sort": "L’IA trie, j’écris",
+    "sortHint": "L’IA écarte ce qui n’appelle pas de réponse et suggère un prompt. Elle lit l’expéditeur, l’objet, le début du texte et le nom des pièces jointes.",
+    "draft": "Des propositions m’attendent",
+    "draftHint": "Comme ci-dessus, et une proposition est rédigée au relevé pour chaque email à traiter. Leur contenu est envoyé à l’IA sans que personne ne le demande.",
+    "mailbox": "Des brouillons dans ma boîte",
+    "mailboxHint": "Comme ci-dessus, et chaque proposition est rangée dans le dossier Brouillons de la boîte, à finir et envoyer depuis mon logiciel de messagerie.",
+    "needsKey": "Nécessite une clé pour l’IA, qui n’a pas été donnée.",
+    "workLater": "Ce choix se modifie à tout moment dans Réglages → Organisation.",
+    "finish": "Appliquer et ouvrir un premier email",
+    "tryIt": "Voici votre premier email ici. Écrivez quelques mots sur ce qu’il faut répondre, ou rien du tout, puis « Rédiger avec ». Rien n’est envoyé sans votre confirmation.",
+    "tryPrepared": "Voici votre premier email ici, avec la proposition préparée pour lui. Lisez-la, modifiez ce que vous voulez, puis Envoyer. Rien n’est envoyé sans votre confirmation."
   }
 }

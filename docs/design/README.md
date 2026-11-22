@@ -111,7 +111,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `RecipientField` | Addresses as removable chips, with a place to type one more. |
 | `AiNote`, `AiHelp`, `PromptPick`, `ReasonField`, `Caution` | The parts of the reply area that concern the AI (see 6.2). |
 | `Panel`, `Message` | A record with its facts; a mail body. |
-| Toast (`createToast`), `Swatch` | One message at a time, at the bottom; a colour token in the style guide. |
+| Toast (`createToast`), `Swatch` | One message at a time, at the top, clear of the reply area; a colour token in the style guide. |
 
 ### Organisms (`organisms.ts`, `organisms.css`)
 
@@ -161,18 +161,20 @@ A brand can add three things to this screen through `brand.json`: a byline next 
 
 ### 6.5 Connecting a mailbox (US-10 to US-16)
 
-A path shown at the top: connect, choose the folder, read. It is built to take a newcomer from sign-up to their first emails in a few minutes: sign-up leads straight to it, and each step asks only for what nobody else can know.
+Getting started is a path, shown at the top of each of its screens (US-08). It is built to take whoever creates an organisation from sign-up to a first email in a few minutes: sign-up leads straight to it, each step asks only for what nobody else can know, and the things a newcomer would not find alone (the prompt, how the tool works) are shown rather than left in the navigation. An invited member only goes through the first two steps.
 
 1. **Connect.** Administrators first choose whose mailbox it is: *Mine* or *Shared by the team*. Then where it is hosted: Google, Microsoft, or another provider. A provider the server is not set up for is disabled and says why. Another provider asks for address, password and display name, with server settings in their own section; Google and Microsoft lead to the provider. For a first mailbox the address and the name come from sign-up. The server asks the address's domain who hosts its mail (its MX records): an address at Google or Microsoft is steered to signing in there when the installation offers it, and told why a password will probably not do when it does not; for other known hosts the servers are filled in, and the usual names are proposed otherwise. The connection is tested before anything is saved.
 2. **Folder.** The mailbox's own folders as a list, the inbox first and preselected. The button waits for the first fetch, so that the next screen has emails in it.
 3. **AI key**, only when no key is available and the person is an administrator: the organisation's OpenRouter key, with a link to where one is created, or *Later*.
-4. **Read.** The To handle box.
+4. **Prompt** (administrators): the organisation's one default prompt, to read and adjust, with the other ready-made prompts beside it to add in one click.
+5. **How it works** (administrators): four ready-made ways, each a card saying what the AI does and what it is sent. *I decide everything*; *The AI sorts, I write*; *Proposals waiting for me*; *Drafts in my mailbox*. None sends anything. Applying one sorts again what the first fetch let through, and prepares proposals if asked.
+6. **A first email.** The first email to handle, open, with a line in the reply area saying what to try.
 
 Once connected, **Mailboxes** is a table: mailbox, folder watched, last fetched, to handle. *Fetch now* is labelled; changing the folder and disconnecting are icon buttons. A connection error shows as a callout above the table.
 
 ### 6.6 Administration (US-05 to US-07, US-50 to US-53)
 
-- **Prompts** is a table of name, description and use. A prompt is edited on its own address, with a breadcrumb back; what members changed in its proposals, and why, sits beside the instructions.
+- **Prompts** is a table of name, description and use, followed by the ready-made prompts not yet added. A prompt is edited on its own address, with a breadcrumb back; what members changed in its proposals, and why, sits beside the instructions.
 - **Users** is a table of members (name, role, joined, personal mailboxes) and one of pending invitations. *Invite someone* opens the form; the fresh link appears as a callout with Copy.
 
 A destructive action at rest is a red icon button. It is always confirmed in a dialog whose red button says what will happen.
@@ -182,7 +184,7 @@ A destructive action at rest is a red icon button. It is always confirmed in a d
 One tab per audience, each with its own address.
 
 - **You:** name, signature, then the AI (model, own key), with one Save; language in a card of its own.
-- **Organisation** (administrators): name, triage, the organisation's model and key; the link to the style guide.
+- **Organisation** (administrators): name, triage, whether proposals are on demand or prepared at fetch, the organisation's model and key; the link to the style guide.
 - **Privacy:** the guarantees as six titled points with their signs, then the one setting that is the user's part, then the technical detail.
 
 ## 7. Brands
@@ -211,6 +213,6 @@ Fonts of a brand live in its folder and are declared with `@font-face` in its `t
 ## 9. Known limits
 
 - The select keeps the browser's own arrow.
-- Toasts show one message at a time, at the bottom of the screen.
+- Toasts show one message at a time, at the top of the screen.
 - On a phone, tables scroll sideways inside their frame.
 - The prompt list shows replies and edits, not which corrections an administrator has yet to read.

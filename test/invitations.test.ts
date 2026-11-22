@@ -57,7 +57,7 @@ test('the invited person sets a password and is in; the link then stops working'
   assert.equal((await lea('POST', '/invitations/accept', { token, password: 'le-mot-de-passe-de-lea' })).status, 201);
   const profile = (await lea('GET', '/me')).body;
   assert.deepEqual([profile.email, profile.role], ['lea@corp.example', 'user']);
-  assert.equal((await lea('GET', '/prompts')).body.length, 5, 'she gets the shared prompts');
+  assert.equal((await lea('GET', '/prompts')).body.length, 1, 'she gets the shared prompts');
   assert.equal((await client()('POST', '/invitations/accept', { token, password: 'encore-un-mot-de-passe' })).status, 404);
   assert.deepEqual((await admin('GET', '/invitations')).body, []);
   assert.equal((await client()('POST', '/auth/login', { email: 'lea@corp.example', password: 'le-mot-de-passe-de-lea' })).status, 200);
@@ -89,7 +89,7 @@ test('an administrator deletes an account; shared prompts survive their author',
   assert.equal((await admin('DELETE', `/users/${users[0].id}`)).status, 409, 'not oneself');
   assert.equal((await admin('DELETE', `/users/${boss.id}`)).status, 200);
   assert.equal((await admin('DELETE', `/users/${lea.id}`)).status, 200);
-  assert.equal((await admin('GET', '/prompts')).body.length, 5);
+  assert.equal((await admin('GET', '/prompts')).body.length, 1);
   assert.deepEqual((await admin('GET', '/users')).body.map((u: { id: number; email: string }) => u.email), ['admin@corp.example']);
   assert.equal((await client()('POST', '/auth/login', { email: 'lea@corp.example', password: 'le-mot-de-passe-de-lea' })).status, 401);
 });

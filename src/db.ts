@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS organizations (
   name TEXT NOT NULL,
   triage_strategy TEXT NOT NULL DEFAULT 'none',
   skip_automated BOOLEAN NOT NULL DEFAULT true,
+  automation TEXT NOT NULL DEFAULT 'none',
   openrouter_key_enc TEXT,
   model TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -140,6 +141,7 @@ CREATE TABLE IF NOT EXISTS replies (
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT '';
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS automation TEXT NOT NULL DEFAULT 'none';
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS folder TEXT;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS folder_name TEXT NOT NULL DEFAULT '';
 ALTER TABLE emails ADD COLUMN IF NOT EXISTS folder TEXT NOT NULL DEFAULT 'INBOX';
@@ -261,9 +263,13 @@ export async function openDb({ databaseUrl, dataDir = null }: DbOptions = {}): P
   return db;
 }
 
-/** Prompts belong to an organisation; prompts.user_id records who created them. */
+/**
+ * Prompts belong to an organisation; prompts.user_id records who created them. A new
+ * organisation starts with one, the general case; the others are templates its
+ * administrators add when they want them.
+ */
 export async function seedDefaultPrompts(db: Db, orgId: number, userId: number, language: string): Promise<void> {
-  for (const p of defaultPrompts(language)) {
+  for (const p of defaultPrompts(language).slice(0, 1)) {
     await db.run('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5)', [orgId, userId, p.name, p.description, p.systemPrompt]);
   }
 }

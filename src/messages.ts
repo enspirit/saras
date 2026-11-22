@@ -36,6 +36,8 @@ export const MESSAGES = {
   'oauth.failed': 'Connection failed: {detail}',
   'sync.fetchFailed': 'Could not read the mailbox: {detail}',
   'sync.triageFailed': 'Triage failed: {detail}',
+  'sync.prepareFailed': 'Could not prepare a proposal: {detail}',
+  'organization.invalidAutomation': 'Unknown way of preparing replies.',
   'accounts.adminOnly': 'A shared mailbox is managed by administrators.',
   'accounts.alreadyConnected': 'This mailbox is already connected in your organisation.',
   'organization.invalidTriage': 'Unknown triage strategy.',

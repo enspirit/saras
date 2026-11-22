@@ -234,7 +234,8 @@
 
 /* ---- Toast ---- */
 .toast {
-  position: fixed; left: 50%; bottom: var(--space-6); transform: translateX(-50%);
+  /* At the top, clear of the reply area and its buttons. */
+  position: fixed; left: 50%; top: var(--space-4); transform: translateX(-50%);
   z-index: var(--z-overlay);
   max-width: min(560px, calc(100vw - 2 * var(--space-4)));
   padding: var(--space-3) var(--space-4);

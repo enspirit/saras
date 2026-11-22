@@ -22,7 +22,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 | [C. Triage and the four boxes](#c-triage-and-the-four-boxes) | US-20 – US-25 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
 | [E. Prompts](#e-prompts) | US-50 – US-53 |
-| [F. Settings](#f-settings) | US-60 – US-65 |
+| [F. Settings](#f-settings) | US-60 – US-66 |
 | [G. Privacy guarantees](#g-privacy-guarantees) | US-70 – US-74 |
 | [H. Installation, brand and languages](#h-installation-brand-and-languages) | US-80 – US-86 |
 
@@ -37,7 +37,15 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - I may give my name, which the other members then see in place of my address.
 - An empty installation always accepts its first sign-up, and says so on the sign-in page; afterwards sign-up is open only if the operator allows it (`ALLOW_SIGNUP`).
 - The password has at least 10 characters. An address has one account, in one organisation.
-- Five default prompts are created in my language (US-51), and I land on **Mailboxes** to connect a first one.
+- One default prompt is created in my language (US-51), and I am taken through getting started (US-08), which begins with connecting a mailbox.
+
+### US-08 — Be taken through getting started
+**As** someone who just created an organisation, **I want** to be led from sign-up to a first email, **so that** I am ready in a few minutes without looking for the right pages.
+
+- The path is shown at the top of each of its screens: connect a mailbox, choose the folder, give the AI its key (only when none is available), read the prompt, choose how it works, try it on a first email.
+- It ends on the first email to handle, open, with a line saying what to try.
+- An invited member only connects a mailbox and chooses its folder: the rest is the administrators' business.
+- Every step can be left; what it sets stays reachable in **Mailboxes**, **Prompts** and **Settings**.
 
 ### US-02 — Sign in and sign out
 **As** a member, **I want** to sign in with my email and password and sign out when I am done, **so that** only I reach my mailboxes.
@@ -285,9 +293,10 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - Deleting asks for confirmation.
 
 ### US-51 — Start with sensible prompts
-**As** an administrator of a new organisation, **I want** a few ready-made prompts in my language, **so that** the tool is useful before I write anything.
+**As** an administrator of a new organisation, **I want** one ready-made prompt in my language and others I can add in one click, **so that** the tool is useful before I write anything, without prompts I never read.
 
-- Five prompts are created with the organisation: standard professional reply, appointment scheduling, polite refusal, customer support, acknowledgement of receipt — in English or French.
+- One prompt is created with the organisation: the standard professional reply, in English or French.
+- Four more are offered as templates in **Prompts** and when getting started: appointment scheduling, polite refusal, customer support, acknowledgement of receipt. A template can be added once.
 - They are ordinary prompts afterwards: I edit or delete them freely.
 
 ### US-52 — Learn from how prompts are used
@@ -329,6 +338,15 @@ How the screens are designed and built is in [`design/`](design/README.md).
 **As** an administrator, **I want** to set my organisation's name, how fetched emails are sorted, and its own model and key, **so that** every member works the same way at the organisation's expense.
 
 - Name; triage strategy (none, or by the AI — with its cost and what it reads stated); whether automated mail is set aside first; default model; the organisation's OpenRouter key (encrypted, removable).
+
+### US-66 — Choose how the tool works for the team
+**As** an administrator, **I want** to choose among a few ready-made ways of working, **so that** the AI does as much, or as little, before a member opens an email as suits us.
+
+- Four ways, shown when getting started: *I decide everything* (no AI sorting, proposals on demand); *The AI sorts, I write*; *Proposals waiting for me* (a proposal is written at fetch for each email to handle, to review in saras); *Drafts in my mailbox* (that proposal is also filed in the mailbox's Drafts folder, and the email moves to **Replied** as a draft).
+- Each says what the AI is sent. The ways that need the AI cannot be chosen without a key.
+- The same choices are in **Settings → Organisation**, as the sorting and the proposals settings.
+- A proposal prepared at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at triage or else the organisation's first; at most ten per fetch and mailbox.
+- Nothing is ever sent automatically: sending is always a member's confirmed action.
 
 ### US-64 — See the privacy guarantees in force
 **As** a member, **I want** to read, in the application, what happens to my emails, **so that** I can trust it — and explain it to a client who asks.

@@ -11,7 +11,7 @@ import { api, isSignedOut, problemText } from './api.ts';
 import { initI18n, language, languages, locale, setLanguage, t, tRich } from './i18n.ts';
 import { serversFor } from './mail-presets.ts';
 import type { MailServers } from './mail-presets.ts';
-import type { Account, BoxId, MailFolder, MailHost, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
+import type { Account, BoxId, MailFolder, MailHost, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PromptTemplate, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
 
 const root = document.getElementById('app') as HTMLElement;
 const toast = createToast(document.getElementById('toast') as HTMLElement);
@@ -270,6 +270,10 @@ function render(): void {
   else if (r.page === 'accounts') void renderAccounts(r.part, r.id, r.query.get('error'), r.query.get('detail') ?? '');
   else if (r.page === 'settings') void renderSettings(r.part);
   else if (r.page === 'more') renderMore();
+  else if (r.page === 'welcome' && r.part === 'key' && needsKey()) keyPage();
+  else if (r.page === 'welcome' && r.part === 'prompt' && isAdmin()) void promptStep();
+  else if (r.page === 'welcome' && r.part === 'work' && isAdmin()) void workStep();
+  else if (r.page === 'welcome') void openFirstEmail();
   else location.hash = '#/inbox';
 }
 
@@ -526,7 +530,11 @@ function composer(email: EmailDetail, prompts: Prompt[], done: (message: string)
 
   const dock = ReplyDock({
     label: t('composer.title'),
-    notice: !me().hasKey && Notice('warn', tRich('composer.noKey', {}, { link: (label) => Link(label, '#/settings') })),
+    notice: [
+      // Arriving from the getting-started path: say what to try, once.
+      route().query.has('welcome') && Block(Notice('info', email.draft ? t('welcome.tryPrepared') : t('welcome.tryIt'))),
+      !me().hasKey && Notice('warn', tRich('composer.noKey', {}, { link: (label) => Link(label, '#/settings') })),
+    ],
     recipients: [to.element, cc.element, email.recipientsAll.cc.length > 0 && CheckField(t('composer.replyAll'), replyAll)],
     write: [editor.element, reasonField],
     help: AiHelp({ label: t('composer.help'), note: t('composer.helpNote') },
@@ -543,7 +551,7 @@ function composer(email: EmailDetail, prompts: Prompt[], done: (message: string)
 // ---- prompts (administrators) -----------------------------------------------------------
 /** The list of prompts, or with `open` one of them (or a new one) being edited. */
 const renderPrompts = guard(async (open: number | 'new' | null = null) => {
-  const prompts = await api<Prompt[]>('GET', '/prompts');
+  const [prompts, templates] = await Promise.all([api<Prompt[]>('GET', '/prompts'), api<PromptTemplate[]>('GET', '/prompts/templates')]);
   const back = (): void => void (location.hash === '#/prompts' ? renderPrompts() : (location.hash = '#/prompts'));
   const prompt = typeof open === 'number' ? prompts.find((p) => p.id === open) ?? null : null;
 
@@ -592,6 +600,7 @@ const renderPrompts = guard(async (open: number | 'new' | null = null) => {
           }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true }),
         ],
       ])),
+      templates.length > 0 && [Block(Text({ muted: true }, t('prompts.templatesHint'))), TemplateTable(templates, () => void renderPrompts())],
     ),
   );
 });
@@ -679,8 +688,35 @@ const renderUsers = guard(async (freshInvitation?: NewInvitation) => {
 const KIND: Record<Account['kind'], string> = { imap: 'IMAP / SMTP', google: 'Google', microsoft: 'Microsoft' };
 /** Whether the path still has to ask for the AI's key: no key is available, and this person may give the organisation's. */
 const needsKey = (): boolean => isAdmin() && !me().hasKey;
-/** Getting started is a path: connect, choose the folder, give the AI its key when there is none, read. */
-const pathSteps = (withKey = needsKey()): string[] => [t('accounts.step1'), t('accounts.step2'), ...(withKey ? [t('accounts.stepKey')] : []), t('accounts.step3')];
+
+/**
+ * Getting started is a path. Everyone connects a mailbox and chooses its folder; whoever
+ * administers the organisation is then shown what a newcomer would not find alone: the AI's
+ * key when there is none, the prompt, and how the tool works for the team. It ends on a first email.
+ */
+type PathStep = 'connect' | 'folder' | 'key' | 'prompt' | 'work' | 'read';
+const STEP_LABEL: Record<PathStep, string> = { connect: 'accounts.step1', folder: 'accounts.step2', key: 'accounts.stepKey', prompt: 'welcome.stepPrompt', work: 'welcome.stepWork', read: 'accounts.step3' };
+const pathOf = (withKey: boolean): PathStep[] => ['connect', 'folder', ...(withKey ? (['key'] as const) : []), ...(isAdmin() ? (['prompt', 'work'] as const) : []), 'read'];
+/** The path as shown at the top of each of its pages. */
+function PathSteps(at: PathStep): HTMLOListElement {
+  const steps = pathOf(needsKey() || at === 'key');
+  return Steps(steps.map((step) => t(STEP_LABEL[step])), steps.indexOf(at));
+}
+/** Where the path goes after `at`. */
+function leave(at: PathStep): void {
+  const steps = pathOf(needsKey());
+  const next = steps[steps.indexOf(at) + 1] ?? 'read';
+  if (next === 'read') void openFirstEmail();
+  else location.hash = `#/welcome/${next}`;
+}
+
+/** The end of the path: the first email to handle, open, or the box that has something to show. */
+const openFirstEmail = guard(async () => {
+  const { emails } = await api<EmailList>('GET', '/emails?box=todo');
+  if (emails[0]) return void (location.hash = `#/inbox/${emails[0].id}?welcome`);
+  const { emails: prepared } = await api<EmailList>('GET', '/emails?box=sent');
+  location.hash = prepared.length ? '#/replied' : '#/inbox';
+});
 
 /**
  * Choosing the one folder of a mailbox to watch. The folders are asked of the mailbox when
@@ -701,7 +737,7 @@ function folderPage(account: Account): void {
     const fetched = await api<SyncResult>('POST', `/accounts/${account.id}/sync`);
     if (fetched.error) toast(problemText(fetched.error), true);
     else toast(t('mailbox.fetched', { count: fetched.fetched }));
-    location.hash = needsKey() ? '#/accounts/key' : '#/inbox';
+    leave('folder');
   }, { variant: 'primary' });
   confirm.disabled = true;
   api<MailFolder[]>('GET', `/accounts/${account.id}/folders`)
@@ -711,7 +747,7 @@ function folderPage(account: Account): void {
     })
     .catch((e) => toast(messageOf(e), true));
   shell(Page(
-    fresh && Steps(pathSteps(), 1),
+    fresh && PathSteps('folder'),
     PageHeader({ title: t('accounts.chooseFolderTitle'), intro: t('accounts.chooseFolder'), crumbs: fresh ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
     fresh && Callout('ok', t('accounts.connectedShort', { email: account.email })),
     Card({ form: true }, folders.element, Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/accounts' }))),
@@ -725,18 +761,91 @@ function keyPage(): void {
   const form = SubmitForm(save, '…', async () => {
     await api('PUT', '/organization', { openrouterKey: key.value });
     state.me = await api<Me>('GET', '/me');
-    location.hash = '#/inbox';
+    leave('key');
   },
     Field(t('organization.key'), key, { hint: tRich('accounts.keyHint', {}, { link: (label) => Link(label, 'https://openrouter.ai/keys') }) }),
-    Actions(save, ButtonLink(t('accounts.keyLater'), { href: '#/inbox', variant: 'link' })),
+    Actions(save, Button(t('accounts.keyLater'), { variant: 'link', onClick: () => leave('key') })),
   );
   shell(Page(
-    Steps(pathSteps(true), 2),
+    PathSteps('key'),
     PageHeader({ title: t('accounts.keyTitle'), intro: t('accounts.keyIntro') }),
     Card({ form: true }, form),
   ));
   key.focus();
 }
+
+/** Ready-made prompts not yet added, each with its button. `onAdded` is called after one was. */
+function TemplateTable(templates: PromptTemplate[], onAdded?: () => void): Child {
+  return Table({ columns: [t('prompts.templates')], actions: t('common.actions') }, templates.map((template) => {
+    const add: HTMLButtonElement = ActionButton(t('prompts.addTemplate'), '…', async () => {
+      await api('POST', '/prompts', template);
+      if (onAdded) return onAdded();
+      add.replaceWith(Badge(t('prompts.added'), 'ok'));
+    }, { size: 'small', icon: 'plus' });
+    return [[Strong(template.name), Text({ muted: true, small: true }, template.description)], add];
+  }));
+}
+
+/** The prompt an organisation starts with, to read and adjust, and the other ready-made ones beside it. */
+const promptStep = guard(async () => {
+  const [prompts, templates] = await Promise.all([api<Prompt[]>('GET', '/prompts'), api<PromptTemplate[]>('GET', '/prompts/templates')]);
+  const first = prompts[0];
+  const name = Input({ required: true, value: first?.name ?? '' });
+  const description = Input({ value: first?.description ?? '' });
+  const system = Textarea({ required: true, rows: 7, value: first?.systemPrompt ?? '' });
+  const next = Button(t('welcome.continue'), { variant: 'primary', type: 'submit' });
+  const form = SubmitForm(next, '…', async () => {
+    const body = { name: name.value, description: description.value, systemPrompt: system.value };
+    await (first ? api('PUT', `/prompts/${first.id}`, body) : api('POST', '/prompts', body));
+    leave('prompt');
+  },
+    Field(t('prompts.name'), name),
+    Field(t('prompts.when'), description, { hint: t('prompts.whenHint') }),
+    Field(t('prompts.instructions'), system, { hint: t('prompts.instructionsHint') }),
+    Actions(next),
+  );
+  shell(Page(
+    PathSteps('prompt'),
+    PageHeader({ title: t('welcome.promptTitle'), intro: t('welcome.promptIntro') }),
+    templates.length ? Columns(Card({}, form), [Block(Text({ muted: true, small: true }, t('prompts.templatesHint'))), TemplateTable(templates)]) : Card({ form: true }, form),
+  ));
+});
+
+/** The ready-made ways of working: who sorts, when a proposal is written, and where it waits. Sending is always the member's. */
+const WAYS = {
+  manual: { triage: 'none', automation: 'none' },
+  sort: { triage: 'ai', automation: 'none' },
+  draft: { triage: 'ai', automation: 'draft' },
+  mailbox: { triage: 'ai', automation: 'mailbox' },
+} as const;
+type Way = keyof typeof WAYS;
+const wayOf = (org: Me['organization']): Way => (org.automation === 'mailbox' ? 'mailbox' : org.automation === 'draft' ? 'draft' : org.triage === 'ai' ? 'sort' : 'manual');
+
+/** Choosing how the tool works for the team, then on to a first email sorted and prepared that way. */
+const workStep = guard(async () => {
+  const hasKey = me().hasKey;
+  // Without a key the AI can do nothing: only the first way can be chosen, and the others say why.
+  const withAi = (hint: string) => ({ hint: hasKey ? hint : t('welcome.needsKey'), disabled: !hasKey });
+  const ways = Choices({ legend: t('welcome.workLegend'), name: 'way', value: hasKey ? wayOf(me().organization) : 'manual', options: [
+    { value: 'manual', title: t('welcome.manual'), hint: t('welcome.manualHint') },
+    { value: 'sort', title: t('welcome.sort'), ...withAi(t('welcome.sortHint')) },
+    { value: 'draft', title: t('welcome.draft'), ...withAi(t('welcome.draftHint')) },
+    { value: 'mailbox', title: t('welcome.mailbox'), ...withAi(t('welcome.mailboxHint')) },
+  ] });
+  const finish = ActionButton(t('welcome.finish'), t('mailbox.refreshing'), async () => {
+    // What the first fetch let through is sorted again the chosen way, and prepared if asked.
+    await api('PUT', '/organization', { ...WAYS[ways.value() as Way], resort: true });
+    state.me = await api<Me>('GET', '/me');
+    for (const account of await api<Account[]>('GET', '/accounts')) if (account.folder) await api('POST', `/accounts/${account.id}/sync`);
+    leave('work');
+  }, { variant: 'primary' });
+  shell(Page(
+    PathSteps('work'),
+    PageHeader({ title: t('welcome.workTitle'), intro: t('welcome.workIntro') }),
+    Card({}, ways.element, Text({ muted: true, small: true }, t('welcome.workLater'))),
+    Actions(finish),
+  ));
+});
 
 /** Connecting a mailbox: whose it is, where it is hosted, then what that host asks for. */
 function connectPage(first: boolean, oauthError: Child): void {
@@ -846,7 +955,7 @@ function connectPage(first: boolean, oauthError: Child): void {
   show();
 
   shell(Page(
-    first && Steps(pathSteps(), 0),
+    first && PathSteps('connect'),
     PageHeader({ title: t('accounts.connectTitle'), intro: t('accounts.connectIntro'), crumbs: first ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
     oauthError,
     advice,
@@ -863,7 +972,6 @@ const renderAccounts = guard(async (part = '', id: number | null = null, oauthEr
 
   // With no mailbox yet, the page is the first step of the path.
   if (part === 'connect' || accounts.length === 0) return connectPage(accounts.length === 0, failure);
-  if (part === 'key' && needsKey()) return keyPage();
   // A mailbox just connected has no folder yet: the page is the second step.
   const pending = accounts.find((a) => a.canManage && (a.folder === null || (part === 'folder' && a.id === id)));
   if (pending) return folderPage(pending);
@@ -914,11 +1022,16 @@ function OrganizationSettings(me: Me): Child {
     { value: 'ai', label: t('organization.triageAi'), selected: org.triage === 'ai' },
   ]);
   const skipAutomated = Checkbox({ checked: org.skipAutomated });
+  const automation = Select([
+    { value: 'none', label: t('organization.automationNone'), selected: org.automation === 'none' },
+    { value: 'draft', label: t('organization.automationDraft'), selected: org.automation === 'draft' },
+    { value: 'mailbox', label: t('organization.automationMailbox'), selected: org.automation === 'mailbox' },
+  ]);
   const model = Input({ value: org.model ?? '', placeholder: t('organization.modelPlaceholder') });
   const key = Input({ type: 'password', autocomplete: 'off', placeholder: org.hasKey ? t('settings.keySaved') : 'sk-or-…' });
   const save = Button(t('common.save'), { variant: 'primary', type: 'submit' });
   const form = SubmitForm(save, '…', async () => {
-    const body: Record<string, unknown> = { name: name.value, triage: triage.value, skipAutomated: skipAutomated.checked, model: model.value };
+    const body: Record<string, unknown> = { name: name.value, triage: triage.value, skipAutomated: skipAutomated.checked, automation: automation.value, model: model.value };
     if (key.value) body.openrouterKey = key.value;
     await api('PUT', '/organization', body);
     toast(t('settings.saved'));
@@ -927,6 +1040,7 @@ function OrganizationSettings(me: Me): Child {
     Field(t('organization.name'), name),
     Field(t('organization.triage'), triage, { hint: t('organization.triageHint') }),
     CheckField(t('organization.skipAutomated'), skipAutomated),
+    Field(t('organization.automation'), automation, { hint: t('organization.automationHint') }),
     CardSection(t('settings.aiTitle'),
       Field(t('organization.model'), model, { hint: t('organization.modelHint') }),
       Field(t('organization.key'), key, { hint: org.hasKey ? t('settings.keyHintOwn') : t('organization.keyHint') }),
@@ -961,7 +1075,7 @@ const renderSettings = guard(async (part = '') => {
       Block(Text({ muted: true }, t('settings.privacyIntro', { product: brand.name }))),
       Features([
         { icon: 'lock', title: t('settings.guarantee.zdr'), text: t('settings.privacyZdr') },
-        { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: me.organization.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone') },
+        { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: [me.organization.triage === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone'), me.organization.automation !== 'none' && ` ${t('settings.privacyPrepared')}`] },
         { icon: 'timer', title: t('settings.guarantee.retention'), text: me.retentionDays ? t('settings.privacyRetention', { days: me.retentionDays }) : t('settings.privacyNoRetention') },
         { icon: 'key', title: t('settings.guarantee.encryption'), text: t('settings.privacyEncryption') },
         { icon: 'check', title: t('settings.guarantee.validation'), text: t('settings.privacyValidation') },

@@ -180,7 +180,11 @@
     "column": "Prompt",
     "usageColumn": "Use",
     "unused": "Not used yet",
-    "noCorrections": "No correction yet."
+    "noCorrections": "No correction yet.",
+    "templates": "Ready-made prompts",
+    "templatesHint": "Other ways of replying, ready to add. Once added they are yours to edit.",
+    "addTemplate": "Add",
+    "added": "Added"
   },
   "users": {
     "title": "Users",
@@ -245,7 +249,7 @@
     "intro": "Each mailbox watches one folder. A shared mailbox is used by every member; only administrators connect, change or disconnect one.",
     "step1": "Connect a mailbox",
     "step2": "Choose the folder to watch",
-    "step3": "Read your first emails",
+    "step3": "Try it on a first email",
     "connectTitle": "Connect a mailbox",
     "connectIntro": "The emails of one folder that you choose are fetched, and your replies are sent from the same address. Nothing else in the mailbox is read.",
     "whose": "Whose mailbox is it?",
@@ -320,7 +324,8 @@
     },
     "privacyZdr": "Every AI request requires a provider that keeps nothing and trains on nothing. If none can guarantee it, the request fails instead of being routed elsewhere.",
     "yourPart": "Your part.",
-    "technical": "For the technically minded"
+    "technical": "For the technically minded",
+    "privacyPrepared": "A proposal is prepared at fetch for each email to handle: its content is then sent to the AI without anyone asking."
   },
   "styleguide": {
     "title": "Style guide — {product}",
@@ -496,7 +501,8 @@
     },
     "sync": {
       "fetchFailed": "Could not read the mailbox: {detail}",
-      "triageFailed": "Triage failed: {detail}"
+      "triageFailed": "Triage failed: {detail}",
+      "prepareFailed": "Could not prepare a proposal: {detail}"
     },
     "prompts": {
       "notFound": "Prompt not found.",
@@ -536,7 +542,8 @@
       "bulk": "Bulk mail."
     },
     "organization": {
-      "invalidTriage": "Unknown triage strategy."
+      "invalidTriage": "Unknown triage strategy.",
+      "invalidAutomation": "Unknown way of preparing replies."
     },
     "assist": {
       "nothingWritten": "Write something first: there is nothing to check or improve.",
@@ -557,7 +564,12 @@
     "modelHint": "Used by members who have not chosen their own. Leave empty for the server's.",
     "key": "OpenRouter API key of the organisation",
     "keyHint": "Encrypted in the database. Used by every member who has no key of their own.",
-    "deleteKey": "Delete the organisation's key"
+    "deleteKey": "Delete the organisation's key",
+    "automation": "Proposals",
+    "automationNone": "On demand: the AI writes only when a member asks",
+    "automationDraft": "Prepared at fetch, to review here",
+    "automationMailbox": "Prepared at fetch and filed in the mailbox’s Drafts folder",
+    "automationHint": "Preparing at fetch sends the content of each email to handle to the AI, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation."
   },
   "editor": {
     "bold": "Bold",
@@ -569,5 +581,28 @@
     "linkPrompt": "Address of the link:",
     "linkInsert": "Insert the link",
     "clear": "Clear formatting"
+  },
+  "welcome": {
+    "stepPrompt": "Read your prompt",
+    "stepWork": "Choose how it works",
+    "promptTitle": "Read your prompt",
+    "promptIntro": "A prompt tells the AI how your organisation replies: its tone, its rules. One is ready. Read it, make it yours, and add others now or later in Prompts.",
+    "continue": "Save and continue",
+    "workTitle": "Choose how it works",
+    "workIntro": "How much the AI does before you open an email. Whatever you choose, nothing is sent until someone confirms it.",
+    "workLegend": "For every member of the organisation",
+    "manual": "I decide everything",
+    "manualHint": "Every email of the watched folder is to handle. The AI writes only when I ask. Nothing is sent to it until then.",
+    "sort": "The AI sorts, I write",
+    "sortHint": "The AI sets aside what needs no reply and suggests a prompt. It reads the sender, the subject, the beginning of the text and attachment names.",
+    "draft": "Proposals waiting for me",
+    "draftHint": "As above, and a proposal is written at fetch for each email to handle. Their content is sent to the AI without anyone asking.",
+    "mailbox": "Drafts in my mailbox",
+    "mailboxHint": "As above, and each proposal is filed in the Drafts folder of the mailbox, to finish and send from my mail client.",
+    "needsKey": "Needs an AI key, which was not given.",
+    "workLater": "This can be changed at any time in Settings → Organisation.",
+    "finish": "Apply and open a first email",
+    "tryIt": "This is your first email here. Write a few words on what to answer, or nothing at all, then “Write with”. Nothing is sent until you confirm.",
+    "tryPrepared": "This is your first email here, with the proposal prepared for it. Read it, change what you want, then Send. Nothing is sent until you confirm."
   }
 }

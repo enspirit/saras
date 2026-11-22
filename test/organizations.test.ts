@@ -50,8 +50,8 @@ test('a member has a name, which the administrators see in place of the address'
 test('each organisation has its own prompts, users and invitations', async () => {
   const mine = (await alice('GET', '/prompts')).body;
   const theirs = (await zoe('GET', '/prompts')).body;
-  assert.equal(mine.length, 5);
-  assert.equal(theirs.length, 5);
+  assert.equal(mine.length, 1);
+  assert.equal(theirs.length, 1);
   assert.deepEqual(mine.map((p: { id: number }) => p.id).filter((id: number) => theirs.some((p: { id: number }) => p.id === id)), []);
 
   assert.equal((await zoe('PUT', `/prompts/${mine[0].id}`, { name: 'x', systemPrompt: 'y' })).status, 404);
@@ -203,6 +203,6 @@ test('deleting a member keeps what belongs to the organisation', async () => {
   assert.equal((await alice('GET', '/me')).status, 401);
   const [stillThere] = (await bruno('GET', '/accounts')).body;
   assert.deepEqual([stillThere.id, stillThere.shared, stillThere.canManage], [sharedId, true, true], 'the shared mailbox outlives who connected it');
-  assert.equal((await bruno('GET', '/prompts')).body.length, 5);
+  assert.equal((await bruno('GET', '/prompts')).body.length, 1);
   assert.equal((await subjects(chloe, 'sent')).length, 1);
 });

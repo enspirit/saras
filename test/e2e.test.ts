@@ -1,7 +1,7 @@
 // End to end over real protocols: HTTP API -> IMAP fetch -> triage -> draft -> SMTP send.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { createClient, join } from './support/client.ts';
+import { createClient, installTemplates, join } from './support/client.ts';
 import type { ApiClient } from './support/client.ts';
 import { startStack } from './support/stack.ts';
 import type { Stack } from './support/stack.ts';
@@ -66,7 +66,13 @@ test('signup, and writes must be JSON', async () => {
   const form = await me('POST', '/auth/logout', 'a=b', { 'content-type': 'application/x-www-form-urlencoded' });
   assert.equal(form.status, 415);
   prompts = (await me('GET', '/prompts')).body;
+  assert.deepEqual(prompts.map((p) => p.name), ['Standard professional reply'], 'an organisation starts with one prompt');
+  // The others are templates, added on demand; each can be added once.
+  assert.equal((await me('GET', '/prompts/templates')).body.length, 4);
+  await installTemplates(me);
+  prompts = (await me('GET', '/prompts')).body;
   assert.equal(prompts.length, 5);
+  assert.deepEqual((await me('GET', '/prompts/templates')).body, []);
 });
 
 test('a wrong IMAP password is refused, a right one connects', async () => {

@@ -117,7 +117,7 @@ The server remembers each user's language (sent by the interface) for what it wr
 
 - the reason the LLM gives for a triage verdict (with the AI strategy) is asked for in that language;
 - the line introducing the quoted original in a reply ("On …, … wrote:") follows it, for the languages the server knows (English and French; English otherwise);
-- the default prompts of an organisation are created in the language of whoever created it (English and French sets are provided).
+- the default prompt of an organisation, and the templates it may add, are in the language of whoever created it (English and French sets are provided).
 
 The prompts sent to the LLM are in English. The reply itself is always drafted in the language of the email received. Prompt names and descriptions are whatever the administrators wrote.
 
@@ -156,7 +156,7 @@ This is the main design constraint.
 | --- | --- |
 | No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
 | No silent fallback | If no provider of the chosen model satisfies both conditions, OpenRouter refuses the request and the application shows the error. |
-| Minimisation | Checking typos and improving style never send the received email to the LLM, only your own text. Only the folder you chose is fetched. By default no email is analysed by the LLM: content leaves the server only when you ask for a draft. Newsletters, mailing lists, `no-reply` addresses and automated messages are set aside by header rules and never reach it. |
+| Minimisation | Checking typos and improving style never send the received email to the LLM, only your own text. Only the folder you chose is fetched. By default no email is analysed by the LLM: content leaves the server only when you ask for a draft. An organisation's administrators may choose otherwise: sorting by the AI, and proposals prepared at fetch (the content of each email to handle is then sent without anyone asking). Whatever they choose, nothing is sent to a correspondent without a member's confirmation. Newsletters, mailing lists, `no-reply` addresses and automated messages are set aside by header rules and never reach it. |
 | Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
 | Transport | Without direct TLS, STARTTLS is required for IMAP and SMTP (except for a local server): no password travels in clear. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |

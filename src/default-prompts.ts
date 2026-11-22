@@ -1,7 +1,8 @@
 /**
- * Prompts created with the first account of an installation, in that account's language
- * (English when we have no set for it). They are plain rows afterwards: administrators edit,
- * delete and add to them freely.
+ * Ready-made prompts, in the language of whoever asks (English when we have no set for it).
+ * The first is created with every organisation; the others are templates that its
+ * administrators add in one click. Once created they are plain rows: edited, deleted and
+ * added to freely.
  */
 export interface DefaultPrompt {
   name: string;
