@@ -85,10 +85,10 @@ BRAND_DIR=./my-brand npm start   # or BRAND_DIR in .env; with Docker, mount the 
 | File | Role |
 | --- | --- |
 | `theme.css` | A dozen variables: accent colour, background, text (light and dark), fonts, corner radius, light/dark mode. Everything else is derived from them. |
-| `brand.json` | `name` (title, tab, wording), `tagline` (one text, or one per language: `{ "fr": "…", "en": "…" }`), `logo` and `logoDark` (file names in the folder, optional). |
+| `brand.json` | `name` (title, tab, wording), `tagline` (one text, or one per language: `{ "fr": "…", "en": "…" }`), `logo` and `logoDark` (file names in the folder, optional). For the sign-in page, optionally: `byline` and `credit` (one text, or one per language) and `euHosting` (`true` when the installation and the AI it calls are hosted in Europe: the page then says so). |
 | `favicon.svg`, logos, fonts | Served from the folder. A web font is declared with `@font-face` in `theme.css`. |
 
-A file missing from the folder falls back to the default brand's. `brands/example/` is a complete fictitious brand: `BRAND_DIR=./brands/example npm start`.
+A file missing from the folder falls back to the default brand's. `brands/example/` is a complete fictitious brand: `BRAND_DIR=./brands/example npm start`. `brands/klaro/` is the Klaro Cards brand, with its font self-hosted.
 
 **`/styleguide.html`** shows every token and component with the brand in place: it is the page to watch while tuning `theme.css`.
 
@@ -129,9 +129,9 @@ The interface follows the hierarchy tokens → atoms → molecules → organisms
 | --- | --- | --- | --- |
 | Tokens | `tokens.css` | — | Brand inputs `--brand-*`, then semantic tokens `--color-*`, `--font-*`, `--space-*`, `--radius-*`… |
 | Base | `base.css` | `dom.ts` | HTML element defaults; the single element-creation function. |
-| Atoms | `atoms.css` | `atoms.ts` | `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Text`, `BrandMark`… |
-| Molecules | `molecules.css` | `molecules.ts` | `Field`, `FormRow`, `Actions`, `Card`, `NavItem`, `EmailListItem`, `Message`, toast… |
-| Organisms | `organisms.css` | `organisms.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `ReadingHeader`. |
+| Atoms | `atoms.css` | `atoms.ts` | `Icon`, `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Avatar`, `Chip`, `Text`, `BrandMark`… |
+| Molecules | `molecules.css` | `molecules.ts` | `Field`, `Card`, `PageHeader`, `Tabs`, `Table`, `Choices`, dialogs, `NavItem`, `EmailListItem`, `RichEditor`, `RecipientField`, toast… |
+| Organisms | `organisms.css` | `organisms.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `Reading`, `ReadingHeader`, `ReplyDock`. |
 | Pages | — | `app.ts`, `styleguide.ts` | Behaviour only, assembled from components; wording comes from the translation files. |
 
 Rules, enforced by `test/design-system.test.ts`:
@@ -145,6 +145,8 @@ Rules, enforced by `test/design-system.test.ts`:
 CSS cascade layers (`@layer`) make the hierarchy effective: a molecule always wins over an atom, and `theme.css`, loaded outside any layer, wins over everything without `!important`.
 
 To add a component: the function in `web/ui/<tier>.ts`, its style in `public/design/<tier>.css`, an example in `web/styleguide.ts`.
+
+The aims of the design, its tokens and components, and how each screen is put together are in [`docs/design/`](docs/design/README.md).
 
 ## Privacy
 
