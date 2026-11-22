@@ -199,3 +199,15 @@ test('OAuth authorization URLs', () => {
   assert.match(m.searchParams.get('scope') ?? '', /offline_access.*Mail\.Send/);
   assert.equal(m.searchParams.get('state'), 'st');
 });
+
+test('the host of a mailbox is read from its MX records', async () => {
+  const { classifyMx, domainOf } = await import('../src/mail/lookup.ts');
+  assert.equal(classifyMx(['aspmx.l.google.com', 'alt1.aspmx.l.google.com']).provider, 'google');
+  assert.equal(classifyMx(['acme-example.mail.protection.outlook.com.']).provider, 'microsoft');
+  assert.deepEqual(classifyMx(['mx1.mail.ovh.net']), { provider: 'other', servers: { imapHost: 'ssl0.ovh.net', imapPort: 993, smtpHost: 'ssl0.ovh.net', smtpPort: 465 } });
+  assert.deepEqual(classifyMx(['mail.acme.example']), { provider: 'other', servers: null }, 'an unknown host proposes nothing');
+  assert.deepEqual(classifyMx(['notgoogle.com']), { provider: 'other', servers: null }, 'a name is recognised by its end, on a dot');
+  assert.equal(domainOf(' Alex@Acme.Example '), 'acme.example');
+  assert.equal(domainOf('alex@localhost'), null);
+  assert.equal(domainOf('not an address'), null);
+});

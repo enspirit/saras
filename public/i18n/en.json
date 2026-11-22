@@ -271,7 +271,9 @@
     "keyHint": "Create one in your <link>OpenRouter account</link>. It is encrypted in the database and used by every member who has no key of their own.",
     "keySave": "Save and read my emails",
     "keyLater": "Later",
-    "serversProposed": "Filled in from the address. Check them with your mail provider if the connection fails."
+    "serversProposed": "Filled in from the address. Check them with your mail provider if the connection fails.",
+    "hostedSignIn": "{address} is hosted at {provider}: connect it by signing in there, no password is typed here.",
+    "hostedPassword": "{address} is hosted at {provider}, which usually refuses the mailbox’s own password. Use an application password, or ask whoever hosts this server to set up sign-in with {provider}."
   },
   "settings": {
     "title": "Settings",

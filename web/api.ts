@@ -109,6 +109,12 @@ export interface Account {
   todo: number;
 }
 
+/** Who hosts the mail of an address, and the servers to propose when that host is known. */
+export interface MailHost {
+  provider: 'google' | 'microsoft' | 'other';
+  servers: { imapHost: string; imapPort: number; smtpHost: string; smtpPort: number } | null;
+}
+
 export interface MailFolder {
   id: string;
   name: string;

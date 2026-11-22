@@ -1,6 +1,8 @@
 // Where the mail servers of an address are likely to be, so that a newcomer does not have
-// to look them up. A few large providers are known; for any other domain the usual names
-// are proposed. Nothing is trusted: the connection is tested before anything is saved.
+// to look them up. This is the immediate proposal, from the address alone: a few large
+// providers are known, and for any other domain the usual names are proposed. The server
+// then says who really hosts the domain (GET /mail/host), which replaces it. Nothing is
+// trusted: the connection is tested before anything is saved.
 
 export interface MailServers {
   imapHost: string;

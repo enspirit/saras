@@ -102,6 +102,8 @@ export interface ChoicesHandle {
   value(): string;
   /** Replaces the options, e.g. once they are known. */
   setOptions(options: ChoiceOption[], value?: string): void;
+  /** Chooses an option, when it exists and can be chosen. Returns whether it did. */
+  select(value: string): boolean;
 }
 
 /** One among a few, each explained. `rows` lays them out as a list, for names without explanation. */
@@ -120,6 +122,11 @@ export function Choices({ legend, name, options, value, rows = false, onChange }
     element,
     value: () => element.querySelector<HTMLInputElement>('input:checked')?.value ?? '',
     setOptions: fill,
+    select(wanted) {
+      const radio = [...element.querySelectorAll<HTMLInputElement>('input')].find((input) => input.value === wanted && !input.disabled);
+      if (radio) radio.checked = true;
+      return Boolean(radio);
+    },
   };
 }
 

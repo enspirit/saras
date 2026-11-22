@@ -15,6 +15,7 @@ import type { MessageCode, MessageParams, Problem } from './messages.ts';
 import { isBlankHtml, sanitizeHtml, stripCodeFence, textToHtml } from './html.ts';
 import { buildPromptMessages, buildStyleMessages, buildTyposMessages } from './llm/prompts.ts';
 import type { MailService } from './mail/index.ts';
+import { lookupMailHost } from './mail/lookup.ts';
 import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from './mail/oauth.ts';
 import { replyRecipients, wasEdited } from './reply.ts';
 import { llmSettings } from './llm/settings.ts';
@@ -409,6 +410,11 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     ]);
     return created!;
   }
+
+  /** Who hosts the mail of an address, from its domain's MX records: the connection page uses it to propose the right way in. */
+  app.get('/api/mail/host', auth, async (req, res) => {
+    res.json(await lookupMailHost(str(req.query.email, 320)));
+  });
 
   /** The folders of the mailbox, for the user to choose the one to watch. */
   app.get('/api/accounts/:id/folders', auth, async (req, res) => {

@@ -10,7 +10,8 @@ import type { Child } from './ui/dom.ts';
 import { api, isSignedOut, problemText } from './api.ts';
 import { initI18n, language, languages, locale, setLanguage, t, tRich } from './i18n.ts';
 import { serversFor } from './mail-presets.ts';
-import type { Account, BoxId, MailFolder, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
+import type { MailServers } from './mail-presets.ts';
+import type { Account, BoxId, MailFolder, MailHost, Correction, Draft, EmailDetail, EmailList, Invitation, Me, NewInvitation, Prompt, PublicInfo, Role, SentReply, SyncResult, User } from './api.ts';
 
 const root = document.getElementById('app') as HTMLElement;
 const toast = createToast(document.getElementById('toast') as HTMLElement);
@@ -769,8 +770,7 @@ function connectPage(first: boolean, oauthError: Child): void {
   smtpPort.addEventListener('input', () => (smtpSecure.checked = smtpPort.value === '465'));
   // The servers follow the address until the user writes their own.
   let proposed = '';
-  const propose = (): void => {
-    const servers = serversFor(email.value);
+  const propose = (servers: MailServers | null): void => {
     if (!servers || (imapHost.value && imapHost.value !== proposed)) return;
     proposed = imapHost.value = servers.imapHost;
     smtpHost.value = servers.smtpHost;
@@ -779,8 +779,36 @@ function connectPage(first: boolean, oauthError: Child): void {
     imapSecure.checked = servers.imapPort === 993;
     smtpSecure.checked = servers.smtpPort === 465;
   };
-  email.addEventListener('input', propose);
-  propose();
+  email.addEventListener('input', () => propose(serversFor(email.value)));
+  propose(serversFor(email.value));
+
+  // Who really hosts the address is asked of its domain: an address at one's own domain is
+  // often at Google or Microsoft, where signing in is the way that works.
+  let advice: HTMLElement = Callout('info', '');
+  advice.hidden = true;
+  const advise = (next: HTMLElement | null): void => {
+    const shown = next ?? Callout('info', '');
+    shown.hidden = next === null;
+    advice.replaceWith(shown);
+    advice = shown;
+  };
+  let asked = '';
+  const findHost = async (address: string): Promise<void> => {
+    if (!serversFor(address) || address === asked) return;
+    asked = address;
+    const found = await api<MailHost>('GET', `/mail/host?email=${encodeURIComponent(address)}`).catch(() => null);
+    if (!found || address !== asked) return;
+    propose(found.servers);
+    if (found.provider === 'other') return advise(null);
+    const provider = found.provider === 'google' ? t('accounts.connectGoogle') : t('accounts.connectMicrosoft');
+    if (oauth[found.provider] && host.select(found.provider)) {
+      show();
+      advise(Callout('info', t('accounts.hostedSignIn', { address, provider })));
+    } else {
+      advise(Callout('warn', t('accounts.hostedPassword', { address, provider })));
+    }
+  };
+  email.addEventListener('change', () => void findHost(email.value));
   const connect = Button(t('accounts.connect'), { variant: 'primary', type: 'submit' });
   const imapForm = SubmitForm(connect, t('accounts.connecting'), async () => {
     await api('POST', '/accounts/imap', {
@@ -821,10 +849,12 @@ function connectPage(first: boolean, oauthError: Child): void {
     first && Steps(pathSteps(), 0),
     PageHeader({ title: t('accounts.connectTitle'), intro: t('accounts.connectIntro'), crumbs: first ? [] : [{ label: t('accounts.title'), href: '#/accounts' }] }),
     oauthError,
+    advice,
     whose && Card({}, whose.element),
     Card({}, host.element),
     detail,
   ));
+  if (first) void findHost(me().email);
 }
 
 const renderAccounts = guard(async (part = '', id: number | null = null, oauthError?: string | null, oauthDetail?: string) => {

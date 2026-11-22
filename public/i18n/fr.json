@@ -271,7 +271,9 @@
     "keyHint": "Créez-en une dans votre <link>compte OpenRouter</link>. Elle est chiffrée dans la base et sert à chaque membre qui n’a pas sa propre clé.",
     "keySave": "Enregistrer et lire mes emails",
     "keyLater": "Plus tard",
-    "serversProposed": "Remplis d’après l’adresse. Vérifiez-les auprès de votre fournisseur si la connexion échoue."
+    "serversProposed": "Remplis d’après l’adresse. Vérifiez-les auprès de votre fournisseur si la connexion échoue.",
+    "hostedSignIn": "{address} est hébergée chez {provider} : connectez-la en vous y identifiant, aucun mot de passe n’est saisi ici.",
+    "hostedPassword": "{address} est hébergée chez {provider}, qui refuse en général le mot de passe de la boîte. Utilisez un mot de passe d’application, ou demandez à l’hébergeur de ce serveur de configurer la connexion par {provider}."
   },
   "settings": {
     "title": "Réglages",
