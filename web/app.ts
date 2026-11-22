@@ -754,6 +754,30 @@ function folderPage(account: Account): void {
   ));
 }
 
+/** Giving saras access to a mailbox again: a new password, or a new trip to its host. */
+function renewPage(account: Account): void {
+  const crumbs = [{ label: t('accounts.title'), href: '#/accounts' }];
+  const header = PageHeader({ title: t('accounts.renewTitle', { email: account.email }), intro: t('accounts.renewIntro'), crumbs });
+  if (account.kind !== 'imap') {
+    const provider = account.kind === 'google' ? t('accounts.connectGoogle') : t('accounts.connectMicrosoft');
+    return shell(Page(header, Card({},
+      Block(Text({ muted: true }, t('accounts.oauthIntro'))),
+      Actions(ButtonLink(t('accounts.continueAt', { provider }), { href: `/api/oauth/${account.kind}/start?renew=${account.id}`, variant: 'primary' }), ButtonLink(t('common.cancel'), { href: '#/accounts' })),
+    )));
+  }
+  const password = Input({ type: 'password', required: true, autocomplete: 'off' });
+  const renew = Button(t('accounts.renew'), { variant: 'primary', type: 'submit' });
+  shell(Page(header, Card({}, SubmitForm(renew, t('accounts.connecting'), async () => {
+    await api('PUT', `/accounts/${account.id}/password`, { password: password.value });
+    toast(t('accounts.renewed'));
+    location.hash = '#/accounts';
+    void renderAccounts();
+  },
+    Field(t('accounts.newPassword'), password, { hint: t('accounts.passwordHint') }),
+    Actions(renew, ButtonLink(t('common.cancel'), { href: '#/accounts' })),
+  ))));
+}
+
 /** Last step before the emails when no AI key is available: the administrator gives the organisation's, or goes on without. */
 function keyPage(): void {
   const key = Input({ type: 'password', required: true, autocomplete: 'off', placeholder: 'sk-or-…' });
@@ -972,6 +996,8 @@ const renderAccounts = guard(async (part = '', id: number | null = null, oauthEr
 
   // With no mailbox yet, the page is the first step of the path.
   if (part === 'connect' || accounts.length === 0) return connectPage(accounts.length === 0, failure);
+  const renewing = part === 'renew' && accounts.find((a) => a.canManage && a.id === id);
+  if (renewing) return renewPage(renewing);
   // A mailbox just connected has no folder yet: the page is the second step.
   const pending = accounts.find((a) => a.canManage && (a.folder === null || (part === 'folder' && a.id === id)));
   if (pending) return folderPage(pending);
@@ -994,6 +1020,7 @@ const renderAccounts = guard(async (part = '', id: number | null = null, oauthEr
             renderAccounts();
           }, { size: 'small', icon: 'refresh-cw' }),
           a.folder && a.canManage && Button(t('accounts.changeFolder'), { variant: 'ghost', size: 'small', icon: 'folder', iconOnly: true, onClick: () => (location.hash = `#/accounts/folder/${a.id}`) }),
+          a.canManage && Button(t('accounts.renew'), { variant: 'ghost', size: 'small', icon: 'key', iconOnly: true, onClick: () => (location.hash = `#/accounts/renew/${a.id}`) }),
           a.canManage && ActionButton(t('accounts.disconnect'), '…', async () => {
             if (!(await confirmAction(t('accounts.confirmDisconnect', { email: a.email }), t('accounts.disconnect')))) return;
             await api('DELETE', `/accounts/${a.id}`);

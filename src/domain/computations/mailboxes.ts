@@ -17,9 +17,22 @@ export const mayManage = (actor: Actor, mailbox: Pick<AccountRow, 'shared' | 'us
 /** Only administrators connect shared mailboxes; anyone else asking for one gets a personal one. */
 export const connectsAsShared = ({ member }: Actor, asked: unknown): boolean => member.role === 'admin' && asked === true;
 
-/** ReqPre of renewing credentials through ConnectMailbox: nobody takes over someone else's mailbox. */
-export const mayRenew = (actor: Actor, existing: Pick<AccountRow, 'shared' | 'user_id'>): Verdict<true> =>
-  manages(actor, existing) ? accept(true) : refuse('conflict', 'accounts.alreadyConnected');
+/** DomPre of ConnectMailbox: an address is connected once per organisation. */
+export const addressIsNotConnected = (existing: unknown): Verdict<true> => (existing ? refuse('conflict', 'accounts.alreadyConnected') : accept(true));
+
+/** ReqPre of renewing by password: the mailbox is one reached by its servers. */
+export const isRenewedByPassword = (mailbox: Pick<AccountRow, 'kind'>): Verdict<true> => (mailbox.kind === 'imap' ? accept(true) : refuse('invalid', 'accounts.renewAtHost'));
+
+/** The same servers and user, with a new password. ReqPre: there is one. */
+export function withNewPassword(credentials: ImapCredentials, password: unknown): Verdict<ImapCredentials> {
+  const pass = String(password || '');
+  if (!pass) return refuse('invalid', 'accounts.passwordRequired');
+  return accept({ imap: { ...credentials.imap, pass }, smtp: { ...credentials.smtp, pass } });
+}
+
+/** ReqPre of renewing by sign-in at the host: the member signed in to that very mailbox. */
+export const isSameMailbox = (mailbox: Pick<AccountRow, 'kind' | 'email'>, kind: string, address: string): Verdict<true> =>
+  mailbox.kind === kind && mailbox.email.toLowerCase() === address.toLowerCase() ? accept(true) : refuse('conflict', 'accounts.otherMailbox');
 
 /** A valid TCP port, or 0. */
 export const portGiven = (value: unknown): number => (Number.isInteger(Number(value)) && Number(value) > 0 && Number(value) < 65536 ? Number(value) : 0);
@@ -68,16 +81,18 @@ export function folderAmong<F extends Pick<MailFolder, 'id'>>(folders: F[], want
   return folder ? accept(folder) : refuse('invalid', 'accounts.unknownFolder');
 }
 
-/** What we remember, on our side, of a mailbox being connected through its host's sign-in. */
+/** What we remember, on our side, of a sign-in under way at a mail host: to connect a mailbox, or to renew one. */
 export interface HostSignIn {
   kind: string;
   state: string;
   shared: boolean;
+  /** The mailbox whose access is renewed, when it is not a new one being connected. */
+  renews: number | null;
 }
-export const rememberedSignIn = ({ kind, state, shared }: HostSignIn): string => `${kind}:${state}:${shared ? 'shared' : 'personal'}`;
+export const rememberedSignIn = ({ kind, state, shared, renews }: HostSignIn): string => `${kind}:${state}:${shared ? 'shared' : 'personal'}${renews ? `:${renews}` : ''}`;
 export function signInRemembered(remembered: string | null | undefined): HostSignIn {
-  const [kind = '', state = '', scope] = (remembered || '').split(':');
-  return { kind, state, shared: scope === 'shared' };
+  const [kind = '', state = '', scope, renews] = (remembered || '').split(':');
+  return { kind, state, shared: scope === 'shared', renews: Number(renews) || null };
 }
 
 /** ReqPre of completing a host sign-in: it answers the one we started, for the same host. */

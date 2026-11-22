@@ -40,6 +40,8 @@ export const MESSAGES = {
   'organization.invalidAutomation': 'Unknown way of preparing replies.',
   'accounts.adminOnly': 'A shared mailbox is managed by administrators.',
   'accounts.alreadyConnected': 'This mailbox is already connected in your organisation.',
+  'accounts.otherMailbox': 'You signed in to another mailbox than the one to renew.',
+  'accounts.renewAtHost': 'Access to this mailbox is renewed by signing in at its host.',
   'organization.invalidTriage': 'Unknown triage strategy.',
   'accounts.folderRequired': 'Choose the folder to watch.',
   'accounts.unknownFolder': 'This folder does not exist in the mailbox.',

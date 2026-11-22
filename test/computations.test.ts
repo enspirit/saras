@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, mayDeleteMember, mayOpenAccount, mayRemoveAdministratorRole, maySignUp, opensNewWindow, organizationNameFor, roleInvitedAs, signUpIsOpen } from '../src/domain/computations/access.ts';
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../src/domain/computations/given.ts';
-import { answersSignIn, connectsAsShared, folderAmong, manages, mayManage, mayRenew, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../src/domain/computations/mailboxes.ts';
+import { addressIsNotConnected, answersSignIn, connectsAsShared, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../src/domain/computations/mailboxes.ts';
 import { promptContent } from '../src/domain/computations/prompts.ts';
 import { modelGiven, proposalsGiven, sortingGiven } from '../src/domain/computations/settings.ts';
 import { mayBeSortedAgain } from '../src/domain/computations/sorting.ts';
@@ -129,8 +129,6 @@ test('a mailbox is managed by its owner; a shared one, by the administrators', (
   assert.equal(manages(actorWith(7, 'user'), shared), false, 'sharing it hands it to the administrators');
   assert.equal(manages(actorWith(8, 'admin'), shared), true);
   assert.equal(outcome(mayManage(actorWith(8, 'user'), shared)), 'forbidden: accounts.adminOnly');
-  assert.equal(outcome(mayRenew(actorWith(8, 'user'), personal)), 'conflict: accounts.alreadyConnected');
-  assert.equal(outcome(mayRenew(actorWith(7, 'user'), personal)), 'ok');
 });
 
 test('only an administrator connects a shared mailbox', () => {
@@ -161,10 +159,27 @@ test('the watched folder is one of the mailbox\'s own', () => {
 });
 
 test('a sign-in at the mail host is answered once, for the same host, with our secret', () => {
-  const remembered = signInRemembered(rememberedSignIn({ kind: 'google', state: 'abc', shared: true }));
-  assert.deepEqual(remembered, { kind: 'google', state: 'abc', shared: true });
+  const remembered = signInRemembered(rememberedSignIn({ kind: 'google', state: 'abc', shared: true, renews: null }));
+  assert.deepEqual(remembered, { kind: 'google', state: 'abc', shared: true, renews: null });
+  assert.equal(signInRemembered(rememberedSignIn({ kind: 'google', state: 'abc', shared: false, renews: 12 })).renews, 12);
   assert.equal(outcome(answersSignIn(remembered, 'google', 'abc')), 'ok');
   assert.equal(outcome(answersSignIn(remembered, 'microsoft', 'abc')), 'gone: oauth.expired');
   assert.equal(outcome(answersSignIn(remembered, 'google', 'xyz')), 'gone: oauth.expired');
   assert.equal(outcome(answersSignIn(signInRemembered(null), 'google', '')), 'gone: oauth.expired', 'nothing remembered answers nothing');
+});
+
+test('an address is connected once; access to it is renewed, for that very mailbox', () => {
+  assert.equal(outcome(addressIsNotConnected(undefined)), 'ok');
+  assert.equal(outcome(addressIsNotConnected({ id: 3 })), 'conflict: accounts.alreadyConnected');
+  assert.equal(outcome(isRenewedByPassword({ kind: 'imap' })), 'ok');
+  assert.equal(outcome(isRenewedByPassword({ kind: 'google' })), 'invalid: accounts.renewAtHost');
+  const mailbox = { kind: 'google' as const, email: 'alex@acme.example' };
+  assert.equal(outcome(isSameMailbox(mailbox, 'google', 'Alex@Acme.example')), 'ok');
+  assert.equal(outcome(isSameMailbox(mailbox, 'google', 'sam@acme.example')), 'conflict: accounts.otherMailbox');
+  assert.equal(outcome(isSameMailbox(mailbox, 'microsoft', 'alex@acme.example')), 'conflict: accounts.otherMailbox');
+  const servers = { imap: { host: 'i', port: 993, secure: true, user: 'u', pass: 'old' }, smtp: { host: 's', port: 587, secure: false, user: 'u', pass: 'old' } };
+  const renewed = withNewPassword(servers, 'new');
+  assert.ok(renewed.ok);
+  assert.deepEqual([renewed.value.imap.pass, renewed.value.smtp.pass, renewed.value.imap.host], ['new', 'new', 'i']);
+  assert.equal(outcome(withNewPassword(servers, '')), 'invalid: accounts.passwordRequired');
 });

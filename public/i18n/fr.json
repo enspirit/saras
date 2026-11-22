@@ -277,7 +277,12 @@
     "keyLater": "Plus tard",
     "serversProposed": "Remplis d’après l’adresse. Vérifiez-les auprès de votre fournisseur si la connexion échoue.",
     "hostedSignIn": "{address} est hébergée chez {provider} : connectez-la en vous y identifiant, aucun mot de passe n’est saisi ici.",
-    "hostedPassword": "{address} est hébergée chez {provider}, qui refuse en général le mot de passe de la boîte. Utilisez un mot de passe d’application, ou demandez à l’hébergeur de ce serveur de configurer la connexion par {provider}."
+    "hostedPassword": "{address} est hébergée chez {provider}, qui refuse en général le mot de passe de la boîte. Utilisez un mot de passe d’application, ou demandez à l’hébergeur de ce serveur de configurer la connexion par {provider}.",
+    "renew": "Renouveler l’accès",
+    "renewTitle": "Renouveler l’accès à {email}",
+    "renewIntro": "Après un changement de mot de passe, ou lorsque l’accès accordé à saras a été retiré ou a expiré. Le dossier surveillé et les e-mails conservés ne changent pas.",
+    "renewed": "Accès renouvelé.",
+    "newPassword": "Nouveau mot de passe"
   },
   "settings": {
     "title": "Réglages",
@@ -491,7 +496,9 @@
       "unknownFolder": "Ce dossier n’existe pas dans la boîte.",
       "foldersFailed": "Impossible de lister les dossiers : {detail}",
       "adminOnly": "Une boîte partagée est gérée par les administrateurs.",
-      "alreadyConnected": "Cette boîte est déjà connectée dans votre organisation."
+      "alreadyConnected": "Cette boîte est déjà connectée dans votre organisation.",
+      "otherMailbox": "Vous vous êtes connecté à une autre boîte que celle à renouveler.",
+      "renewAtHost": "L’accès à cette boîte se renouvelle en se connectant chez son hébergeur."
     },
     "oauth": {
       "notConfigured": "Ce fournisseur OAuth n’est pas configuré sur ce serveur.",

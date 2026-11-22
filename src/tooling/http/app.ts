@@ -57,6 +57,7 @@ import { connectMailboxByServers } from '../../domain/mailboxes/connect-mailbox-
 import { disconnectMailbox } from '../../domain/mailboxes/disconnect-mailbox.ts';
 import { fetchMailboxNow } from '../../domain/mailboxes/fetch-mailbox-now.ts';
 import { listFolders } from '../../domain/mailboxes/list-folders.ts';
+import { renewMailboxPassword } from '../../domain/mailboxes/renew-mailbox-credentials.ts';
 import { promptOf as organizationPrompt } from '../../domain/state/prompts.ts';
 import { createWorld } from '../../domain/world.ts';
 import type { Actor, World } from '../../domain/world.ts';
@@ -291,6 +292,11 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.json({ ok: true, folder: folder.id, folderName: folder.name });
   });
 
+  app.put('/api/accounts/:id/password', auth, async (req, res) => {
+    await renewMailboxPassword(world, actorOf(req), req.params.id, req.body.password);
+    res.json({ ok: true });
+  });
+
   app.delete('/api/accounts/:id', auth, async (req, res) => {
     await disconnectMailbox(world, actorOf(req), req.params.id);
     res.json({ ok: true });
@@ -302,7 +308,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   // ---- signing in at the mail host (Google / Microsoft) -------------------------------------
   app.get('/api/oauth/:kind/start', auth, async (req, res) => {
-    res.redirect(await beginHostSignIn(world, actorOf(req), req.user.sid, String(req.params.kind), req.query.shared === '1'));
+    res.redirect(await beginHostSignIn(world, actorOf(req), req.user.sid, String(req.params.kind), req.query.shared === '1', req.query.renew));
   });
 
   /** The member comes back from the host: the outcome travels in the URL, as a message code and its technical detail when there is one. */

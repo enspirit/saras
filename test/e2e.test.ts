@@ -258,6 +258,25 @@ test('a colleague does not reach a personal mailbox', async () => {
   assert.equal(takeover.body.code, 'accounts.alreadyConnected');
 });
 
+test('a mailbox is connected once; its access is renewed, by the one who manages it', async () => {
+  const [account] = (await me('GET', '/accounts')).body;
+  const again = await me('POST', '/accounts/imap', stack.imapAccount);
+  assert.equal(again.status, 409, 'not even by its owner: renewing is another operation');
+  assert.equal(again.body.code, 'accounts.alreadyConnected');
+
+  assert.equal((await eve('PUT', `/accounts/${account.id}/password`, { password: stack.imapAccount.password })).status, 404);
+  assert.equal((await me('PUT', `/accounts/${account.id}/password`, { password: '' })).body.code, 'accounts.passwordRequired');
+  const wrong = await me('PUT', `/accounts/${account.id}/password`, { password: 'nope' });
+  assert.equal(wrong.status, 400);
+  assert.equal(wrong.body.code, 'accounts.connectionFailed');
+  assert.equal((await me('POST', `/accounts/${account.id}/sync`)).body.error, null, 'a refused renewal leaves the access as it was');
+
+  assert.equal((await me('PUT', `/accounts/${account.id}/password`, { password: stack.imapAccount.password })).status, 200);
+  const [renewed] = (await me('GET', '/accounts')).body;
+  assert.deepEqual([renewed.id, renewed.folder, renewed.todo], [account.id, account.folder, account.todo], 'the folder watched and the emails kept do not change');
+  assert.equal((await me('POST', `/accounts/${account.id}/sync`)).body.error, null);
+});
+
 test('prompts belong to the organisation; only its administrators manage them', async () => {
   assert.equal((await me('GET', '/me')).body.role, 'admin', 'who creates the organisation administers it');
   assert.equal((await eve('GET', '/me')).body.role, 'user');

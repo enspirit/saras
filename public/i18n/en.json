@@ -277,7 +277,12 @@
     "keyLater": "Later",
     "serversProposed": "Filled in from the address. Check them with your mail provider if the connection fails.",
     "hostedSignIn": "{address} is hosted at {provider}: connect it by signing in there, no password is typed here.",
-    "hostedPassword": "{address} is hosted at {provider}, which usually refuses the mailbox’s own password. Use an application password, or ask whoever hosts this server to set up sign-in with {provider}."
+    "hostedPassword": "{address} is hosted at {provider}, which usually refuses the mailbox’s own password. Use an application password, or ask whoever hosts this server to set up sign-in with {provider}.",
+    "renew": "Renew access",
+    "renewTitle": "Renew access to {email}",
+    "renewIntro": "After a password change, or when the access granted to saras was withdrawn or ran out. The folder watched and the emails kept do not change.",
+    "renewed": "Access renewed.",
+    "newPassword": "New password"
   },
   "settings": {
     "title": "Settings",
@@ -491,7 +496,9 @@
       "unknownFolder": "This folder does not exist in the mailbox.",
       "foldersFailed": "Could not list the folders: {detail}",
       "adminOnly": "A shared mailbox is managed by administrators.",
-      "alreadyConnected": "This mailbox is already connected in your organisation."
+      "alreadyConnected": "This mailbox is already connected in your organisation.",
+      "otherMailbox": "You signed in to another mailbox than the one to renew.",
+      "renewAtHost": "Access to this mailbox is renewed by signing in at its host."
     },
     "oauth": {
       "notConfigured": "This OAuth provider is not configured on this server.",
