@@ -87,7 +87,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 
 - A confirmation states the consequences: their personal mailboxes, emails and replies stored in saras are erased; the mailboxes themselves are untouched.
 - The prompts and the shared mailboxes they created stay with the organisation.
-- I cannot delete my own account.
+- I cannot delete my own account from the list of users: that is done from my settings (US-68).
 
 ---
 
