@@ -8,29 +8,38 @@ import type { Vault } from './crypto.ts';
 import { seedDefaultPrompts } from './db.ts';
 import { defaultPrompts } from './default-prompts.ts';
 import type { Db } from './db.ts';
+import { proposalHtml } from './domain/computations/replying.ts';
+import { Refusal } from './domain/refusal.ts';
+import type { RefusalKind } from './domain/refusal.ts';
+import { checkTypos } from './domain/replying/check-typos.ts';
+import { fileReplyAsDraft } from './domain/replying/file-reply-as-draft.ts';
+import { improveStyle } from './domain/replying/improve-style.ts';
+import { sendReply } from './domain/replying/send-reply.ts';
+import { writeWithPrompt } from './domain/replying/write-with-prompt.ts';
+import { emailFor } from './domain/state/emails.ts';
+import type { OwnedEmailRow } from './domain/state/emails.ts';
+import { mayUse } from './domain/state/mailboxes.ts';
+import { promptOf as organizationPrompt } from './domain/state/prompts.ts';
+import type { Actor, World } from './domain/world.ts';
 import { errorMessage } from './errors.ts';
 import type { SessionUser } from './express.d.ts';
 import { LlmError, PRIVACY } from './llm/openrouter.ts';
 import { decodeProblem, problem, readReason } from './messages.ts';
 import type { MessageCode, MessageParams, Problem } from './messages.ts';
-import { isBlankHtml, sanitizeHtml, stripCodeFence, textToHtml } from './html.ts';
-import { buildPromptMessages, buildStyleMessages, buildTyposMessages } from './llm/prompts.ts';
 import type { MailService } from './mail/index.ts';
 import { lookupMailHost } from './mail/lookup.ts';
 import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from './mail/oauth.ts';
-import { replyRecipients, wasEdited } from './reply.ts';
+import { replyRecipients } from './reply.ts';
 import { llmSettings } from './llm/settings.ts';
 import { rowToEmail } from './sync.ts';
 import type { Sync } from './sync.ts';
 import { isTriageStrategy } from './triage/index.ts';
-import { htmlToText, isEmailAddress } from './text.ts';
+import { isEmailAddress } from './text.ts';
 import { AUTOMATIONS } from './types.ts';
 import type {
   AccountKind,
   AccountRow,
-  ChatMessage,
   DraftRow,
-  EmailRow,
   EmailStatus,
   Fetch,
   ImapCredentials,
@@ -77,8 +86,6 @@ function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
-/** An email row joined with the address of the mailbox it belongs to. */
-type OwnedEmailRow = EmailRow & { account_email: string; account_shared: boolean };
 
 interface Dependencies {
   config: Config;
@@ -90,7 +97,13 @@ interface Dependencies {
   fetchImpl?: Fetch;
 }
 
+/** The status that says each kind of refusal. */
+const STATUS: Record<RefusalKind, number> = { invalid: 400, forbidden: 403, notFound: 404, conflict: 409, gone: 410, upstream: 502 };
+
 export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetch }: Dependencies): Express {
+  /** What the operations of the domain act in, and on whose behalf. */
+  const world: World = { db, mail, llm, vault, config };
+  const actorOf = (req: Request): Actor => ({ member: req.user, organization: req.org });
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -152,7 +165,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     try {
       await handler(req, res);
     } catch (e) {
-      if (e instanceof HttpError && (e.status === 401 || e.status === 404)) {
+      if ((e instanceof HttpError && (e.status === 401 || e.status === 404)) || (e instanceof Refusal && e.kind === 'notFound')) {
         if (!entry || entry.reset <= now) failures.set(ip, { count: 1, reset: now + 15 * 60_000 });
         else entry.count += 1;
       }
@@ -340,7 +353,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   // ---- mail accounts ----------------------------------------------------------------------
   // A mailbox is reachable by its owner and, when shared, by every member of its organisation.
   // `a` is the alias of the accounts table; $org and $user are given positions by the caller.
-  const canUse = (org: string, user: string): string => `a.org_id = ${org} AND (a.user_id = ${user} OR a.shared)`;
+  const canUse = mayUse;
 
   const accountOf = async (req: Request): Promise<AccountRow> => {
     const account = await db.one<AccountRow>(`SELECT a.* FROM accounts a WHERE a.id = $1 AND ${canUse('$2', '$3')}`, [Number(req.params.id) || 0, req.org.id, req.user.id]);
@@ -508,11 +521,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
 
   // ---- prompts ----------------------------------------------------------------------------
   // Prompts belong to the organisation: shared by its members, maintained by its administrators.
-  const promptOf = async (req: Request, id: unknown = req.params.id): Promise<PromptRow> => {
-    const prompt = Number.isInteger(Number(id)) ? await db.one<PromptRow>('SELECT * FROM prompts WHERE id = $1 AND org_id = $2', [Number(id), req.org.id]) : undefined;
-    if (!prompt) throw new HttpError(404, 'prompts.notFound');
-    return prompt;
-  };
+  const promptOf = (req: Request, id: unknown = req.params.id): Promise<PromptRow> => organizationPrompt(db, req.org.id, id);
   const promptBody = (req: Request) => {
     const p = { name: str(req.body.name, 120), description: str(req.body.description, 500), systemPrompt: str(req.body.systemPrompt, 20_000) };
     if (!p.name || !p.systemPrompt) throw new HttpError(400, 'prompts.incomplete');
@@ -563,20 +572,6 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     await db.run('DELETE FROM prompts WHERE id = $1', [(await promptOf(req)).id]);
     res.json({ ok: true });
   });
-
-  /**
-   * What this user said when correcting drafts made with this prompt, most recent first.
-   * Corrections are personal ("I am on first-name terms with this client"): they steer the
-   * drafts of the user who made them, not those of colleagues.
-   */
-  const lessonsFor = async (promptId: number, userId: number): Promise<string[]> => {
-    const rows = await db.query<{ change_reason: string }>(
-      `SELECT change_reason FROM replies
-       WHERE prompt_id = $1 AND user_id = $2 AND was_edited AND change_reason != '' ORDER BY id DESC LIMIT 8`,
-      [promptId, userId],
-    );
-    return rows.map((r) => r.change_reason);
-  };
 
   /** For administrators: every user's corrections on a prompt, the raw material to improve it. */
   app.get('/api/prompts/:id/corrections', auth, adminOnly, async (req, res) => {
@@ -662,15 +657,7 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
   /** The boxes of the interface, and the statuses each one shows. */
   const BOXES: Record<string, EmailStatus[]> = { todo: ['needs_reply', 'pending'], none: ['no_reply'], sent: ['sent'], ignored: ['ignored'] };
 
-  const emailOf = async (req: Request): Promise<OwnedEmailRow> => {
-    const row = await db.one<OwnedEmailRow>(
-      `SELECT e.*, a.email AS account_email, a.shared AS account_shared FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = $1 AND ${canUse('$2', '$3')}`,
-      [Number(req.params.id) || 0, req.org.id, req.user.id],
-    );
-    if (!row) throw new HttpError(404, 'emails.notFound');
-    return row;
-  };
-
+  const emailOf = (req: Request): Promise<OwnedEmailRow> => emailFor(db, actorOf(req), req.params.id);
   app.get('/api/emails', auth, async (req, res) => {
     const statuses = BOXES[String(req.query.box)] || BOXES.todo!;
     const rows = await db.query(
@@ -727,112 +714,43 @@ export function createApp({ config, db, vault, mail, llm, sync, fetchImpl = fetc
     res.json({ ok: true });
   });
 
-  /** Pure: a stored proposal as HTML. One made before proposals were rich text is plain text. */
-  const proposalHtml = (draft: Pick<DraftRow, 'action' | 'ai_text'>): string => (draft.action ? draft.ai_text : textToHtml(draft.ai_text));
+  // ---- replying --------------------------------------------------------------------------
+  // The operations are in domain/replying: a route translates the request and calls one.
+  const ASSISTANCE = { typos: checkTypos, style: improveStyle, prompt: writeWithPrompt };
 
-  /**
-   * The LLM helps with what the user wrote in the reply area, in one of three ways:
-   *  - typos:  corrects spelling and grammar, nothing else;
-   *  - style:  rewrites for clarity and tone, same meaning;
-   *  - prompt: writes the reply with one of the organisation's prompts, from the email and
-   *            from what the user wrote (notes, instructions, a draft, or nothing).
-   * Only `prompt` sends the received email to the LLM.
-   */
   app.post('/api/emails/:id/assist', auth, async (req, res) => {
-    const row = await emailOf(req);
-    const action: unknown = req.body.action;
-    if (action !== 'typos' && action !== 'style' && action !== 'prompt') throw new HttpError(400, 'assist.invalidAction');
-    const html = sanitizeHtml(typeof req.body.html === 'string' ? req.body.html.slice(0, 200_000) : '');
-    const { apiKey, model } = llmSettings(req.user, req.org, { config, vault });
-
-    let messages: ChatMessage[];
-    let promptId: number | null = null;
-    if (action === 'prompt') {
-      if (!row.body_text) throw new HttpError(410, 'emails.contentErased');
-      const prompt = await promptOf(req, req.body.promptId);
-      promptId = prompt.id;
-      messages = buildPromptMessages({
-        email: rowToEmail(row),
-        prompt: { systemPrompt: prompt.system_prompt },
-        ownAddress: row.account_email,
-        signature: req.user.signature,
-        lessons: await lessonsFor(prompt.id, req.user.id),
-        html,
-      });
-    } else {
-      if (isBlankHtml(html)) throw new HttpError(400, 'assist.nothingWritten');
-      messages = action === 'typos' ? buildTyposMessages({ html }) : buildStyleMessages({ html });
+    const assist = ASSISTANCE[String(req.body.action) as keyof typeof ASSISTANCE];
+    if (!assist) {
+      // An email one may not see is not found, whatever else is wrong with the request.
+      await emailOf(req);
+      throw new HttpError(400, 'assist.invalidAction');
     }
-
-    const answer = await llm.chat({ apiKey, model, messages, maxTokens: 3000 });
-    // Whatever the model returned, only the elements a reply may contain are kept.
-    const proposed = sanitizeHtml(stripCodeFence(answer.text));
-    const created = await db.one<{ id: number }>('INSERT INTO drafts (email_id, action, prompt_id, model, ai_text) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
-      row.id,
-      action,
-      promptId,
-      answer.model,
-      proposed,
-    ]);
-    res.status(201).json({ id: created!.id, action, promptId, model: answer.model, provider: answer.provider, html: proposed });
+    res.status(201).json(await assist(world, actorOf(req), { emailId: req.params.id, html: req.body.html, promptId: req.body.promptId }));
   });
 
-  /** Emails with a delivery in flight, so that a double click cannot send twice. */
-  const sending = new Set<number>();
+  const replyRequest = (req: Request) => ({
+    emailId: req.params.id,
+    html: req.body.html,
+    to: addressList(req.body.to),
+    cc: addressList(req.body.cc),
+    proposalId: Number(req.body.draftId) || 0,
+    changeReason: str(req.body.changeReason, 1000),
+  });
 
-  /**
-   * Hand the reply over to the mailbox, either sent ('sent') or left in its drafts ('draft').
-   * Both record what the AI proposed, what the user made of it, and why.
-   */
-  const deliver = (mode: ReplyMode): RequestHandler => async (req, res) => {
-    const row = await emailOf(req);
-    // The reply is rich text; its plain-text form, for storage, comparison and mail clients, is derived from it.
-    const html = sanitizeHtml(typeof req.body.html === 'string' ? req.body.html.slice(0, 200_000) : '');
-    const text = htmlToText(html);
-    const to = addressList(req.body.to);
-    const cc = addressList(req.body.cc);
-    if (isBlankHtml(html)) throw new HttpError(400, 'reply.empty');
-    if (!to.length) throw new HttpError(400, 'reply.noRecipient');
-    const bad = [...to, ...cc].find((a) => !isEmailAddress(a));
-    if (bad) throw new HttpError(400, 'reply.invalidAddress', { address: bad });
-    if (row.status === 'sent' || sending.has(row.id)) throw new HttpError(409, 'emails.alreadyHandled');
-    // Claimed before the first await that follows, so that a second request cannot slip in between.
-    sending.add(row.id);
-    try {
-      const draft = Number(req.body.draftId) ? await db.one<DraftRow>('SELECT * FROM drafts WHERE id = $1 AND email_id = $2', [Number(req.body.draftId), row.id]) : undefined;
-      const account = await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1', [row.account_id]);
-      const provider = mail.providerFor(account!);
-      const reply = { email: rowToEmail(row), to, cc, html, language: req.user.language };
-      try {
-        await (mode === 'draft' ? provider.saveDraft(reply) : provider.send(reply));
-      } catch (e) {
-        throw new HttpError(502, mode === 'draft' ? 'reply.draftFailed' : 'reply.sendFailed', { detail: errorMessage(e) });
-      }
-      const proposedText = draft ? htmlToText(proposalHtml(draft)) : null;
-      const edited = draft ? wasEdited(proposedText, text) : false;
-      await db.transaction(async (tx) => {
-        await tx.run(
-          `INSERT INTO replies (email_id, user_id, prompt_id, ai_text, final_text, was_edited, change_reason, mode, to_json, cc_json, final_html)
-           VALUES ($1, $10, $2, $3, $4, $5, $6, $7, $8, $9, $11)`,
-          [row.id, draft?.prompt_id ?? null, proposedText, text, edited, edited ? str(req.body.changeReason, 1000) : '', mode, JSON.stringify(to), JSON.stringify(cc), req.user.id, html],
-        );
-        await tx.run(`UPDATE emails SET status = 'sent' WHERE id = $1`, [row.id]);
-      });
-      res.json({ ok: true, wasEdited: edited });
-    } finally {
-      sending.delete(row.id);
-    }
-  };
+  app.post('/api/emails/:id/send', auth, async (req, res) => {
+    res.json({ ok: true, ...(await sendReply(world, actorOf(req), replyRequest(req))) });
+  });
 
-  app.post('/api/emails/:id/send', auth, deliver('sent'));
-  app.post('/api/emails/:id/save-draft', auth, deliver('draft'));
+  app.post('/api/emails/:id/save-draft', auth, async (req, res) => {
+    res.json({ ok: true, ...(await fileReplyAsDraft(world, actorOf(req), replyRequest(req))) });
+  });
 
   // ---- errors -----------------------------------------------------------------------------
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'request.unknownRoute')));
   const onError: ErrorRequestHandler = (err: Error & { status?: number; statusCode?: number }, req, res, next) => {
     if (res.headersSent) return next(err);
-    const known = err instanceof HttpError || err instanceof LlmError;
-    const status = err instanceof LlmError ? 502 : err.status || err.statusCode || 500;
+    const known = err instanceof HttpError || err instanceof LlmError || err instanceof Refusal;
+    const status = err instanceof LlmError ? 502 : err instanceof Refusal ? STATUS[err.kind] : err.status || err.statusCode || 500;
     // Only the message is logged, never request bodies: they contain mail content.
     if (!known && status >= 500) console.error(`${req.method} ${req.path}: ${err.message}`);
     // Malformed requests refused by the framework (4xx) keep its own message, without a code.
