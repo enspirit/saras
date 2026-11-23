@@ -1,9 +1,11 @@
 // Routes: the members of an organisation and its invitations, for its administrators. The
 // operations are in domain/access.
 import { appointAdministrator } from '../../domain/access/appoint-administrator.ts';
+import { createPasswordResetLink } from '../../domain/access/create-password-reset-link.ts';
 import { deleteMember } from '../../domain/access/delete-member.ts';
 import { inviteMember } from '../../domain/access/invite-member.ts';
 import { removeAdministratorRole } from '../../domain/access/remove-administrator-role.ts';
+import { resetSecondFactor } from '../../domain/access/reset-second-factor.ts';
 import { revokeInvitation } from '../../domain/access/revoke-invitation.ts';
 import { invitationsOf, membersOf } from '../../domain/observations/members.ts';
 import { Refusal } from '../../domain/refusal.ts';
@@ -24,6 +26,13 @@ const revoke: Handle = async ({ world }, req, res) => {
 
 const remove: Handle = async ({ world }, req, res) => {
   await deleteMember(world, actorOf(req), req.params.id);
+  done(res);
+};
+
+const resetLink: Handle = async ({ world }, req, res) => void res.status(201).json(await createPasswordResetLink(world, actorOf(req), req.params.id));
+
+const resetFactor: Handle = async ({ world }, req, res) => {
+  await resetSecondFactor(world, actorOf(req), req.params.id);
   done(res);
 };
 
@@ -48,4 +57,6 @@ export const MEMBERS: Route[] = [
   { method: 'delete', path: '/invitations/:id', handle: revoke },
   { method: 'delete', path: '/members/:id', handle: remove },
   { method: 'put', path: '/members/:id', handle: changeRole, for: 'administrators' },
+  { method: 'post', path: '/members/:id/password-reset', handle: resetLink },
+  { method: 'delete', path: '/members/:id/second-factor', handle: resetFactor },
 ];

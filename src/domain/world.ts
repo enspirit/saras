@@ -3,6 +3,7 @@ import type { Config } from '../tooling/config.ts';
 import type { Vault } from '../tooling/crypto.ts';
 import type { Db } from '../tooling/db.ts';
 import type { MailService } from '../tooling/mail/mail-service.ts';
+import type { Postman } from '../tooling/postman.ts';
 import type { Llm } from './model/llm.ts';
 import type { UserRow } from './model/member.ts';
 import type { OrganizationRow } from './model/organization.ts';
@@ -26,9 +27,11 @@ export interface World extends Reach {
   handingOver: Set<number>;
   /** The fetching of mailboxes: one at a time per mailbox, whoever asks. */
   fetching: Sync;
+  /** The server's own outgoing mail, when it was given one. */
+  postman: Postman;
 }
 
-export const createWorld = (reach: Reach, fetching: Sync): World => ({ ...reach, attempts: new Map(), handingOver: new Set(), fetching });
+export const createWorld = (reach: Reach, fetching: Sync, postman: Postman): World => ({ ...reach, attempts: new Map(), handingOver: new Set(), fetching, postman });
 
 /** The member an operation is performed by, with their organisation. */
 export interface Actor {

@@ -9,13 +9,13 @@
 import { clipped, languageGiven } from '../computations/given.ts';
 import { Refusal } from '../refusal.ts';
 import { forgetInvitation, pendingInvitation } from '../state/invitations.ts';
-import { openSession } from '../state/sessions.ts';
-import type { Session } from '../state/sessions.ts';
 import type { World } from '../world.ts';
+import { admit } from './admit.ts';
+import type { Admission } from './admit.ts';
 import { withGuessingBrake } from './guessing-brake.ts';
 import { openAccount } from './open-account.ts';
 
-export function acceptInvitation(world: World, origin: string, given: { token?: unknown; password?: unknown; name?: unknown; language?: unknown }): Promise<Session> {
+export function acceptInvitation(world: World, origin: string, given: { token?: unknown; password?: unknown; name?: unknown; language?: unknown }): Promise<Admission> {
   const { db } = world;
   return withGuessingBrake(world, origin, async () => {
     const invitation = await pendingInvitation(db, given.token);
@@ -25,6 +25,6 @@ export function acceptInvitation(world: World, origin: string, given: { token?: 
       await forgetInvitation(tx, invitation.id);
       return id;
     });
-    return openSession(db, memberId);
+    return admit(world, memberId);
   });
 }

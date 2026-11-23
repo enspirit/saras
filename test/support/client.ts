@@ -27,17 +27,25 @@ export async function installTemplates(admin: ApiClient): Promise<void> {
   }
 }
 
-/** A browser-like API client: it keeps the session cookie between calls. */
+/** Keeps what the server sets, by name; a cookie set to nothing is forgotten. */
+function remember(jar: Map<string, string>, setCookies: string[]): void {
+  for (const set of setCookies) {
+    const [name = '', value = ''] = (set.split(';')[0] ?? '').split('=');
+    if (value) jar.set(name, value);
+    else jar.delete(name);
+  }
+}
+
+/** A browser-like API client: it keeps its cookies between calls. */
 export function createClient(baseUrl: () => string): ApiClient {
-  let cookie = '';
+  const jar = new Map<string, string>();
   return async (method, path, body, headers = { 'content-type': 'application/json' }) => {
     const res = await fetch(`${baseUrl()}/api${path}`, {
       method,
-      headers: { ...(method === 'GET' ? {} : headers), cookie },
+      headers: { ...(method === 'GET' ? {} : headers), cookie: [...jar].map(([name, value]) => `${name}=${value}`).join('; ') },
       body: method === 'GET' ? undefined : typeof body === 'string' ? body : JSON.stringify(body || {}),
     });
-    const set = res.headers.get('set-cookie');
-    if (set) cookie = set.split(';')[0] ?? '';
+    remember(jar, res.headers.getSetCookie());
     return { status: res.status, body: await res.json().catch(() => null) };
   };
 }

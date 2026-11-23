@@ -7,6 +7,8 @@ import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
 import { createWorld } from '../../domain/world.ts';
 import type { Reach } from '../../domain/world.ts';
 import type { Config } from '../config.ts';
+import { createPostman } from '../postman.ts';
+import type { Postman } from '../postman.ts';
 import type { Fetch } from '../fetch.ts';
 import { ACCESS } from './access.ts';
 import { EMAILS } from './emails.ts';
@@ -60,16 +62,18 @@ function serveApi(app: Express, http: Http): void {
 
 export interface Dependencies extends Reach {
   sync: Sync;
+  /** The server's own outgoing mail; none is configured from the configuration when it is not given. */
+  postman?: Postman;
   fetchImpl?: Fetch;
 }
 
-export function createApp({ sync, fetchImpl = fetch, ...reach }: Dependencies): Express {
+export function createApp({ sync, fetchImpl = fetch, postman, ...reach }: Dependencies): Express {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use(hardened);
   serveInterface(app, reach.config);
-  serveApi(app, { world: createWorld(reach, sync), fetchImpl });
+  serveApi(app, { world: createWorld(reach, sync, postman ?? createPostman(reach.config)), fetchImpl });
   app.use(tellRefusal);
   return app;
 }

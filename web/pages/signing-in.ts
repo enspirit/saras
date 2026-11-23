@@ -24,7 +24,7 @@ export const guarantees = (info: WhatVisitorsAreTold) => [
 ].filter((point) => point !== null && point !== false);
 
 /** What the installation says of itself; when it cannot be asked, sign-up is taken as closed. */
-export const publicInfo = (): Promise<WhatVisitorsAreTold> => readPublicInfo().catch((): WhatVisitorsAreTold => ({ allowSignup: false, firstAccount: false, retentionDays: 0 }));
+export const publicInfo = (): Promise<WhatVisitorsAreTold> => readPublicInfo().catch((): WhatVisitorsAreTold => ({ allowSignup: false, passwordResetByEmail: false, firstAccount: false, retentionDays: 0 }));
 
 interface SignInFields {
   email: HTMLInputElement;

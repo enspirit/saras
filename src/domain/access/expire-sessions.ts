@@ -3,7 +3,14 @@
 //   DomPre   sessions past their date
 //   DomPost  they are gone
 //   ReqTrig  every hour, and when the server starts
+import { forgetExpiredPasswordResets } from '../state/password-resets.ts';
+import { forgetExpiredSignIns } from '../state/second-factor.ts';
 import { forgetExpiredSessions } from '../state/sessions.ts';
 import type { Reach } from '../world.ts';
 
-export const expireSessions = async ({ db }: Pick<Reach, 'db'>): Promise<void> => void (await forgetExpiredSessions(db));
+/** With them go the sign-ins that waited too long for a second factor, and the links to a new password that ran out. */
+export async function expireSessions({ db }: Pick<Reach, 'db'>): Promise<void> {
+  await forgetExpiredSessions(db);
+  await forgetExpiredSignIns(db);
+  await forgetExpiredPasswordResets(db);
+}

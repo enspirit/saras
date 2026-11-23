@@ -13,6 +13,8 @@ export interface Member {
   createdAt: string;
   /** Number of personal mailboxes they connected. */
   mailboxes: number;
+  /** Whether they have set their second factor up. */
+  secondFactor: boolean;
 }
 
 export interface Invitation {
@@ -63,6 +65,8 @@ export interface Profile {
 /** What anyone may know before signing in. */
 export interface WhatVisitorsAreTold {
   allowSignup: boolean;
+  /** Whether a lost password can be replaced by a link sent by email; otherwise an administrator gives the link. */
+  passwordResetByEmail: boolean;
   /** No account exists yet: the next one created administers the installation. */
   firstAccount: boolean;
   retentionDays: number;

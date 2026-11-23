@@ -27,6 +27,8 @@ const joining = (env: Env) => ({
   // Closed by default: beyond the first account, people join through an administrator's invitation.
   allowSignup: env.ALLOW_SIGNUP === 'true',
   invitationDays: int(env.INVITATION_DAYS, 7),
+  // A second factor (a code from an authenticator app) is asked of every member at sign-in.
+  secondFactor: env.MFA_ENABLED === 'true',
   // How fetched emails are sorted: 'none' (the watched folder is the filter) or 'ai'.
   triageStrategy: env.TRIAGE_STRATEGY === 'ai' ? ('ai' as const) : ('none' as const),
   // Set plainly automated mail aside (newsletters, no-reply…) before any triage.
@@ -43,6 +45,9 @@ const fetching = (env: Env) => ({
 
 /** The other hosts this server talks to: the LLM, and the mail hosts members sign in at. */
 const otherHosts = (env: Env) => ({
+  // Outgoing mail of the server itself, for lost passwords: smtp(s)://user:password@host:port, and who it writes as.
+  smtpUrl: env.SMTP_URL || '',
+  mailFrom: env.MAIL_FROM || '',
   openrouter: {
     apiKey: env.OPENROUTER_API_KEY || '',
     model: env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5',

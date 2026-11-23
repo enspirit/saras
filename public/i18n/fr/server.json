@@ -15,7 +15,11 @@
     "passwordTooShort": "Mot de passe : 10 caractères minimum.",
     "emailTaken": "Un compte existe déjà avec cette adresse.",
     "signupClosed": "Les inscriptions sont fermées : demandez une invitation à un administrateur.",
-    "wrongPassword": "Ce n’est pas votre mot de passe actuel."
+    "wrongPassword": "Ce n’est pas votre mot de passe actuel.",
+    "wrongCode": "Ce code n’est pas le bon, ou a déjà servi.",
+    "signInExpired": "Cette connexion a pris trop de temps : recommencez avec votre mot de passe.",
+    "resetInvalid": "Ce lien n’est plus valable : demandez-en un nouveau.",
+    "resetNotByEmail": "Ce serveur n’envoie pas d’email : demandez à un administrateur un lien vers un nouveau mot de passe."
   },
   "invitation": {
     "invalid": "Invitation invalide ou expirée. Demandez-en une nouvelle à votre administrateur."

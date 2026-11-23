@@ -16,6 +16,12 @@ export interface UserRow {
   model: string | null;
   signature: string;
   openrouter_key_enc: string | null;
+  /** Their second factor: the secret their authenticator shares with us, sealed; null until they have one. */
+  totp_secret_enc: string | null;
+  /** The last 30-second step a code was accepted for: a code is good once. */
+  totp_last_step: number;
+  /** Hashes of the recovery codes they have left, as JSON. */
+  recovery_codes_json: string;
   created_at: Date;
 }
 

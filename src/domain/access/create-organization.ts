@@ -13,9 +13,9 @@ import { addressGiven, clipped, languageGiven } from '../computations/given.ts';
 import { isAnAddress, maySignUp, organizationNameFor, signUpIsOpen } from '../computations/access.ts';
 import { accepted } from '../refusal.ts';
 import { addFirstPrompt, addOrganization, installationIsEmpty } from '../state/members.ts';
-import { openSession } from '../state/sessions.ts';
-import type { Session } from '../state/sessions.ts';
 import type { World } from '../world.ts';
+import { admit } from './admit.ts';
+import type { Admission } from './admit.ts';
 import { withGuessingBrake } from './guessing-brake.ts';
 import { openAccount } from './open-account.ts';
 
@@ -27,7 +27,7 @@ export interface SignUp {
   language?: unknown;
 }
 
-export function createOrganization(world: World, origin: string, given: SignUp): Promise<Session> {
+export function createOrganization(world: World, origin: string, given: SignUp): Promise<Admission> {
   const { db, config } = world;
   return withGuessingBrake(world, origin, async () => {
     accepted(maySignUp(signUpIsOpen(config.allowSignup, await installationIsEmpty(db))));
@@ -41,6 +41,6 @@ export function createOrganization(world: World, origin: string, given: SignUp):
       await addFirstPrompt(tx, organizationId, id, language);
       return id;
     });
-    return openSession(db, memberId);
+    return admit(world, memberId);
   });
 }

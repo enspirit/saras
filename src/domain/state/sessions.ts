@@ -31,6 +31,9 @@ export type SessionMember = UserRow & { sid: string; oauth_state: string | null 
 export const memberOfSession = (db: Db, id: string): Promise<SessionMember | undefined> =>
   db.one<SessionMember>(`SELECT u.*, s.id AS sid, s.oauth_state FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = $1 AND s.expires_at > now()`, [id]);
 
+/** Closes every session of a member. */
+export const closeSessionsOf = (db: Db, memberId: number): Promise<number> => db.run('DELETE FROM sessions WHERE user_id = $1', [memberId]);
+
 export const forgetExpiredSessions = (db: Db): Promise<number> => db.run(`DELETE FROM sessions WHERE expires_at <= now()`);
 
 /** Counts a wrong guess from this origin: in a new window of fifteen minutes, or in the one in progress. */

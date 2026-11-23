@@ -6,7 +6,7 @@ import { isConfigured } from '../../tooling/mail/oauth.ts';
 import { signUpIsOpen } from '../computations/access.ts';
 import { llmSettings } from '../computations/key-in-force.ts';
 import { installationIsEmpty } from '../state/members.ts';
-import type { Actor, Reach } from '../world.ts';
+import type { Actor, Reach, World } from '../world.ts';
 
 /** The organisation as a member sees it; its model and whether it has a key are the administrators' business. */
 function organizationSeenBy({ member, organization }: Actor): Organization {
@@ -50,7 +50,7 @@ export const profileOf = (reach: Pick<Reach, 'config' | 'vault'>, actor: Actor):
  * strangers may do so is the operator's choice, and an empty installation always accepts its
  * first account. How long content is kept is public: the sign-in screen says so.
  */
-export async function whatVisitorsAreTold({ db, config }: Pick<Reach, 'db' | 'config'>): Promise<WhatVisitorsAreTold> {
+export async function whatVisitorsAreTold({ db, config, postman }: Pick<World, 'db' | 'config' | 'postman'>): Promise<WhatVisitorsAreTold> {
   const empty = await installationIsEmpty(db);
-  return { allowSignup: signUpIsOpen(config.allowSignup, empty), firstAccount: empty, retentionDays: config.retentionDays };
+  return { allowSignup: signUpIsOpen(config.allowSignup, empty), passwordResetByEmail: postman.configured, firstAccount: empty, retentionDays: config.retentionDays };
 }

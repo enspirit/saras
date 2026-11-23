@@ -10,6 +10,8 @@ import { createVault } from '../../src/tooling/crypto.ts';
 import type { Db } from '../../src/tooling/db.ts';
 import { createApp } from '../../src/tooling/http/server.ts';
 import { createOpenRouter } from '../../src/tooling/llm/openrouter.ts';
+import { createPostman } from '../../src/tooling/postman.ts';
+import type { Postman } from '../../src/tooling/postman.ts';
 import { createMailService } from '../../src/tooling/mail/mail-service.ts';
 import { testDatabase } from './database.ts';
 import { fakeOpenRouter } from './language-model.ts';
@@ -29,6 +31,8 @@ interface StackOptions {
   messages?: Messages;
   /** Environment variables overriding the test defaults. */
   env?: Record<string, string>;
+  /** Gives the server its own outgoing mail, through the test SMTP server: what it sends lands in the outbox. */
+  ownMail?: boolean;
 }
 
 const testConfig = (openrouterPort: number, env: Record<string, string>): Config =>
@@ -42,12 +46,12 @@ const testConfig = (openrouterPort: number, env: Record<string, string>): Config
   });
 
 /** The application, wired as main.ts wires it, listening on a free port. */
-async function startApplication(config: Config, db: Db): Promise<Server> {
+async function startApplication(config: Config, db: Db, postman: Postman): Promise<Server> {
   const vault = createVault(config.appSecret);
   const mail = createMailService({ db, vault, config });
   const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
   const sync = createSync({ db, mail, triage: createTriage({ config, vault, llm }), config, llm, vault });
-  const http = createApp({ config, db, vault, mail, llm, sync }).listen(0, '127.0.0.1');
+  const http = createApp({ config, db, vault, mail, llm, sync, postman }).listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => http.once('listening', () => resolve()));
   return http;
 }
@@ -72,11 +76,15 @@ async function stopAll(http: Server, llm: Server, { imap, smtp }: Mailbox, drop:
   await drop();
 }
 
-export async function startStack({ messages = INBOX, folders = {}, env = {} }: StackOptions = {}) {
+/** The server's own mail: through the test SMTP server when asked, none otherwise. */
+const postmanFor = (ownMail: boolean, smtpPort: number): Postman =>
+  createPostman({ smtpUrl: ownMail ? `smtp://saras:testpass@127.0.0.1:${smtpPort}` : '', mailFrom: 'saras@server.example' });
+
+export async function startStack({ messages = INBOX, folders = {}, env = {}, ownMail = false }: StackOptions = {}) {
   const mailbox = await startMailbox(messages, folders);
   const openrouter = fakeOpenRouter();
   const { db, drop } = await testDatabase();
-  const http = await startApplication(testConfig(await listen(openrouter.server), env), db);
+  const http = await startApplication(testConfig(await listen(openrouter.server), env), db, postmanFor(ownMail, mailbox.imapAccount.smtpPort));
   return {
     url: `http://127.0.0.1:${(http.address() as AddressInfo).port}`,
     db,

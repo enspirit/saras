@@ -7,7 +7,8 @@ type Kept<T, K extends keyof T> = Omit<T, K> & Record<K, Date>;
 /** Each member, with how many personal mailboxes they connected. */
 export async function membersOf(db: Db, organizationId: number): Promise<Member[]> {
   const members = await db.query<Kept<Member, 'createdAt'>>(
-    `SELECT u.id, u.email, u.name, u.role, u.created_at AS "createdAt", (SELECT count(*)::int FROM accounts a WHERE a.user_id = u.id AND NOT a.shared) AS mailboxes
+    `SELECT u.id, u.email, u.name, u.role, u.created_at AS "createdAt", (SELECT count(*)::int FROM accounts a WHERE a.user_id = u.id AND NOT a.shared) AS mailboxes,
+            u.totp_secret_enc IS NOT NULL AS "secondFactor"
      FROM users u WHERE u.org_id = $1 ORDER BY u.id`,
     [organizationId],
   );

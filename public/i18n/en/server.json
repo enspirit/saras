@@ -15,7 +15,11 @@
     "passwordTooShort": "Password: 10 characters minimum.",
     "emailTaken": "An account already exists with this address.",
     "signupClosed": "Sign-up is closed: ask an administrator for an invitation.",
-    "wrongPassword": "This is not your current password."
+    "wrongPassword": "This is not your current password.",
+    "wrongCode": "This code is not the right one, or was already used.",
+    "signInExpired": "This sign-in took too long: start again with your password.",
+    "resetInvalid": "This link is no longer valid: ask for a new one.",
+    "resetNotByEmail": "This server sends no email: ask an administrator for a link to a new password."
   },
   "invitation": {
     "invalid": "Invalid or expired invitation. Ask your administrator for a new one."
