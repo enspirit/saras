@@ -1,6 +1,7 @@
 // Reading an email: its header, the decisions about it, its text, and under it the reply
 // that was sent or the place to write one.
 
+import { attributesOfEmail } from './email-attributes.ts';
 import type { EmailWithItsReply } from '../../shared/email.ts';
 import type { Prompt } from '../../shared/prompt.ts';
 import type { Reply } from '../../shared/reply.ts';
@@ -11,7 +12,7 @@ import { fmtFull, fmtWhen } from '../i18n/dates.ts';
 import { ActionButton, toast } from './actions.ts';
 import { called } from './people.ts';
 import { replyArea } from './replying.ts';
-import { me } from '../session.ts';
+import { me, session } from '../session.ts';
 import { Badge } from '../ui/atoms/badge.ts';
 import { Button } from '../ui/atoms/button.ts';
 import { Notice } from '../ui/atoms/notice.ts';
@@ -115,7 +116,8 @@ export function emailDetail(email: EmailWithItsReply, prompts: Prompt[], backHre
   const header = emailHeader(email, done);
   const original = email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased'));
   const sent = replyOf(email);
-  if (sent) return Reading({ header }, original, sentReply(sent));
-  if (isWaiting(email)) return Reading({ header, dock: replyArea(email, prompts, done) }, original);
-  return Reading({ header, dock: closedReplyArea(email, prompts, done) }, original);
+  const attributes = attributesOfEmail(email, session.attributes);
+  if (sent) return Reading({ header }, attributes, original, sentReply(sent));
+  if (isWaiting(email)) return Reading({ header, dock: replyArea(email, prompts, done) }, attributes, original);
+  return Reading({ header, dock: closedReplyArea(email, prompts, done) }, attributes, original);
 }

@@ -55,6 +55,14 @@ export const MESSAGES = {
   'mailboxes.foldersFailed': 'Could not list the folders: {detail}',
 
   // Prompts and emails
+  'attributes.notFound': 'Attribute not found.',
+  'attributes.nameRequired': 'An attribute needs a name.',
+  'attributes.valuesRequired': 'A choice needs at least two values.',
+  'attributes.ruleRequired': 'An attribute decided by a rule needs its rule.',
+  'attributes.ruleInvalid': 'The rule cannot be read: {detail}',
+  'attributes.systemFixed': 'The name and the values of a pre-configured attribute are fixed.',
+  'attributes.valueUnknown': 'This is not a value of the attribute.',
+  'attributes.aiNotYet': 'The AI does not decide the attributes an organisation makes yet: choose a rule, or nobody.',
   'boards.notFound': 'Board not found.',
   'boards.nameRequired': 'A board needs a name.',
   'boards.sharedByAdministrators': 'Only administrators share a board with the organisation.',

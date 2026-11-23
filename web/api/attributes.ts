@@ -1,0 +1,12 @@
+// Attributes: what an organisation wants to know of each email. One function per operation of OPERATIONS.md.
+import type { Attribute, AttributeGiven, RuleTried } from '../../shared/attribute.ts';
+import { api } from '../api.ts';
+
+export const readAttributes = (): Promise<Attribute[]> => api<Attribute[]>('GET', '/attributes');
+export const createAttribute = (attribute: AttributeGiven): Promise<Attribute> => api<Attribute>('POST', '/attributes', attribute);
+export const editAttribute = (key: string, attribute: AttributeGiven): Promise<Attribute> => api<Attribute>('PUT', `/attributes/${key}`, attribute);
+export const deleteAttribute = (key: string): Promise<unknown> => api('DELETE', `/attributes/${key}`);
+/** What a rule would say of recent emails, without changing any. `key` names the attribute being changed, `values` those typed for a new one. */
+export const tryRule = (elo: string, key: string | null, values: string[]): Promise<RuleTried[]> => api<RuleTried[]>('POST', '/attributes/try', { elo, key, values });
+/** SetEmailAttribute: a value by hand, or null to take it away. */
+export const setEmailAttribute = (emailId: number, key: string, value: string | null): Promise<unknown> => api('PUT', `/emails/${emailId}/attributes/${key}`, { value });

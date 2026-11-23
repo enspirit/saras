@@ -58,10 +58,10 @@ export const keepFetched = async (db: Db, mailboxId: number, folder: string, ema
   void (await db.run(
     `INSERT INTO emails
        (account_id, folder, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
-        subject, date, body_text, attachments_json, status, triage_source, triage_reason)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        subject, date, body_text, attachments_json, status, triage_source, triage_reason, priority, attributes_json, headers_json)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
      ON CONFLICT (account_id, folder, provider_id) DO NOTHING`,
-    [mailboxId, folder, ...whoAndWhat(email), standing.status, standing.source, standing.reason],
+    [mailboxId, folder, ...whoAndWhat(email), standing.status, standing.source, standing.reason, standing.priority, JSON.stringify(standing.attributes), JSON.stringify(email.headers ?? {})],
   ));
 
 /** The emails of a mailbox that wait to be sorted, most recent first. */
@@ -70,7 +70,9 @@ export const emailsWaiting = (db: Db, mailboxId: number): Promise<EmailRow[]> =>
 
 /** Records what a gate decided about an email, if it still waits. */
 export const keepVerdict = async (db: Db, gate: string, decision: TriageDecision): Promise<void> =>
-  void (await db.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3, priority = $4, suggested_prompt_id = $5 WHERE id = $6 AND status = 'pending'`, [
+  void (await db.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3, suggested_prompt_id = $5,
+       priority = CASE WHEN attributes_json::jsonb ? 'priority' THEN priority ELSE $4 END
+     WHERE id = $6 AND status = 'pending'`, [
     decision.replyNeeded ? 'needs_reply' : 'no_reply',
     gate,
     decision.reason ?? '',

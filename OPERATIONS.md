@@ -63,7 +63,9 @@ Essential state only: what another agent can observe.
 | Reply in progress | What a member has written or changed in the reply area, its recipients, the reason for an edit. | Frontend | The member | the editor and fields of the composer (lost on leaving the page) |
 | Reply | What was handed to the mailbox for an email: sent or filed as a draft, to whom, by whom, whether the proposal was edited and why. | Backend | Members | `replies` |
 | Prompt | A way of replying: name, when to use it, instructions. | Backend | Administrators (members: name and description) | `prompts` |
-| Board | A named view of emails: a filter on their attributes (mailbox, box, priority, how recent, sender, keywords, attachments), personal or shared. | Backend | Its owner; every member when shared | `boards` (the filter as JSON); `shared/board.ts` |
+| Board | A named view of emails: a filter on their attributes and on their facts (mailbox, how recent, sender, keywords, attachments), personal or shared. | Backend | Its owner; every member when shared | `boards` (the filter as JSON); `shared/board.ts` |
+| Attribute | Something the organisation wants to know of each email: a choice among values, or a member. Two are pre-configured, with fixed values: "Stands in" and "Priority". Each says who decides it: nobody, a rule written in Elo, the AI, or the rule then the AI. | Backend | Members; administrators change them | `attributes`; for "Stands in", `organizations.skip_automated` and `.triage_strategy`; `shared/attribute.ts` |
+| Value of an email for an attribute | The value, and who decided it: a rule, the AI, a member by hand. | Backend | Members who may use its mailbox | `emails.status`, `.priority`, `.attributes_json` |
 | Mailbox contents | The messages, drafts and flags at the provider. | Mail provider | Backend, the member in their mail client | outside saras |
 
 Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`), replies on their way to the mailbox (`World.handingOver`), the sign-in under way at a mail host (`sessions.oauth_state`), box counts cached in the frontend.
@@ -124,7 +126,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **RenameOrganization** | Administrator | → the organisation's name | Administrator | An empty name changes nothing | Settings → Organisation · `PUT /organization` |
 | **ChooseSorting** | Administrator | → fetched emails are sorted by nobody, or by the AI, from the next fetch on | Administrator · `none` or `ai` | What was fetched before stays as it was sorted | Settings → Organisation; step 1 of "Sorting and writing" in the tour · `PUT /organization` |
 | **ChooseWriting** | Administrator | → proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts | Administrator · one of those three | Nothing sends by itself | same; step 2 of "Sorting and writing" |
-| **SetAsideAutomatedFirst** | Administrator | → on or off | Administrator | | Settings → Organisation · `PUT /organization` |
+| **SetAsideAutomatedFirst** | Administrator | → the rule of "Stands in" is applied, or not | Administrator | | Settings → Organisation · `PUT /organization`; the same as choosing who decides "Stands in" |
 | **SetOrganizationModel** | Administrator | → the default model, or none (the server's applies) | Administrator · looks like `provider/model` | | same |
 | **SetOrganizationKey** / **RemoveOrganizationKey** | Administrator | → the organisation has a key / has none | Administrator | Stored sealed | same; the key step of the tour |
 
@@ -171,6 +173,20 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **AddReadyMadePrompt** | Administrator | A template the organisation does not have → a prompt with its content | same | | "Add" · `GET /prompts/ready-made` then `POST /prompts` |
 | **EditPrompt** | Administrator | A prompt → with a new name, description, instructions | same · of their organisation | | "Save" · `PUT /prompts/:id` |
 | **DeletePrompt** | Administrator | A prompt → none | Administrator · of their organisation | Emails, proposals and replies that named it keep going without it | red bin · `DELETE /prompts/:id` |
+
+### Attributes
+
+| Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
+| --- | --- | --- | --- | --- | --- |
+| **CreateAttribute** | Administrator | → the organisation has one more attribute | Administrator · a name · two values for a choice · decided by a rule: it has one, which Elo can read · not left to the AI (not yet) | Emails fetched from then on get its value from its rule | Configuration → Attributes → "New attribute" · `POST /attributes` |
+| **EditAttribute** | Administrator | An attribute → decided this way; one the organisation made also has this name and these values | Administrator · the same as above | Of the two pre-configured ones only how they are decided changes · "Stands in": that is the organisation's two sorting settings | pencil in Attributes · `PUT /attributes/:key` |
+| **DeleteAttribute** | Administrator | An attribute the organisation made → none | Administrator · not pre-configured | | "Delete the attribute" · `DELETE /attributes/:key` |
+| **SortByRules** | Backend | An email just fetched → it has, for each attribute whose rule speaks of it, that value, as the rule's | | A rule that says nothing, fails or runs too long leaves the attribute undecided · "Stands in" undecided, the email waits to be sorted · a rule cannot mark an email as replied | part of FetchMailbox (`sorting/sort-by-rules.ts`) |
+| **SetEmailAttribute** | Member | An email → it has this value for the attribute, as the member's, or none | May use the email's mailbox · a value of the attribute · not "Stands in" | Not overwritten by later sorting | the selects above an email · `PUT /emails/:id/attributes/:key` |
+
+Observations: `GET /attributes`; `POST /attributes/try` (what a rule would say of the member's twenty most recent emails, changing none).
+
+The rule "Stands in" starts with is in `computations/default-rules.ts`: what used to be built-in header rules, now written in Elo and open to change.
 
 ### Boards
 

@@ -1,4 +1,5 @@
 // An email, where it stands, and the boxes members see their emails in.
+import type { ValueOfEmail } from './attribute.ts';
 import type { Proposal, Reply, ReplyMode } from './reply.ts';
 
 /** Where an email stands: waiting to be sorted, to handle, needing no reply, ignored, replied. */
@@ -38,6 +39,8 @@ export interface EmailSummary {
   shared: boolean;
   /** How it was replied to, when it was. */
   replyMode: ReplyMode | null;
+  /** Its values for the attributes of the organisation, by the attribute's key, and who decided each. */
+  attributes: Record<string, ValueOfEmail>;
 }
 
 /** The most recent emails of a box, with how many each box holds. */
@@ -73,6 +76,8 @@ export interface EmailWithItsReply {
   triageReason: string;
   triageReasonCode: string | null;
   suggestedPromptId: number | null;
+  /** Its values for the attributes of the organisation, by the attribute's key, and who decided each. */
+  attributes: Record<string, ValueOfEmail>;
   recipients: Recipients;
   /** Recipients of a reply to all. */
   recipientsAll: Recipients;

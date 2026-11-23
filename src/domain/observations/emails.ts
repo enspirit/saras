@@ -13,22 +13,20 @@ import { emailFor } from '../state/emails.ts';
 import { mayUse } from '../state/mailboxes.ts';
 import type { Actor } from '../world.ts';
 
-type Kept<T, K extends keyof T> = Omit<T, K> & Record<K, Date>;
-
 /** The emails a member may see, among those of their organisation's mailboxes they may use: parameters $1 and $2. */
 export const SEEN_BY_MEMBER = `FROM emails e JOIN accounts a ON a.id = e.account_id WHERE ${mayUse('$1', '$2')}`;
 
 /** The 200 most recent emails a member may see that meet these conditions, whose parameters are numbered from $3. */
 export async function emailSummaries(db: Db, { member, organization }: Actor, { sql, params }: Conditions): Promise<EmailSummary[]> {
-  const emails = await db.query<Kept<EmailSummary, 'date'>>(
+  const emails = await db.query<Omit<EmailSummary, 'date' | 'attributes'> & { date: Date; attributesJson: string }>(
     `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status, e.priority,
-            e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS mailbox, a.shared,
+            e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS mailbox, a.shared, e.attributes_json AS "attributesJson",
             (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
      ${[SEEN_BY_MEMBER, ...sql].join(' AND ')}
      ORDER BY e.date DESC LIMIT 200`,
     [organization.id, member.id, ...params],
   );
-  return emails.map((email) => ({ ...email, date: email.date.toISOString() }));
+  return emails.map(({ attributesJson, ...email }) => ({ ...email, date: email.date.toISOString(), attributes: JSON.parse(attributesJson) }));
 }
 
 const listed = (db: Db, actor: Actor, statuses: readonly EmailStatus[]): Promise<EmailSummary[]> => emailSummaries(db, actor, { sql: ['e.status = ANY($3)'], params: [statuses] });
@@ -73,6 +71,7 @@ export async function emailWithItsReply(db: Db, actor: Actor, id: unknown): Prom
     ...email,
     triageReason: reason.text,
     triageReasonCode: reason.code,
+    attributes: JSON.parse(row.attributes_json),
     mailbox: row.account_email,
     shared: row.account_shared,
     recipients: replyRecipients(email, row.account_email, false),

@@ -18,7 +18,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 | Area | Stories |
 | --- | --- |
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
-| [J. Boards](#j-boards) | US-90 – US-92 |
+| [J. Boards and attributes](#j-boards) | US-90 – US-96 |
 | [B. Mailboxes](#b-mailboxes) | US-10 – US-17 |
 | [C. Triage and the four boxes](#c-triage-and-the-four-boxes) | US-20 – US-25 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
@@ -490,7 +490,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** a member, **I want** to make a board that shows the emails meeting conditions I choose, **so that** I look at my mail the way my work is organised (a client, a subject, what is urgent).
 
 - **New board** in the menu, under **Boards**, above Configuration. A board has a name and a filter.
-- The filter is made of the attributes of an email: the mailboxes it arrived in, where it stands (to handle, no reply needed, replied, ignored), its priority, how recently it was received, its sender (part of a name, an address or a domain), keywords (every word must appear in the subject or the text), and whether it has attachments.
+- The filter is made of the organisation's attributes (US-93: where the email stands, its priority, and those the organisation made) and of the facts of an email: the mailboxes it arrived in, how recently it was received, its sender (part of a name, an address or a domain), keywords (every word must appear in the subject or the text), and whether it has attachments.
 - An email is shown when it meets every condition given; within a condition made of several values, any of them. A condition left empty keeps every email.
 - A board is a view: it moves nothing, and deleting it leaves its emails where they are.
 
@@ -506,3 +506,31 @@ These are behaviours of the system rather than screens, but they are what the pr
 - A board is its owner's alone unless an administrator shares it. A shared board is managed by administrators.
 - Through a shared board, each member sees only the emails of mailboxes they may use.
 - When the member who shared a board leaves, the board stays with the organisation.
+
+### US-93 — Give emails our own attributes
+**As** an administrator, **I want** to define the attributes we organise ourselves by (a topic, an assignee, urgent or not), **so that** boards can show our mail the way we work.
+
+- **Configuration → Attributes** lists the organisation's attributes. Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
+- A new attribute is a choice among values I type, or a member of the organisation.
+- Each attribute says who decides it when an email is sorted: nobody (set by hand), a rule, the AI, or the rule then the AI where the rule says nothing. The AI decides only the two pre-configured attributes for now.
+
+### US-94 — Sort with rules that cost nothing and say what they do
+**As** an administrator, **I want** to write the rule that decides an attribute, **so that** sorting is transparent and uses no AI tokens.
+
+- A rule is written in Elo (elo-lang.org). It is given the email (sender, recipients, subject, text, attachments, mailbox, date, a few headers) and answers one of the attribute's values, or nothing.
+- The rule that sets automated mail aside is the rule of **Stands in**: it is there to read, and I can change it.
+- **Try it on recent emails** shows what a rule would say of my twenty most recent emails, without changing any.
+- A rule Elo cannot read is refused with Elo's own message. A rule that fails or runs too long on an email leaves the attribute undecided for that email.
+- Rules apply to the emails fetched from then on.
+
+### US-95 — Set an attribute by hand
+**As** a member, **I want** to set or correct the value of an attribute on an email, **so that** it shows on the right boards whatever the rules said.
+
+- Above an email, each attribute but **Stands in** is a list of its values; the line says who decided the current one (its rule, the AI, by hand).
+- A value I set is recorded as set by hand and is not overwritten by later sorting.
+- Where an email stands is changed by acting on it: the sorting corrections, a reply.
+
+### US-96 — Filter a board on any attribute
+**As** a member, **I want** a board to filter on the organisation's attributes, **so that** a board is "Sales, to handle" or "Assigned to me".
+
+- The board form has one line of values per attribute; within a line any ticked value matches, and a line with nothing ticked keeps every email.

@@ -1,5 +1,5 @@
 // Pure: boards — what a filter given is reduced to, the conditions it puts on emails, who manages a board.
-import { PRIORITIES } from '../../../shared/board.ts';
+import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
 import type { BoardFilter, BoardGiven } from '../../../shared/board.ts';
 import { BOXES } from '../../../shared/email.ts';
 import type { Box, EmailStatus } from '../../../shared/email.ts';
@@ -8,24 +8,28 @@ import type { Verdict } from '../refusal.ts';
 import type { Actor } from '../world.ts';
 import { clipped } from './given.ts';
 
-const BOX_NAMES = Object.keys(BOXES) as Box[];
-const among = <T>(known: readonly T[], value: unknown): T[] => (Array.isArray(value) ? known.filter((item) => value.includes(item)) : []);
 const numbers = (value: unknown): number[] => (Array.isArray(value) ? [...new Set(value.map(Number).filter((n) => Number.isInteger(n) && n > 0))] : []);
 const days = (value: unknown): number => (Number.isInteger(Number(value)) && Number(value) > 0 ? Math.min(Number(value), 3650) : 0);
+const texts = (value: unknown): string[] => (Array.isArray(value) ? [...new Set(value.map((v) => clipped(v, 60)).filter(Boolean))] : []);
 
-/** The conditions made of a choice among known values: kept only when something is chosen. */
-function choicesGiven(given: Record<string, unknown>): BoardFilter {
-  const filter: BoardFilter = {};
-  if (numbers(given.mailbox).length) filter.mailbox = numbers(given.mailbox);
-  if (among(BOX_NAMES, given.box).length) filter.box = among(BOX_NAMES, given.box);
-  if (among(PRIORITIES, given.priority).length) filter.priority = among(PRIORITIES, given.priority);
-  return filter;
+/** The key of an attribute as a filter may name it: one of the two pre-configured, or the number of one the organisation made. */
+const isAttributeKey = (key: string): boolean => key === STATUS || key === PRIORITY || /^[0-9]+$/.test(key);
+
+/** The conditions on attributes: by key, the values kept. A filter made before attributes existed named two of them itself. */
+function attributesGiven(given: Record<string, unknown>): Record<string, string[]> {
+  const named: Record<string, unknown> = given.attributes && typeof given.attributes === 'object' ? { ...given.attributes } : {};
+  named[STATUS] ??= given.box;
+  named[PRIORITY] ??= given.priority;
+  const kept = Object.entries(named).filter(([key, values]) => isAttributeKey(key) && texts(values).length);
+  return Object.fromEntries(kept.map(([key, values]) => [key, texts(values)]));
 }
 
-/** A filter as it is kept: only the attributes we know, only the conditions that say something. */
+/** A filter as it is kept: only what we know how to filter on, only the conditions that say something. */
 export function filterGiven(value: unknown): BoardFilter {
   const given = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
-  const filter = choicesGiven(given);
+  const filter: BoardFilter = {};
+  if (Object.keys(attributesGiven(given)).length) filter.attributes = attributesGiven(given);
+  if (numbers(given.mailbox).length) filter.mailbox = numbers(given.mailbox);
   if (days(given.received)) filter.received = days(given.received);
   if (clipped(given.from, 200)) filter.from = clipped(given.from, 200);
   if (clipped(given.keywords, 200)) filter.keywords = clipped(given.keywords, 200);
@@ -57,31 +61,39 @@ export interface Conditions {
 }
 
 /** A text to find anywhere in a column: `%`, `_` and the escape character itself are taken literally. */
-const containing = (text: string): string => `%${text.replace(/[\\%_]/g, (special) => `\\${special}`)}%`;
+const containing = (text: string): string => '%' + text.replace(/[\\%_]/g, (special) => '\\' + special) + '%';
 
-const statusesOf = (boxes: Box[]): EmailStatus[] => boxes.flatMap((box) => [...BOXES[box]]);
+/** The statuses the values of "Stands in" stand for: an email waiting to be sorted is to handle. */
+const statusesOf = (values: string[]): EmailStatus[] => values.flatMap((value) => [...(BOXES[value as Box] ?? [])]);
 
 /** One condition: its SQL, given the number of its parameter, and that parameter. */
 type Part = [write: (n: number) => string, param: unknown];
+const part = (sql: string, param: unknown): Part => [(n) => sql.replaceAll('?', '$' + n), param];
 
-/** The conditions on what an email is: where it arrived, where it stands, how urgent, how recent. */
+/** The condition one attribute puts: where the email stands and its priority have their own columns, the others are kept together. */
+function onAttribute(key: string, values: string[]): Part {
+  if (key === STATUS) return part('e.status = ANY(?)', statusesOf(values));
+  if (key === PRIORITY) return part('e.priority = ANY(?)', values);
+  return part("(e.attributes_json::jsonb -> '" + Number(key) + "' ->> 'value') = ANY(?)", values);
+}
+
+/** The conditions on what an email is: its attributes, where it arrived, how recent. */
 const whatItIs = (filter: BoardFilter): Part[] => [
-  ...(filter.mailbox ? [[(n: number) => `e.account_id = ANY($${n})`, filter.mailbox] as Part] : []),
-  ...(filter.box ? [[(n: number) => `e.status = ANY($${n})`, statusesOf(filter.box)] as Part] : []),
-  ...(filter.priority ? [[(n: number) => `e.priority = ANY($${n})`, filter.priority] as Part] : []),
-  ...(filter.received ? [[(n: number) => `e.date > now() - make_interval(days => $${n})`, filter.received] as Part] : []),
+  ...Object.entries(filter.attributes ?? {}).map(([key, values]) => onAttribute(key, values)),
+  ...(filter.mailbox ? [part('e.account_id = ANY(?)', filter.mailbox)] : []),
+  ...(filter.received ? [part('e.date > now() - make_interval(days => ?)', filter.received)] : []),
 ];
 
 /** The conditions on what an email says: who wrote it, and the words it holds, each of which must appear. */
 const whatItSays = (filter: BoardFilter): Part[] => [
-  ...(filter.from ? [[(n: number) => `(e.from_name ILIKE $${n} OR e.from_addr ILIKE $${n})`, containing(filter.from)] as Part] : []),
-  ...(filter.keywords ?? '').split(/\s+/).filter(Boolean).map((word): Part => [(n) => `(e.subject ILIKE $${n} OR e.body_text ILIKE $${n})`, containing(word)]),
+  ...(filter.from ? [part('(e.from_name ILIKE ? OR e.from_addr ILIKE ?)', containing(filter.from))] : []),
+  ...(filter.keywords ?? '').split(/\s+/).filter(Boolean).map((word) => part('(e.subject ILIKE ? OR e.body_text ILIKE ?)', containing(word))),
 ];
 
 /** The conditions a filter puts on emails, their parameters numbered from `first`. */
 export function conditionsOf(filter: BoardFilter, first: number): Conditions {
   const parts = [...whatItIs(filter), ...whatItSays(filter)];
   const sql = parts.map(([write], index) => write(first + index));
-  if (filter.attachment !== undefined) sql.push(filter.attachment ? `e.attachments_json <> '[]'` : `e.attachments_json = '[]'`);
+  if (filter.attachment !== undefined) sql.push(filter.attachment ? "e.attachments_json <> '[]'" : "e.attachments_json = '[]'");
   return { sql, params: parts.map(([, param]) => param) };
 }

@@ -7,7 +7,9 @@ import { isSignedOut } from './api.ts';
 import { chooseLanguage } from './api/settings.ts';
 import { initI18n, language, t } from './i18n.ts';
 import { invitationToken, passwordResetToken, route, wireNavigation } from './navigation.ts';
+import { attributesPage } from './pages/attributes.ts';
 import { boardPage } from './pages/board.ts';
+import { editAttributePage } from './pages/edit-attribute.ts';
 import { editBoardPage } from './pages/edit-board.ts';
 import { newPasswordPage } from './pages/lost-password.ts';
 import { invitationPage } from './pages/accepting-invitation.ts';
@@ -25,7 +27,7 @@ import { screenIsBlank, showScreen } from './pages/screen.ts';
 import { settingsPage } from './pages/settings.ts';
 import { morePage } from './pages/shell.ts';
 import { signingInPage } from './pages/signing-in.ts';
-import { isAdmin, needsKey, refreshBoards, refreshMe, session } from './session.ts';
+import { isAdmin, needsKey, refreshAttributes, refreshBoards, refreshMe, session } from './session.ts';
 import { loadBrand } from './ui/brand.ts';
 import { Loading } from './ui/molecules/loading.ts';
 
@@ -39,7 +41,7 @@ async function startApplication(): Promise<void> {
   if (screenIsBlank()) showScreen(Loading(t('common.loading')));
   try {
     const who = await refreshMe();
-    await refreshBoards();
+    await Promise.all([refreshBoards(), refreshAttributes()]);
     // The server writes on the user's behalf (triage reasons, reply quoting): keep it told of their language.
     if (who.language !== language()) void chooseLanguage(language()).catch(() => {});
   } catch (e) {
@@ -65,6 +67,13 @@ function showBoards(part: string, id: number | null, email: string | null): void
   else void boardPage(id, Number(email) || null);
 }
 
+/** The attributes, the form that changes one (named by the last part of the address), or the form for a new one. */
+function showAttributes(part: string): void {
+  if (part === 'new') void editAttributePage(null);
+  else if (part === 'edit') void editAttributePage(location.hash.split('/')[3] ?? null);
+  else void attributesPage();
+}
+
 /** Shows the page of the current URL. Pages report their own failures, so nothing is awaited. */
 function showPageOfAddress(): void {
   const r = route();
@@ -75,6 +84,7 @@ function showPageOfAddress(): void {
   else if (r.page === 'mailboxes') void mailboxesPage(r.part, r.id, r.query.get('error'), r.query.get('detail') ?? '');
   else if (r.page === 'settings') void settingsPage(r.part);
   else if (r.page === 'boards') showBoards(r.part, r.id, r.query.get('email'));
+  else if (r.page === 'attributes' && isAdmin()) showAttributes(r.part);
   else if (r.page === 'more') morePage();
   else if (r.page === 'welcome') showGettingStarted(r.part);
   else location.hash = '#/inbox';

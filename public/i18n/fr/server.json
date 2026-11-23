@@ -109,5 +109,15 @@
     "nameRequired": "Un tableau a besoin d’un nom.",
     "sharedByAdministrators": "Seuls les administrateurs partagent un tableau avec l’organisation.",
     "notYours": "Un tableau partagé est géré par les administrateurs."
+  },
+  "attributes": {
+    "notFound": "Attribut introuvable.",
+    "nameRequired": "Un attribut a besoin d’un nom.",
+    "valuesRequired": "Un choix a besoin d’au moins deux valeurs.",
+    "ruleRequired": "Un attribut décidé par une règle a besoin de sa règle.",
+    "ruleInvalid": "La règle est illisible : {detail}",
+    "systemFixed": "Le nom et les valeurs d’un attribut préconfiguré sont fixes.",
+    "valueUnknown": "Ce n’est pas une valeur de cet attribut.",
+    "aiNotYet": "L’IA ne décide pas encore des attributs créés par une organisation : choisissez une règle, ou personne."
   }
 }

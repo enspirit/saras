@@ -21,13 +21,14 @@ import { errorMessage } from '../../tooling/errors.ts';
 import type { MailService } from '../../tooling/mail/mail-service.ts';
 import { problem } from '../../tooling/messages.ts';
 import type { ServerProblem } from '../../tooling/messages.ts';
-import { firstStanding } from '../computations/emails.ts';
 import type { Llm } from '../model/llm.ts';
 import type { AccountRow } from '../model/mailbox.ts';
 import { prepareProposals } from '../replying/prepare-proposals.ts';
 import type { Triage } from '../sorting/strategies.ts';
+import { ruled, sortByRules } from '../sorting/sort-by-rules.ts';
 import { sortWaitingEmails } from '../sorting/sort-waiting-emails.ts';
 import type { SortingResult } from '../sorting/sort-waiting-emails.ts';
+import { attributesOf } from '../state/attributes.ts';
 import { keepFetched, knownIn } from '../state/emails.ts';
 import { recordFetch, watchedMailboxes } from '../state/mailboxes.ts';
 import { memberById, organizationById } from '../state/members.ts';
@@ -51,14 +52,14 @@ interface Dependencies {
   vault: Vault;
 }
 
-/** Brings in what arrived in the folder and keeps it. Plainly automated mail is set aside at once, when the organisation wants that. */
+/** Brings in what arrived in the folder and keeps it, sorted at once by the rules of the organisation's attributes (SortByRules). */
 async function bringIn({ db, mail, config }: Dependencies, account: AccountRow, folder: string): Promise<number> {
   const known = await knownIn(db, account.id, folder);
   const since = new Date(Date.now() - config.syncDays * 86_400_000);
   const emails = await mail.providerFor(account).listNew({ folder, since, limit: config.syncMaxEmails, known });
-  const organization = await organizationById(db, account.org_id);
+  const rules = ruled(await attributesOf(db, await organizationById(db, account.org_id)));
   await db.transaction(async (tx) => {
-    for (const email of emails) await keepFetched(tx, account.id, folder, email, firstStanding(organization, email, account.email));
+    for (const email of emails) await keepFetched(tx, account.id, folder, email, sortByRules(rules, email, account.email));
   });
   return emails.length;
 }

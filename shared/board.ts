@@ -1,26 +1,20 @@
 // A board: a named view of emails, defined by a filter on their attributes.
-import type { Box, EmailSummary, Priority } from './email.ts';
+import type { EmailSummary } from './email.ts';
 
 /**
- * The attributes of an email a board can filter on, each with the kind of value it takes.
+ * What a board filters on: the attributes of the organisation, and the facts of an email.
  * Every condition given must hold; within one made of several values, any of them does.
+ *   attributes  its values for the attributes of the organisation, by their key: where it
+ *               stands, its priority, and those the organisation made
  *   mailbox     the mailboxes it arrived in
- *   box         where it stands: to handle, no reply needed, replied, ignored
- *   priority    how urgent the sorting found it
  *   received    how recently it arrived, in days
  *   from        part of the sender's name or address
  *   keywords    words that all appear in its subject or text
  *   attachment  whether it came with attachments
  */
-export const EMAIL_ATTRIBUTES = ['mailbox', 'box', 'priority', 'received', 'from', 'keywords', 'attachment'] as const;
-export type EmailAttribute = (typeof EMAIL_ATTRIBUTES)[number];
-
-export const PRIORITIES = ['high', 'normal', 'low'] as const satisfies readonly Priority[];
-
 export interface BoardFilter {
+  attributes?: Record<string, string[]>;
   mailbox?: number[];
-  box?: Box[];
-  priority?: Priority[];
   received?: number;
   from?: string;
   keywords?: string;

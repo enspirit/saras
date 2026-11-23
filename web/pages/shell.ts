@@ -25,6 +25,7 @@ import { Page } from '../ui/organisms/page.ts';
 const CONFIGURATION: { path: string; label: string; icon: IconName; admin?: boolean }[] = [
   { path: 'mailboxes', label: 'nav.mailboxes', icon: 'plug' },
   { path: 'prompts', label: 'nav.prompts', icon: 'file-text', admin: true },
+  { path: 'attributes', label: 'nav.attributes', icon: 'list', admin: true },
   { path: 'members', label: 'nav.members', icon: 'users', admin: true },
   { path: 'settings', label: 'nav.settings', icon: 'settings' },
 ];

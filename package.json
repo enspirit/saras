@@ -17,8 +17,10 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.17",
+    "@enspirit/elo": "1.2.4",
     "express": "^5.1.0",
     "imapflow": "^1.0.0",
+    "luxon": "3.7.2",
     "mailparser": "^3.7.0",
     "nodemailer": "^7.0.0",
     "pg": "^8.23.1",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/luxon": "3.7.6",
     "@types/mailparser": "^3.9.0",
     "@types/node": "^22.20.5",
     "@types/nodemailer": "^8.0.2",

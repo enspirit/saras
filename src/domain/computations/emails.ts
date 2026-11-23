@@ -1,8 +1,8 @@
 // Pure: an email, from how it is kept to how operations and the sorting gate see it.
+import type { ValueOfEmail } from '../../../shared/attribute.ts';
+import type { Priority } from '../../../shared/email.ts';
 import type { TriageMail } from '../sorting/gate.ts';
-import type { Email, EmailRow, EmailStatus, IncomingEmail } from '../model/email.ts';
-import type { OrganizationRow } from '../model/organization.ts';
-import { heuristicTriage } from '../sorting/rules.ts';
+import type { Email, EmailRow, EmailStatus } from '../model/email.ts';
 
 /** What saras keeps of a message, and how it is sorted, from its row. */
 const sortingOf = (row: EmailRow) => ({
@@ -56,15 +56,11 @@ const MAX_STORED_BODY = 100_000;
 /** The text kept of an email. PostgreSQL text cannot hold a NUL character, which a malformed mail may contain. */
 export const textToKeep = (body: string): string => body.replaceAll('\u0000', '').slice(0, MAX_STORED_BODY);
 
-/** Where a fetched email first stands, and why. */
+/** Where a fetched email first stands and why, its priority, and the other attributes the rules gave it. */
 export interface Standing {
   status: EmailStatus;
   source: string | null;
   reason: string;
-}
-
-/** Plainly automated mail is set aside at once, by rule, when the organisation wants that; the rest waits to be sorted. */
-export function firstStanding(organization: Pick<OrganizationRow, 'skip_automated'>, email: IncomingEmail, mailboxAddress: string): Standing {
-  const verdict = organization.skip_automated ? heuristicTriage(email, mailboxAddress) : null;
-  return verdict ? { status: verdict.status, source: 'rule', reason: verdict.reason } : { status: 'pending', source: null, reason: '' };
+  priority: Priority;
+  attributes: Record<string, ValueOfEmail>;
 }

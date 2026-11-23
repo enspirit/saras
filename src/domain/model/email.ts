@@ -72,5 +72,7 @@ export interface EmailRow {
   triage_reason: string;
   priority: Priority;
   suggested_prompt_id: number | null;
+  /** The values of the attributes the organisation made, and who decided each (and the priority). */
+  attributes_json: string;
   created_at: Date;
 }

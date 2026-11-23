@@ -109,5 +109,15 @@
     "nameRequired": "A board needs a name.",
     "sharedByAdministrators": "Only administrators share a board with the organisation.",
     "notYours": "A shared board is managed by administrators."
+  },
+  "attributes": {
+    "notFound": "Attribute not found.",
+    "nameRequired": "An attribute needs a name.",
+    "valuesRequired": "A choice needs at least two values.",
+    "ruleRequired": "An attribute decided by a rule needs its rule.",
+    "ruleInvalid": "The rule cannot be read: {detail}",
+    "systemFixed": "The name and the values of a pre-configured attribute are fixed.",
+    "valueUnknown": "This is not a value of the attribute.",
+    "aiNotYet": "The AI does not decide the attributes an organisation makes yet: choose a rule, or nobody."
   }
 }

@@ -11,6 +11,7 @@ import { createPostman } from '../postman.ts';
 import type { Postman } from '../postman.ts';
 import type { Fetch } from '../fetch.ts';
 import { ACCESS } from './access.ts';
+import { ATTRIBUTES } from './attributes.ts';
 import { BOARDS } from './boards.ts';
 import { EMAILS } from './emails.ts';
 import { MAILBOXES } from './mailboxes.ts';
@@ -23,7 +24,7 @@ import { administratorsOnly, membersOnly } from './session.ts';
 import { SETTINGS } from './settings.ts';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
-const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS];
+const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES];
 
 const hardened: RequestHandler = (_req, res, next) => {
   res.set({
