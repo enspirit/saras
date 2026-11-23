@@ -11,19 +11,20 @@ import { Badge } from '../ui/atoms/badge.ts';
 import { Button } from '../ui/atoms/button.ts';
 import { Input, Select } from '../ui/atoms/input.ts';
 import { Strong } from '../ui/atoms/text.ts';
+import type { Child } from '../ui/dom.ts';
 import { Callout } from '../ui/molecules/callout.ts';
 import { Card } from '../ui/molecules/card.ts';
 import { Field } from '../ui/molecules/field.ts';
 import { Actions, FormRow } from '../ui/molecules/form.ts';
 import { Table } from '../ui/molecules/table.ts';
 
-/** The link of an invitation just created, to copy: it cannot be shown again. */
-function copyButton(invitation: NewInvitation, link: HTMLInputElement): HTMLButtonElement {
-  return Button(t('common.copy'), {
+/** Copies a link that is shown once. */
+const copyButton = (address: string, link: HTMLInputElement): HTMLButtonElement =>
+  Button(t('common.copy'), {
     icon: 'copy',
     onClick: async () => {
       try {
-        await navigator.clipboard.writeText(invitation.link);
+        await navigator.clipboard.writeText(address);
         toast(t('members.linkCopied'));
       } catch {
         link.focus();
@@ -31,14 +32,16 @@ function copyButton(invitation: NewInvitation, link: HTMLInputElement): HTMLButt
       }
     },
   });
+
+/** Says that a link is ready to hand to someone, and shows it to copy: it cannot be shown again. */
+export function LinkToHandOver(address: string, ready: Child): HTMLDivElement {
+  const link = Input({ readOnly: true, value: address, onfocus: () => link.select() });
+  return Callout('ok', ready, FormRow(Field(null, link), Field(null, copyButton(address, link), { size: 'fit' })));
 }
 
-/** Says that the invitation is ready, with its link and for how long it holds. */
-export function InvitationLink(invitation: NewInvitation): HTMLDivElement {
-  const link = Input({ readOnly: true, value: invitation.link, onfocus: () => link.select() });
-  const ready = tRich('members.linkReady', { email: invitation.email, days: invitation.validDays }, { strong: Strong });
-  return Callout('ok', ready, FormRow(Field(null, link), Field(null, copyButton(invitation, link), { size: 'fit' })));
-}
+/** The link of an invitation just created, and for how long it holds. */
+export const InvitationLink = (invitation: NewInvitation): HTMLDivElement =>
+  LinkToHandOver(invitation.link, tRich('members.linkReady', { email: invitation.email, days: invitation.validDays }, { strong: Strong }));
 
 export interface InviteCardHandle {
   element: HTMLDivElement;

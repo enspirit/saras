@@ -12,6 +12,9 @@ export function route() {
 /** The token of the invitation link being opened, when the address is one. */
 export const invitationToken = (): string | null => location.hash.match(/^#\/invitation\/([\w-]+)$/)?.[1] || null;
 
+/** The token of the link to a new password being opened, when the address is one. */
+export const passwordResetToken = (): string | null => location.hash.match(/^#\/reset-password\/([\w-]+)$/)?.[1] || null;
+
 const wired = { showPage: (): void => {}, start: async (): Promise<void> => {} };
 
 /** Called once by the entry file, with what the two functions below do. */

@@ -1,0 +1,17 @@
+{
+  "title": "Your second factor",
+  "intro": "Open your authenticator app and type the code it shows for saras.",
+  "code": "Code",
+  "codeHint": "Six digits. Without your app, type one of your recovery codes.",
+  "confirm": "Confirm",
+  "startAgain": "Start again with my password",
+  "enrolTitle": "Set up your second factor",
+  "enrolWhy": "This installation asks for a second factor: besides your password, a code from an app on your phone.",
+  "enrolIntro": "In an authenticator app (Aegis, Google Authenticator, 1Password…), scan this code. Then type the six digits the app shows.",
+  "qrLabel": "QR code to scan with your authenticator app",
+  "key": "Or type this key in the app",
+  "keyHint": "Time-based, six digits, 30 seconds.",
+  "recoveryTitle": "Keep your recovery codes",
+  "recoveryIntro": "If you lose your phone, each of these codes gets you in once, in place of the app’s code. Keep them somewhere safe: they are not shown again.",
+  "recoveryKept": "I have kept them"
+}

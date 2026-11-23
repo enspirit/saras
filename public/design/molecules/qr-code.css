@@ -1,0 +1,2 @@
+/* ---- QR code: what a phone's camera reads ---- */
+.qr { display: block; max-width: 100%; height: auto; margin: 0 0 var(--space-3); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-sm); }

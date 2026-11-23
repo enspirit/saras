@@ -17,7 +17,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 
 | Area | Stories |
 | --- | --- |
-| [A. Access and organisation](#a-access-and-organisation) | US-01 – US-07 |
+| [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
 | [B. Mailboxes](#b-mailboxes) | US-10 – US-17 |
 | [C. Triage and the four boxes](#c-triage-and-the-four-boxes) | US-20 – US-25 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
@@ -54,6 +54,23 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - A lost session returns to the sign-in page from any screen.
 - When sign-up is closed, the page tells newcomers to ask their administrator for an invitation.
 - There is no password reset and no two-factor authentication (known limitation).
+
+### US-09 — Sign in with a second factor
+**As** a member of an installation that requires it, **I want** to confirm my sign-in with a code from an app on my phone, **so that** my password alone does not open my organisation's mail.
+
+- The operator turns it on for everyone (`MFA_ENABLED=true`); there is then no session on a password alone, including right after creating an organisation or accepting an invitation.
+- The first time, I scan a QR code in an authenticator app (or type its key), confirm with a code, and am shown eight recovery codes once.
+- Afterwards I am asked for the app's six-digit code. A code is good once; a recovery code replaces it, once each.
+- A wrong code counts towards the lock-out of US-02. A sign-in left waiting for ten minutes starts again with the password.
+- If I lose my app and my recovery codes, an administrator resets my second factor from **Users**: I am signed out everywhere and set a new one up at my next sign-in.
+
+### US-0A — Replace a lost password
+**As** a member who lost their password, **I want** a link to choose a new one, **so that** I am not locked out.
+
+- **Forgot your password?** on the sign-in page. Where the server has outgoing mail of its own (`SMTP_URL`, `MAIL_FROM`), I give my address and am sent a link; the page says the same whether the address has an account or not.
+- Where it has none, the page tells me to ask an administrator, who creates the link from **Users** (key button) and hands it to me.
+- The link is good once, for an hour. Choosing the new password signs me out everywhere; I then sign in with it, second factor included where required.
+- On every password field of the sign-in, sign-up, invitation and new-password pages, an eye shows what I typed.
 
 ### US-03 — Invite a colleague
 **As** an administrator, **I want** to create an invitation link for a colleague's address, with a role, **so that** they can join my organisation without my choosing their password.

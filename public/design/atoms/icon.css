@@ -22,6 +22,7 @@
 .icon--shield-check::before { content: "\e1ff"; }
 .icon--user-plus::before { content: "\e1a2"; }
 .icon--circle-alert::before { content: "\e077"; }
+.icon--eye::before { content: "\e0ba"; }
 .icon--eye-off::before { content: "\e0bb"; }
 .icon--file-text::before { content: "\e0cc"; }
 .icon--globe::before { content: "\e0e8"; }

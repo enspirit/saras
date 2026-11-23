@@ -33,6 +33,9 @@
  * a line of the email list, a navigation entry. Built by web/ui/molecules/.
  */
 @import url("molecules/field.css") layer(molecules);
+@import url("molecules/password-input.css") layer(molecules);
+@import url("molecules/qr-code.css") layer(molecules);
+@import url("molecules/code-list.css") layer(molecules);
 @import url("molecules/form.css") layer(molecules);
 @import url("molecules/card.css") layer(molecules);
 @import url("molecules/page-header.css") layer(molecules);

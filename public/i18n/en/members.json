@@ -21,5 +21,9 @@
   "joined": "Joined",
   "mailboxes": "Personal mailboxes",
   "noMailbox": "None",
-  "expiry": "Expires"
+  "expiry": "Expires",
+  "newPassword": "Link to a new password",
+  "newPasswordReady": "The link for <strong>{email}</strong> to choose a new password is ready. Hand it to them: it is good once, for {minutes} minutes, and cannot be shown again.",
+  "resetSecondFactor": "Reset the second factor",
+  "confirmResetSecondFactor": "Take the second factor of {email} away? They are signed out everywhere, and set a new one up at their next sign-in."
 }

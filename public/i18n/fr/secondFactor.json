@@ -1,0 +1,17 @@
+{
+  "title": "Votre second facteur",
+  "intro": "Ouvrez votre application d’authentification et saisissez le code qu’elle affiche pour saras.",
+  "code": "Code",
+  "codeHint": "Six chiffres. Sans votre application, saisissez l’un de vos codes de secours.",
+  "confirm": "Confirmer",
+  "startAgain": "Recommencer avec mon mot de passe",
+  "enrolTitle": "Configurer votre second facteur",
+  "enrolWhy": "Cette installation demande un second facteur : en plus de votre mot de passe, un code fourni par une application sur votre téléphone.",
+  "enrolIntro": "Dans une application d’authentification (Aegis, Google Authenticator, 1Password…), scannez ce code. Saisissez ensuite les six chiffres qu’elle affiche.",
+  "qrLabel": "QR code à scanner avec votre application d’authentification",
+  "key": "Ou saisissez cette clé dans l’application",
+  "keyHint": "Basé sur l’heure, six chiffres, 30 secondes.",
+  "recoveryTitle": "Conservez vos codes de secours",
+  "recoveryIntro": "Si vous perdez votre téléphone, chacun de ces codes vous connecte une fois, à la place du code de l’application. Gardez-les en lieu sûr : ils ne seront plus affichés.",
+  "recoveryKept": "Je les ai conservés"
+}

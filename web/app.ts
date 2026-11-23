@@ -6,7 +6,8 @@
 import { isSignedOut } from './api.ts';
 import { chooseLanguage } from './api/settings.ts';
 import { initI18n, language, t } from './i18n.ts';
-import { invitationToken, route, wireNavigation } from './navigation.ts';
+import { invitationToken, passwordResetToken, route, wireNavigation } from './navigation.ts';
+import { newPasswordPage } from './pages/lost-password.ts';
 import { invitationPage } from './pages/accepting-invitation.ts';
 import { messageOf, toast } from './pages/actions.ts';
 import { BOXES_ON_SCREEN } from './pages/boxes.ts';
@@ -30,6 +31,8 @@ import { Loading } from './ui/molecules/loading.ts';
 async function startApplication(): Promise<void> {
   const token = invitationToken();
   if (token) return invitationPage(token);
+  const reset = passwordResetToken();
+  if (reset) return newPasswordPage(reset);
   // Nothing on screen yet: say that something is coming rather than show a blank page.
   if (screenIsBlank()) showScreen(Loading(t('common.loading')));
   try {
@@ -67,7 +70,7 @@ function showPageOfAddress(): void {
 }
 
 wireNavigation({ showPage: showPageOfAddress, start: startApplication });
-window.addEventListener('hashchange', () => (invitationToken() ? startApplication() : session.me && showPageOfAddress()));
+window.addEventListener('hashchange', () => (invitationToken() || passwordResetToken() ? startApplication() : session.me && showPageOfAddress()));
 
 // Translations first: the brand's tagline and every screen depend on the language.
 initI18n()
