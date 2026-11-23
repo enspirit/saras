@@ -1,5 +1,6 @@
 # Bundle what the browser loads (web/, shared/, the style sheets and the translations -> public/js/).
-FROM node:22-bookworm-slim AS build
+# The bundle is the same for every platform: built once, on the machine's own architecture.
+FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
