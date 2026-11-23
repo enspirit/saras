@@ -7,8 +7,9 @@
 # docker.
 #
 # Sources are baked into the images here, not mounted: a suite run against
-# mounted sources is run against something other than the artefact. And `.env`
-# is not read: no suite depends on a secret.
+# mounted sources is run against something other than the artefact. And no
+# suite depends on a secret: env/test.env pins everything env/devel.env would
+# take from a laptop's `.env`.
 
 services:
   saras:

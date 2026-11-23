@@ -8,7 +8,7 @@ The tests of `software/saras/test/integration/` already stand in for them, in th
 
 ## Decision
 
-They stay there. The stack of `docker-compose.test.yml` has no mailbox and no LLM: the server in it has no key, and an address for OpenRouter where nothing listens (`software/saras/env/test.env`).
+They stay there. The stack of `docker-compose.test.yml` has no mailbox and no LLM: the server in it has no key, whatever a laptop's `.env` holds, and an address for OpenRouter where nothing listens (`software/saras/env/test.env`).
 
 ## Alternatives
 

@@ -17,19 +17,12 @@ services:
       - '127.0.0.1:${SARAS_PORT:-3000}:3000'
     env_file:
       # After env/base.env, which docker-compose.base.yml lists. Later files win.
+      #
+      # `.env` is not listed, here or anywhere: env/devel.env names what it
+      # takes from it, as ${NAME:-default}, and nothing else reaches the
+      # container.
       - ./.env.commons
       - ./software/saras/env/devel.env
-      # A real key (OPENROUTER_API_KEY, the OAuth applications) reaches the
-      # container from here. `required: false` is load-bearing: the stack
-      # comes up without the file.
-      - path: ./.env
-        required: false
-    environment:
-      # Beats every env file: what is derived from this stack's own variables.
-      BASE_URL: http://localhost:${SARAS_PORT:-3000}
-      # The default brand, unless SARAS_BRAND names a folder of
-      # software/saras/brands (SARAS_BRAND=klaro in .env, or in the shell).
-      BRAND_DIR: ${SARAS_BRAND:+/app/brands/}${SARAS_BRAND:-}
     # `npm run dev` runs two watchers under a shell: an init process hands
     # them the signal that stops the container.
     init: true
