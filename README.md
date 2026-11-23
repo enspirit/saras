@@ -5,123 +5,21 @@
 A self-hosted web tool to answer email with the help of AI, without handing it the keys:
 
 1. **Connect** one or more mailboxes: IMAP/SMTP, Gmail / Google Workspace (OAuth), Outlook / Microsoft 365 (OAuth), and choose the one folder of each to watch (the inbox by default).
-2. **Identify** the emails that are waiting for a reply: what is fetched from that folder passes a triage gate. By default the gate decides nothing and every email is to be handled; an LLM can do it instead.
-3. **Write** the reply in a rich-text editor — in full, or as a few notes — and, if you wish, let the AI check the typos, improve the style, or write it with a *system prompt* prepared by an administrator.
-4. **Send** in your name after review, or **save as a draft** in your mailbox to finish there. If you change the proposal you can say why: that reason is fed into your next drafts made with the same prompt.
+2. **Identify** the emails that are waiting for a reply. By default every email of that folder is to be handled; rules you write, or an LLM, can sort them instead.
+3. **Write** the reply in a rich-text editor — in full, or as a few notes — and, if you wish, let the AI check the typos, improve the style, or write it with a *prompt* prepared by an administrator.
+4. **Send** in your name after review, or **save as a draft** in your mailbox to finish there.
 
-Nothing is sent without explicit validation.
+Nothing is sent without explicit validation. The interface is in English and in French.
 
-Everything is in English by default, and the interface is also available in French (see "Translations").
+## What it does
 
-## Folders and triage
+- **Organisations.** Everything lives inside an organisation, and nothing crosses from one to another. Signing up creates one; its other members join by invitation. A second factor (TOTP) can be required of everyone.
+- **Mailboxes, personal or shared.** A member connects their own address, which only they see. An administrator may connect a shared one (contact@, info@…), which every member reads and replies from.
+- **Sorting.** Plainly automated mail (newsletters, no-reply senders, automatic replies) is set aside before anything else. What an organisation wants to know of each email is an *attribute*, decided by nobody, by a rule written in [Elo](https://elo-lang.org) (which costs no tokens), or by the AI. *Boards* are saved views filtered on them.
+- **Writing.** One reply area. Send what you wrote as it is, or ask the AI to check typos, to improve the style, or to apply one of the organisation's prompts. When you change a proposal you can say why: the reason steers your next ones.
+- **Your brand.** A folder with a `theme.css`, a `brand.json` and a logo changes the look without touching the code (`BRAND_DIR`, see [the design](doc/4-design.md#7-brands)); `/styleguide.html` shows it in place.
 
-**One folder per mailbox.** After connecting a mailbox, the user chooses the folder to watch: the inbox, or any other (an IMAP folder, a Gmail label, an Outlook folder). Nothing is fetched before that choice, and only that folder ever is. Watching a folder you fill yourself — by hand or with your mail client's own rules — is the simplest way to decide what deserves a reply.
-
-**The triage gate.** Every fetched email passes through a gate, which answers two questions: is a reply needed, and with which prompt. It is an abstraction (`src/domain/sorting/gate.ts`) with interchangeable strategies:
-
-```ts
-interface TriageGate {
-  readonly name: string;
-  decide(batch: { prompts: TriagePrompt[]; mails: TriageMail[] }): Promise<TriageDecision[]>;
-}
-```
-
-- **In:** the prompts (id, name, description) and up to 20 mails, each with `from`, `to`, `cc`, `subject`, `body` and its attachments' names, types and sizes. Never the content of an attachment, and nothing else: no database, no mailbox.
-- **Out:** per mail, `replyNeeded` and `promptId` (or `null` to let the user choose), plus an optional `reason` and `priority`.
-- A mail the gate says nothing about, or a gate that fails, leaves the mail untriaged; it is presented again at the next fetch.
-
-| Strategy | What it does | Cost |
-| --- | --- | --- |
-| `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a draft is asked for. |
-| `ai` | An LLM decides and suggests a prompt. It reads the sender, subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
-
-The strategy is chosen **per organisation** by its administrators, as the first of two choices (sorting, then when proposals are written: on demand, at fetch, or at fetch and filed in the mailbox's drafts); `TRIAGE_STRATEGY` only sets what a new organisation starts with. To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/domain/sorting/index.ts`.
-
-**Before the gate**, header rules set plainly automated mail aside (no-reply senders, mailing lists, automatic replies, bulk mail, and over IMAP what you already answered), so that no strategy spends anything on it. Those emails stay visible under "No reply needed" and can be moved back. An organisation can turn the rules off in its settings.
-
-## Organisations, members and mailboxes
-
-saras is multi-tenant: everything lives inside an **organisation**, and nothing crosses from one to another.
-
-- **Signing up creates an organisation**, and whoever signs up administers it. Whether strangers may do so is the operator's choice (`ALLOW_SIGNUP`); an empty installation always accepts its first one.
-- **Second factor and lost passwords.** With `MFA_ENABLED=true` every member is asked, besides their password, for a code from an authenticator app (TOTP), set up at their first sign-in with recovery codes; an administrator can reset a member's. A lost password is replaced through a one-time link: sent by email when the server has outgoing mail of its own (`SMTP_URL`, `MAIL_FROM`), created by an administrator from Users otherwise.
-- **Boards and attributes.** Members make boards: saved views of emails, filtered on the organisation's attributes and on facts of the email (mailbox, sender, keywords…). Attributes are what the organisation wants to know of each email; two are pre-configured (where it stands, its priority) and administrators add their own. Each attribute says who decides it: nobody, the AI, or a rule written in [Elo](https://elo-lang.org), which costs no tokens and can be read, changed and tried on recent emails.
-- **Members join by invitation**: an administrator enters an address and gets a one-time link, valid for `INVITATION_DAYS` days (7 by default), which they pass on themselves — saras has no outgoing mailbox of its own. The invited person only chooses a password. Only a hash of the link is stored; inviting the same address again invalidates the previous link. An address has one account, in one organisation.
-- **A mailbox is personal or shared.** Any member connects their own address, which only they see — administrators included. An administrator may connect a mailbox as *shared* (contact@, info@…): every member, present and future, sees its emails and replies from it. Only administrators change its folder or disconnect it. An address is connected once per organisation.
-- **In a shared mailbox**, a reply by one member takes the email off everyone's list, and shows who replied. Each member keeps their own signature, and their corrections steer their own drafts only.
-- **Prompts belong to the organisation.** Only its administrators create and edit them; members see their name and description, not the instructions. Administrators also see the reasons members give when correcting drafts, prompt by prompt.
-- **The organisation's settings** (for administrators): its name in Settings → Organisation; its model, its OpenRouter key and when the AI writes in Settings → AI & privacy, above what the product guarantees. Members read that tab; none has a model or a key of their own.
-- **Administrators** can appoint others, at least one always remains, and can delete a member: their personal mailboxes are erased from saras, while the prompts and shared mailboxes they created stay with the organisation.
-
-**Who pays for the LLM.** A request uses the organisation's key, else the server's (`OPENROUTER_API_KEY`). An operator hosting organisations that are not theirs leaves the server key empty.
-
-Not per organisation: the brand, the OAuth applications, the retention period and the fetch settings are the installation's.
-
-## Writing a reply
-
-There is one reply area: a rich-text editor (bold, italic, underline, lists, links). Write whatever you want in it — a complete reply, a few notes, instructions — and send it as it is, or first ask the AI for one of three things:
-
-| Action | What the AI does | What it is sent |
-| --- | --- | --- |
-| **Just check typos** | Corrects spelling, grammar and punctuation; changes nothing else. | Only what you wrote. |
-| **Improve style** | Rewrites for clarity and tone, keeping the meaning and the facts. | Only what you wrote. |
-| **Apply a prompt** | Writes the reply the way one of the organisation's prompts describes, from the email received and from what you wrote (which may be nothing). | The email received, the prompt, and what you wrote. |
-
-The proposal replaces your text; "Put my text back" restores it. When you change a proposal made with a prompt, you can say why: that reason is given to your next proposals made with the same prompt.
-
-A reply is sent as HTML with a plain-text alternative, both quoting the original. Only the elements an email needs are allowed (`src/tooling/html.ts`): whatever the LLM returns, and whatever is stored or sent, is rebuilt from that list on the server, and the interface sanitises again before displaying anything.
-
-## Drafts
-
-"Save as draft" files the reply, attached to the original thread, in the mailbox's Drafts folder: over IMAP (the folder flagged `\Drafts`, or named Drafts or Brouillons), through the Gmail API, or through Microsoft Graph. Nothing is sent. What you change afterwards in your mail client is unknown to saras.
-
-## Branding
-
-The look is changed **without touching the code**, with a brand folder:
-
-```sh
-cp -r public/brand my-brand      # start from the default brand
-BRAND_DIR=./my-brand npm start   # or BRAND_DIR in .env; with Docker, mount the folder
-```
-
-| File | Role |
-| --- | --- |
-| `theme.css` | A dozen variables: accent colour, background, text (light and dark), fonts, corner radius, light/dark mode. Everything else is derived from them. |
-| `brand.json` | `name` (title, tab, wording), `tagline` (one text, or one per language: `{ "fr": "…", "en": "…" }`), `logo` and `logoDark` (file names in the folder, optional). For the sign-in page, optionally: `byline` and `credit` (one text, or one per language) and `euHosting` (`true` when the installation and the AI it calls are hosted in Europe: the page then says so). |
-| `favicon.svg`, logos, fonts | Served from the folder. A web font is declared with `@font-face` in `theme.css`. |
-
-A file missing from the folder falls back to the default brand's. `brands/example/` is a complete fictitious brand: `BRAND_DIR=./brands/example npm start`. `brands/klaro/` is the Klaro Cards brand, with its font self-hosted.
-
-**`/styleguide.html`** shows every token and component with the brand in place: it is the page to watch while tuning `theme.css`.
-
-## Translations
-
-Every word of the interface comes from a translation file; none is written in the code (a test enforces it).
-
-- **Files:** `public/i18n/<language>/<section>.json`, one folder per language and one file per section of the interface (`mailboxes`, `members`, `prompts`, `settings`, `server`…), plus `public/i18n/index.json`, which lists the languages and the sections and names the default language. The first part of a key is its section: `mailboxes.connect` is `connect` in `mailboxes.json`. English is the default and the source language; French is provided.
-- **Format:** Tolgee's native JSON — keys nested on dots, values in ICU MessageFormat: `{name}` parameters, `{count, plural, one {…} other {…}}`, `{kind, select, …}`, and `<tag>…</tag>` for a part the interface renders as a link or in bold.
-- **Language shown:** the user's choice (Settings → Language, also on the sign-in page), else the first browser language available, else the default. A missing translation falls back to the default language. Dates follow the reader's regional format.
-- **Adding a language:** add the folder `public/i18n/<tag>/` with the same files, and one line in `index.json`, then `npm run build`.
-
-In the code, `t('key', params)` returns a string and `tRich('key', params, { link: … })` returns nodes for messages with tags (`web/i18n.ts`). The formatter itself (`web/i18n/format.ts`) is a small dependency-free implementation of the ICU subset above.
-
-`test/unit/i18n.test.ts` checks that every language has exactly the keys of the source language, with the same parameters and tags; that every key used in the code exists; and that no key is left unused.
-
-### With Tolgee
-
-`.tolgeerc.json` maps the files for the [Tolgee CLI](https://docs.tolgee.io/tolgee-cli): with a project id and an API key (`TOLGEE_API_KEY`), `npx @tolgee/cli push` uploads the keys and `npx @tolgee/cli pull` brings translations back into `public/i18n/`, each section of the interface being a Tolgee namespace. Tolgee's in-context editing SDK is not integrated.
-
-### What the server writes
-
-The server never sends sentences of its own to the interface: errors, triage verdicts made by rules and mailbox problems travel as a code with parameters (`src/tooling/messages.ts`, with their English text), which the interface translates under the `server.` keys. A test keeps the English file identical to the server's text and every language complete.
-
-The server remembers each user's language (sent by the interface) for what it writes on their behalf:
-
-- the reason the LLM gives for a triage verdict (with the AI strategy) is asked for in that language;
-- the line introducing the quoted original in a reply ("On …, … wrote:") follows it, for the languages the server knows (English and French; English otherwise);
-- the default prompt of an organisation, and the templates it may add, are in the language of whoever created it (English and French sets are provided).
-
-The prompts sent to the LLM are in English. The reply itself is always drafted in the language of the email received. Prompt names and descriptions are whatever the administrators wrote.
+Each of these is told in full in the [user stories](doc/1-user-stories.md).
 
 ## Privacy
 
@@ -129,177 +27,82 @@ This is the main design constraint.
 
 | Guarantee | How |
 | --- | --- |
-| No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded in `src/tooling/llm/openrouter.ts`, the only place where email content leaves the application, and cannot be disabled by configuration. |
-| No silent fallback | If no provider of the chosen model satisfies both conditions, OpenRouter refuses the request and the application shows the error. |
-| Minimisation | Checking typos and improving style never send the received email to the LLM, only your own text. Only the folder you chose is fetched. By default no email is analysed by the LLM: content leaves the server only when you ask for a draft. An organisation's administrators may choose otherwise: sorting by the AI, and proposals prepared at fetch (the content of each email to handle is then sent without anyone asking). Whatever they choose, nothing is sent to a correspondent without a member's confirmation. Newsletters, mailing lists, `no-reply` addresses and automated messages are set aside by header rules and never reach it. |
-| Encrypted secrets | IMAP/SMTP passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
-| Transport | Without direct TLS, STARTTLS is required for IMAP and SMTP (except for a local server): no password travels in clear. |
+| No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded, and cannot be disabled by configuration. If no provider of the chosen model satisfies both, the request is refused and the error shown: there is no silent fallback. |
+| Minimisation | Only the folder you chose is fetched. Checking typos and improving style send only your own text, never the email received. By default no email is analysed by the LLM: content leaves the server only when you ask for a proposal. An organisation's administrators may choose otherwise (sorting by the AI, proposals prepared at fetch). Mail set aside as automated never reaches it. |
+| Encrypted secrets | Mailbox passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
+| Transport | A mail server is given a password over TLS only, unless it is one of the server's own machine. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |
 | Logs | The server never logs the content of emails or requests. |
 
-**What remains your responsibility** (the application cannot guarantee it for you):
+**What remains your responsibility:**
 
 - In your OpenRouter account (*Settings → Privacy*), keep logging of prompts and responses **disabled**. Per-request ZDR covers the model providers, not this account setting.
 - Check that the chosen model has a ZDR provider; otherwise requests fail (on purpose).
-- ZDR is a contractual commitment of the providers, relayed by OpenRouter: it cannot be verified technically from the application.
+- ZDR is a contractual commitment of the providers, relayed by OpenRouter: it cannot be verified from the application.
+
+The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
 
 ## Trying it with sample emails
 
-```bash
+With Docker and [`emb`](https://github.com/enspirit/emb):
+
+```sh
 npm install -g @enspirit/emb
-emb up          # saras, a PostgreSQL server and the mail servers of the stack, in Docker
-emb run demo
+emb up          # saras, a PostgreSQL server and a mailbox of sample emails, on this machine
+emb run demo    # prints the address and the account to sign in with
 ```
 
-This gives saras on `http://localhost:3000` a demo organisation, **Brightwater Consulting**, and prints the account to sign in with. Its mailbox is one of this machine, holding twenty sample emails, in English and in French: requests for quotes, invoices, problems, meetings, and the newsletters, notifications and automatic replies around them.
+The demo organisation has a mailbox of twenty sample emails, a few attributes with their rules, and two boards. Replies you send go nowhere, and nothing leaves the machine; `emb run demo` again puts everything back as it was. With `OPENROUTER_API_KEY` in a `.env` at the root of the repository, the AI is the real one.
 
-The organisation has that mailbox connected and fetched, a **Topic** attribute decided by a rule, a **Who** attribute set by hand, a rule for the priority, and two boards. Replies you send are handed to the mailbox of the stack and go nowhere (`emb logs mailbox` shows them). Nothing leaves the machine, and `emb run demo` again puts everything back as it was.
+## Installing it
 
-It is added to whatever the stack's database already holds, and empties nothing else: the organisation is a seed ([`software/storage`](software/storage/README.md)), and the mailbox a stand-in ([`world/mailbox`](world/mailbox/README.md)).
-
-With `OPENROUTER_API_KEY` in `.env`, the AI is the real one: it writes proposals, and sorts once the organisation's settings say so. Without it, everything that needs no AI works.
-
-## Getting started
-
-Requires Node.js ≥ 22.18.
+From a checkout, with Node.js ≥ 22.18, on an embedded database:
 
 ```sh
 cd software/saras
 npm install
-cp .env.example .env
-# set APP_SECRET (openssl rand -hex 32) and OPENROUTER_API_KEY
-npm run build   # compiles the browser code
+cp .env.example .env   # set APP_SECRET (openssl rand -hex 32) and OPENROUTER_API_KEY
+npm run build
 npm start
 ```
 
-Open http://localhost:3000 and create your organisation: you become its administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
-
-With Docker, as an image, from the root of the repository and with the same `.env`:
+Or as a Docker image, from the root of the repository and with the same `.env`:
 
 ```sh
 docker build --target saras-production -t saras software/saras
 docker run -d --name saras -p 127.0.0.1:3000:3000 --env-file software/saras/.env -v saras-data:/data saras
 ```
 
-The embedded database is then kept in the volume `saras-data`. For real use, give it a PostgreSQL server of yours with `DATABASE_URL` (see "Database").
+Open http://localhost:3000 and create your organisation: you become its administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
 
-In production, put the application behind an HTTPS reverse proxy and set `BASE_URL=https://…` (the session cookie then becomes `Secure`).
+For real use:
 
-### IMAP / SMTP
+- **A PostgreSQL server**, named by `DATABASE_URL`. Without it saras runs an embedded PostgreSQL ([PGlite](https://pglite.dev)) kept in `DATA_DIR`: nothing to install, but a single connection and no outside access for backups. The schema is created at startup; there is no transfer between the two.
+- **An HTTPS reverse proxy** in front, and `BASE_URL=https://…` (the session cookie then becomes `Secure`).
 
-Works with any standard mailbox (OVH, Infomaniak, Fastmail, Proton Bridge, etc.). Prefer an application password. The connection is tested before it is saved.
+Every variable is described in [`software/saras/env/base.env`](software/saras/env/base.env), with its default.
 
-### Google
+### Connecting mailboxes
 
-1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials): create a project, enable the Gmail API, create an OAuth client of type "Web application".
-2. Authorised redirect URI: `{BASE_URL}/api/oauth/google/callback`.
-3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
-
-Requested scopes: `gmail.readonly` and `gmail.compose` (drafts and sending). `gmail.readonly` is a "restricted" scope at Google: for internal use (Workspace, user type "Internal") or in testing mode with a few declared accounts no verification is needed; public distribution requires Google's security assessment.
-
-### Microsoft
-
-1. [Entra ID](https://entra.microsoft.com) → App registrations → New registration, platform "Web".
-2. Redirect URI: `{BASE_URL}/api/oauth/microsoft/callback`.
-3. Delegated Microsoft Graph permissions: `Mail.ReadWrite`, `Mail.Send`, `User.Read`, `offline_access`.
-4. Create a client secret, set `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` and, to restrict to your organisation, `MICROSOFT_TENANT`.
-
-## Database
-
-The database is PostgreSQL, used in one of two ways with the same schema and queries:
-
-| Mode | When | Meant for |
-| --- | --- | --- |
-| **PostgreSQL server** | `DATABASE_URL` is set | Deployments |
-| **Embedded PostgreSQL** ([PGlite](https://pglite.dev)) | `DATABASE_URL` is empty; files go to `DATA_DIR/postgres` | Trying the tool, development, tests |
-
-The embedded mode runs PostgreSQL inside the application's own process: nothing to install, but a single connection and no outside access for backups or monitoring. Use a server for anything real. There is no automatic transfer between the two.
-
-The schema is created at startup (`src/tooling/db/schema.ts`). The tests run on the embedded database by default and on a server when `TEST_DATABASE_URL` is set; CI runs both.
-
-## Configuration
-
-Every variable is described in [`software/saras/env/base.env`](software/saras/env/base.env), with its default; [`software/saras/.env.example`](software/saras/.env.example) is the short list an installation starts its `.env` from. The default model (`OPENROUTER_MODEL`) and the OpenRouter key can be overridden per organisation and per user in **Settings**.
-
-## The repository
-
-The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architecture.md) says it in full.
-
-| | |
-| --- | --- |
-| [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it, and its [README](software/saras/README.md) says what it answers for and how it is built. |
-| | [`storage/`](software/storage/) holds the seeds: the datasets the stack's database is put into, the demo among them. |
-| [`world/`](world/) | What it runs in. [`mailbox/`](world/mailbox/) is a member's mailbox as the stack meets it: sample emails, and replies that go nowhere. [`fakesmtp/`](world/fakesmtp/) is the outgoing mail server of the stack: it delivers nothing, and shows what saras gave it on `http://localhost:1080`. |
-| [`tests/`](tests/) | What proves it, from outside. [`webspicy/`](tests/webspicy/) is the black-box specification of the API, run through the front door of the stack; [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
-| [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), and the [decisions](doc/decisions/). |
-
-Every build and every suite is a task of [`emb`](https://github.com/enspirit/emb) (`npm install -g @enspirit/emb`), declared in `.emb.yml` and in each component's `Embfile.yml`. `emb tasks` lists them; CI calls them and nothing else.
-
-```sh
-emb run setup           # install the dependencies
-emb run lint            # the static checks
-emb run build           # bundle the browser code
-emb run test            # unit and integration tests, on a checkout
-emb up                  # saras and a PostgreSQL server in Docker, on http://localhost:3000, sources watched
-emb run test:postgres   # the integration tests on that PostgreSQL server
-emb run test:webspicy   # the API's contract, from a container of its own
-emb run demo            # the demo organisation and its mailbox of sample emails, wholly on this machine
-emb down
-```
-
-`emb up` needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail (the stack's own mail server otherwise, which delivers nothing). `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
-
-## How it works
-
-```
-mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
-              │
-              ├─ header rules ──► "no reply needed"       (automated mail, never shown to a gate)
-              │
-              └─ triage gate, 20 at a time ──► "to handle" (+ suggested prompt, with the AI strategy)
-                                        │
-                     you write in the reply area, as much as you like
-                                        │
-              optionally, the LLM (ZDR): check typos / improve style / apply a prompt
-                                        │
-                       you review, edit, explain (optional)
-                                        │
-              sent in your name, or filed as a draft (SMTP / IMAP / Gmail API / Graph)
-```
-
-How the code is laid out, and how it is built and tested, is in the component's own [`software/saras/README.md`](software/saras/README.md).
-
-The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
-
-## Tests
-
-```sh
-emb run test   # or, in software/saras: npm test
-```
-
-The computations are tested as pure functions (`test/unit/`), and the operations over HTTP (`test/integration/`). The latter start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
-
-GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database; then, in the stack of `docker-compose.test.yml`, the integration tests once more against a PostgreSQL server, the black-box suite, and the build of the production image.
+- **IMAP / SMTP** works with any standard mailbox (OVH, Infomaniak, Fastmail, Proton Bridge…). Prefer an application password. The connection is tested before it is saved.
+- **Google**: in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the Gmail API and create an OAuth client of type "Web application", with `{BASE_URL}/api/oauth/google/callback` as redirect URI; set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The scopes asked for are `gmail.readonly` and `gmail.compose`. The first is "restricted" at Google: fine for internal use or in testing mode, while public distribution requires Google's security assessment.
+- **Microsoft**: in [Entra ID](https://entra.microsoft.com), register an application of platform "Web", with `{BASE_URL}/api/oauth/microsoft/callback` as redirect URI and the delegated Graph permissions `Mail.ReadWrite`, `Mail.Send`, `User.Read`, `offline_access`; set `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` and, to restrict to your organisation, `MICROSOFT_TENANT`.
 
 ## Known limitations
 
 - The Gmail and Microsoft Graph connectors are covered by message-conversion tests but have not been exercised against the real services: validate them with your own OAuth credentials.
-- Replies cannot carry attachments or images, and received emails are shown as plain text. Of received attachments only the name, type and size are kept and shown; their content is neither stored nor sent to the LLM.
-- One folder per mailbox is fetched (the `SYNC_MAX_EMAILS` most recent at a time; how far back, and whether only unread mail, is chosen per mailbox with its folder, `SYNC_DAYS` days until then). For Outlook, only top-level folders are offered.
+- Replies cannot carry attachments or images, and received emails are shown as plain text. Of received attachments only the name, type and size are kept; their content is neither stored nor sent to the LLM.
+- One folder per mailbox is fetched, the `SYNC_MAX_EMAILS` most recent at a time. For Outlook, only top-level folders are offered.
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
-- No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).
+
+## Working on it
+
+[`HACKING.md`](HACKING.md) says how the repository is laid out, how to run the stack and the tests, and where each thing is documented.
 
 ## Third-party software
 
-Two libraries run in the browser on every page, both open source and bundled unmodified from their packages at build time, their licence notices kept at the end of the bundle:
-
-- [Squire](https://github.com/fastmail/Squire), the rich-text editor Fastmail built for composing email — MIT.
-- [DOMPurify](https://github.com/cure53/DOMPurify), the HTML sanitiser — Apache-2.0 or MPL-2.0.
-
-The rule editor adds [CodeMirror 6](https://codemirror.net) (MIT) with Elo's own language support, `@enspirit/codemirror-lang-elo`; it is loaded only by the page that edits an attribute. The login QR code is drawn by `qrcode-generator` (MIT). On the server, rules are compiled and type-checked by [`@enspirit/elo`](https://elo-lang.org) (MIT).
-
-The server's dependencies are listed in `package.json`; all are under permissive licences.
+Bundled unmodified in what the browser loads, their licence notices kept at the end of the bundle: [Squire](https://github.com/fastmail/Squire), the rich-text editor (MIT); [DOMPurify](https://github.com/cure53/DOMPurify), the HTML sanitiser (Apache-2.0 or MPL-2.0); [CodeMirror 6](https://codemirror.net) with [Elo](https://elo-lang.org)'s language support, for the rule editor (MIT); `qrcode-generator` (MIT). The server's dependencies are listed in [`software/saras/package.json`](software/saras/package.json); all are under permissive licences.
 
 ## License
 

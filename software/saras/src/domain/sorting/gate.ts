@@ -4,7 +4,7 @@ import type { Address, Attachment, Priority } from '../model/email.ts';
  * The triage gate: every fetched email passes through it, and it decides whether a reply
  * is needed and with which prompt.
  *
- * It is an abstraction with several strategies (see index.ts): none at all, an LLM, and
+ * It is an abstraction with several strategies (see strategies.ts): none at all, an LLM, and
  * later others such as an external rules engine. A strategy sees a batch of mails and the
  * prompts it may choose from, and nothing else: no database, no mailbox.
  */

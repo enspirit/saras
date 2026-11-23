@@ -79,7 +79,7 @@ Green means: `lint` clean, and every test passing on both databases.
 - `src/domain/mailboxes/fetch-mailbox.ts`: fetch, then sort, then prepare proposals.
 - `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (driver and schema), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
 - `web/`: the interface's TypeScript, one page file per subject under `pages/` and one function per operation under `api/` (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
-- Data: PostgreSQL (see "Database").
+- Data: PostgreSQL, a server or the embedded one (`src/tooling/db.ts`).
 
 ### TypeScript
 

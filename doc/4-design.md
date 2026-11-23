@@ -190,7 +190,15 @@ One tab per audience, each with its own address.
 
 ## 7. Brands
 
-A brand is a folder: `theme.css` for the inputs of section 4, `brand.json` for the name, the tagline and the sign-in extras, plus its logo, favicon and fonts. A file missing from the folder falls back to the default brand's.
+A brand is a folder, named by `BRAND_DIR`: the look is changed without touching the code. A file missing from the folder falls back to the default brand's.
+
+| File | Role |
+| --- | --- |
+| `theme.css` | The inputs of section 4, a dozen variables: accent colour, background, text (light and dark), fonts, corner radius, light/dark mode. Everything else is derived from them. |
+| `brand.json` | `name` (title, tab, wording), `tagline` (one text, or one per language: `{ "fr": "…", "en": "…" }`), `logo` and `logoDark` (file names in the folder, optional). For the sign-in page, optionally: `byline` and `credit` (one text, or one per language) and `euHosting` (`true` when the installation and the AI it calls are hosted in Europe: the page then says so). |
+| `favicon.svg`, logos, fonts | Served from the folder. |
+
+`/styleguide.html` shows every token and component with the brand in place: it is the page to watch while tuning `theme.css`. Start from the default brand: `cp -r public/brand my-brand`, then `BRAND_DIR=./my-brand npm start`; with Docker, mount the folder.
 
 | Brand | Folder | What it shows |
 | --- | --- | --- |
