@@ -1,0 +1,18 @@
+[
+  {
+    "id": 900001,
+    "org_id": 900001,
+    "email": "demo@saras.example",
+    "password_hash": "scrypt$ryYluJMb5XYPETLqsA55Ug==$QYGYD9b2UjmySJLOe/aqVu9ncrbOZJP7NvQOm2dlHeG3OyQoWR8bymahdl1/3Ym6dst6HPGTKQjg257OjpdiHA==",
+    "role": "admin",
+    "language": "en",
+    "name": "Alex Morgan",
+    "model": null,
+    "signature": "Kind regards,\nAlex Morgan\nBrightwater Consulting",
+    "openrouter_key_enc": null,
+    "created_at": "2026-11-23 15:02:17 +0000",
+    "totp_secret_enc": null,
+    "totp_last_step": 0,
+    "recovery_codes_json": "[]"
+  }
+]

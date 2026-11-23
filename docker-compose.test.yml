@@ -18,3 +18,9 @@ services:
       - ./.env.commons
       - ./software/saras/env/devel.env
       - ./software/saras/env/test.env
+
+  storage:
+    volumes:
+      # Read-only here, writable on a laptop: a suite that could rewrite the
+      # seed it just installed is a suite that can make itself pass.
+      - ./software/storage/data:/home/app/data:ro

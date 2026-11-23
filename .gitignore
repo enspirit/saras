@@ -1,5 +1,7 @@
 node_modules/
-data/
+# The embedded database of a server run from a checkout, here or in its component
+/data/
+/software/saras/data/
 .env
 *.log
 # Browser code compiled from web/ by `npm run build`

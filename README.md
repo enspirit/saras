@@ -155,6 +155,8 @@ This builds the interface and starts saras on `http://localhost:3210` (`DEMO_POR
 
 The demo organisation has that mailbox connected and fetched, a **Topic** attribute decided by a rule, a **Who** attribute set by hand, a rule for the priority, and two boards. Replies you send are handed to the demo mail server and go nowhere; nothing is kept when the demo stops.
 
+The same organisation is a seed of the development stack: `emb up`, then `emb run storage:demo`, adds it to whatever the stack's database holds (see [`software/storage`](software/storage/README.md); it cannot fetch or send there yet).
+
 With `OPENROUTER_API_KEY` in the environment or in `.env`, the AI is the real one: it sorts what the rules leave and writes proposals. Without it, everything that needs no AI works. The demo needs the development dependencies (the mail servers are those of the tests), so it runs from a checkout, not from the Docker image.
 
 ## Getting started
@@ -226,6 +228,7 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | | |
 | --- | --- |
 | [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it, and its [README](software/saras/README.md) says what it answers for and how it is built. |
+| | [`storage/`](software/storage/) holds the seeds: the datasets the stack's database is put into, the demo among them. |
 | [`tests/`](tests/) | What proves it, from outside. [`webspicy/`](tests/webspicy/) is the black-box specification of the API, run through the front door of the stack; [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
 | [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), and the [decisions](doc/decisions/). |
 
@@ -239,6 +242,7 @@ emb run test            # unit and integration tests, on a checkout
 emb up                  # saras and a PostgreSQL server in Docker, on http://localhost:3000, sources watched
 emb run test:postgres   # the integration tests on that PostgreSQL server
 emb run test:webspicy   # the API's contract, from a container of its own
+emb run storage:demo    # add the demo organisation and its sample emails to the stack's database
 emb down
 ```
 

@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: The seeds — datasets the stack's database is put into, by dbagent
+
+# Thin wrappers over dbagent's rake tasks, all in its container (the compose
+# service `storage`). No image of ours: the service runs enspirit/dbagent,
+# pinned in docker-compose.base.yml, with data/ mounted.
+tasks:
+  demo:
+    description: Add the demo organisation to the database, or put it back as it was. Empties nothing else
+    executors:
+      - container
+    script: bundle exec rake "db:apply[demo]"
+
+  demo.rebuild:
+    description: Rebuild data/demo from what `npm run demo` sets up, in a stack of its own. Review the diff
+    # On the host: it starts and removes a compose project, and writes the seed.
+    executors:
+      - local
+    # The stack it starts runs what the image holds: the image is built first.
+    dependencies:
+      - saras:image
+    script: ./rebuild-demo
+
+  db.apply:
+    description: Add the ${S} seed to the database as a slice — nothing is emptied but what the seed itself replaces
+    executors:
+      - container
+    vars:
+      S: ${env:S:-demo}
+    script: bundle exec rake "db:apply[${S}]"
+
+  db.seed:
+    description: Install the ${S} seed — EMPTIES every table, then fills them with the seed
+    executors:
+      - container
+    vars:
+      S: ${env:S:-empty}
+    confirm:
+      message: This empties every table of the stack's database, whatever it holds
+      expect: empty
+    script: bundle exec rake "db:seed[${S}]"
+
+  db.flush:
+    description: Export the current database as the ${S} seed, inheriting ${I}
+    executors:
+      - container
+    vars:
+      S: ${env:S:-tmp}
+      I: ${env:I:-empty}
+    script: bundle exec rake "db:flush[${S},${I}]"
+
+  db.check:
+    description: Install every seed in turn and report — EMPTIES every table. For a database of its own
+    executors:
+      - container
+    confirm:
+      message: This empties every table of the stack's database, whatever it holds
+      expect: empty
+    script: bundle exec rake db:check-seeds
+
+  db.tables:
+    description: The tables, fewest dependencies first
+    executors:
+      - container
+    script: bundle exec rake db:tables
+
+  db.repl:
+    description: psql on the stack's database
+    executors:
+      - container
+    interactive: true
+    script: bundle exec rake db:ping db:repl

@@ -58,6 +58,43 @@ services:
       start_period: 20s
 
   # -------------------------------------------------------------------------
+  # storage — dbagent, long-running: `emb run storage:…` execs here. It owns
+  # the seeds (software/storage/data), the datasets the database is put into.
+  #
+  # Named `storage` rather than `dbagent` because emb picks a task's container
+  # by matching the service name to the component name.
+  #
+  # It waits for saras, not the reverse: the schema is the server's, created
+  # when it starts (doc/decisions/0001), and a seed needs its tables.
+  #
+  # Never deployed, never routed, no published port: its seed endpoint empties
+  # tables.
+  # -------------------------------------------------------------------------
+  storage:
+    image: enspirit/dbagent:3.11.0
+    depends_on:
+      saras:
+        condition: service_healthy
+    environment:
+      # Interpolated, never retyped: the same variables postgres reads.
+      DBAGENT_HOST: postgres
+      DBAGENT_DB: ${POSTGRES_DB:-saras}
+      DBAGENT_USER: ${POSTGRES_USER:-saras}
+      DBAGENT_PASSWORD: ${POSTGRES_PASSWORD:-saras}
+      DBAGENT_SUPER_USER: ${POSTGRES_USER:-saras}
+      DBAGENT_SUPER_PASSWORD: ${POSTGRES_PASSWORD:-saras}
+    volumes:
+      # What it is: its seeds. Writable, because `db.flush` writes a seed by
+      # dumping the database; read-only under the suites.
+      - ./software/storage/data:/home/app/data
+    healthcheck:
+      # /ping tests the database connection, not only the web server.
+      test: ['CMD', 'curl', '-fs', 'http://127.0.0.1:9292/ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # -------------------------------------------------------------------------
   # webspicy — the black-box specification of the API. It sleeps, and the
   # suite is `exec`ed into it. Not published to any registry.
   # -------------------------------------------------------------------------

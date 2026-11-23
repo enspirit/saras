@@ -29,6 +29,7 @@ A component is a directory under one of the three, with a `README.md` that is it
 | Component | What it is | Runs as |
 | --- | --- | --- |
 | [`software/saras`](../software/saras/) | The server and the interface it serves: every operation, and the state. | The service `saras`, image `saras/saras`: the front door |
+| [`software/storage`](../software/storage/) | The seeds: the datasets the stack's database is put into, the demo among them. | The service `storage`, which is `dbagent`: never deployed, never published |
 | [`tests/webspicy`](../tests/webspicy/) | The black-box specification of the API: what a URL answers, knowing nothing of what serves it. | The service `webspicy`, image `saras/webspicy`, never published: it sleeps, and the suite is run inside it |
 | [`tests/harness`](../tests/harness/) | The checks on the repository itself: links, import boundaries. | On a checkout, inside `emb run lint` |
 
@@ -72,6 +73,8 @@ No suite talks to a real one. Why the stand-ins live inside the tests and not in
 ## State
 
 The state is kept in PostgreSQL and controlled by `software/saras` alone, which creates its schema when it starts: [decision 0001](decisions/0001-the-server-creates-its-schema.md).
+
+A named state is a seed of `software/storage`, loaded by `dbagent`: `emb run storage:demo` adds the demo organisation to whatever the database holds. A seed is made by arriving at the state through the API and flushing it, never by hand.
 
 ## The two stacks
 

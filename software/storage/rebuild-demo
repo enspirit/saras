@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Rebuilds data/demo: `emb run storage:demo.rebuild`.
+#
+# A seed is written by arriving at the state and flushing it. The state is the
+# one `npm run demo` sets up, through the API of a server; the server is one of
+# a stack of its own, started for this and removed afterwards, so that the
+# database of the development stack is never touched.
+#
+# What is authored by hand stays as it is: data/demo/metadata.json and the two
+# hooks. Only the rows are replaced. Review the diff before committing.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+# The first id of everything the demo holds. High, so that the demo can be
+# added to a database that holds other rows; data/demo/*.sql name it too.
+FIRST_ID=900001
+
+overlay=$(mktemp)
+trap 'compose down -v >/dev/null 2>&1 || true; rm -f "$overlay"' EXIT INT TERM
+# The stack under the suites (no published port, no secret of a laptop, the
+# development APP_SECRET), with the seeds writable.
+cat > "$overlay" <<'YAML'
+services:
+  storage:
+    volumes:
+      - ./software/storage/data:/home/app/data
+YAML
+
+compose() {
+  docker compose -p saras-demo-rebuild --project-directory . --env-file .env.commons \
+    -f docker-compose.base.yml -f docker-compose.test.yml -f "$overlay" "$@"
+}
+sql() { compose exec -T postgres psql -v ON_ERROR_STOP=1 -U saras -d saras -At "$@"; }
+rake() { compose exec -T storage bundle exec rake "$@" 2>&1 | grep -v 'warning:\|Gemfile' || true; }
+
+compose up -d --wait postgres saras storage
+
+# Every id starts high.
+sql -c "SELECT format('ALTER SEQUENCE %I RESTART WITH $FIRST_ID;', sequencename) FROM pg_sequences WHERE schemaname = 'public'" | sql -q
+
+# Arrive at the state, then flush it — beside the seed, because a flush
+# deletes its target, hooks included.
+compose exec -T saras node scripts/demo-onto.ts http://127.0.0.1:3000
+rake "db:flush[tmp/demo,empty]"
+
+# The session of whoever set the demo up is a credential: it is not kept.
+rm -f software/storage/data/tmp/demo/*-sessions.json
+find software/storage/data/demo -name '[0-9]*.json' -delete
+cp software/storage/data/tmp/demo/[0-9]*.json software/storage/data/demo/
+rm -rf software/storage/data/tmp
+
+# The seed is one that installs: on an empty database, as a slice, twice, and
+# its account signs in.
+rake "db:seed[empty]"
+rake "db:apply[demo]"
+rake "db:apply[demo]"
+compose exec -T saras node -e "
+  const answer = await fetch('http://127.0.0.1:3000/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'demo@saras.example', password: 'saras-demo-password' }) });
+  if (!answer.ok) { console.error('The demo account cannot sign in: ' + answer.status); process.exit(1); }
+"
+echo "data/demo is rebuilt: $(sql -c 'SELECT count(*) FROM emails') emails. Review the diff."

@@ -55,7 +55,7 @@ Two operations are specified, and only as far as a suite with no way to choose i
 
 What is not specified, and why:
 
-- **Anything that succeeds in writing.** A sign-up that succeeds leaves an organisation behind, and the same address is refused at the next run. A case that writes needs to start from a named state, and nothing installs one: the server creates its schema itself and no service owns seeds ([decision 0001](../../doc/decisions/0001-the-server-creates-its-schema.md)).
+- **Anything that succeeds in writing.** A sign-up that succeeds leaves an organisation behind, and the same address is refused at the next run. A case that writes needs to start from a named state. [`software/storage`](../../software/storage/) now has seeds, but installing one empties the database, and on a laptop the stack's database is the development one: the suite does not reset it yet. It needs a database of its own first.
 - **Anything a member does.** A session is obtained by signing up or signing in, hence the same need.
 - **A wrong password at sign-in.** It counts towards the lock-out of the origin, ten in fifteen minutes, kept in the server's memory: ten runs would lock the suite out of every route a visitor may attempt.
 - **Anything that needs a mailbox or the LLM.** The stack has neither ([decision 0003](../../doc/decisions/0003-third-parties-stood-in-inside-the-tests.md)).

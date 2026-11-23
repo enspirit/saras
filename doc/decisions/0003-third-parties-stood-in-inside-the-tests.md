@@ -16,4 +16,4 @@ They stay there. The stack of `docker-compose.test.yml` has no mailbox and no LL
 
 ## What would reverse this
 
-The first black-box specification of an operation that needs a mailbox or the LLM (ConnectMailbox, FetchMailbox, WriteWithPrompt). The stand-ins then move to `world/`, as images that are never published, and the integration tests use the same definitions.
+The demo seed of `software/storage`, whose mailbox has no mail server to fetch from or send through in the stack; or the first black-box specification of an operation that needs a mailbox or the LLM (ConnectMailbox, FetchMailbox, WriteWithPrompt). The stand-ins then move to `world/`, as images that are never published, and the integration tests use the same definitions.
