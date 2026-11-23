@@ -9,11 +9,6 @@ export const SplitPanel = (main: Child, aside: Child): HTMLElement =>
 /** The heading of one part of a split panel. */
 export const PartTitle = (title: string): HTMLHeadingElement => Heading(2, title);
 
-/** A few things that follow one another, numbered: each said in a few words, then explained. */
-export const Points = (points: { title: string; text: Child }[]): HTMLOListElement =>
-  h('ol', { class: 'points' }, points.map(({ title, text }, i) =>
-    h('li', { class: 'points__point' }, h('span', { class: 'points__mark', 'aria-hidden': 'true' }, i + 1), h('span', { class: 'points__text' }, h('strong', {}, title), h('span', { class: 'points__detail' }, text)))));
-
 /** One thing that is so, and where it is chosen. */
 export interface Standing {
   /** What it is about, in a word. */

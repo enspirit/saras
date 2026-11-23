@@ -72,3 +72,7 @@ tasks:
     pre:
       - harness:test
       - saras:test
+
+  publish:
+    description: Build the image that ships for amd64 and arm64, and push it to Docker Hub. From main or a version tag; needs a docker login
+    script: bin/publish

@@ -46,6 +46,6 @@ export const ruleGuidePage = guard(async () => {
     Columns([shapeCard(), checkedCard()], [fieldsCard()]),
     Block(Heading(2, t('rules.recipesTitle'))),
     CodeCards(RECIPES.map(recipeCard)),
-    Columns(briefCard({ label: t('rules.eloSite'), href: 'https://elo-lang.org' }), skillCard(null)),
+    Columns(briefCard({ label: t('rules.eloSite'), href: 'https://elo-lang.org' }), skillCard()),
   ));
 });

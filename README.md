@@ -66,12 +66,13 @@ npm run build
 npm start
 ```
 
-Or as a Docker image, from the root of the repository and with the same `.env`:
+Or as a Docker image, with the same variables in a `.env`. [`enspirit/saras`](https://hub.docker.com/r/enspirit/saras) is published for amd64 and arm64: `latest` follows `main`, and a release has its own tag (`1.2.3`, `1.2`).
 
 ```sh
-docker build --target saras-production -t saras software/saras
-docker run -d --name saras -p 127.0.0.1:3000:3000 --env-file software/saras/.env -v saras-data:/data saras
+docker run -d --name saras -p 127.0.0.1:3000:3000 --env-file .env -v saras-data:/data enspirit/saras
 ```
+
+To build it yourself, from the root of a checkout: `docker build --target saras-production -t saras software/saras`.
 
 Open http://localhost:3000 and create your organisation: you become its administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
 

@@ -1,5 +1,5 @@
 // The prompts of the organisation (administrators): the list, how much each is used, when the AI
-// writes and with which one, and the ready-made ones still to add.
+// writes, and the ready-made ones still to add.
 
 import type { Prompt } from '../../shared/prompt.ts';
 import { deletePrompt, readPrompts, readPromptTemplates } from '../api/prompts.ts';

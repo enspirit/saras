@@ -10,11 +10,11 @@ import { roleLabel } from './people.ts';
 import { Badge } from '../ui/atoms/badge.ts';
 import { Button } from '../ui/atoms/button.ts';
 import { Input, Select } from '../ui/atoms/input.ts';
-import { Strong } from '../ui/atoms/text.ts';
+import { Strong, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
 import { Callout } from '../ui/molecules/callout.ts';
 import { Card } from '../ui/molecules/card.ts';
-import { Field } from '../ui/molecules/field.ts';
+import { Block, Field } from '../ui/molecules/field.ts';
 import { Actions, FormRow } from '../ui/molecules/form.ts';
 import { Table } from '../ui/molecules/table.ts';
 
@@ -57,6 +57,7 @@ export function InviteCard(onInvited: (invitation: NewInvitation) => unknown): I
   const element = Card({ title: t('members.invite'), form: true },
     SubmitForm(invite, '…', async () => onInvited(await inviteMember(email.value, role.value)),
       FormRow(Field(t('members.email'), email), Field(t('members.role'), role, { size: 'narrow' })),
+      Block(Text({ muted: true, small: true }, t('members.roleHint'))),
       Actions(invite, Button(t('common.cancel'), { onClick: () => (element.hidden = true) })),
     ),
   );

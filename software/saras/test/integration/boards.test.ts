@@ -39,6 +39,10 @@ test('each condition of a filter is one condition on emails, with its own parame
   assert.match(sql[6]!, /subject ILIKE \$9 OR e\.body_text ILIKE \$9/);
   assert.equal(sql[7], `e.attachments_json = '[]'`);
   assert.deepEqual(conditionsOf({}, 3), { sql: [], params: [] }, 'an empty filter shows every email');
+  // Whatever a filter holds, its values travel as parameters; of the key of an attribute only a number is written.
+  const hostile = conditionsOf({ attributes: { "1' OR '1'='1": ["x' OR '1'='1"] }, from: "'; DROP TABLE emails; --" }, 3);
+  assert.deepEqual(hostile.sql, [`(e.attributes_json::jsonb -> 'NaN' ->> 'value') = ANY($3)`, '(e.from_name ILIKE $4 OR e.from_addr ILIKE $4)']);
+  assert.deepEqual(hostile.params, [["x' OR '1'='1"], "%'; DROP TABLE emails; --%"]);
 });
 
 let stack: Stack;

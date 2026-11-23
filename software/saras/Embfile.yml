@@ -4,8 +4,8 @@ description: saras — the server, and the interface it serves
 resources:
   image:
     type: 'docker/image'
-    # The thing that ships. No registry is configured yet: an operator builds
-    # it from a checkout.
+    # The thing that ships, as enspirit/saras on Docker Hub. `emb run publish`
+    # pushes it, not `emb resources publish`: decision 0006 says why.
     publish: true
     params:
       # The context is this directory, and the Dockerfile the one beside it.

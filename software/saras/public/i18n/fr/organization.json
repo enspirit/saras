@@ -1,6 +1,5 @@
 {
   "title": "Organisation",
-  "intro": "Ces réglages s’appliquent à tous les membres et à toutes les boîtes de l’organisation.",
   "name": "Nom",
   "model": "Modèle",
   "modelHint": "Un identifiant OpenRouter, « fournisseur/modèle » : il rédige et trie pour tous les membres. Laisser vide pour celui du serveur. Il doit avoir un fournisseur qui ne conserve aucune donnée, sinon les requêtes sont refusées.",

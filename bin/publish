@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# The image that ships, on Docker Hub: `emb run publish`. CI runs it from main
+# and from a version tag, after the suites; nothing else pushes an image.
+#
+#   main      -> enspirit/saras:latest and :sha-<commit>
+#   v1.2.3    -> enspirit/saras:1.2.3 and :1.2
+#   v1.2.3-x  -> enspirit/saras:1.2.3-x, and nothing a stable tag would follow
+#
+# Built here rather than by `emb resources publish`, which names an image
+# <project>/<component> under its registry (enspirit/saras/saras, which Docker
+# Hub has no place for), pushes one tag and builds one architecture.
+#
+# The ref and the commit are GitHub's when it runs this, the checkout's
+# otherwise. PUBLISH_DRY_RUN=1 prints the build and pushes nothing.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+image=${PUBLISH_IMAGE:-docker.io/enspirit/saras}
+platforms=${PUBLISH_PLATFORMS:-linux/amd64,linux/arm64}
+ref=${GITHUB_REF:-$(git symbolic-ref -q HEAD || echo "refs/tags/$(git describe --tags --exact-match)")}
+sha=${GITHUB_SHA:-$(git rev-parse HEAD)}
+
+if [ "$ref" = refs/heads/main ]; then
+  tags=(latest "sha-${sha:0:7}")
+elif [[ "$ref" =~ ^refs/tags/v([0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
+  tags=("${ref#refs/tags/v}" "${BASH_REMATCH[1]}")
+elif [[ "$ref" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.-]+$ ]]; then
+  tags=("${ref#refs/tags/v}")
+else
+  echo "publish: $ref is neither main nor a version tag (v1.2.3): nothing is published from it" >&2
+  exit 1
+fi
+
+build=(docker buildx build software/saras
+  --target saras-production
+  --platform "$platforms"
+  --label "org.opencontainers.image.source=https://github.com/enspirit/saras"
+  --label "org.opencontainers.image.revision=$sha"
+  --push)
+for tag in "${tags[@]}"; do
+  build+=(--tag "$image:$tag")
+done
+
+if [ -n "${PUBLISH_DRY_RUN:-}" ]; then
+  printf '%q ' "${build[@]}"
+  echo
+  exit 0
+fi
+exec "${build[@]}"

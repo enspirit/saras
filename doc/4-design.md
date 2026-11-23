@@ -175,7 +175,7 @@ Once connected, **Mailboxes** is a table: mailbox, folder watched, last fetched,
 
 ### 6.6 Administration (US-05 to US-07, US-50 to US-53)
 
-- **Prompts** is a table of name, description and use, followed by the ready-made prompts not yet added. A prompt is edited on its own address, with a breadcrumb back; what members changed in its proposals, and why, sits beside the instructions.
+- **Prompts** is a table of name, description and use, followed by the choice of when the AI writes, then the ready-made prompts not yet added. A prompt is edited on its own address, with a breadcrumb back; what members changed in its proposals, and why, sits beside the instructions.
 - **Users** is a table of members (name, role, joined, personal mailboxes) and one of pending invitations. *Invite someone* opens the form; the fresh link appears as a callout with Copy.
 
 A destructive action at rest is a red icon button. It is always confirmed in a dialog whose red button says what will happen.
@@ -184,9 +184,9 @@ A destructive action at rest is a red icon button. It is always confirmed in a d
 
 One tab per audience, each with its own address.
 
-- **You:** name, signature, then the AI (model, own key), with one Save; language in a card of its own.
-- **Organisation** (administrators): name, triage, whether proposals are on demand or prepared at fetch, the organisation's model and key; the link to the style guide.
-- **Privacy:** the guarantees as six titled points with their signs, then the one setting that is the user's part, then the technical detail.
+- **You:** name and signature, with one Save; password, language and deleting one's account, each in a card of its own.
+- **Organisation** (administrators): its name, and deleting it.
+- **AI & privacy:** the model and the key, beside what the AI does at sorting and at writing with what it is sent at each; then the guarantees as five titled points with their signs, and the one setting that is the user's part.
 
 ## 7. Brands
 
