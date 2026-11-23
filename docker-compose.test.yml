@@ -13,14 +13,7 @@
 services:
   saras:
     env_file:
+      # After env/base.env, which docker-compose.base.yml lists. Later files win.
       - ./.env.commons
       - ./software/saras/env/devel.env
       - ./software/saras/env/test.env
-    environment:
-      # How the suites reach it: by service name, on the compose network.
-      BASE_URL: http://saras:3000
-
-  webspicy:
-    env_file:
-      - ./.env.commons
-      - ./tests/webspicy/env/devel.env

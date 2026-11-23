@@ -9,7 +9,7 @@ Nothing else is public.
 - **The operations, over HTTP**, under `/api`: one route per operation or observation, requests and answers in JSON. Their inventory, with the clauses of each, is [`doc/2-operations.md`](../../doc/2-operations.md), by area: access, settings, mailboxes, sorting, replying, prompts, attributes, boards. A route is open to visitors, to members (the default) or to administrators only; a write that is not JSON is answered `415`.
 - **A refusal** is a status and a message code the interface translates: invalid `400`, unauthenticated `401`, forbidden `403`, not found `404`, conflict `409`, gone `410`, too many attempts `429`, a mail host or the LLM failing `502`.
 - **The interface**: `/` and `/styleguide.html`, with the files they load. `/brand/*` is the brand folder when there is one, file by file, over the default brand.
-- **Its configuration**: the environment variables of [`.env.example`](.env.example), and nothing else. `APP_SECRET` is the only one it refuses to start without.
+- **Its configuration**: the environment variables of [`env/base.env`](env/base.env), each described there with its default, and nothing else. `APP_SECRET` is the only one it refuses to start without.
 - **The brand folder** named by `BRAND_DIR`: `theme.css`, `brand.json`, a logo, a favicon. [`brands/example/`](brands/example/) is a complete one.
 - **The image** `saras/saras`, built from this directory: it listens on `PORT` (3000), keeps the embedded database under `/data`, and is healthy when `GET /api/public` answers.
 - **What it does on its own**: ExpireSessions and ErasePastRetention hourly and at start; FetchMailbox for every mailbox each `SYNC_INTERVAL_MINUTES`.

@@ -217,7 +217,7 @@ The schema is created at startup (`src/tooling/db/schema.ts`). The tests run on 
 
 ## Configuration
 
-Every variable is described in [`software/saras/.env.example`](software/saras/.env.example). The default model (`OPENROUTER_MODEL`) and the OpenRouter key can be overridden per organisation and per user in **Settings**.
+Every variable is described in [`software/saras/env/base.env`](software/saras/env/base.env), with its default; [`software/saras/.env.example`](software/saras/.env.example) is the short list an installation starts its `.env` from. The default model (`OPENROUTER_MODEL`) and the OpenRouter key can be overridden per organisation and per user in **Settings**.
 
 ## The repository
 

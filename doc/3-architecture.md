@@ -82,7 +82,7 @@ The state is kept in PostgreSQL and controlled by `software/saras` alone, which 
 
 `emb up` starts the first; `COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up` the second. `base` names images and `emb` builds them, from each component's Embfile.
 
-Environment, four files with one reader each: `.env.commons` (shared, non-secret, loaded by `emb` into every task), `.env` (secrets and one laptop's overrides; reaches a container only where the compose file lists it), `software/saras/env/devel.env` (how the container sees the stack), `env/test.env` (what only the suites change).
+Environment, by who reads it: `.env.commons` (the stack's vocabulary: shared, non-secret, loaded by `emb` into every task), `.env` (secrets and one laptop's overrides; reaches a container only where the compose file lists it), and for each component `env/base.env` (what it is configured by, in every stack: every variable it reads, with its default; listed in `docker-compose.base.yml`), `env/devel.env` (what the development stack changes) and `env/test.env` (what only the suites change). Later files win, in that order, and `.env` last.
 
 ## Tests
 
