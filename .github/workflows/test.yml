@@ -55,8 +55,9 @@ jobs:
       - run: emb run test:postgres
       # The API's contract, through the front door, from a container of its own.
       - run: emb run test:webspicy
-      # The demo seed still fits the schema the server creates.
-      - run: emb run storage:demo
+      # The demo still stands: its seed fits the schema the server creates, and
+      # its mailbox is connected and fetched.
+      - run: emb run demo
       # The image that ships: nothing else in CI builds that target.
       - run: emb resources build --flavor production --publishable
       - if: always()

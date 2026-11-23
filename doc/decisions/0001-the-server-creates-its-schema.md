@@ -2,7 +2,7 @@
 
 ## Context
 
-saras runs on PostgreSQL in two ways with one schema and one set of queries: a server, when `DATABASE_URL` is set, and an embedded PostgreSQL ([PGlite](https://pglite.dev)) inside the server's own process otherwise. The embedded one is what `npm start` and `npm run demo` use, and what the tests run on by default: nothing to install to try the tool (US-84).
+saras runs on PostgreSQL in two ways with one schema and one set of queries: a server, when `DATABASE_URL` is set, and an embedded PostgreSQL ([PGlite](https://pglite.dev)) inside the server's own process otherwise. The embedded one is what `npm start` uses, and what the tests run on by default: nothing to install to try the tool (US-84).
 
 The repository's layout otherwise expects the schema, the grants and the seeds to be files of a data component, applied by `dbagent` as a one-shot service the others wait for.
 

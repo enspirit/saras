@@ -146,18 +146,18 @@ This is the main design constraint.
 ## Trying it with sample emails
 
 ```bash
-cd software/saras
-npm install
-npm run demo
+npm install -g @enspirit/emb
+emb up          # saras, a PostgreSQL server and the mail servers of the stack, in Docker
+emb run demo
 ```
 
-This builds the interface and starts saras on `http://localhost:3210` (`DEMO_PORT` changes the port), with a mail server of its own on this machine holding twenty sample emails, in English and in French: requests for quotes, invoices, problems, meetings, and the newsletters, notifications and automatic replies around them. It prints the address and the account to sign in with.
+This gives saras on `http://localhost:3000` a demo organisation, **Brightwater Consulting**, and prints the account to sign in with. Its mailbox is one of this machine, holding twenty sample emails, in English and in French: requests for quotes, invoices, problems, meetings, and the newsletters, notifications and automatic replies around them.
 
-The demo organisation has that mailbox connected and fetched, a **Topic** attribute decided by a rule, a **Who** attribute set by hand, a rule for the priority, and two boards. Replies you send are handed to the demo mail server and go nowhere; nothing is kept when the demo stops.
+The organisation has that mailbox connected and fetched, a **Topic** attribute decided by a rule, a **Who** attribute set by hand, a rule for the priority, and two boards. Replies you send are handed to the mailbox of the stack and go nowhere (`emb logs mailbox` shows them). Nothing leaves the machine, and `emb run demo` again puts everything back as it was.
 
-The same organisation is a seed of the development stack: `emb up`, then `emb run storage:demo`, adds it to whatever the stack's database holds (see [`software/storage`](software/storage/README.md); it cannot fetch or send there yet).
+It is added to whatever the stack's database already holds, and empties nothing else: the organisation is a seed ([`software/storage`](software/storage/README.md)), and the mailbox a stand-in ([`world/mailbox`](world/mailbox/README.md)).
 
-With `OPENROUTER_API_KEY` in the environment or in `.env`, the AI is the real one: it sorts what the rules leave and writes proposals. Without it, everything that needs no AI works. The demo needs the development dependencies (the mail servers are those of the tests), so it runs from a checkout, not from the Docker image.
+With `OPENROUTER_API_KEY` in `.env`, the AI is the real one: it writes proposals, and sorts once the organisation's settings say so. Without it, everything that needs no AI works.
 
 ## Getting started
 
@@ -229,7 +229,7 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | --- | --- |
 | [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it, and its [README](software/saras/README.md) says what it answers for and how it is built. |
 | | [`storage/`](software/storage/) holds the seeds: the datasets the stack's database is put into, the demo among them. |
-| [`world/`](world/) | What it runs in. [`fakesmtp/`](world/fakesmtp/) is the outgoing mail server of the stack: it delivers nothing, and shows what saras gave it on `http://localhost:1080`. |
+| [`world/`](world/) | What it runs in. [`mailbox/`](world/mailbox/) is a member's mailbox as the stack meets it: sample emails, and replies that go nowhere. [`fakesmtp/`](world/fakesmtp/) is the outgoing mail server of the stack: it delivers nothing, and shows what saras gave it on `http://localhost:1080`. |
 | [`tests/`](tests/) | What proves it, from outside. [`webspicy/`](tests/webspicy/) is the black-box specification of the API, run through the front door of the stack; [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
 | [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), and the [decisions](doc/decisions/). |
 
@@ -243,7 +243,7 @@ emb run test            # unit and integration tests, on a checkout
 emb up                  # saras and a PostgreSQL server in Docker, on http://localhost:3000, sources watched
 emb run test:postgres   # the integration tests on that PostgreSQL server
 emb run test:webspicy   # the API's contract, from a container of its own
-emb run storage:demo    # add the demo organisation and its sample emails to the stack's database
+emb run demo            # the demo organisation and its mailbox of sample emails, wholly on this machine
 emb down
 ```
 

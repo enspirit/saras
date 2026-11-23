@@ -58,6 +58,28 @@ services:
       start_period: 20s
 
   # -------------------------------------------------------------------------
+  # mailbox — a member's mailbox, as the stack meets it: an IMAP server holding
+  # sample emails and an SMTP server that sends nothing (world/mailbox).
+  #
+  # In the network of saras, not beside it: saras refuses a mail server
+  # without TLS unless it is one of its own machine, and this one listens on
+  # 127.0.0.1 there (doc/decisions/0005). Nothing else reaches it.
+  # Never published and never deployed.
+  # -------------------------------------------------------------------------
+  mailbox:
+    image: saras/mailbox:${DOCKER_TAG:-latest}
+    network_mode: service:saras
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - require('node:net').connect(1143,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # -------------------------------------------------------------------------
   # fakesmtp — the mail server saras hands its own mail to (the link of a lost
   # password), as the stack meets it: it accepts everything on port 25,
   # delivers nothing, and shows what it was given on port 1080.

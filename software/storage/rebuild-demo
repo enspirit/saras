@@ -2,12 +2,12 @@
 # Rebuilds data/demo: `emb run storage:demo.rebuild`.
 #
 # A seed is written by arriving at the state and flushing it. The state is the
-# one `npm run demo` sets up, through the API of a server; the server is one of
-# a stack of its own, started for this and removed afterwards, so that the
+# one software/saras/scripts/demo-organisation.ts sets up, through the API of a
+# server; the server is one of a stack of its own, started for this and removed afterwards, so that the
 # database of the development stack is never touched.
 #
-# What is authored by hand stays as it is: data/demo/metadata.json and the two
-# hooks. Only the rows are replaced. Review the diff before committing.
+# What is authored by hand stays as it is: data/demo/metadata.json and the
+# hook. Only the rows are replaced. Review the diff before committing.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -40,7 +40,7 @@ sql -c "SELECT format('ALTER SEQUENCE %I RESTART WITH $FIRST_ID;', sequencename)
 
 # Arrive at the state, then flush it — beside the seed, because a flush
 # deletes its target, hooks included.
-compose exec -T saras node scripts/demo-onto.ts http://127.0.0.1:3000
+compose exec -T saras node scripts/demo-organisation.ts http://127.0.0.1:3000
 rake "db:flush[tmp/demo,empty]"
 
 # The session of whoever set the demo up is a credential: it is not kept.
@@ -58,4 +58,4 @@ compose exec -T saras node -e "
   const answer = await fetch('http://127.0.0.1:3000/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'demo@saras.example', password: 'saras-demo-password' }) });
   if (!answer.ok) { console.error('The demo account cannot sign in: ' + answer.status); process.exit(1); }
 "
-echo "data/demo is rebuilt: $(sql -c 'SELECT count(*) FROM emails') emails. Review the diff."
+echo "data/demo is rebuilt: $(sql -c 'SELECT count(*) FROM attributes') attributes, $(sql -c 'SELECT count(*) FROM boards') boards. Review the diff."

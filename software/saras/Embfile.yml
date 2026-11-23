@@ -78,12 +78,6 @@ tasks:
       - local
     script: npm start
 
-  demo:
-    description: saras with a mailbox of sample emails, nothing kept when it stops
-    executors:
-      - local
-    script: npm run demo
-
   test:postgres:
     description: The integration tests on the stack's PostgreSQL server, as in production. Needs the running stack
     # In the saras container: it reaches the database by service name, with

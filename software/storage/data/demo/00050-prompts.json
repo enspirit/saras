@@ -6,6 +6,6 @@
     "name": "Standard professional reply",
     "description": "General case: a request for information, a question from a colleague, client or partner.",
     "system_prompt": "You write professional, clear and courteous replies. Get to the point: answer each question asked, in order, in short sentences. Polite without being obsequious, no empty phrases.",
-    "created_at": "2026-11-23 15:02:17 +0000"
+    "created_at": "2026-11-23 15:22:34 +0000"
   }
 ]

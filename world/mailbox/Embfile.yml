@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: A member's mailbox, as the stack meets it — sample emails, and replies that go nowhere
+
+resources:
+  image:
+    type: 'docker/image'
+    # Not published: a stand-in in a registry next to the product is a
+    # stand-in somebody eventually deploys.
+    publish: false
+
+flavors:
+  dev:
+    patches:
+      - path: /resources/image/rebuildTrigger
+        op: add
+        value:
+          strategy: watch-paths
+          paths:
+            - world/mailbox

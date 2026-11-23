@@ -1,4 +1,4 @@
-// The emails the demo mailbox holds: invented correspondents writing to an invented consultancy,
+// The emails the mailbox holds: invented correspondents writing to an invented consultancy,
 // in English and in French, as a small business receives them — requests, invoices, problems,
 // meetings, and the automated mail around them.
 
@@ -6,7 +6,7 @@ export interface SampleEmail {
   from: string;
   address: string;
   subject: string;
-  /** When it was received, in hours before the demo starts. */
+  /** When it was received, in hours before the mailbox starts. */
   hoursAgo: number;
   text: string;
   /** Already read in the mailbox. */

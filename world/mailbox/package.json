@@ -1,0 +1,10 @@
+{
+  "name": "mailbox",
+  "private": true,
+  "description": "The mailbox of the stack: an IMAP and an SMTP server holding sample emails",
+  "type": "module",
+  "dependencies": {
+    "hoodiecrow-imap": "2.1.0",
+    "smtp-server": "3.21.6"
+  }
+}

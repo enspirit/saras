@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# The demo, wholly on this machine: `emb run demo`, on a stack that is up.
+#
+# The demo organisation is a seed (software/storage/data/demo), which the task
+# applies before calling this script. What is left is its mailbox: the one of
+# the stack (world/mailbox), made anew so that it holds its sample emails as
+# they were, then connected to the organisation through saras's API.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# Made anew rather than restarted: it lives in the network of the saras
+# container, and one that was started before saras was last made anew is no
+# longer in it.
+docker compose up -d --force-recreate --no-deps mailbox >/dev/null 2>&1
+for _ in $(seq 30); do
+  [ "$(docker compose ps --format '{{.Health}}' mailbox)" = healthy ] && break
+  sleep 1
+done
+
+docker compose exec -T saras node scripts/demo-mailbox.ts http://127.0.0.1:3000
+
+cat <<TXT
+
+saras demo — ${BASE_URL:-http://localhost:${SARAS_PORT:-3000}}
+
+  Sign in with   demo@saras.example
+  Password       saras-demo-password
+
+  The mailbox holds sample emails. Replies you send are handed to the mailbox of
+  the stack and go nowhere; \`emb logs mailbox\` shows them. Nothing leaves this
+  machine, unless a key in .env lets the AI sort and write.
+  \`emb run demo\` again puts the demo back as it was.
+TXT

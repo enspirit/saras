@@ -5,14 +5,8 @@ description: The seeds — datasets the stack's database is put into, by dbagent
 # service `storage`). No image of ours: the service runs enspirit/dbagent,
 # pinned in docker-compose.base.yml, with data/ mounted.
 tasks:
-  demo:
-    description: Add the demo organisation to the database, or put it back as it was. Empties nothing else
-    executors:
-      - container
-    script: bundle exec rake "db:apply[demo]"
-
   demo.rebuild:
-    description: Rebuild data/demo from what `npm run demo` sets up, in a stack of its own. Review the diff
+    description: Rebuild data/demo by setting the demo organisation up through the API, in a stack of its own. Review the diff
     # On the host: it starts and removes a compose project, and writes the seed.
     executors:
       - local

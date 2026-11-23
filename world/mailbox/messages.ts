@@ -1,12 +1,14 @@
-// The demo mailbox: a mail server on this machine holding the sample emails, and an outgoing
-// server that keeps what it is given to send. Nothing leaves the machine.
-import { startMailbox } from '../../test/support/mailbox.ts';
-import type { Messages } from '../../test/support/mailbox.ts';
-import { AUTOMATED, CLIENTS } from './emails.ts';
+// A sample email as a mail server holds it: its headers and its body, as mail carries them.
 import type { SampleEmail } from './emails.ts';
 
-/** The address the demo mailbox answers to. */
-export const DEMO_ADDRESS = 'me@corp.example';
+/** The address the mailbox answers to. */
+export const ADDRESS = 'me@corp.example';
+
+export interface Message {
+  raw: string;
+  internaldate: Date;
+  flags: string[];
+}
 
 const received = ({ hoursAgo }: SampleEmail): Date => new Date(Date.now() - hoursAgo * 3_600_000);
 
@@ -30,10 +32,10 @@ function bodyOf({ text, pdf }: SampleEmail): string[] {
 }
 
 /** A sample email as the mail server holds it. */
-const message = (email: SampleEmail, index: number): Messages[number] => ({
+export const message = (email: SampleEmail, index: number): Message => ({
   raw: [
     `From: ${header(email.from)} <${email.address}>`,
-    `To: ${DEMO_ADDRESS}`,
+    `To: ${ADDRESS}`,
     `Subject: ${header(email.subject)}`,
     `Message-ID: <${index}-${slug(email.subject)}@${email.address.split('@')[1]}>`,
     `Date: ${received(email).toUTCString()}`,
@@ -44,7 +46,3 @@ const message = (email: SampleEmail, index: number): Messages[number] => ({
   internaldate: received(email),
   flags: email.read ? ['\\Seen'] : [],
 });
-
-/** Starts the demo mailbox with every sample email in its inbox, the oldest first as a mailbox has them. */
-export const startDemoMailbox = () =>
-  startMailbox([...CLIENTS, ...AUTOMATED].sort((a, b) => b.hoursAgo - a.hoursAgo).map(message), {});

@@ -7,6 +7,7 @@ How the repository is laid out, what each part is responsible for, and who may r
 The directory says what a thing is for.
 
 ```
+bin/            the few commands of the repository itself: the demo
 doc/            what saras is for, what it does, and the decisions taken
 software/       what we write and ship          one directory per component
 tests/          what proves it, from outside    each a component too
@@ -30,6 +31,7 @@ A component is a directory under one of the three, with a `README.md` that is it
 | --- | --- | --- |
 | [`software/saras`](../software/saras/) | The server and the interface it serves: every operation, and the state. | The service `saras`, image `saras/saras`: the front door |
 | [`software/storage`](../software/storage/) | The seeds: the datasets the stack's database is put into, the demo among them. | The service `storage`, which is `dbagent`: never deployed, never published |
+| [`world/mailbox`](../world/mailbox/) | A member's mailbox, as the stack meets it: an IMAP server holding sample emails, an SMTP server that sends nothing. | The service `mailbox`, image `saras/mailbox`, in the network of `saras`; never published |
 | [`world/fakesmtp`](../world/fakesmtp/) | The outgoing mail server, as the stack meets it: it delivers nothing and shows what it was given. | The service `fakesmtp`, image `saras/fakesmtp`, never published |
 | [`tests/webspicy`](../tests/webspicy/) | The black-box specification of the API: what a URL answers, knowing nothing of what serves it. | The service `webspicy`, image `saras/webspicy`, never published: it sleeps, and the suite is run inside it |
 | [`tests/harness`](../tests/harness/) | The checks on the repository itself: links, import boundaries. | On a checkout, inside `emb run lint` |
@@ -67,16 +69,17 @@ A new arrow is a decision, not an edit.
 | --- | --- | --- |
 | PostgreSQL | A server | The same image in the stack; the embedded PostgreSQL in the tests that need only a checkout |
 | The server's own outgoing mail server | A real one, when `SMTP_URL` names it | `world/fakesmtp` in the stack; an SMTP server started by the tests that need only a checkout |
-| Mail providers, identity providers | The real ones | A real IMAP server and a real SMTP server started by the tests, in their own process |
+| Mail providers | The real ones | `world/mailbox` in the stack, for the demo; a real IMAP server and a real SMTP server started by the tests, in their own process |
+| Identity providers | The real ones | None: the tests stand in for their answers |
 | The LLM (OpenRouter) | The real one, zero retention enforced | A stand-in started by the tests, recording what it is sent; none in the stack, which has no key |
 
-No suite talks to a real one. Why the stand-ins of the mailboxes and of the LLM live inside the tests and not in `world/` is [decision 0003](decisions/0003-third-parties-stood-in-inside-the-tests.md).
+No suite talks to a real one. Why the tests keep stand-ins of their own for the mailboxes and the LLM is [decision 0003](decisions/0003-third-parties-stood-in-inside-the-tests.md); why the mailbox of the stack runs in the network of saras is [decision 0005](decisions/0005-the-mailbox-of-the-stack-is-local-to-saras.md).
 
 ## State
 
 The state is kept in PostgreSQL and controlled by `software/saras` alone, which creates its schema when it starts: [decision 0001](decisions/0001-the-server-creates-its-schema.md).
 
-A named state is a seed of `software/storage`, loaded by `dbagent`: `emb run storage:demo` adds the demo organisation to whatever the database holds. A seed is made by arriving at the state through the API and flushing it, never by hand.
+A named state is a seed of `software/storage`, loaded by `dbagent`: `emb run demo` adds the demo organisation to whatever the database holds, then connects its mailbox, which is not saras's to keep but the mail provider's. A seed is made by arriving at the state through the API and flushing it, never by hand.
 
 ## The two stacks
 

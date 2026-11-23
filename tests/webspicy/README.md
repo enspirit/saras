@@ -58,6 +58,6 @@ What is not specified, and why:
 - **Anything that succeeds in writing.** A sign-up that succeeds leaves an organisation behind, and the same address is refused at the next run. A case that writes needs to start from a named state. [`software/storage`](../../software/storage/) now has seeds, but installing one empties the database, and on a laptop the stack's database is the development one: the suite does not reset it yet. It needs a database of its own first.
 - **Anything a member does.** A session is obtained by signing up or signing in, hence the same need.
 - **A wrong password at sign-in.** It counts towards the lock-out of the origin, ten in fifteen minutes, kept in the server's memory: ten runs would lock the suite out of every route a visitor may attempt.
-- **Anything that needs a mailbox or the LLM.** The stack has neither ([decision 0003](../../doc/decisions/0003-third-parties-stood-in-inside-the-tests.md)).
+- **Anything that needs the LLM.** The stack has none ([decision 0003](../../doc/decisions/0003-third-parties-stood-in-inside-the-tests.md)). It has a mailbox now ([`world/mailbox`](../../world/mailbox/)), which ConnectMailbox and FetchMailbox could be specified against once the suite can start from a seed.
 
 Until then the operations are held by `software/saras/test/integration/`, from inside the component.

@@ -48,6 +48,14 @@ tasks:
     pre:
       - saras:setup
 
+  demo:
+    description: The demo, wholly on this machine — its organisation, a mailbox of sample emails, replies that go nowhere. On a stack that is up
+    # The organisation is a seed: it is added to whatever the database holds,
+    # or put back as it was. Then its mailbox, which a script connects.
+    pre:
+      - storage:db.apply
+    script: bin/demo
+
   lint:
     description: The static checks, every component
     pre:

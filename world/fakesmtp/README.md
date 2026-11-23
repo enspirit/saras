@@ -21,7 +21,7 @@ emb run fakesmtp:purge   # forget them
 | --- | --- | --- |
 | The server's own outgoing mail server (`SMTP_URL`, `MAIL_FROM`) | It takes the letter of a lost password and delivers it to the member. | `software/saras/test/integration/lost-password.test.ts`, against an SMTP server the test starts itself |
 
-It does not stand in for a member's mailbox: saras sends a member's replies through the mailbox's own servers, and refuses one that is neither local nor speaking TLS.
+It does not stand in for a member's mailbox: saras sends a member's replies through the mailbox's own servers. That is [`world/mailbox`](../mailbox/).
 
 ## Must not
 

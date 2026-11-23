@@ -8,12 +8,14 @@ The tests of `software/saras/test/integration/` already stand in for them, in th
 
 ## Decision
 
-They stay there. The stack has a stand-in for one third party only, the server's own outgoing mail server (`world/fakesmtp`), which needs nothing of saras to be what it is. It has no mailbox and no LLM: the server in it has no key, whatever a laptop's `.env` holds, and an address for OpenRouter where nothing listens (`software/saras/env/test.env`).
+They stay there, for the tests: each test needs a mailbox of its own, with its own messages, and reads afterwards what was sent.
+
+The stack has stand-ins of its own in `world/`: the server's outgoing mail server (`world/fakesmtp`) and, for the demo, one mailbox of sample emails (`world/mailbox`). It has no LLM: the server in it has no key, whatever a laptop's `.env` holds, and an address for OpenRouter where nothing listens (`software/saras/env/test.env`).
 
 ## Alternatives
 
-- **`world/mailbox` and `world/openrouter` as services of the stack.** Needed by a black-box suite that connects a mailbox or asks for a proposal. Until such a suite exists they would be a second copy of what `test/support/` does, with nothing to hold the two equal.
+- **The tests use the stand-ins of the stack.** `world/mailbox` holds one fixed mailbox; the tests would share it, and each other's leftovers. And `world/openrouter`, which nothing needs until a black-box suite asks for a proposal.
 
 ## What would reverse this
 
-The demo seed of `software/storage`, whose mailbox has no mail server to fetch from or send through in the stack; or the first black-box specification of an operation that needs a mailbox or the LLM (ConnectMailbox, FetchMailbox, WriteWithPrompt). The stand-ins then move to `world/`, as images that are never published, and the integration tests use the same definitions.
+The first black-box specification of an operation that needs the LLM (WriteWithPrompt): a stand-in for it then joins `world/`. And the day `world/mailbox` can be given a mailbox per test, the integration tests can use it instead of their own.

@@ -23,7 +23,7 @@ No other component of ours. Third parties, each reached through one place:
 | | Reached through | What is expected of it |
 | --- | --- | --- |
 | PostgreSQL: a server (`DATABASE_URL`), or the embedded one ([PGlite](https://pglite.dev)) | `src/tooling/db.ts`, `db/` | Keeps the state. Both speak the same SQL: one schema, one set of queries. |
-| A mail provider: IMAP / SMTP, Gmail, Microsoft Graph | `src/tooling/mail/`, one provider per kind behind one interface | Controls the mailbox: lists folders, gives the messages of one, sends, files a draft. |
+| A mail provider: IMAP / SMTP, Gmail, Microsoft Graph | `src/tooling/mail/`, one provider per kind behind one interface | Controls the mailbox: lists folders, gives the messages of one, sends, files a draft. In the stack, [`world/mailbox`](../../world/mailbox/) for IMAP / SMTP. |
 | An identity provider: Google, Microsoft | `src/tooling/mail/oauth.ts` | Grants lasting access to a mailbox by sign-in. |
 | The LLM, through OpenRouter | `src/tooling/llm/openrouter.ts`, the only place where email content leaves the application | Honours `zdr` and `data_collection: deny`, or refuses the request. This is contractual: it cannot be verified from here. |
 | The DNS | `src/tooling/mail/lookup.ts` | Says who hosts the mail of a domain. |
