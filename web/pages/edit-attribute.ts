@@ -1,81 +1,77 @@
-// Making an attribute, or changing one: what it is, and how it is decided when an email is
-// sorted — by nobody, by a rule written in Elo, by the AI. A rule can be tried before it is kept.
+// Making an attribute, or changing one: what it is, its values and their colours, and how it is
+// decided when an email is sorted — by hand, by a rule written in Elo, by the AI.
 
-import { ATTRIBUTE_KINDS, DECIDERS, EMAIL_FOR_RULES } from '../../shared/attribute.ts';
-import type { Attribute, AttributeGiven, AttributeKind, Decider, RuleTried } from '../../shared/attribute.ts';
-import { createAttribute, deleteAttribute, editAttribute, readAttributes, sortAgainByRule, tryRule } from '../api/attributes.ts';
-import { t, tRich } from '../i18n.ts';
+import { ATTRIBUTE_KINDS, DECIDERS, VALUE_COLORS } from '../../shared/attribute.ts';
+import type { Attribute, AttributeGiven, AttributeKind, Decider } from '../../shared/attribute.ts';
+import { createAttribute, deleteAttribute, editAttribute, readAttributes, sortAgainByRule } from '../api/attributes.ts';
+import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard, SubmitForm, toast } from './actions.ts';
 import { attributeName, valueLabel } from './attribute-names.ts';
+import { ruleSection } from './attribute-rule.ts';
+import type { EloEditorMaker } from './attribute-rule.ts';
 import { DECIDER_LABEL } from './attributes.ts';
+import { briefCard, fieldsCard, skillCard } from './rule-aside.ts';
 import { shell } from './shell.ts';
 import { Button, ButtonLink } from '../ui/atoms/button.ts';
-import { Input, Select, Textarea } from '../ui/atoms/input.ts';
-import { Code, Link, Muted, Prose, Text } from '../ui/atoms/text.ts';
-import { Card, CardSection } from '../ui/molecules/card.ts';
+import { Input, Select } from '../ui/atoms/input.ts';
+import { Text } from '../ui/atoms/text.ts';
+import { Card } from '../ui/molecules/card.ts';
+import { Choices } from '../ui/molecules/choices.ts';
+import type { ChoicesHandle } from '../ui/molecules/choices.ts';
 import type { EloEditorHandle } from '../ui/molecules/elo-editor.ts';
 import { Block, Field } from '../ui/molecules/field.ts';
 import { Actions } from '../ui/molecules/form.ts';
 import { PageHeader } from '../ui/molecules/page-header.ts';
-import { Table } from '../ui/molecules/table.ts';
-import { Page } from '../ui/organisms/page.ts';
-
-type EloEditorMaker = typeof import('../ui/molecules/elo-editor.ts').EloEditor;
+import { ValueEditor } from '../ui/molecules/value-editor.ts';
+import type { ValueEditorHandle } from '../ui/molecules/value-editor.ts';
+import { Columns, Page } from '../ui/organisms/page.ts';
 
 const KIND_LABEL: Record<AttributeKind, string> = { choice: 'attributes.kindChoice', member: 'attributes.kindMember' };
+const DECIDER_HINT: Record<Decider, string> = { nobody: 'attributes.hintNobody', elo: 'attributes.hintElo', ai: 'attributes.hintAi', eloAi: 'attributes.hintEloAi' };
 
 interface AttributeFields {
   name: HTMLInputElement;
   kind: HTMLSelectElement;
-  values: HTMLTextAreaElement;
-  decidedBy: HTMLSelectElement;
-  elo: EloEditorHandle;
+  values: ValueEditorHandle;
+  decidedBy: ChoicesHandle;
 }
 
-/** The AI decides the two pre-configured attributes only, for now. */
-const decidersFor = (attribute: Attribute | null): readonly Decider[] => (attribute?.system ? DECIDERS : ['nobody', 'elo']);
-
-/** The fields. Of a pre-configured attribute only how it is decided can be changed. */
-const attributeFields = (attribute: Attribute | null, EloEditor: EloEditorMaker): AttributeFields => ({
-  name: Input({ required: true, maxLength: 60, value: attribute ? attributeName(attribute) : '', disabled: attribute?.system }),
-  kind: Select(ATTRIBUTE_KINDS.map((kind) => ({ value: kind, label: t(KIND_LABEL[kind]), selected: attribute?.kind === kind })), { disabled: attribute?.system }),
-  values: Textarea({ rows: 5, value: attribute?.kind === 'choice' ? attribute.values.map((value) => valueLabel(attribute, value)).join('\n') : '', disabled: attribute?.system }),
-  decidedBy: Select(decidersFor(attribute).map((decider) => ({ value: decider, label: t(DECIDER_LABEL[decider]), selected: attribute?.decidedBy === decider }))),
-  elo: EloEditor({ value: attribute?.elo ?? '', label: t('attributes.ruleTitle'), hint: t('attributes.ruleExample') }),
+/** The values of a choice, to type and colour; those of a pre-configured attribute are shown as they are. */
+const valuesField = (attribute: Attribute | null): ValueEditorHandle => ValueEditor({
+  values: attribute?.kind === 'choice' ? attribute.values.map((value) => ({ label: valueLabel(attribute, value), color: value.color ?? 'grey' })) : [],
+  colors: VALUE_COLORS,
+  fixed: attribute?.system,
+  placeholder: t('attributes.addValue'),
+  colorLabel: (label) => t('attributes.colorOf', { label }),
+  removeLabel: (label) => t('attributes.removeValue', { label }),
 });
 
-const valuesTyped = (f: AttributeFields): string[] => f.values.value.split('\n').map((line) => line.trim()).filter(Boolean);
+/** Who decides: the four ways, each explained. The AI decides the two pre-configured attributes only, for now. */
+const decidedByField = (attribute: Attribute | null): ChoicesHandle => Choices({
+  legend: t('attributes.decidedBy'),
+  name: 'decidedBy',
+  value: attribute?.decidedBy ?? 'nobody',
+  options: DECIDERS.map((decider) => {
+    const notYet = !attribute?.system && (decider === 'ai' || decider === 'eloAi');
+    return { value: decider, title: t(DECIDER_LABEL[decider]), hint: t(notYet ? 'attributes.hintNotYet' : DECIDER_HINT[decider]), disabled: notYet };
+  }),
+});
 
-const written = (f: AttributeFields): AttributeGiven => ({ name: f.name.value, kind: f.kind.value as AttributeKind, values: valuesTyped(f), decidedBy: f.decidedBy.value as Decider, elo: f.elo.value() });
+/** The fields. Of a pre-configured attribute only how it is decided can be changed. */
+const attributeFields = (attribute: Attribute | null): AttributeFields => ({
+  name: Input({ required: true, maxLength: 60, value: attribute ? attributeName(attribute) : '', disabled: attribute?.system }),
+  kind: Select(ATTRIBUTE_KINDS.map((kind) => ({ value: kind, label: t(KIND_LABEL[kind]), selected: attribute?.kind === kind })), { disabled: attribute?.system }),
+  values: valuesField(attribute),
+  decidedBy: decidedByField(attribute),
+});
 
-/** What the rule says of recent emails, shown under it. */
-const triedTable = (tried: RuleTried[]): HTMLDivElement =>
-  Table({ title: t('attributes.triedTitle'), columns: [t('attributes.triedEmail'), t('attributes.triedValue')] }, tried.map((one) => [[one.subject || t('mailbox.noSubject'), ' ', Muted(one.from)], one.value ?? Muted(t('attributes.triedNothing'))]));
-
-/** The rule: what it is given, where Elo is explained, and a way to see it at work on recent emails before it is kept. */
-function ruleSection(attribute: Attribute | null, f: AttributeFields): HTMLDivElement {
-  let shown: HTMLElement = Block(Text({ muted: true, small: true }, t('attributes.tryHint')));
-  const section = CardSection(t('attributes.ruleTitle'),
-    Block(Text({ muted: true, small: true }, tRich('attributes.ruleIntro', {}, { link: (label) => Link(label, 'https://elo-lang.org'), code: Code }))),
-    Field(null, f.elo.element),
-    Actions(ActionButton(t('attributes.try'), '…', async () => {
-      const tried = triedTable(await tryRule(f.elo.value(), attribute?.key ?? null, valuesTyped(f)));
-      shown.replaceWith(tried);
-      shown = tried;
-    }, { icon: 'search' })),
-    shown,
-    Block(Text({ muted: true, small: true }, t('attributes.ruleGiven'))),
-    Prose(EMAIL_FOR_RULES),
-    Block(Text({ muted: true, small: true }, t('attributes.skillHint'))),
-    Actions(ButtonLink(t('attributes.skill'), { href: attribute ? `/api/attributes/${attribute.key}/skill` : '/api/attributes/skill' })),
-  );
-  return section;
-}
+const written = (f: AttributeFields, elo: EloEditorHandle): AttributeGiven =>
+  ({ name: f.name.value, kind: f.kind.value as AttributeKind, values: f.values.values(), decidedBy: f.decidedBy.value() as Decider, elo: elo.value() });
 
 /** EditAttribute then SortAgainByRule, once confirmed: the rule as written here is kept, then applied to the emails already kept. */
-const sortAgainButton = (attribute: Attribute, f: AttributeFields): HTMLButtonElement => ActionButton(t('attributes.sortAgain'), t('attributes.sortingAgain'), async () => {
+const sortAgainButton = (attribute: Attribute, given: () => AttributeGiven): HTMLButtonElement => ActionButton(t('attributes.sortAgain'), t('attributes.sortingAgain'), async () => {
   if (!(await confirmAction(t('attributes.confirmSortAgain', { name: attributeName(attribute) }), t('attributes.sortAgain'), false))) return;
-  await editAttribute(attribute.key, written(f));
+  await editAttribute(attribute.key, given());
   const { examined, changed } = await sortAgainByRule(attribute.key);
   toast(t('attributes.sortedAgain', { examined, changed }));
 }, { icon: 'refresh-cw' });
@@ -88,31 +84,35 @@ const deleteButton = (attribute: Attribute): HTMLButtonElement => ActionButton(t
 }, { variant: 'danger' });
 
 /** CreateAttribute or EditAttribute, then back to the list. */
-function attributeForm(attribute: Attribute | null, f: AttributeFields): HTMLFormElement {
+function attributeForm(attribute: Attribute | null, EloEditor: EloEditorMaker): { form: HTMLFormElement; editor: EloEditorHandle } {
+  const f = attributeFields(attribute);
+  const { section, editor } = ruleSection(attribute, EloEditor, () => f.values.values());
+  const given = (): AttributeGiven => written(f, editor);
   const save = Button(attribute ? t('common.save') : t('attributes.create'), { variant: 'primary', type: 'submit' });
-  return SubmitForm(save, '…', async () => {
-    await (attribute ? editAttribute(attribute.key, written(f)) : createAttribute(written(f)));
+  const form = SubmitForm(save, '…', async () => {
+    await (attribute ? editAttribute(attribute.key, given()) : createAttribute(given()));
     toast(t('attributes.saved'));
     location.hash = '#/attributes';
   },
     Field(t('attributes.name'), f.name, { hint: attribute?.system && t('attributes.fixed') }),
     Field(t('attributes.kind'), f.kind),
-    Field(t('attributes.values'), f.values, { hint: t('attributes.valuesHint') }),
-    Field(t('attributes.decidedBy'), f.decidedBy, { hint: t('attributes.decidedByHint') }),
-    ruleSection(attribute, f),
+    Field(t('attributes.values'), f.values.element, { hint: !attribute?.system && t('attributes.valuesHint') }),
+    f.decidedBy.element,
+    section,
     attribute && Block(Text({ muted: true, small: true }, t('attributes.sortAgainHint'))),
-    Actions(save, attribute && sortAgainButton(attribute, f), ButtonLink(t('common.cancel'), { href: '#/attributes' }), attribute && !attribute.system && deleteButton(attribute)),
+    Actions(save, attribute && sortAgainButton(attribute, given), ButtonLink(t('common.cancel'), { href: '#/attributes' }), attribute && !attribute.system && deleteButton(attribute)),
   );
+  return { form, editor };
 }
 
-/** The form for a new attribute, or with `key` for one of the organisation's. */
+/** The form for a new attribute, or with `key` for one of the organisation's; beside it, what helps write its rule. */
 export const editAttributePage = guard(async (key: string | null) => {
   const attribute = (await readAttributes()).find((a) => a.key === key) ?? null;
   // The editor is loaded with this page only: it is by far the heaviest thing the interface has.
   const { EloEditor } = await import('../ui/molecules/elo-editor.ts');
-  const fields = attributeFields(attribute, EloEditor);
+  const { form, editor } = attributeForm(attribute, EloEditor);
   shell(Page(
     PageHeader({ title: attribute ? t('attributes.editTitle', { name: attributeName(attribute) }) : t('attributes.newTitle'), intro: t('attributes.formIntro'), crumbs: [{ label: t('attributes.title'), href: '#/attributes' }] }),
-    Card({ form: true }, attributeForm(attribute, fields)),
+    Columns(Card({}, form), [fieldsCard((path) => editor.insert(path)), briefCard({ label: t('rules.guideMore'), href: '#/attributes/guide' }), skillCard(attribute)]),
   ));
 });

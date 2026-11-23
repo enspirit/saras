@@ -25,6 +25,7 @@
 @import url("atoms/brand-mark.css") layer(atoms);
 @import url("atoms/avatar.css") layer(atoms);
 @import url("atoms/chip.css") layer(atoms);
+@import url("atoms/value-chip.css") layer(atoms);
 @import url("atoms/todo-mark.css") layer(atoms);
 @import url("atoms/spacer.css") layer(atoms);
 
@@ -38,6 +39,9 @@
 @import url("molecules/code-list.css") layer(molecules);
 @import url("molecules/check-group.css") layer(molecules);
 @import url("molecules/elo-editor.css") layer(molecules);
+@import url("molecules/attribute-bar.css") layer(molecules);
+@import url("molecules/value-editor.css") layer(molecules);
+@import url("molecules/rule-help.css") layer(molecules);
 @import url("molecules/form.css") layer(molecules);
 @import url("molecules/card.css") layer(molecules);
 @import url("molecules/page-header.css") layer(molecules);

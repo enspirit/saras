@@ -1,6 +1,6 @@
 // State: the attributes an organisation gives its emails, and how each is decided.
 import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
-import type { Attribute, AttributeGiven, AttributeValue, Decider } from '../../../shared/attribute.ts';
+import type { Attribute, AttributeGiven, AttributeValue, Decider, ValueGiven } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
 import { PRIORITY_VALUES, STATUS_VALUES, attributeTold, deciderOfStatus } from '../computations/attributes.ts';
 import { DEFAULT_STATUS_RULE } from '../computations/default-rules.ts';
@@ -64,7 +64,7 @@ export async function attributeOf(db: Db, organization: OrganizationRow, key: un
   return attribute;
 }
 
-const valuesKept = (labels: string[]): string => JSON.stringify(labels.map((label, index) => ({ key: String(index + 1), label })));
+const valuesKept = (values: ValueGiven[]): string => JSON.stringify(values.map(({ label, color }, index) => ({ key: String(index + 1), label, color })));
 
 export async function addAttribute(db: Db, organizationId: number, { name, kind, values, decidedBy, elo }: AttributeGiven): Promise<string> {
   const added = await db.one<{ id: number }>('INSERT INTO attributes (org_id, name, kind, values_json, decided_by, elo) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id', [organizationId, name, kind, valuesKept(values), decidedBy, elo]);

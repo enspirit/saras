@@ -511,7 +511,8 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** an administrator, **I want** to define the attributes we organise ourselves by (a topic, an assignee, urgent or not), **so that** boards can show our mail the way we work.
 
 - **Configuration → Attributes** lists the organisation's attributes. Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
-- A new attribute is a choice among values I type, or a member of the organisation.
+- A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, changed by a click on its dot; the values of the pre-configured attributes have theirs. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
+- Above the list, three steps say how an email gets a value: its rule, then the AI, then a member by hand.
 - Each attribute says who decides it when an email is sorted: nobody (set by hand), a rule, the AI, or the rule then the AI where the rule says nothing. The AI decides only the two pre-configured attributes for now.
 
 ### US-94 — Sort with rules that cost nothing and say what they do
@@ -521,7 +522,11 @@ These are behaviours of the system rather than screens, but they are what the pr
 - The rule that sets automated mail aside is the rule of **Stands in**: it is there to read, and I can change it.
 - **Try it on recent emails** shows what a rule would say of my twenty most recent emails, without changing any.
 - The rule is written in an editor that knows Elo: colours, matching brackets, completion of its functions.
-- The type of what a rule is given is shown under the editor, and the rule is checked against it: a field an email does not have, a text used as a number, a condition that is not true-or-false are refused when the rule is tried or saved, with the line and the column.
+- The rule is checked against the type of the email as I write it, a moment after I stop: **Fits the email**, or the number of problems. A field an email does not have, a text used as a number, a condition that is not true-or-false is underlined where it is and said under the editor with its line and column. Where a field was probably meant (`subjet` for `subject`), one click writes it. A rule with a problem is refused when it is tried or saved.
+- Beside the editor, **What a rule can read** lists the fields of the email with their types: a click writes one in the rule. **Elo in brief** gives the few constructs most rules need.
+- A rule may answer `{value: …, reason: …}`: the reason is kept with the value and shown on the email.
+- Trying a rule shows, for each recent email, the value it has now beside what the rule says, and how many emails get each value. An email whose value was set by hand is marked as staying as it is.
+- **Writing a rule** (from the list of attributes, or beside the editor) is a guide: the shape of a rule, what it can read, rules to start from that can be copied, Elo in brief, what is checked, and the skill for an AI assistant.
 - **Download the skill for an AI agent** gives a small archive (a folder with one `SKILL.md`) to hand to an AI assistant: it names the attribute and its values, says what a rule is given and must answer, and teaches enough Elo to write one. What the assistant writes is pasted in the editor and tried like any rule.
 - A rule Elo cannot read is refused with Elo's own message. A rule that fails or runs too long on an email leaves the attribute undecided for that email.
 - Rules apply to the emails fetched from then on. **Save and apply to the emails already kept** has a rule look again at those: it says how many it looked at and how many changed. Values set by hand stay; emails replied or placed by a member stay where they are; an email the rule of **Stands in** no longer places goes back to be sorted.
@@ -529,7 +534,9 @@ These are behaviours of the system rather than screens, but they are what the pr
 ### US-95 — Set an attribute by hand
 **As** a member, **I want** to set or correct the value of an attribute on an email, **so that** it shows on the right boards whatever the rules said.
 
-- Above an email, each attribute but **Stands in** is a list of its values; the line says who decided the current one (its rule, the AI, by hand).
+- Above an email, each attribute but **Stands in** is on one line: its name, its value as a chip, and the sign of who decided it (a rule, the AI, by hand); an attribute without a value is offered with a “+”. The line says what each sign means.
+- A click on an attribute opens its values to choose from, “no value” included, and says who decided the current one and why when that is known: the reason its rule gave, or what the AI said when it sorted, for the priority.
+- In a list of emails, each email shows its values for the attributes the organisation made.
 - A value I set is recorded as set by hand and is not overwritten by later sorting.
 - Where an email stands is changed by acting on it: the sorting corrections, a reply.
 

@@ -1,41 +1,71 @@
-// The attributes of an email being read: what each is, who decided it, and a way to set it by hand.
+// The attributes of an email being read: the value each has, who decided it and why, and a way to set it by hand.
 
-import { STATUS } from '../../shared/attribute.ts';
+import { PRIORITY, STATUS } from '../../shared/attribute.ts';
 import type { Attribute, ValueOfEmail } from '../../shared/attribute.ts';
-import type { EmailWithItsReply } from '../../shared/email.ts';
+import type { EmailWithItsReply, Priority } from '../../shared/email.ts';
 import { setEmailAttribute } from '../api/attributes.ts';
 import { t } from '../i18n.ts';
 import { messageOf, toast } from './actions.ts';
-import { attributeName, valueLabel } from './attribute-names.ts';
-import { Select } from '../ui/atoms/input.ts';
+import { attributeName } from './attribute-names.ts';
+import { chipFor, chipOf, noValueChip, signOf, signs } from './attribute-values.ts';
 import type { Child } from '../ui/dom.ts';
-import { Field } from '../ui/molecules/field.ts';
-import { FormRow } from '../ui/molecules/form.ts';
-
-const SOURCE = { rule: 'attributes.sourceRule', ai: 'attributes.sourceAi', user: 'attributes.sourceUser' };
+import { AttributeBar } from '../ui/molecules/attribute-bar.ts';
+import type { AttributeEntry } from '../ui/molecules/attribute-bar.ts';
 
 /** The value an email has for an attribute. Its priority is kept apart: the AI or nobody may have set it. */
 const valueOf = (email: EmailWithItsReply, attribute: Attribute): ValueOfEmail | undefined =>
-  email.attributes[attribute.key] ?? (attribute.key === 'priority' ? { value: email.priority, source: 'ai' } : undefined);
+  email.attributes[attribute.key] ?? (attribute.key === PRIORITY ? { value: email.priority, source: 'ai' } : undefined);
 
-/** SetEmailAttribute: the value chosen is the member's from then on. */
-async function setByHand(email: EmailWithItsReply, attribute: Attribute, value: string): Promise<void> {
+/** Who sorted an email, when it was the AI: then what it said of it also explains its priority. */
+const sortedByAi = ({ triageSource, triageReasonCode }: EmailWithItsReply): boolean => Boolean(triageSource) && !['rule', 'user', 'none'].includes(triageSource ?? '') && !triageReasonCode;
+
+/** Why a value is what it is, in the words of who decided: a rule that said, or the AI when it sorted. Nothing when it is not known. */
+function reasonOf(email: EmailWithItsReply, attribute: Attribute, has: ValueOfEmail): string {
+  if (has.source === 'rule') return has.reason && !has.reason.startsWith('code:') ? has.reason : '';
+  return has.source === 'ai' && attribute.key === PRIORITY && sortedByAi(email) ? email.triageReason : '';
+}
+
+const NOTES = { rule: 'attributes.noteRule', ai: 'attributes.noteAi', user: 'attributes.noteUser' };
+
+/** Under the values: who decided the one it has, why when that is known, and what setting it by hand does. */
+function noteOf(email: EmailWithItsReply, attribute: Attribute, has: ValueOfEmail | undefined): Child[] {
+  if (!has) return [t('attributes.noteNone'), t('attributes.noteByHand')];
+  const reason = reasonOf(email, attribute, has);
+  return [t(NOTES[has.source]), reason && t('attributes.noteReason', { reason }), has.source !== 'user' && t('attributes.noteByHand')].filter(Boolean);
+}
+
+/** SetEmailAttribute: the value chosen is the member's from then on; the email on screen is brought up to date. */
+async function setByHand(email: EmailWithItsReply, attribute: Attribute, value: string, shown: () => void): Promise<void> {
   try {
     await setEmailAttribute(email.id, attribute.key, value || null);
+    if (value) email.attributes[attribute.key] = { value, source: 'user' };
+    else delete email.attributes[attribute.key];
+    if (attribute.key === PRIORITY) email.priority = (value || 'normal') as Priority;
+    shown();
     toast(t('attributes.valueSet', { name: attributeName(attribute) }));
   } catch (e) {
     toast(messageOf(e), true);
   }
 }
 
-/** One attribute: its values to choose from, and who decided the one it has. */
-function attributeField(email: EmailWithItsReply, attribute: Attribute): HTMLDivElement {
+/** One attribute: its value, the sign of who decided it, and its values to choose from, "none" last. */
+function entryOf(email: EmailWithItsReply, attribute: Attribute, shown: () => void): AttributeEntry {
   const has = valueOf(email, attribute);
-  const none = { value: '', label: t('attributes.noValue'), selected: !has };
-  const select = Select([none, ...attribute.values.map((v) => ({ value: v.key, label: valueLabel(attribute, v), selected: has?.value === v.key }))], { onchange: () => void setByHand(email, attribute, select.value) });
-  return Field(attributeName(attribute), select, { hint: has && email.attributes[attribute.key] ? t(SOURCE[has.source]) : undefined, size: 'narrow' });
+  const choices = attribute.values.map((v) => ({ key: v.key, label: chipOf(attribute, v), chosen: has?.value === v.key }));
+  return {
+    name: attributeName(attribute),
+    value: has ? chipFor(attribute, has.value) : null,
+    decider: has && signOf(has.source),
+    choices: [...choices, { key: '', label: noValueChip(), chosen: !has }],
+    note: noteOf(email, attribute, has),
+    onPick: (key) => void setByHand(email, attribute, key, shown),
+  };
 }
 
 /** Every attribute but where the email stands, which is changed by acting on it. */
-export const attributesOfEmail = (email: EmailWithItsReply, attributes: Attribute[]): Child =>
-  attributes.some((a) => a.key !== STATUS) && FormRow(attributes.filter((a) => a.key !== STATUS).map((attribute) => attributeField(email, attribute)));
+export function attributesOfEmail(email: EmailWithItsReply, attributes: Attribute[]): Child {
+  const others = attributes.filter((a) => a.key !== STATUS);
+  if (!others.length) return null;
+  const bar: HTMLElement = AttributeBar(others.map((attribute) => entryOf(email, attribute, () => bar.replaceWith(attributesOfEmail(email, attributes) as Node))), { label: t('attributes.ofEmail'), legend: signs() });
+  return bar;
+}

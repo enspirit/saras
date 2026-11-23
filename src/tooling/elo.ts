@@ -23,6 +23,32 @@ const firstLine = (e: unknown): string => String(e instanceof Error ? e.message 
 /** A diagnostic in a line: where, and what. The schema an unknown field was looked for in is left out: it is long, and shown beside the editor. */
 const told = (diagnostic: Diagnostic): string => formatDiagnostic(diagnostic).replace(/ of \{.*\}: the schema is closed\./, '.');
 
+/** Something wrong in a rule, and where. */
+export interface Found {
+  line: number;
+  column: number;
+  /** Elo's own name for the kind of problem, e.g. `unknown-field`; `syntax` when the rule cannot be read at all. */
+  code: string;
+  message: string;
+}
+
+/** Where Elo's reader stopped, from what it says: "… at line 1, column 10". */
+function unread(e: unknown): Found {
+  const message = firstLine(e);
+  const [, line, column] = message.match(/ at line (\d+), column (\d+)$/) ?? [];
+  return { line: Number(line) || 1, column: Number(column) || 1, code: 'syntax', message: message.replace(/ at line \d+, column \d+$/, '') };
+}
+
+/** Everything wrong in a rule, each with its place: what cannot be read, then what does not fit the type of its input `_`. */
+export function foundIn(source: string, inputType: string): Found[] {
+  try {
+    const errors = typecheck(parse(source, { locations: true }), { inputType: parseTypeExpr(inputType) }).filter((d) => d.severity === 'error');
+    return errors.map((d) => ({ line: d.loc?.line ?? 1, column: d.loc?.column ?? 1, code: d.code, message: d.message }));
+  } catch (e) {
+    return [unread(e)];
+  }
+}
+
 /** What the type checker objects to in a rule, given the type of its input `_` as an Elo type expression. */
 export function problemsOf(source: string, inputType: string): string[] {
   const errors = typecheck(parse(source, { locations: true }), { inputType: parseTypeExpr(inputType) }).filter((d) => d.severity === 'error');

@@ -4,7 +4,7 @@ import { deleteAttribute } from '../../domain/attributes/delete-attribute.ts';
 import { editAttribute } from '../../domain/attributes/edit-attribute.ts';
 import { setEmailAttribute } from '../../domain/attributes/set-email-attribute.ts';
 import { SKILL_NAME, ruleWritingSkill } from '../../domain/computations/rule-writing-skill.ts';
-import { tryRule } from '../../domain/observations/attributes.ts';
+import { checkRule, tryRule } from '../../domain/observations/attributes.ts';
 import { sortAgainByRule } from '../../domain/sorting/sort-again-by-rule.ts';
 import { attributeOf, attributesOf } from '../../domain/state/attributes.ts';
 import { zip } from '../zip.ts';
@@ -24,6 +24,8 @@ const remove: Handle = async ({ world }, req, res) => {
 
 const tryIt: Handle = async ({ world }, req, res) => void res.json(await tryRule(world.db, actorOf(req), req.body));
 
+const check: Handle = async (_, req, res) => void res.json(checkRule(req.body));
+
 const sortAgain: Handle = async ({ world }, req, res) => void res.json(await sortAgainByRule(world, actorOf(req), req.params.key));
 
 /** The skill an AI agent is handed to write a rule: a folder with its one file, as an archive to download. For one attribute, it names it and its values. */
@@ -42,6 +44,7 @@ export const ATTRIBUTES: Route[] = [
   { method: 'get', path: '/attributes', handle: list },
   { method: 'post', path: '/attributes', handle: create },
   { method: 'post', path: '/attributes/try', handle: tryIt, for: 'administrators' },
+  { method: 'post', path: '/attributes/check', handle: check, for: 'administrators' },
   { method: 'get', path: '/attributes/skill', handle: skill, for: 'administrators' },
   { method: 'get', path: '/attributes/:key/skill', handle: skill, for: 'administrators' },
   { method: 'put', path: '/attributes/:key', handle: edit },

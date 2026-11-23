@@ -12,7 +12,7 @@ import type { Attribute, ValueOfEmail } from '../../../shared/attribute.ts';
 import type { EmailStatus, Priority } from '../../../shared/email.ts';
 import { EloError, compileRule } from '../../tooling/elo.ts';
 import type { Rule } from '../../tooling/elo.ts';
-import { decidedByRule, decidedFrom, emailForRules } from '../computations/attributes.ts';
+import { decidedByRule, decidedFrom, emailForRules, ruleValue } from '../computations/attributes.ts';
 import type { Decided } from '../computations/attributes.ts';
 import type { Standing } from '../computations/emails.ts';
 import type { IncomingEmail } from '../model/email.ts';
@@ -52,7 +52,7 @@ export function sortByRules(rules: Ruled[], email: IncomingEmail, mailboxAddress
   const decided = new Map(rules.map((r) => [r.attribute.key, said(r, input)] as const).filter(([, d]) => d !== null)) as Map<string, Decided>;
   const stands = STATUS_OF[decided.get(STATUS)?.value ?? ''];
   const attributes: Record<string, ValueOfEmail> = {};
-  for (const [key, { value }] of decided) if (key !== STATUS) attributes[key] = { value, source: 'rule' };
+  for (const [key, said] of decided) if (key !== STATUS) attributes[key] = ruleValue(said);
   return {
     status: stands ?? 'pending',
     source: stands ? 'rule' : null,

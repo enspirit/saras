@@ -2,7 +2,7 @@ import { cx, h } from '../dom.ts';
 
 /** The glyphs of the icon font that the interface uses (see .icon in design/atoms/icon.css). */
 export type IconName =
-  | 'archive' | 'bold' | 'check' | 'chevron-down' | 'chevron-right' | 'copy' | 'folder' | 'key' | 'shield-check' | 'user-plus' | 'circle-alert' | 'eye' | 'eye-off' | 'file-text' | 'globe' | 'inbox' | 'info' | 'italic'
+  | 'archive' | 'arrow-right' | 'bold' | 'book-open' | 'code' | 'download' | 'play' | 'sparkles' | 'tag' | 'check' | 'chevron-down' | 'chevron-right' | 'copy' | 'folder' | 'key' | 'shield-check' | 'user-plus' | 'circle-alert' | 'eye' | 'eye-off' | 'file-text' | 'globe' | 'inbox' | 'info' | 'italic'
   | 'link' | 'list' | 'list-ordered' | 'lock' | 'log-out' | 'mail' | 'mail-check' | 'paperclip' | 'pen-line' | 'pencil' | 'plug' | 'plus'
   | 'refresh-cw' | 'remove-formatting' | 'reply' | 'search' | 'send' | 'settings' | 'spell-check' | 'timer' | 'trash' | 'triangle-alert'
   | 'underline' | 'undo' | 'users' | 'x';

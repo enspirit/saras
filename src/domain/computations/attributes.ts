@@ -1,7 +1,7 @@
 // Pure: attributes of emails — what an attribute given is reduced to, what a rule sees of an
 // email, and what its answer is taken as.
-import { ATTRIBUTE_KINDS, DECIDERS, PRIORITY, STATUS } from '../../../shared/attribute.ts';
-import type { Attribute, AttributeGiven, AttributeKind, AttributeValue, Decider } from '../../../shared/attribute.ts';
+import { ATTRIBUTE_KINDS, DECIDERS, PRIORITY, STATUS, VALUE_COLORS } from '../../../shared/attribute.ts';
+import type { Attribute, AttributeGiven, AttributeKind, AttributeValue, Decider, ValueGiven, ValueOfEmail } from '../../../shared/attribute.ts';
 import { MESSAGES, reasonCode } from '../../tooling/messages.ts';
 import type { MessageCode } from '../../tooling/messages.ts';
 import type { EmailRow, IncomingEmail } from '../model/email.ts';
@@ -12,9 +12,21 @@ import { clipped } from './given.ts';
 
 const oneOf = <T extends string>(known: readonly T[], value: unknown, otherwise: T): T => known.find((item) => item === value) ?? otherwise;
 
-/** The values of a choice as they are typed, one per line: each keeps its place as its key. */
-const valuesGiven = (value: unknown): string[] =>
-  [...new Set((Array.isArray(value) ? value : []).map((label) => clipped(label, 60)).filter(Boolean))].slice(0, 30);
+/** One value as it is given: its label alone, or its label and its colour. */
+const valueGiven = (given: unknown): ValueGiven => {
+  const { label, color } = given && typeof given === 'object' ? (given as { label?: unknown; color?: unknown }) : { label: given, color: undefined };
+  return { label: clipped(label, 60), color: oneOf(VALUE_COLORS, color, 'grey') };
+};
+
+/** The values of a choice, each once: each keeps its place as its key. */
+export function valuesGiven(value: unknown): ValueGiven[] {
+  const seen = new Set<string>();
+  const values = (Array.isArray(value) ? value : []).map(valueGiven).filter(({ label }) => label && !seen.has(label) && seen.add(label));
+  return values.slice(0, 30);
+}
+
+/** A value a rule decided, as it is kept on the email: with why, when the rule said. */
+export const ruleValue = ({ value, reason }: { value: string; reason: string }): ValueOfEmail => ({ value, source: 'rule', ...(reason ? { reason } : {}) });
 
 /** ReqPre of CreateAttribute and EditAttribute: a name; for a choice, at least two values. */
 export function attributeGiven(given: Record<string, unknown>): Verdict<AttributeGiven> {
@@ -78,15 +90,15 @@ export function decidedFrom(answer: unknown, values: AttributeValue[]): Decided 
 
 /** The values of the two pre-configured attributes: fixed, because the application relies on them. */
 export const STATUS_VALUES: AttributeValue[] = [
-  { key: 'todo', label: 'To handle' },
-  { key: 'none', label: 'No reply needed' },
-  { key: 'sent', label: 'Replied' },
-  { key: 'ignored', label: 'Ignored' },
+  { key: 'todo', label: 'To handle', color: 'purple' },
+  { key: 'none', label: 'No reply needed', color: 'grey' },
+  { key: 'sent', label: 'Replied', color: 'green' },
+  { key: 'ignored', label: 'Ignored', color: 'grey' },
 ];
 export const PRIORITY_VALUES: AttributeValue[] = [
-  { key: 'high', label: 'High' },
-  { key: 'normal', label: 'Normal' },
-  { key: 'low', label: 'Low' },
+  { key: 'high', label: 'High', color: 'red' },
+  { key: 'normal', label: 'Normal', color: 'grey' },
+  { key: 'low', label: 'Low', color: 'blue' },
 ];
 
 export const isSystem = (key: string): boolean => key === STATUS || key === PRIORITY;

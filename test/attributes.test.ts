@@ -59,7 +59,7 @@ test('an administrator makes an attribute with its rule; a rule Elo cannot read 
   assert.equal((await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'ai' })).body.code, 'attributes.aiNotYet');
   const made = await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'elo', elo: topicRule });
   assert.equal(made.status, 201);
-  assert.deepEqual([made.body.name, made.body.system, made.body.values], ['Topic', false, [{ key: '1', label: 'Sales' }, { key: '2', label: 'Planning' }]]);
+  assert.deepEqual([made.body.name, made.body.system, made.body.values], ['Topic', false, [{ key: '1', label: 'Sales', color: 'grey' }, { key: '2', label: 'Planning', color: 'grey' }]]);
   topic = made.body.key;
 });
 
@@ -77,7 +77,8 @@ test('emails fetched afterwards get its value from the rule; a board filters on 
 test('a rule is tried on recent emails before it is kept', async () => {
   const tried = (await alice('POST', '/attributes/try', { elo: topicRule, values: ['Sales', 'Planning'] })).body;
   assert.equal(tried.length, 4);
-  assert.deepEqual(tried.map((t: { value: string | null }) => t.value).filter(Boolean).sort(), ['Planning', 'Sales']);
+  assert.deepEqual(tried.map((t: { value: string | null }) => t.value).filter(Boolean).sort(), ['1', '2'], 'each value by its key');
+  assert.ok(tried.every((t: { now: unknown }) => t.now === null), 'an attribute being made has no value yet on any email');
   assert.equal((await alice('POST', '/attributes/try', { elo: 'nope(', values: [] })).body.code, 'attributes.ruleInvalid');
 });
 

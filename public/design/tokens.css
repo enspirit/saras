@@ -85,6 +85,17 @@
   --color-danger-soft: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
   --color-warn-border: color-mix(in srgb, var(--color-warn) 45%, var(--color-surface));
 
+  /* The colours a value of an attribute can be shown in: each readable as text on its own soft ground. */
+  --color-value-grey: var(--color-text-soft);
+  --color-value-red: light-dark(#b3261e, #ff8a80);
+  --color-value-orange: light-dark(#8a4700, #f0b464);
+  --color-value-yellow: light-dark(#6b5200, #e8cf6a);
+  --color-value-green: light-dark(#0a7a48, #63d1a4);
+  --color-value-blue: light-dark(#1a56c4, #7fb0ff);
+  --color-value-purple: light-dark(#5a08c4, #c3a2ff);
+  /* The colour of the value at hand: set by a tone, grey until then. */
+  --value: var(--color-value-grey);
+
   --color-overlay-bg: var(--color-text);
   --color-overlay-text: var(--color-bg);
   --color-focus: var(--color-accent);

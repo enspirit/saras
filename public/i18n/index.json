@@ -33,6 +33,7 @@
     "secondFactor",
     "lostPassword",
     "boards",
-    "attributes"
+    "attributes",
+    "rules"
   ]
 }

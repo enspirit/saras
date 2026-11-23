@@ -1,0 +1,26 @@
+/* ---- Tone: the colour of a value, for whatever shows it ---- */
+.tone--grey { --value: var(--color-value-grey); }
+.tone--red { --value: var(--color-value-red); }
+.tone--orange { --value: var(--color-value-orange); }
+.tone--yellow { --value: var(--color-value-yellow); }
+.tone--green { --value: var(--color-value-green); }
+.tone--blue { --value: var(--color-value-blue); }
+.tone--purple { --value: var(--color-value-purple); }
+
+/* ---- Value chip: one value of an attribute, in its colour ---- */
+.value-chip {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: calc(var(--space-5) + var(--space-1) / 2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--value) 13%, var(--color-surface));
+  color: var(--value);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  line-height: 1;
+  white-space: nowrap;
+}
+.value-chip::before { content: ""; flex: none; width: calc(var(--space-2) - 1px); height: calc(var(--space-2) - 1px); border-radius: var(--radius-pill); background: var(--value); }
+.value-chip--plain::before { display: none; }
+.value-chip--small { min-height: var(--space-4); padding: 0 calc(var(--space-1) * 1.5); font-size: calc(var(--text-xs) - 1px); }
+.value-chip--empty { background: transparent; border: var(--border-width) dashed var(--color-border-strong); color: var(--color-text-muted); font-weight: var(--weight-medium); }

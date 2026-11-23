@@ -12,6 +12,7 @@ import { fmtDate, fmtWhen } from '../i18n/dates.ts';
 import { showPage } from '../navigation.ts';
 import { ActionButton, guard, toast } from './actions.ts';
 import type { BoxOnScreen } from './boxes.ts';
+import { chipFor } from './attribute-values.ts';
 import { emailDetail } from './reading.ts';
 import { shell } from './shell.ts';
 import { session } from '../session.ts';
@@ -56,6 +57,9 @@ export interface EmailsShown {
   selectedId: number | null;
 }
 
+/** The values an email has for the attributes the organisation made, each as a small chip. */
+const valuesOf = (e: EmailSummary): Child => session.attributes.filter((a) => !a.system).map((a) => chipFor(a, e.attributes[a.key]?.value, true));
+
 /** One email of the list: who and when, what about, and what to know first. */
 const emailItem = (e: EmailSummary, { hrefOf, selectedId }: EmailsShown): HTMLButtonElement =>
   EmailListItem({
@@ -69,6 +73,7 @@ const emailItem = (e: EmailSummary, { hrefOf, selectedId }: EmailsShown): HTMLBu
       e.priority === 'high' && e.status !== 'sent' && Badge(t('mailbox.priority'), 'warn'),
       e.status === 'pending' && Badge(t('mailbox.untriaged'), 'neutral'),
       e.replyMode === 'draft' && Badge(t('mailbox.draft'), 'neutral'),
+      valuesOf(e),
     ],
     // In a shared mailbox, say which: several may be shown together.
     shared: e.shared ? { label: e.mailbox.split('@')[0] ?? e.mailbox, title: e.mailbox } : undefined,

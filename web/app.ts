@@ -8,6 +8,7 @@ import { chooseLanguage } from './api/settings.ts';
 import { initI18n, language, t } from './i18n.ts';
 import { invitationToken, passwordResetToken, route, wireNavigation } from './navigation.ts';
 import { attributesPage } from './pages/attributes.ts';
+import { ruleGuidePage } from './pages/rule-guide.ts';
 import { boardPage } from './pages/board.ts';
 import { editAttributePage } from './pages/edit-attribute.ts';
 import { editBoardPage } from './pages/edit-board.ts';
@@ -67,9 +68,10 @@ function showBoards(part: string, id: number | null, email: string | null): void
   else void boardPage(id, Number(email) || null);
 }
 
-/** The attributes, the form that changes one (named by the last part of the address), or the form for a new one. */
+/** The attributes, the form that changes one (named by the last part of the address), the form for a new one, or the guide to writing a rule. */
 function showAttributes(part: string): void {
   if (part === 'new') void editAttributePage(null);
+  else if (part === 'guide') void ruleGuidePage();
   else if (part === 'edit') void editAttributePage(location.hash.split('/')[3] ?? null);
   else void attributesPage();
 }

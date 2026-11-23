@@ -1,0 +1,31 @@
+/* ---- Value editor: the values of a choice, typed one by one, each with its colour ---- */
+.value-editor {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
+  min-height: var(--control-md);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-weight: var(--weight-regular);
+}
+.value-editor:focus-within { border-color: var(--color-accent); }
+.value-editor > span { min-height: var(--control-sm); padding: 0 var(--space-1) 0 var(--space-2); font-size: var(--text-sm); }
+.value-editor__dot {
+  flex: none;
+  width: var(--space-3); height: var(--space-3);
+  padding: 0;
+  border: 0; border-radius: var(--radius-pill);
+  background: var(--value);
+  cursor: pointer;
+}
+.value-editor__dot:hover { box-shadow: 0 0 0 var(--focus-width) color-mix(in srgb, var(--value) 30%, transparent); }
+.value-editor__remove {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--space-5); height: var(--space-5);
+  padding: 0;
+  border: 0; border-radius: var(--radius-pill);
+  background: transparent; color: inherit;
+  cursor: pointer;
+}
+.value-editor__remove:hover { background: color-mix(in srgb, var(--value) 18%, transparent); }
+.value-editor__input { flex: 1; min-width: 140px; min-height: var(--control-sm); border: 0; outline: 0; background: transparent; color: var(--color-text); font: inherit; }

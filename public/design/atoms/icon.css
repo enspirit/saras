@@ -55,3 +55,10 @@
 .icon--undo::before { content: "\e2a1"; }
 .icon--users::before { content: "\e1a4"; }
 .icon--x::before { content: "\e1b2"; }
+.icon--arrow-right::before { content: "\e049"; }
+.icon--book-open::before { content: "\e05f"; }
+.icon--code::before { content: "\e093"; }
+.icon--download::before { content: "\e0b2"; }
+.icon--play::before { content: "\e13c"; }
+.icon--sparkles::before { content: "\e412"; }
+.icon--tag::before { content: "\e17f"; }

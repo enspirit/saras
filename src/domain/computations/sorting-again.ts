@@ -3,6 +3,7 @@
 import type { ValueOfEmail } from '../../../shared/attribute.ts';
 import { PRIORITY } from '../../../shared/attribute.ts';
 import type { EmailStatus, Priority } from '../../../shared/email.ts';
+import { ruleValue } from './attributes.ts';
 import type { Decided } from './attributes.ts';
 
 /** What is kept of an email that sorting again looks at. */
@@ -54,7 +55,7 @@ export function valueAgain(key: string, kept: KeptSorting, decided: Decided | nu
   if (current?.source === 'user') return null;
   if (decided) {
     if (current?.source === 'rule' && current.value === decided.value) return null;
-    return { attributes: { ...kept.attributes, [key]: { value: decided.value, source: 'rule' } }, ...priorityOf(key, decided.value) };
+    return { attributes: { ...kept.attributes, [key]: ruleValue(decided) }, ...priorityOf(key, decided.value) };
   }
   if (current?.source !== 'rule') return null;
   const { [key]: _gone, ...left } = kept.attributes;

@@ -15,6 +15,9 @@
 .elo-editor .cm-placeholder { color: var(--color-text-muted); }
 .elo-editor .cm-tooltip { background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); }
 .elo-editor .cm-tooltip-autocomplete ul li[aria-selected] { background: var(--color-accent); color: var(--color-on-accent); }
+/* The editor draws its underline with an image the page's security policy refuses: ours is drawn in text. */
+.elo-editor .cm-lintRange-error { background-image: none !important; text-decoration: underline wavy var(--color-danger); text-underline-offset: 3px; }
+.elo-editor .cm-diagnostic { font-family: var(--font-body); font-size: var(--text-sm); }
 
 /* What each word is, as the highlighter names it. */
 .elo-editor .tok-keyword, .elo-editor .tok-operatorKeyword { color: var(--color-accent); font-weight: var(--weight-strong); }
