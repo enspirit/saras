@@ -37,6 +37,28 @@
         "existingClaim": { "type": "string" }
       }
     },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "tag": { "type": "string", "minLength": 1 },
+            "pullPolicy": { "enum": ["Always", "IfNotPresent", "Never"] }
+          }
+        },
+        "password": { "type": "string" },
+        "existingSecret": { "type": "string" },
+        "existingSecretKey": { "type": "string", "minLength": 1 },
+        "size": { "type": "string", "minLength": 1 },
+        "storageClass": { "type": "string" },
+        "resources": { "type": "object" }
+      }
+    },
     "brand": {
       "type": "object",
       "additionalProperties": false,

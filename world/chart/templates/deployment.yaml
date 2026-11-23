@@ -43,6 +43,31 @@ spec:
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
+      {{- if .Values.postgresql.enabled }}
+      initContainers:
+        # The server leaves when it finds no database: it is started once the
+        # one of the release answers.
+        - name: wait-for-postgresql
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          command:
+            - node
+            - -e
+            - |
+              const net = require('node:net');
+              const knock = () => net.connect(5432, process.env.HOST)
+                .on('connect', () => process.exit(0))
+                .on('error', () => setTimeout(knock, 2000));
+              knock();
+          env:
+            - name: HOST
+              value: {{ include "saras.postgresql.fullname" . }}
+      {{- end }}
       containers:
         - name: saras
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -77,6 +102,16 @@ spec:
             {{- with include "saras.baseUrl" . }}
             - name: BASE_URL
               value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.postgresql.enabled }}
+            # The server of the release, whatever another Secret says. Its
+            # address carries no password: the driver takes it from
+            # PGPASSWORD, read where the database reads it, as it is written.
+            - name: DATABASE_URL
+              value: postgres://saras@{{ include "saras.postgresql.fullname" . }}:5432/saras
+            - name: PGPASSWORD
+              valueFrom:
+                {{- include "saras.postgresql.passwordRef" . | nindent 16 }}
             {{- end }}
             {{- if .Values.embeddedDatabase.enabled }}
             # Empty whatever a Secret says: the embedded database, in DATA_DIR.

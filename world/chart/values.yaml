@@ -31,8 +31,9 @@ secrets:
   # Required, 32 characters at least: openssl rand -hex 32. Do not lose it and
   # do not change it: connected mailboxes would become unreadable.
   APP_SECRET: ''
-  # The PostgreSQL server: postgres://user:password@host:5432/saras. Required
-  # unless embeddedDatabase.enabled.
+  # A PostgreSQL server of yours: postgres://user:password@host:5432/saras.
+  # One database is required: this, postgresql.enabled or
+  # embeddedDatabase.enabled.
   DATABASE_URL: ''
   OPENROUTER_API_KEY: ''
   SMTP_URL: ''
@@ -41,8 +42,32 @@ secrets:
 
 # A Secret of yours holding the same names, for values that must not pass
 # through Helm. The chart cannot read it: it is then yours to put APP_SECRET
-# in it, and DATABASE_URL unless embeddedDatabase.enabled.
+# in it, and DATABASE_URL unless the chart is asked for a database.
 existingSecret: ''
+
+# A PostgreSQL server of the release's own, in a pod of its own beside saras,
+# its files on a volume that is kept when the release is uninstalled. One
+# server, no replica: its backups, and the move to another major version, are
+# yours (see the README).
+postgresql:
+  enabled: false
+  image:
+    repository: postgres
+    tag: '16'
+    pullPolicy: IfNotPresent
+  # Its password, one way or the other. Set when the volume is first filled,
+  # and not changed by an upgrade afterwards: the server keeps the one it was
+  # created with.
+  password: ''
+  # A Secret of yours holding it, under existingSecretKey, for a password that
+  # must not pass through Helm:
+  #   kubectl create secret generic saras-postgresql --from-literal=POSTGRES_PASSWORD="$(openssl rand -hex 16)"
+  existingSecret: ''
+  existingSecretKey: POSTGRES_PASSWORD
+  size: 8Gi
+  # Empty: the cluster's default class.
+  storageClass: ''
+  resources: {}
 
 # The embedded PostgreSQL (PGlite) instead of a server, its files on a volume:
 # to try saras, not to run it for real. A single connection, and no access

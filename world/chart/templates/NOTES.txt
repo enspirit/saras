@@ -1,4 +1,4 @@
-saras is starting as {{ include "saras.fullname" . }}, on {{ ternary "its embedded database" "a PostgreSQL server" .Values.embeddedDatabase.enabled }}.
+saras is starting as {{ include "saras.fullname" . }}, on {{ if .Values.embeddedDatabase.enabled }}its embedded database{{ else if .Values.postgresql.enabled }}the PostgreSQL server of the release, {{ include "saras.postgresql.fullname" . }}{{ else }}a PostgreSQL server{{ end }}.
 
 {{- if include "saras.baseUrl" . }}
 

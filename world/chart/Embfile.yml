@@ -5,10 +5,12 @@ description: The Helm chart — saras on Kubernetes, for an operator
 # nothing here installs anything anywhere.
 tasks:
   lint:
-    description: helm lint, strictly, on values that install
+    description: helm lint, strictly, on values that install — on the embedded database, then with a PostgreSQL server of the release
     executors:
       - local
-    script: helm lint --strict . --set secrets.APP_SECRET=0123456789abcdef0123456789abcdef --set embeddedDatabase.enabled=true
+    script: | # shell
+      helm lint --strict . --set secrets.APP_SECRET=0123456789abcdef0123456789abcdef --set embeddedDatabase.enabled=true
+      helm lint --strict . --set secrets.APP_SECRET=0123456789abcdef0123456789abcdef --set postgresql.enabled=true --set postgresql.password=only-for-the-lint
 
   test:
     description: What the chart renders and what it refuses; and that it knows every variable of env/base.env
