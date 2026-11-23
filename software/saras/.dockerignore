@@ -1,5 +1,16 @@
+# The context is this directory. What is installed or built here is installed
+# and built again inside the image, always.
 node_modules
+public/js
 data
+
+# Secrets never enter an image, and neither do the stack's env files.
 .env
+.env.*
+env
+
 .git
-test
+*.md
+Embfile.yml
+Dockerfile
+.dockerignore

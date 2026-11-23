@@ -1,0 +1,62 @@
+# The stack. What each component *is* and what it needs before it starts —
+# nothing about laptops, ports or dev-loop mounts, which are the overlays' job.
+#
+#   emb up                                                      base + devel
+#   COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up
+#
+# Images are named, never built here: `emb` builds them from each component's
+# Embfile.yml, so the target is chosen in one place.
+#
+# This is the stack saras is developed and tested in. The one an operator runs
+# is world/compose, under another project name: the two never share a
+# container or a volume.
+name: saras-dev
+
+services:
+  # -------------------------------------------------------------------------
+  # postgres — the database. A third-party image, pinned here; world/compose
+  # names the same one, and `emb run lint` holds the two equal.
+  # -------------------------------------------------------------------------
+  postgres:
+    image: postgres:16
+    environment:
+      # Visibly dev defaults. world/compose defaults none of them.
+      POSTGRES_DB: ${POSTGRES_DB:-saras}
+      POSTGRES_USER: ${POSTGRES_USER:-saras}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-saras}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-saras} -d ${POSTGRES_DB:-saras}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # -------------------------------------------------------------------------
+  # saras — the server and the interface it serves: the front door, and the
+  # only way in. It creates its schema when it starts, so there is no
+  # migration to wait for.
+  # -------------------------------------------------------------------------
+  saras:
+    image: saras/saras:${DOCKER_TAG:-latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Interpolated, never retyped: the same variables postgres reads.
+      DATABASE_URL: postgres://${POSTGRES_USER:-saras}:${POSTGRES_PASSWORD:-saras}@postgres:5432/${POSTGRES_DB:-saras}
+    healthcheck:
+      # What visitors are told is read from the database: an answer means the
+      # server is up and reaches it.
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/api/public').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  postgres-data:

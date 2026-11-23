@@ -3,10 +3,7 @@ description: saras as an operator runs it — the application and a PostgreSQL s
 
 tasks:
   lint:
-    description: The deployment's compose file is one docker compose accepts
+    description: The deployment's compose file is one docker compose accepts, on the PostgreSQL the stack is tested with
     executors:
       - local
-    # Without an operator's .env: the one variable the file requires is given
-    # here, and the file it reads is not asked for.
-    script: | # shell
-      POSTGRES_PASSWORD=lint docker compose --env-file /dev/null -f docker-compose.yml config --quiet --no-env-resolution
+    script: ./lint

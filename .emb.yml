@@ -20,6 +20,25 @@ plugins:
         - 'tests/*/Embfile.{yaml,yml}'
         - 'world/*/Embfile.{yaml,yml}'
 
+env:
+  DOCKER_TAG: ${env:DOCKER_TAG:-latest}
+
+defaults:
+  docker:
+    tag: ${env:DOCKER_TAG}
+
+flavors:
+  # The flavor `emb up` runs under. Each component's own `dev` flavor adds its
+  # rebuildTrigger.
+  dev: {}
+
+  production:
+    patches:
+      # `:-latest` again: a patch replaces the default along with the value.
+      - path: /env/DOCKER_TAG
+        op: replace
+        value: ${env:DOCKER_TAG:-latest}-production
+
 # Repository-wide tasks: what CI calls. A component's own tasks live in its
 # Embfile.yml; the `pre:` entries are qualified, because several components
 # may define a task of the same name.

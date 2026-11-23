@@ -1,8 +1,40 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
 description: saras — the server, and the interface it serves
 
-# Every task runs on the host, in this directory, and calls the npm script of
-# the same name: package.json holds the one list of commands.
+resources:
+  image:
+    type: 'docker/image'
+    # The thing that ships. No registry is configured yet: an operator builds
+    # it from a checkout (world/compose).
+    publish: true
+    params:
+      # The context is this directory, and the Dockerfile the one beside it.
+      target: saras-development
+
+flavors:
+  production:
+    patches:
+      - path: /resources/image/params/target
+        op: replace
+        value: saras-production
+
+  dev:
+    patches:
+      # What makes the image stale. Bind-mounted sources are deliberately not
+      # listed — only what a watch inside the container cannot recover from.
+      - path: /resources/image/rebuildTrigger
+        op: add
+        value:
+          strategy: watch-paths
+          paths:
+            - software/saras/Dockerfile
+            - software/saras/package.json
+            - software/saras/package-lock.json
+
+# Every task but one runs on the host, in this directory, and calls the npm
+# script of the same name: package.json holds the one list of commands. On the
+# host because this component has a compose service, and emb would otherwise
+# exec the task into it — only when the stack happens to be up.
 tasks:
   setup:
     description: Install the dependencies, as the lock file states them
@@ -51,3 +83,12 @@ tasks:
     executors:
       - local
     script: npm run demo
+
+  test:postgres:
+    description: The integration tests on the stack's PostgreSQL server, as in production. Needs the running stack
+    # In the saras container: it reaches the database by service name, with
+    # the URL the server itself was given. Each test file works in a schema of
+    # its own, so the stack's data is left alone.
+    executors:
+      - container
+    script: TEST_DATABASE_URL="$DATABASE_URL" npm run test:integration
