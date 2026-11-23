@@ -58,7 +58,7 @@ Essential state only: what another agent can observe.
 | Fetch state | When a mailbox was last fetched and what went wrong. | Backend | Members who may use it | `accounts.last_sync_at`, `.last_error` |
 | Email | A received message as saras keeps it: who, what, when; erased past retention. | Backend | Members who may use its mailbox | `emails.*` |
 | Email status | Where the email stands: waiting to be sorted, to handle, no reply needed, ignored, replied. | Backend | Members | `emails.status` |
-| Triage verdict | Who sorted the email, why, its priority, the prompt suggested for it. | Backend | Members | `emails.triage_source`, `.triage_reason`, `.priority`, `.suggested_prompt_id` |
+| Triage verdict | Who sorted the email, why, its priority. | Backend | Members | `emails.triage_source`, `.triage_reason`, `.priority` (`.suggested_prompt_id` remains from before and is no longer read) |
 | Proposal | A text the AI wrote for an email: by which help, prompt and model. | Backend | Members | `drafts` |
 | Reply in progress | What a member has written or changed in the reply area, its recipients, the reason for an edit. | Frontend | The member | the editor and fields of the composer (lost on leaving the page) |
 | Reply | What was handed to the mailbox for an email: sent or filed as a draft, to whom, by whom, whether the proposal was edited and why. | Backend | Members | `replies` |
@@ -146,7 +146,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **SortWaitingEmails** | Backend | Emails waiting to be sorted → to handle, or no reply needed, with who decided, why, a priority and a suggested prompt | The organisation's strategy can decide (for `ai`: a key in force, as the mailbox's owner) | An email the strategy says nothing about stays waiting · if it fails, all stay waiting and the failure is recorded on the mailbox | part of FetchMailbox (`sorting/sort-waiting-emails.ts`) |
+| **SortWaitingEmails** | Backend | Emails waiting to be sorted → to handle, or no reply needed, with who decided, why and a priority | The organisation's strategy can decide (for `ai`: a key in force, as the mailbox's owner) | An email the strategy says nothing about stays waiting · if it fails, all stay waiting and the failure is recorded on the mailbox | part of FetchMailbox (`sorting/sort-waiting-emails.ts`) |
 | **MarkNoReplyNeeded** | Member | An email not replied → no reply needed | May use its mailbox | The verdict becomes the member's | "No reply needed" · `POST /emails/:id/status` |
 | **IgnoreEmail** | Member | An email not replied → ignored | same | same | "Ignore" · same route |
 | **MoveBackToHandle** | Member | An email not replied → to handle | same | same | "Move back to 'To handle'" · same route |
@@ -159,7 +159,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **CheckTypos** | Member | A text in the reply area → a proposal: the same text, corrected | May use the mailbox · something is written · a key in force · the model has a zero-retention provider | The received email is not sent to the LLM · only what a reply may contain is kept of the answer | "Check typos" · `POST /emails/:id/assist` |
 | **ImproveStyle** | Member | A text in the reply area → a proposal: the same text, reworded | same | same | "Improve style" · same route |
 | **WriteWithPrompt** | Member | An email whose content is kept → a proposal written with a prompt, from the email and from what the member wrote | May use the mailbox · the prompt is the organisation's · a key in force · zero-retention provider | In the language of the email · ends with the member's signature · takes their past corrections on this prompt into account · only what a reply may contain is kept | "Write with" · same route |
-| **PrepareProposals** | Backend | Emails to handle with content and no proposal → each has one | The organisation's writing is `draft` or `mailbox` · a key in force as the mailbox's owner · it has a prompt | With the prompt suggested at triage, else the organisation's first · at most ten per fetch, most recent first | part of FetchMailbox (`replying/prepare-proposals.ts`) |
+| **PrepareProposals** | Backend | Emails to handle with content and no proposal → each has one | The organisation's writing is `draft` or `mailbox` · a key in force as the mailbox's owner · it has a prompt | With the prompt that suits the email best by its attributes ([decision 0007](decisions/0007-the-prompt-that-suits-follows-from-attributes.md)), else the organisation's first · at most ten per fetch, most recent first | part of FetchMailbox (`replying/prepare-proposals.ts`) |
 | **FileProposalAsDraft** | Backend | A proposal just prepared → a draft in the mailbox; the email is replied, as a draft, by the mailbox's owner | The organisation's writing is `mailbox` · the email has someone to reply to | Recorded as not edited | part of PrepareProposals |
 | **PutMyTextBack** | Member (Frontend) | A proposal shown, with the text it replaced → that text again | | | "Put my text back"; frontend only |
 | **SendReply** | Member | An email not replied, with none of its replies in flight → replied: the reply is sent from the mailbox | May use the mailbox · the reply is not empty · at least one recipient · every address valid · the member confirmed (frontend) | Quoted and threaded on the original, HTML with a text alternative · flagged answered over IMAP · whether the proposal was edited, and the reason only if it was, are recorded with who replied | "Send", then the confirmation · `POST /emails/:id/send` |
@@ -169,9 +169,9 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **CreatePrompt** | Administrator | → a prompt of the organisation | Administrator · a name and instructions | | "Create the prompt" · `POST /prompts` |
+| **CreatePrompt** | Administrator | → a prompt of the organisation, with the emails it suits | Administrator · a name and instructions | What it suits is kept reduced to the attributes we know, each with a value | "Create the prompt" · `POST /prompts` |
 | **AddReadyMadePrompt** | Administrator | A template the organisation does not have → a prompt with its content | same | | "Add" · `GET /prompts/ready-made` then `POST /prompts` |
-| **EditPrompt** | Administrator | A prompt → with a new name, description, instructions | same · of their organisation | | "Save" · `PUT /prompts/:id` |
+| **EditPrompt** | Administrator | A prompt → with a new name, description, instructions, and the emails it suits | same · of their organisation | | "Save" · `PUT /prompts/:id` |
 | **DeletePrompt** | Administrator | A prompt → none | Administrator · of their organisation | Emails, proposals and replies that named it keep going without it | red bin · `DELETE /prompts/:id` |
 
 ### Attributes

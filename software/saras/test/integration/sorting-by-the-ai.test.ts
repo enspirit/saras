@@ -1,5 +1,5 @@
 // Sorting by the AI: what is fetched from the watched folder is sorted in one request per
-// batch, automated mail apart, and each email to handle may be given a suggested prompt.
+// batch, automated mail apart. Which prompt suits an email is not asked of the AI.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { createClient, installTemplates, signUp } from '../support/client.ts';
@@ -65,11 +65,10 @@ test('fetching again imports nothing twice and asks the LLM nothing more', async
   assert.equal(sortings().length, 1);
 });
 
-test('the AI suggests a prompt per email, the user may pick another one', async () => {
-  const prompts: { id: number; name: string }[] = (await me('GET', '/prompts')).body;
+test('the AI is not told the prompts, and suggests none: that follows from the attributes of the email', async () => {
+  assert.ok(sortings().every((request) => !JSON.stringify(request.body.messages).includes('Appointment scheduling')), 'no prompt is named to the AI');
   const rdv = (await me('GET', `/emails/${todo[1]!.id}`)).body;
-  assert.equal(rdv.suggestedPromptId, prompts.find((p) => p.name === 'Appointment scheduling')?.id);
-  assert.ok(rdv.suggestedPromptId, 'a prompt was suggested');
+  assert.equal(rdv.suggestedPromptId, null, 'no prompt says it suits such an email');
   const devis = (await me('GET', `/emails/${todo[0]!.id}`)).body;
   assert.equal(devis.suggestedPromptId, null);
   assert.deepEqual(devis.recipients, { to: ['claire@client.example'], cc: [] });

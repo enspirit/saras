@@ -10,15 +10,16 @@ import { promptContent } from '../computations/prompts.ts';
 import { accepted } from '../refusal.ts';
 import type { Actor, World } from '../world.ts';
 
-export async function createPrompt({ db }: World, actor: Actor, given: { name?: unknown; description?: unknown; systemPrompt?: unknown }): Promise<{ id: number }> {
+export async function createPrompt({ db }: World, actor: Actor, given: { name?: unknown; description?: unknown; systemPrompt?: unknown; affinity?: unknown }): Promise<{ id: number }> {
   accepted(isAdministrator(actor));
   const content = accepted(promptContent(given));
-  const created = await db.one<{ id: number }>('INSERT INTO prompts (org_id, user_id, name, description, system_prompt) VALUES ($1, $2, $3, $4, $5) RETURNING id', [
+  const created = await db.one<{ id: number }>('INSERT INTO prompts (org_id, user_id, name, description, system_prompt, affinity_json) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id', [
     actor.organization.id,
     actor.member.id,
     content.name,
     content.description,
     content.systemPrompt,
+    JSON.stringify(content.affinity),
   ]);
   return { id: created!.id };
 }

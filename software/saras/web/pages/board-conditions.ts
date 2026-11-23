@@ -5,10 +5,10 @@ import type { Attribute } from '../../shared/attribute.ts';
 import type { BoardFilter } from '../../shared/board.ts';
 import type { Mailbox } from '../../shared/mailbox.ts';
 import { t } from '../i18n.ts';
-import { attributeName, valueLabel } from './attribute-names.ts';
+import { attributeCondition, pickedCondition } from './attribute-conditions.ts';
 import { Input, Select } from '../ui/atoms/input.ts';
-import { ConditionList, ValuePicker } from '../ui/molecules/condition-list.ts';
-import type { Condition, PickOption } from '../ui/molecules/condition-list.ts';
+import { ConditionList } from '../ui/molecules/condition-list.ts';
+import type { Condition } from '../ui/molecules/condition-list.ts';
 
 /** A condition the board can have: how it is shown, whether the filter has it, and what it adds to a filter. */
 interface BoardCondition extends Condition {
@@ -19,21 +19,15 @@ interface BoardCondition extends Condition {
 /** How recent, in days. */
 const RECENT = [1, 7, 30, 90];
 
-/** A condition made of values picked among a few: an attribute, or the mailboxes. */
-function picked(key: string, name: string, group: string, options: PickOption[], has: string[], write: (filter: BoardFilter, values: string[]) => void, changed: () => void): BoardCondition {
-  const picker = ValuePicker({ options, picked: has, addLabel: t('boards.orValue'), removeLabel: (label) => t('boards.removeValue', { label }), onChange: changed });
-  return { key, name, group, verb: t('boards.is'), control: picker.element, has: has.length > 0, write: (filter) => write(filter, picker.values()) };
+const onAttribute = (attribute: Attribute, filter: BoardFilter, changed: () => void): BoardCondition => {
+  const picked = attributeCondition(attribute, filter.attributes?.[attribute.key] ?? [], changed);
+  return { ...picked, write: (written) => void (picked.values().length && (written.attributes = { ...written.attributes, [attribute.key]: picked.values() })) };
+};
+
+function onMailbox(mailboxes: Mailbox[], filter: BoardFilter, changed: () => void): BoardCondition {
+  const picked = pickedCondition('mailbox', t('boards.mailbox'), t('boards.groupEmail'), mailboxes.map((m) => ({ key: String(m.id), label: m.email })), (filter.mailbox ?? []).map(String), changed);
+  return { ...picked, write: (written) => void (picked.values().length && (written.mailbox = picked.values().map(Number))) };
 }
-
-const onAttribute = (attribute: Attribute, filter: BoardFilter, changed: () => void): BoardCondition =>
-  picked(`attribute:${attribute.key}`, attributeName(attribute), t('boards.groupAttributes'),
-    attribute.values.map((value) => ({ key: value.key, label: attribute.kind === 'member' ? value.label : valueLabel(attribute, value), color: value.color })),
-    filter.attributes?.[attribute.key] ?? [],
-    (written, values) => void (values.length && (written.attributes = { ...written.attributes, [attribute.key]: values })), changed);
-
-const onMailbox = (mailboxes: Mailbox[], filter: BoardFilter, changed: () => void): BoardCondition =>
-  picked('mailbox', t('boards.mailbox'), t('boards.groupEmail'), mailboxes.map((m) => ({ key: String(m.id), label: m.email })), (filter.mailbox ?? []).map(String),
-    (written, values) => void (values.length && (written.mailbox = values.map(Number))), changed);
 
 function onReceived(filter: BoardFilter, changed: () => void): BoardCondition {
   const days = Select(RECENT.map((n) => ({ value: n, label: t('boards.receivedWithin', { days: n }), selected: (filter.received ?? 7) === n })), { onchange: changed });

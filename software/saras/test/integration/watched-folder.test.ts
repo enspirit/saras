@@ -71,7 +71,7 @@ test('without AI, every mail of the watched folder is to be handled, automated m
   assert.deepEqual(aside.map((e: { subject: string; triageSource: string }) => [e.subject, e.triageSource]), [['Les 10 actus de la semaine', 'rule']]);
 
   const detail = (await me('GET', `/emails/${inbox.emails[0].id}`)).body;
-  assert.equal(detail.suggestedPromptId, null, 'the user picks the prompt');
+  assert.equal(detail.suggestedPromptId, null, 'no prompt says it suits such an email: the user picks');
   assert.equal(detail.folder, 'INBOX');
   assert.equal(stack.llmRequests.length, 0, 'fetching and sorting cost no LLM request');
   assert.equal((await me('GET', '/mailboxes')).body[0].folderName, 'Inbox');

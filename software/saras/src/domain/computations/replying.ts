@@ -1,6 +1,8 @@
 // Pure decisions about replying: what a proposal is, whether a reply may be handed over and
 // what is recorded of it, which prompt writes a proposal nobody asked for. No state is read
 // or written here; every function is a table of inputs and outputs.
+import type { PromptAffinity } from '../../../shared/prompt.ts';
+import { bestPrompt } from './prompt-affinity.ts';
 import { isBlankHtml, textToHtml } from '../../tooling/html.ts';
 import { wasEdited } from './reply.ts';
 import { htmlToText, isEmailAddress } from '../../tooling/text.ts';
@@ -54,6 +56,5 @@ export function handOverRecord(html: string, proposal: Pick<DraftRow, 'action' |
   return { text, promptId: proposal?.prompt_id ?? null, proposedText, edited, reason: edited ? changeReason : '' };
 }
 
-/** The prompt that writes a proposal nobody asked for: the one suggested at triage, else the organisation's first. */
-export const promptToPrepareWith = (suggestedPromptId: number | null, prompts: PromptRow[]): PromptRow | undefined =>
-  prompts.find((p) => p.id === suggestedPromptId) ?? prompts[0];
+/** The prompt that writes a proposal nobody asked for: the one that suits the email best by its attributes, else the organisation's first. */
+export const promptToPrepareWith = <P extends { affinity: PromptAffinity }>(prompts: P[], values: Record<string, string>): P | undefined => bestPrompt(prompts, values) ?? prompts[0];

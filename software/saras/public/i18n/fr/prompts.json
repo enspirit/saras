@@ -7,7 +7,7 @@
   "intro": "Chaque prompt décrit une façon de répondre. Les membres voient son nom et sa description, pas ses instructions.",
   "name": "Nom",
   "when": "Quand l’utiliser",
-  "whenHint": "L’IA lit cette description pour suggérer le bon prompt à chaque email.",
+  "whenHint": "Ce que les membres lisent pour choisir un prompt.",
   "instructions": "Instructions",
   "instructionsHint": "Ton, structure, règles métier. Les consignes communes (langue de l’email, texte brut, ne rien inventer, signature) sont ajoutées automatiquement.",
   "corrections": "Corrections des membres",
@@ -22,9 +22,14 @@
   "templatesHint": "D’autres façons de répondre, prêtes à ajouter. Une fois ajoutés, ils sont à vous de modifier.",
   "addTemplate": "Ajouter",
   "added": "Ajouté",
-  "usedByDefault": "Utilisé quand aucun n’est suggéré",
+  "usedByDefault": "Utilisé quand aucun ne convient",
   "writingLegend": "Quand l’IA rédige une proposition",
   "writingNoneHint": "Rien n’est envoyé à l’IA avant.",
   "writingDraftHint": "Le contenu de chaque email à traiter est envoyé à l’IA, dix au plus par relevé et par boîte.",
-  "writingMailboxHint": "De même, et l’email passe ensuite dans Répondus, comme brouillon."
+  "writingMailboxHint": "De même, et l’email passe ensuite dans Répondus, comme brouillon.",
+  "suits": "Les emails auxquels il convient",
+  "suitsHint": "D’après leurs attributs. Le prompt qui convient le mieux à un email est proposé d’abord à qui rédige, et rédige les propositions préparées au relevé. Aucune IA n’est consultée.",
+  "suitsAny": "Aucune condition : il convient à tous les emails de la même façon, et à aucun en particulier.",
+  "suitsAnyShort": "Tout email",
+  "suitsColumn": "Convient à"
 }

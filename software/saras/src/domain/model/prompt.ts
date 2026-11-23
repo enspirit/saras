@@ -6,5 +6,7 @@ export interface PromptRow {
   name: string;
   description: string;
   system_prompt: string;
+  /** The emails it suits: values by attribute, as JSON. */
+  affinity_json: string;
   created_at: Date;
 }

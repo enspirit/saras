@@ -71,14 +71,13 @@ export const emailsWaiting = (db: Db, mailboxId: number): Promise<EmailRow[]> =>
 
 /** Records what a gate decided about an email, if it still waits. */
 export const keepVerdict = async (db: Db, gate: string, decision: TriageDecision): Promise<void> =>
-  void (await db.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3, suggested_prompt_id = $5,
+  void (await db.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3,
        priority = CASE WHEN attributes_json::jsonb ? 'priority' THEN priority ELSE $4 END
-     WHERE id = $6 AND status = 'pending'`, [
+     WHERE id = $5 AND status = 'pending'`, [
     decision.replyNeeded ? 'needs_reply' : 'no_reply',
     gate,
     decision.reason ?? '',
     decision.priority ?? 'normal',
-    decision.replyNeeded ? decision.promptId : null,
     decision.mailId,
   ]));
 

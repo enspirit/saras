@@ -1,6 +1,6 @@
 // Prompts: the organisation's ways of replying, the ready-made ones, and what members corrected.
 // One function per operation of doc/2-operations.md.
-import type { Correction, Prompt, ReadyMadePrompt } from '../../shared/prompt.ts';
+import type { Correction, Prompt, PromptAffinity, ReadyMadePrompt } from '../../shared/prompt.ts';
 import { api } from '../api.ts';
 
 /** What a prompt is made of, as its form sends it. */
@@ -8,6 +8,8 @@ export interface PromptContent {
   name: string;
   description: string;
   systemPrompt: string;
+  /** The emails it suits: values by the key of an attribute. */
+  affinity: PromptAffinity;
 }
 
 export const readPrompts = (): Promise<Prompt[]> => api<Prompt[]>('GET', '/prompts');

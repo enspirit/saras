@@ -5,21 +5,26 @@ import { defaultPrompts } from '../prompts/ready-made-prompts.ts';
 import { promptOf } from '../state/prompts.ts';
 import type { Actor } from '../world.ts';
 
+/** A prompt as it is read from where it is kept: the emails it suits still as JSON. */
+type Kept = Omit<Prompt, 'affinity'> & { affinity_json: string };
+
 /** Members pick a prompt by name and purpose; its instructions stay with the administrators. */
-const asMembersSeeThem = (db: Db, organizationId: number): Promise<Prompt[]> => db.query<Prompt>('SELECT id, name, description FROM prompts WHERE org_id = $1 ORDER BY id', [organizationId]);
+const asMembersSeeThem = (db: Db, organizationId: number): Promise<Kept[]> => db.query<Kept>('SELECT id, name, description, affinity_json FROM prompts WHERE org_id = $1 ORDER BY id', [organizationId]);
 
 /** Administrators also see the instructions, and how often each prompt was used and its proposal edited. */
-const asAdministratorsSeeThem = (db: Db, organizationId: number): Promise<Prompt[]> =>
-  db.query<Prompt>(
-    `SELECT p.id, p.name, p.description, p.system_prompt AS "systemPrompt",
+const asAdministratorsSeeThem = (db: Db, organizationId: number): Promise<Kept[]> =>
+  db.query<Kept>(
+    `SELECT p.id, p.name, p.description, p.affinity_json, p.system_prompt AS "systemPrompt",
             (SELECT count(*)::int FROM replies r WHERE r.prompt_id = p.id) AS used,
             (SELECT count(*)::int FROM replies r WHERE r.prompt_id = p.id AND r.was_edited) AS edited
      FROM prompts p WHERE p.org_id = $1 ORDER BY p.id`,
     [organizationId],
   );
 
-export const promptsFor = (db: Db, { member, organization }: Actor): Promise<Prompt[]> =>
-  member.role === 'admin' ? asAdministratorsSeeThem(db, organization.id) : asMembersSeeThem(db, organization.id);
+export async function promptsFor(db: Db, { member, organization }: Actor): Promise<Prompt[]> {
+  const kept = await (member.role === 'admin' ? asAdministratorsSeeThem(db, organization.id) : asMembersSeeThem(db, organization.id));
+  return kept.map(({ affinity_json, ...prompt }) => ({ ...prompt, affinity: JSON.parse(affinity_json) }));
+}
 
 /** Ready-made prompts the organisation does not have yet, in the administrator's language. */
 export async function readyMadePromptsLeft(db: Db, { member, organization }: Actor): Promise<ReadyMadePrompt[]> {

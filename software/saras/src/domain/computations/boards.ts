@@ -15,13 +15,18 @@ const texts = (value: unknown): string[] => (Array.isArray(value) ? [...new Set(
 /** The key of an attribute as a filter may name it: one of the two pre-configured, or the number of one the organisation made. */
 const isAttributeKey = (key: string): boolean => key === STATUS || key === PRIORITY || /^[0-9]+$/.test(key);
 
+/** Values by attribute, as they are kept: only attributes we know how to name, only those with a value. */
+export function attributeValuesGiven(named: Record<string, unknown>): Record<string, string[]> {
+  const kept = Object.entries(named).filter(([key, values]) => isAttributeKey(key) && texts(values).length);
+  return Object.fromEntries(kept.map(([key, values]) => [key, texts(values)]));
+}
+
 /** The conditions on attributes: by key, the values kept. A filter made before attributes existed named two of them itself. */
 function attributesGiven(given: Record<string, unknown>): Record<string, string[]> {
   const named: Record<string, unknown> = given.attributes && typeof given.attributes === 'object' ? { ...given.attributes } : {};
   named[STATUS] ??= given.box;
   named[PRIORITY] ??= given.priority;
-  const kept = Object.entries(named).filter(([key, values]) => isAttributeKey(key) && texts(values).length);
-  return Object.fromEntries(kept.map(([key, values]) => [key, texts(values)]));
+  return attributeValuesGiven(named);
 }
 
 /** A filter as it is kept: only what we know how to filter on, only the conditions that say something. */

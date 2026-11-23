@@ -40,7 +40,7 @@
     "style": "Style amélioré.",
     "prompt": "Réponse rédigée avec le prompt."
   },
-  "suggestedTag": "Suggéré",
+  "suggestedTag": "Convient à cet email",
   "removeRecipient": "Retirer {address}",
   "confirmSendTitle": "Envoyer cette réponse ?",
   "confirmSendText": "Elle part immédiatement de votre boîte et ne peut pas être reprise.",

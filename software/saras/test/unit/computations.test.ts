@@ -32,7 +32,7 @@ test('an email can be sorted again by a member until it is replied', () => {
 
 test('a prompt has a name and instructions; what is given is trimmed and capped', () => {
   const full = promptContent({ name: '  Refusal ', description: ' Declining. ', systemPrompt: ' You decline. ' });
-  assert.deepEqual(full.ok && full.value, { name: 'Refusal', description: 'Declining.', systemPrompt: 'You decline.' });
+  assert.deepEqual(full.ok && full.value, { name: 'Refusal', description: 'Declining.', systemPrompt: 'You decline.', affinity: {} });
   assert.equal(outcome(promptContent({ name: 'Refusal', systemPrompt: 'You decline.' })), 'ok', 'the description is optional');
   assert.equal(outcome(promptContent({ name: '   ', systemPrompt: 'You decline.' })), 'invalid: prompts.incomplete');
   assert.equal(outcome(promptContent({ name: 'Refusal', systemPrompt: '' })), 'invalid: prompts.incomplete');

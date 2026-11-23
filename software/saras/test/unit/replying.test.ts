@@ -4,7 +4,6 @@ import { test } from 'node:test';
 import { contentIsKept, handOverRecord, hasSomethingWritten, mayHandOver, promptToPrepareWith, proposalHtml } from '../../src/domain/computations/replying.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import type { EmailStatus } from '../../src/domain/model/email.ts';
-import type { PromptRow } from '../../src/domain/model/prompt.ts';
 
 /** What a verdict comes down to: 'ok', or the kind and code of its refusal. */
 const outcome = (verdict: Verdict<unknown>): string => (verdict.ok ? 'ok' : `${verdict.refusal.kind}: ${verdict.refusal.problem.code}`);
@@ -49,12 +48,11 @@ test('typos and style need something written; a prompt needs the content of the 
   assert.equal(outcome(contentIsKept('')), 'gone: emails.contentErased');
 });
 
-test('a proposal nobody asked for is written with the suggested prompt, else the first', () => {
-  const prompts = [{ id: 1 }, { id: 2 }, { id: 3 }] as PromptRow[];
-  assert.equal(promptToPrepareWith(2, prompts)?.id, 2);
-  assert.equal(promptToPrepareWith(null, prompts)?.id, 1);
-  assert.equal(promptToPrepareWith(99, prompts)?.id, 1, 'a suggestion that no longer exists falls back');
-  assert.equal(promptToPrepareWith(2, []), undefined);
+test('a proposal nobody asked for is written with the prompt that suits the email, else the first', () => {
+  const prompts: { id: number; affinity: Record<string, string[]> }[] = [{ id: 1, affinity: {} }, { id: 2, affinity: { 7: ['2'] } }, { id: 3, affinity: { priority: ['high'] } }];
+  assert.equal(promptToPrepareWith(prompts, { 7: '2', priority: 'normal' })?.id, 2);
+  assert.equal(promptToPrepareWith(prompts, { 7: '1', priority: 'normal' })?.id, 1, 'none suits: the first of the list');
+  assert.equal(promptToPrepareWith([], { 7: '2' }), undefined);
 });
 
 test('a proposal made before proposals were rich text is shown as text', () => {

@@ -6,7 +6,7 @@ import type { ReadyMadePrompt } from '../../../shared/prompt.ts';
  * administrators add in one click. Once created they are plain rows: edited, deleted and
  * added to freely.
  */
-/** A ready-made prompt; "when to use it" is read by the LLM to suggest a prompt for each email. */
+/** A ready-made prompt; "when to use it" is what members read to choose one. */
 type DefaultPrompt = ReadyMadePrompt;
 
 const PROMPTS: Record<string, DefaultPrompt[]> = {

@@ -75,6 +75,7 @@ export interface EmailWithItsReply {
   /** Why it was sorted so, and the code of that reason when it is one of the server's own. */
   triageReason: string;
   triageReasonCode: string | null;
+  /** The prompt that suits it best, by its attributes: the one offered first to who writes. None when no prompt names an attribute it has. */
   suggestedPromptId: number | null;
   /** Its values for the attributes of the organisation, by the attribute's key, and who decided each. */
   attributes: Record<string, ValueOfEmail>;

@@ -41,7 +41,7 @@ test('prompts belong to the organisation: a member sees the catalogue, without t
   // a user sees the shared catalogue, without the instructions
   const seen = (await eve('GET', '/prompts')).body;
   assert.deepEqual(seen.map((p: PromptView) => p.id), prompts.map((p: PromptView) => p.id));
-  assert.deepEqual(Object.keys(seen[0]), ['id', 'name', 'description']);
+  assert.deepEqual(Object.keys(seen[0]), ['id', 'name', 'description', 'affinity']);
 });
 
 test('only the administrators of the organisation manage its prompts and its members', async () => {
