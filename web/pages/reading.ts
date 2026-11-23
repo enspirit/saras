@@ -9,7 +9,6 @@ import { ignoreEmail, markNoReplyNeeded, moveBackToHandle } from '../api/sorting
 import { t } from '../i18n.ts';
 import { fmtFull, fmtWhen } from '../i18n/dates.ts';
 import { ActionButton, toast } from './actions.ts';
-import type { BoxOnScreen } from './boxes.ts';
 import { called } from './people.ts';
 import { replyArea } from './replying.ts';
 import { me } from '../session.ts';
@@ -107,10 +106,11 @@ function closedReplyArea(email: EmailWithItsReply, prompts: Prompt[], done: Done
   return closed;
 }
 
-export function emailDetail(email: EmailWithItsReply, prompts: Prompt[], box: BoxOnScreen): Child {
+/** `backHref` is the list the email was opened from: where one returns once it is dealt with. */
+export function emailDetail(email: EmailWithItsReply, prompts: Prompt[], backHref: string): Child {
   const done: Done = (message) => {
     toast(message);
-    location.hash = `#/${box.path}`;
+    location.hash = backHref;
   };
   const header = emailHeader(email, done);
   const original = email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased'));

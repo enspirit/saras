@@ -9,5 +9,7 @@
     "text": "AI with zero data retention (ZDR): enforced on every request",
     "title": "Every AI call enforces zdr=true and data_collection=deny at OpenRouter."
   },
-  "more": "More"
+  "more": "More",
+  "boards": "Boards",
+  "newBoard": "New board"
 }

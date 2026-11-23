@@ -18,6 +18,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 | Area | Stories |
 | --- | --- |
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
+| [J. Boards](#j-boards) | US-90 – US-92 |
 | [B. Mailboxes](#b-mailboxes) | US-10 – US-17 |
 | [C. Triage and the four boxes](#c-triage-and-the-four-boxes) | US-20 – US-25 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
@@ -482,3 +483,26 @@ These are behaviours of the system rather than screens, but they are what the pr
 - Nothing crosses from one organisation to another: members, mailboxes, prompts, settings.
 - With the server key left empty, each organisation uses its own key.
 - The brand, the OAuth applications, the retention period and the fetch settings are the installation's, not the organisation's.
+
+## J. Boards
+
+### US-90 — Make a board
+**As** a member, **I want** to make a board that shows the emails meeting conditions I choose, **so that** I look at my mail the way my work is organised (a client, a subject, what is urgent).
+
+- **New board** in the menu, under **Boards**, above Configuration. A board has a name and a filter.
+- The filter is made of the attributes of an email: the mailboxes it arrived in, where it stands (to handle, no reply needed, replied, ignored), its priority, how recently it was received, its sender (part of a name, an address or a domain), keywords (every word must appear in the subject or the text), and whether it has attachments.
+- An email is shown when it meets every condition given; within a condition made of several values, any of them. A condition left empty keeps every email.
+- A board is a view: it moves nothing, and deleting it leaves its emails where they are.
+
+### US-91 — Work from a board
+**As** a member, **I want** to read and answer emails from a board, **so that** I stay in my view while I work.
+
+- A board lists its emails like a box does, most recent first, and its entry in the menu says how many it shows.
+- Opening an email shows it beside the list, with the same actions and reply area as in a box; once it is dealt with, I am back on the board.
+
+### US-92 — Share a board with the organisation
+**As** an administrator, **I want** to share a board with every member, **so that** the team looks at its mail the same way.
+
+- A board is its owner's alone unless an administrator shares it. A shared board is managed by administrators.
+- Through a shared board, each member sees only the emails of mailboxes they may use.
+- When the member who shared a board leaves, the board stays with the organisation.

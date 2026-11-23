@@ -63,6 +63,7 @@ Essential state only: what another agent can observe.
 | Reply in progress | What a member has written or changed in the reply area, its recipients, the reason for an edit. | Frontend | The member | the editor and fields of the composer (lost on leaving the page) |
 | Reply | What was handed to the mailbox for an email: sent or filed as a draft, to whom, by whom, whether the proposal was edited and why. | Backend | Members | `replies` |
 | Prompt | A way of replying: name, when to use it, instructions. | Backend | Administrators (members: name and description) | `prompts` |
+| Board | A named view of emails: a filter on their attributes (mailbox, box, priority, how recent, sender, keywords, attachments), personal or shared. | Backend | Its owner; every member when shared | `boards` (the filter as JSON); `shared/board.ts` |
 | Mailbox contents | The messages, drafts and flags at the provider. | Mail provider | Backend, the member in their mail client | outside saras |
 
 Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`), replies on their way to the mailbox (`World.handingOver`), the sign-in under way at a mail host (`sessions.oauth_state`), box counts cached in the frontend.
@@ -98,14 +99,14 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **AcceptInvitation** | Visitor | A pending, unexpired invitation → a member with its role; the invitation is gone | Password of 10+ characters · address not taken meanwhile · not locked out | A session is opened | "Create my account" on the invitation page · `POST /invitations/accept` |
 | **AppointAdministrator** | Administrator | A member with role user → administrator | Administrator · same organisation | | "Make administrator" · `PUT /members/:id` |
 | **RemoveAdministratorRole** | Administrator | An administrator → user | Administrator · not the last administrator | | "Remove the administrator role" · `PUT /members/:id` |
-| **DeleteMember** | Administrator | A member → none | Administrator · not oneself (that is DeleteOwnAccount) | Their prompts and shared mailboxes pass to whoever deletes them · their personal mailboxes go, with what was stored from them | red bin in Users · `DELETE /members/:id` |
+| **DeleteMember** | Administrator | A member → none | Administrator · not oneself (that is DeleteOwnAccount) | Their prompts, shared mailboxes and shared boards pass to whoever deletes them · their personal mailboxes go, with what was stored from them | red bin in Users · `DELETE /members/:id` |
 | **ChangePassword** | Member | → the member's password is the new one; their other sessions are closed | The current password is given · the new one has 10+ characters · not locked out | A wrong current password counts as a wrong guess · the session that made the change stays | Settings → You → "Change password" · `PUT /auth/password` |
 | **GiveSecondFactor** | Visitor | A sign-in in progress → a session for the member; the first time, the member has a second factor and recovery codes | Where the installation requires one (`MFA_ENABLED`) · the sign-in has not run out (ten minutes) · the code is the one of the moment, not used before — or a recovery code, then spent · not locked out | No session is opened on a password alone · a wrong code counts as a wrong guess · recovery codes are told once, kept as hashes · the secret is kept sealed | the code page after "Sign in", "Create my account" · `POST /auth/second-factor` |
 | **ResetSecondFactor** | Administrator | A member → the same, without second factor or recovery codes; their sessions are closed | Administrator · same organisation | They set a new one up at their next sign-in | shield button in Users · `DELETE /members/:id/second-factor` |
 | **RequestPasswordReset** | Visitor | → if the address is a member's, a link to a new password exists for them and was sent to that address | The server has mail of its own (`SMTP_URL`, `MAIL_FROM`) | Same answer whether the address is a member's or not · the link is good once, for an hour, kept as a hash · asking again within two minutes sends nothing | "Forgot your password?" · `POST /auth/password-reset` |
 | **CreatePasswordResetLink** | Administrator | A member → a link to a new password exists for them | Administrator · same organisation | Told once, good once, for an hour | key button in Users · `POST /members/:id/password-reset` |
 | **ResetPassword** | Visitor | A live link → the member's password is the new one; the link is spent; all their sessions are closed | The link is live · 10+ characters · not locked out | Nobody is signed in by it: the second factor is still asked · a link that opens nothing counts as a wrong guess | the page a link opens · `POST /auth/password-reset/check`, `PUT /auth/password-reset` |
-| **DeleteOwnAccount** | Member | A member → none, with their sessions | The current password is given · not the organisation's last administrator · not locked out | Their prompts and shared mailboxes pass to the longest-standing other administrator · their personal mailboxes go, with what was stored from them · a wrong password counts as a wrong guess | Settings → You → "Delete my account", then the confirmation · `DELETE /me` |
+| **DeleteOwnAccount** | Member | A member → none, with their sessions | The current password is given · not the organisation's last administrator · not locked out | Their prompts, shared mailboxes and shared boards pass to the longest-standing other administrator · their personal mailboxes go, with what was stored from them · a wrong password counts as a wrong guess | Settings → You → "Delete my account", then the confirmation · `DELETE /me` |
 | **DeleteOrganization** | Administrator | An organisation → none, with its members, sessions, invitations, prompts, mailboxes and everything kept from them | Administrator · the current password is given · the organisation's name is given, as it is · not locked out | The mailboxes at the providers are untouched · the other members are not told · a wrong password counts as a wrong guess | Settings → Organisation → "Delete the organisation", then the confirmation · `DELETE /organization` |
 | **ExpireSessions** | Backend | Sessions past their date → none | | | ReqTrig: hourly, and at start (`main.ts`) |
 
@@ -170,6 +171,16 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **AddReadyMadePrompt** | Administrator | A template the organisation does not have → a prompt with its content | same | | "Add" · `GET /prompts/ready-made` then `POST /prompts` |
 | **EditPrompt** | Administrator | A prompt → with a new name, description, instructions | same · of their organisation | | "Save" · `PUT /prompts/:id` |
 | **DeletePrompt** | Administrator | A prompt → none | Administrator · of their organisation | Emails, proposals and replies that named it keep going without it | red bin · `DELETE /prompts/:id` |
+
+### Boards
+
+| Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
+| --- | --- | --- | --- | --- | --- |
+| **CreateBoard** | Member | → the member has one more board, with this name and filter | A name · only an administrator makes it shared | The filter is kept reduced to the attributes we know · a board shows each member only the emails of mailboxes they may use | "New board" in the menu · `POST /boards` |
+| **EditBoard** | Member | A board → with this name, this filter, shared or not | Manages it (its owner; a shared one, an administrator) · a name · only an administrator shares | | pencil on the board · `PUT /boards/:id` |
+| **DeleteBoard** | Member | A board → none | Manages it | The emails it showed are untouched | "Delete the board" in its form · `DELETE /boards/:id` |
+
+Observations: `GET /boards` (the boards a member sees, each with how many emails it shows them), `GET /boards/:id/emails`.
 
 ### Retention
 

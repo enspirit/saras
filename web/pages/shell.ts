@@ -1,4 +1,4 @@
-// The frame of every signed-in screen: the boxes, the configuration pages, who is signed in
+// The frame of every signed-in screen: the boxes, the boards, the configuration pages, who is signed in
 // and the way out. On a phone, the page that leads to everything that is not a box.
 
 import { signOut } from '../api/access.ts';
@@ -16,6 +16,7 @@ import { Assurance } from '../ui/molecules/assurance.ts';
 import { Card } from '../ui/molecules/card.ts';
 import { Block } from '../ui/molecules/field.ts';
 import { NavItem } from '../ui/molecules/nav-item.ts';
+import type { NavEntry } from '../ui/molecules/nav-item.ts';
 import { PageHeader } from '../ui/molecules/page-header.ts';
 import { AppShell } from '../ui/organisms/app-shell.ts';
 import { Page } from '../ui/organisms/page.ts';
@@ -27,6 +28,14 @@ const CONFIGURATION: { path: string; label: string; icon: IconName; admin?: bool
   { path: 'members', label: 'nav.members', icon: 'users', admin: true },
   { path: 'settings', label: 'nav.settings', icon: 'settings' },
 ];
+
+/** The boards of the menu, then the entry that makes a new one. */
+function boardEntries(): NavEntry[] {
+  const { page, part, id } = route();
+  const at = (boardId: number): boolean => page === 'boards' && id === boardId;
+  const boards = session.boards.map((b) => ({ href: `#/boards/${b.id}`, label: b.name, icon: 'list' as const, count: b.count, current: at(b.id) }));
+  return [...boards, { href: '#/boards/new', label: t('nav.newBoard'), icon: 'plus' as const, current: page === 'boards' && part === 'new' }];
+}
 
 const pagesOfUser = () => CONFIGURATION.filter((p) => !p.admin || isAdmin());
 const assurance = () => ({ text: t('nav.assurance.text'), title: t('nav.assurance.title') });
@@ -45,6 +54,7 @@ export function shell(content: Child): void {
     AppShell({
       brand: session.brand,
       boxes: BOXES_ON_SCREEN.map((b) => item(b.path, t(b.label), b.icon, session.counts[b.id])),
+      boards: { title: t('nav.boards'), items: boardEntries() },
       pages: { title: t('nav.configuration'), items: pages.map((p) => item(p.path, t(p.label), p.icon)) },
       // On a phone the boxes fill the bar: this entry leads to everything else.
       more: { href: '#/more', label: t('nav.more'), icon: 'settings', current: current === 'more' || pages.some((p) => p.path === current) },
@@ -60,6 +70,7 @@ export function morePage(): void {
   shell(
     Page(
       PageHeader({ title: called(me().name, me().email), intro: me().organization.name }),
+      Card({ title: t('nav.boards') }, boardEntries().map(NavItem)),
       Card({}, pagesOfUser().map((p) => NavItem({ href: `#/${p.path}`, label: t(p.label), icon: p.icon }))),
       Block(Assurance(assurance().text, assurance().title)),
       signOutButton({ icon: 'log-out' }),
