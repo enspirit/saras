@@ -74,7 +74,7 @@ A seed is not written by hand: `emb run storage:demo.rebuild` sets the organisat
 | api | An operation as a client sees it, black box | `tests/webspicy/formaldoc/` | `emb run test:webspicy` |
 | repository | Links, import boundaries | `tests/harness/` | `emb run lint` |
 
-Green means `emb run lint` clean and `emb run test` passing; and, for what touches the stack, the suites that need it. GitHub Actions runs all of it on every push, without any secret (`.github/workflows/test.yml`).
+Green means `emb run lint` clean and `emb run test` passing; and, for what touches the stack, the suites that need it. GitHub Actions runs all of it on every push, without any secret (`.github/workflows/test.yml`). Once it is green on `main` or on a version tag, a last job publishes the image with `emb run publish`: the only one that reads a secret, the Docker Hub login ([decision 0006](doc/decisions/0006-the-image-is-published-on-docker-hub.md)).
 
 ## Environment
 
