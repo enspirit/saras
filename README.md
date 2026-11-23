@@ -170,6 +170,19 @@ This is the main design constraint.
 - Check that the chosen model has a ZDR provider; otherwise requests fail (on purpose).
 - ZDR is a contractual commitment of the providers, relayed by OpenRouter: it cannot be verified technically from the application.
 
+## Trying it with sample emails
+
+```bash
+npm install
+npm run demo
+```
+
+This builds the interface and starts saras on `http://localhost:3210` (`DEMO_PORT` changes the port), with a mail server of its own on this machine holding twenty sample emails, in English and in French: requests for quotes, invoices, problems, meetings, and the newsletters, notifications and automatic replies around them. It prints the address and the account to sign in with.
+
+The demo organisation has that mailbox connected and fetched, a **Topic** attribute decided by a rule, a **Who** attribute set by hand, a rule for the priority, and two boards. Replies you send are handed to the demo mail server and go nowhere; nothing is kept when the demo stops.
+
+With `OPENROUTER_API_KEY` in the environment or in `.env`, the AI is the real one: it sorts what the rules leave and writes proposals. Without it, everything that needs no AI works. The demo needs the development dependencies (the mail servers are those of the tests), so it runs from a checkout, not from the Docker image.
+
 ## Getting started
 
 Requires Node.js ≥ 22.18.

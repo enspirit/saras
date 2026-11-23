@@ -12,6 +12,7 @@
     "build": "node scripts/build.ts",
     "start": "node src/main.ts",
     "dev": "node scripts/build.ts --watch & node --watch src/main.ts",
+    "demo": "node scripts/build.ts && node scripts/demo.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.web.json",
     "test": "node --test --test-reporter=spec \"test/*.test.ts\""
   },
