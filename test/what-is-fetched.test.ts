@@ -55,3 +55,30 @@ test('further back, read or not: the rest comes in, and what was already here st
   await me('POST', `/mailboxes/${id}/fetch`);
   assert.deepEqual(await subjects(), ['Ten days ago', 'Today read', 'Today unread', 'Twenty days ago read']);
 });
+
+test('who manages a mailbox reads its servers, never its password, and changes the name its replies show', async () => {
+  const servers = (await me('GET', `/mailboxes/${id}/servers`)).body;
+  assert.deepEqual(servers, { imapHost: '127.0.0.1', imapPort: stack.imapAccount.imapPort, imapSecure: false, smtpHost: '127.0.0.1', smtpPort: stack.imapAccount.smtpPort, smtpSecure: false, username: 'testuser' });
+  assert.equal((await me('PUT', `/mailboxes/${id}/name`, { displayName: '  Bob, Corp  ' })).status, 200);
+  assert.equal((await me('GET', '/mailboxes')).body[0].displayName, 'Bob, Corp');
+});
+
+test('its servers are changed only once the mailbox was seen to answer there; an empty password keeps the one it has', async () => {
+  const servers = (await me('GET', `/mailboxes/${id}/servers`)).body;
+  const wrong = await me('PUT', `/mailboxes/${id}/servers`, { ...servers, imapPort: 1, password: '' });
+  assert.deepEqual([wrong.status, wrong.body.code], [400, 'mailboxes.connectionFailed']);
+  assert.equal((await me('PUT', `/mailboxes/${id}/servers`, { ...servers, imapHost: '' })).body.code, 'mailboxes.serversRequired');
+  assert.equal((await me('PUT', `/mailboxes/${id}/servers`, { ...servers, password: 'not-the-password' })).body.code, 'mailboxes.connectionFailed');
+  assert.equal((await me('PUT', `/mailboxes/${id}/servers`, { ...servers, username: 'testuser', password: '' })).status, 200, 'the password it had still works');
+  assert.deepEqual((await me('GET', `/mailboxes/${id}/servers`)).body, servers);
+  const fetched = await me('POST', `/mailboxes/${id}/fetch`);
+  assert.equal(fetched.body.error ?? null, null);
+});
+
+test('a member who does not manage the mailbox neither reads nor changes any of it', async () => {
+  const other = createClient(() => stack.url);
+  await signUp(other, 'eve@other.example');
+  assert.equal((await other('GET', `/mailboxes/${id}/servers`)).status, 404);
+  assert.equal((await other('PUT', `/mailboxes/${id}/name`, { displayName: 'Eve' })).status, 404);
+  assert.equal((await other('PUT', `/mailboxes/${id}/servers`, {})).status, 404);
+});

@@ -164,10 +164,14 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - A confirmation states that the emails and replies stored in saras are deleted and the mailbox itself is not touched.
 - For a shared mailbox, only administrators can.
 
-### US-17 — Renew access to a mailbox
-**As** a member, **I want** to give saras access to my mailbox again after I changed its password, or after the access I granted was withdrawn or ran out, **so that** fetching resumes without losing anything.
+### US-17 — Change a connected mailbox, and renew its access
+**As** a member, **I want** to look at and change how a mailbox I manage is set up — the name its replies show, what is fetched from it, how saras reaches it — and give saras access to it again after a password change or once the access I granted was withdrawn or ran out, **so that** I correct it without disconnecting it and losing its emails.
 
-- From **Mailboxes**, the key button of a mailbox I manage: a new password for a mailbox connected by its servers; a new sign-in at Google or Microsoft for the others.
+- From **Mailboxes**, **Edit** on a mailbox I manage opens its page. The list also says, beside the folder, how far back each mailbox is fetched and whether only unread mail.
+- **Name shown to recipients**: shown beside the address on replies; empty, replies show the address alone.
+- **What is fetched**: the folder, how far back, read or not; changed on the page that chooses them (US-16).
+- **How saras reaches it**: for a mailbox connected by its servers, the IMAP and SMTP servers, their ports, the user name and the password. The password saras has is never shown; left empty, it is kept. For Google or Microsoft, a new sign-in there.
+- The address of a mailbox cannot be changed: another address is another mailbox.
 - The new access is tested before it is saved. Signing in to another mailbox than the one being renewed is refused.
 - The folder watched and the emails kept do not change; the mailbox's last error is cleared and it is fetched at once.
 

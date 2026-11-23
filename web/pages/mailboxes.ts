@@ -9,7 +9,7 @@ import { t } from '../i18n.ts';
 import { fmtWhen } from '../i18n/dates.ts';
 import { ActionButton, confirmAction, guard, toast } from './actions.ts';
 import { connectMailboxPage } from './connect-mailbox.ts';
-import { renewMailboxAccessPage } from './renew-mailbox-access.ts';
+import { editMailboxPage } from './edit-mailbox.ts';
 import { shell } from './shell.ts';
 import { watchedFolderPage } from './watched-folder.ts';
 import { Badge } from '../ui/atoms/badge.ts';
@@ -40,18 +40,17 @@ const disconnectButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('mail
   void mailboxesPage();
 }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true });
 
-/** What can be done about a mailbox: fetch it, and for who manages it, change its folder, renew its access, disconnect it. */
+/** What can be done about a mailbox: fetch it, and for who manages it, change it (its name, what is fetched, its access) or disconnect it. */
 const mailboxActions = (a: Mailbox): Child[] => [
   a.folder && fetchButton(a),
-  a.folder && a.canManage && Button(t('mailboxes.changeFolder'), { variant: 'ghost', size: 'small', icon: 'folder', iconOnly: true, onClick: () => (location.hash = `#/mailboxes/folder/${a.id}`) }),
-  a.canManage && Button(t('mailboxes.renew'), { variant: 'ghost', size: 'small', icon: 'key', iconOnly: true, onClick: () => (location.hash = `#/mailboxes/renew/${a.id}`) }),
+  a.canManage && Button(t('mailboxes.edit'), { size: 'small', icon: 'pencil', onClick: () => (location.hash = `#/mailboxes/edit/${a.id}`) }),
   a.canManage && disconnectButton(a),
 ];
 
 const mailboxesTable = (mailboxes: Mailbox[]): HTMLDivElement =>
   Table({ columns: [t('mailboxes.mailbox'), t('mailboxes.folderColumn'), t('mailboxes.lastSyncColumn'), t('box.todo.label')], actions: t('common.actions') }, mailboxes.map((a) => [
     Person({ name: a.email, detail: KIND[a.kind], tags: [a.shared && Badge(t('mailboxes.shared'))], icon: a.shared ? 'users' : 'mail' }),
-    a.folder ? a.folderName : Muted(t('mailboxes.folderPending')),
+    a.folder ? [a.folderName, ' ', Muted(t(a.unreadOnly ? 'mailboxes.fetchedUnread' : 'mailboxes.fetchedAll', { days: a.fetchDays }))] : Muted(t('mailboxes.folderPending')),
     a.lastSyncAt ? fmtWhen(a.lastSyncAt) : Muted(t('mailboxes.neverSynced')),
     a.todo,
     mailboxActions(a),
@@ -61,18 +60,19 @@ const mailboxesTable = (mailboxes: Mailbox[]): HTMLDivElement =>
 const fetchFailures = (mailboxes: Mailbox[]): HTMLDivElement[] =>
   mailboxes.filter((a) => a.lastError && a.folder).map((a) => Callout('warn', `${a.email}: ${problemText(a.lastError as NonNullable<Mailbox['lastError']>)}`));
 
-/** The list of mailboxes, or the page of the `part` asked for: connect, renew/<id>, folder/<id>. */
+/** The list of mailboxes, or the page of the `part` asked for: connect, edit/<id>, folder/<id>. */
 export const mailboxesPage = guard(async (part = '', id: number | null = null, oauthError?: string | null, oauthDetail?: string) => {
   const mailboxes = await readMailboxes();
   const failure = oauthError && Callout('warn', problemText({ code: oauthError, params: { detail: oauthDetail ?? '' }, message: oauthDetail || oauthError }));
 
   // With no mailbox yet, the page is the first step of the path.
   if (part === 'connect' || mailboxes.length === 0) return connectMailboxPage(mailboxes.length === 0, failure);
-  const renewing = part === 'renew' && mailboxes.find((a) => a.canManage && a.id === id);
-  if (renewing) return renewMailboxAccessPage(renewing);
   // A mailbox just connected has no folder yet: the page is the second step.
   const pending = mailboxes.find((a) => a.canManage && (a.folder === null || (part === 'folder' && a.id === id)));
   if (pending) return watchedFolderPage(pending);
+
+  const editing = part === 'edit' && mailboxes.find((a) => a.canManage && a.id === id);
+  if (editing) return editMailboxPage(editing);
 
   shell(Page(
     PageHeader({ title: t('mailboxes.title'), intro: t('mailboxes.intro') }, ButtonLink(t('mailboxes.connectTitle'), { href: '#/mailboxes/connect', variant: 'primary' })),

@@ -39,6 +39,13 @@ export interface MailServers {
   smtpPort: number;
 }
 
+/** The servers a mailbox is reached by, as they are told to who manages it: never its password. */
+export interface MailboxServers extends MailServers {
+  imapSecure: boolean;
+  smtpSecure: boolean;
+  username: string;
+}
+
 /** Who hosts the mail of an address, and its servers when we are sure of them: nothing is proposed otherwise. */
 export interface MailHost {
   provider: 'google' | 'microsoft' | 'other';

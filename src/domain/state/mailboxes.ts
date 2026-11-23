@@ -51,6 +51,9 @@ export const addMailbox = async (db: Db, m: NewMailbox): Promise<AccountRow> =>
 export const renewCredentials = async (db: Db, mailboxId: number, sealedCredentials: string, displayName: string): Promise<AccountRow> =>
   (await db.one<AccountRow>('UPDATE accounts SET config_enc = $1, display_name = $2, last_error = NULL WHERE id = $3 RETURNING *', [sealedCredentials, displayName, mailboxId]))!;
 
+export const nameMailbox = async (db: Db, mailboxId: number, displayName: string): Promise<void> =>
+  void (await db.run('UPDATE accounts SET display_name = $1 WHERE id = $2', [displayName, mailboxId]));
+
 export const watchFolder = async (db: Db, mailboxId: number, folder: { id: string; name: string }, fetched: { days: number | null; unreadOnly: boolean }): Promise<AccountRow> =>
   (await db.one<AccountRow>('UPDATE accounts SET folder = $1, folder_name = $2, fetch_days = $3, unread_only = $4, last_error = NULL WHERE id = $5 RETURNING *', [folder.id, folder.name, fetched.days, fetched.unreadOnly, mailboxId]))!;
 

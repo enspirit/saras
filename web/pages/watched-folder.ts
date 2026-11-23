@@ -26,7 +26,7 @@ async function watchFolder(account: Mailbox, folder: string, what: WhatIsFetched
   await chooseWatchedFolder(account.id, folder, what);
   if (account.folder !== null) {
     toast(t('mailboxes.folderChosen'));
-    return goTo('#/mailboxes');
+    return goTo(`#/mailboxes/edit/${account.id}`);
   }
   // The first choice goes on with the path. The button waits for the first fetch, so that
   // the newcomer arrives on their emails and not on an empty box.
@@ -64,11 +64,11 @@ export function watchedFolderPage(account: Mailbox): void {
   offerFolders(account, folders, confirm);
   shell(Page(
     fresh && PathSteps('folder'),
-    PageHeader({ title: t('mailboxes.chooseFolderTitle'), intro: t('mailboxes.chooseFolder'), crumbs: fresh ? [] : [{ label: t('mailboxes.title'), href: '#/mailboxes' }] }),
+    PageHeader({ title: t('mailboxes.chooseFolderTitle'), intro: t('mailboxes.chooseFolder'), crumbs: fresh ? [] : [{ label: t('mailboxes.title'), href: '#/mailboxes' }, { label: account.email, href: `#/mailboxes/edit/${account.id}` }] }),
     fresh && Callout('ok', t('mailboxes.connectedShort', { email: account.email })),
     Card({ form: true }, folders.element,
       Field(t('mailboxes.fetchBack'), days, { hint: t('mailboxes.fetchBackHint'), size: 'narrow' }),
       CheckField(t('mailboxes.unreadOnly'), unreadOnly),
-      Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/mailboxes' }))),
+      Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: `#/mailboxes/edit/${account.id}` }))),
   ));
 }

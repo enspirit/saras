@@ -3,8 +3,10 @@ import { clipped } from '../../domain/computations/given.ts';
 import { chooseWatchedFolder } from '../../domain/mailboxes/choose-watched-folder.ts';
 import { beginHostSignIn, connectMailboxByHostSignIn } from '../../domain/mailboxes/connect-mailbox-by-host-sign-in.ts';
 import { connectMailboxByServers } from '../../domain/mailboxes/connect-mailbox-by-servers.ts';
+import { changeMailboxServers, mailboxServers } from '../../domain/mailboxes/change-mailbox-servers.ts';
 import { disconnectMailbox } from '../../domain/mailboxes/disconnect-mailbox.ts';
 import { fetchMailboxNow } from '../../domain/mailboxes/fetch-mailbox-now.ts';
+import { nameMailbox } from '../../domain/mailboxes/name-mailbox.ts';
 import { listFolders } from '../../domain/mailboxes/list-folders.ts';
 import { renewMailboxPassword } from '../../domain/mailboxes/renew-mailbox-credentials.ts';
 import { mailboxesOf } from '../../domain/observations/mailboxes.ts';
@@ -31,6 +33,18 @@ const watchFolder: Handle = async ({ world }, req, res) => {
 
 const renewByPassword: Handle = async ({ world }, req, res) => {
   await renewMailboxPassword(world, actorOf(req), req.params.id, req.body.password);
+  done(res);
+};
+
+const servers: Handle = async ({ world }, req, res) => void res.json(await mailboxServers(world, actorOf(req), req.params.id));
+
+const changeServers: Handle = async ({ world }, req, res) => {
+  await changeMailboxServers(world, actorOf(req), req.params.id, req.body);
+  done(res);
+};
+
+const name: Handle = async ({ world }, req, res) => {
+  await nameMailbox(world, actorOf(req), req.params.id, req.body.displayName);
   done(res);
 };
 
@@ -65,6 +79,9 @@ export const MAILBOXES: Route[] = [
   { method: 'get', path: '/mailboxes/:id/folders', handle: folders },
   { method: 'put', path: '/mailboxes/:id/folder', handle: watchFolder },
   { method: 'put', path: '/mailboxes/:id/password', handle: renewByPassword },
+  { method: 'get', path: '/mailboxes/:id/servers', handle: servers },
+  { method: 'put', path: '/mailboxes/:id/servers', handle: changeServers },
+  { method: 'put', path: '/mailboxes/:id/name', handle: name },
   { method: 'delete', path: '/mailboxes/:id', handle: disconnect },
   { method: 'post', path: '/mailboxes/:id/fetch', handle: fetchNow },
   { method: 'get', path: '/oauth/:kind/start', handle: signInAtHost },

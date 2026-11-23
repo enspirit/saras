@@ -1,5 +1,6 @@
 // Pure decisions about mailboxes.
 import { FETCH_DAYS } from '../../../shared/mailbox.ts';
+import type { MailboxServers } from '../../../shared/mailbox.ts';
 import { isEmailAddress } from '../../tooling/text.ts';
 import type { AccountRow, ImapCredentials, MailFolder, ServerCredentials } from '../model/mailbox.ts';
 import { accept, refuse } from '../refusal.ts';
@@ -75,6 +76,19 @@ export function serversGiven(given: ServersGiven): Verdict<ServersToConnect> {
   if (!credentials.imap.pass) return refuse('invalid', 'mailboxes.passwordRequired');
   return accept({ email, displayName: clipped(given.displayName, 200), credentials });
 }
+
+/** The servers of a mailbox as they are told: everything but the password. */
+export const serversTold = ({ imap, smtp }: ImapCredentials): MailboxServers =>
+  ({ imapHost: imap.host, imapPort: imap.port, imapSecure: imap.secure, smtpHost: smtp.host, smtpPort: smtp.port, smtpSecure: smtp.secure, username: imap.user });
+
+/** ReqPre of ChangeMailboxServers: both servers with their ports. A password left empty keeps the one the mailbox has. */
+export function withServers(current: ImapCredentials, address: string, given: ServersGiven): Verdict<ImapCredentials> {
+  const made = serversGiven({ ...given, email: address, password: String(given.password || '') || current.imap.pass });
+  return made.ok ? accept(made.value.credentials) : made;
+}
+
+/** The name a mailbox shows to recipients, as it is given. */
+export const mailboxNameGiven = (given: unknown): string => clipped(given, 200);
 
 /** ReqPre of ChooseWatchedFolder: the folder is one of the mailbox's. */
 export function folderAmong<F extends Pick<MailFolder, 'id'>>(folders: F[], wanted: string): Verdict<F> {
