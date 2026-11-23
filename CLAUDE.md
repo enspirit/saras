@@ -9,6 +9,7 @@ software/saras/     the server and its interface: src/ (domain, tooling), web/, 
 software/storage/   the seeds of the stack's database (dbagent): data/empty, data/demo
 world/mailbox/      a member's mailbox, as the stack meets it (IMAP + SMTP, sample emails)
 world/fakesmtp/     the outgoing mail server of the stack (delivers nothing)
+world/chart/        the Helm chart, for an operator on Kubernetes
 tests/webspicy/     the black-box specification of the API
 tests/harness/      checks on the repository: links, import boundaries
 doc/                user stories, operations, architecture, design, decisions/
@@ -22,7 +23,7 @@ Each component's `README.md` is its contract. Read it before changing the compon
 `emb` is the only entry point; CI calls the same tasks.
 
 ```sh
-emb run lint            # type-check, links, import boundaries — seconds
+emb run lint            # type-check, links, import boundaries, helm lint — seconds
 emb run test            # unit + integration, on a checkout (no stack)
 emb up                  # the stack: saras on :3000, postgres, storage, mailbox, fakesmtp, webspicy
 emb run test:postgres   # integration tests on the stack's PostgreSQL
@@ -40,6 +41,7 @@ In `software/saras`: `npm test`, `npm run test:unit`, `npm run typecheck`, one f
 - **`.env` holds real secrets.** Do not read it or print it. `docker compose config` prints the resolved environment: use `config --quiet`. To see what a container got, grep `docker inspect` for the one variable, and say "from .env" rather than the value.
 - **Env files.** `software/saras/env/base.env` describes every variable the server reads; `devel.env` names what it takes from `.env` as `${NAME:-default}`; `test.env` pins every one of those. No compose file lists `.env`. A new variable goes in `src/tooling/config.ts` and `base.env`; `test/unit/configuration.test.ts` holds them together. These files hold no secret, yet a tool may refuse to touch `**/env/*.env`: ask, do not work around it.
 - **Guarantees that are not settings.** Every LLM request carries the zero-retention clause; a mail server gets a password over TLS only, unless it is local (which is why `world/mailbox` runs in the network of the saras container: decision 0005); nothing of an organisation is reachable from another; credentials are sealed with `APP_SECRET`. A change that makes one of these configurable is the wrong change.
+- **`kubectl` may point at a real cluster.** The chart is held by `helm lint` and `helm template`, which reach none. Never `helm install` or `kubectl apply` to see whether it works: ask.
 - **The mailbox container follows saras.** Recreating `saras` alone leaves `mailbox` in the old network; `emb up` or `emb run demo` puts it right.
 - **A seed is flushed, not written.** Change the demo by changing `software/saras/scripts/demo/setup.ts`, then `emb run storage:demo.rebuild`, and review the diff. A mailbox's access is sealed with the server's secret, so no seed carries one.
 
@@ -71,4 +73,5 @@ Each is held by a test, which will tell you:
 | The interface: tokens, components, screens, brands | [`doc/4-design.md`](doc/4-design.md) |
 | The code layout of the server | [`software/saras/README.md`](software/saras/README.md) |
 | Seeds, the demo | [`software/storage/README.md`](software/storage/README.md) |
+| The Helm chart | [`world/chart/README.md`](world/chart/README.md) |
 | A black-box specification | [`tests/webspicy/README.md`](tests/webspicy/README.md) |

@@ -11,7 +11,7 @@ bin/            the few commands of the repository itself: the demo
 doc/            what saras is for, what it does, and the decisions taken
 software/       what we write and ship          one directory per component
 tests/          what proves it, from outside    each a component too
-world/          what it runs in                 stand-ins for third parties
+world/          what it runs in                 stand-ins for third parties, the chart
 
 .emb.yml                    project, plugins, flavors, repository-wide tasks
 .env.commons                committed, non-secret defaults: the stack's vocabulary
@@ -33,10 +33,11 @@ A component is a directory under one of the three, with a `README.md` that is it
 | [`software/storage`](../software/storage/) | The seeds: the datasets the stack's database is put into, the demo among them. | The service `storage`, which is `dbagent`: never deployed, never published |
 | [`world/mailbox`](../world/mailbox/) | A member's mailbox, as the stack meets it: an IMAP server holding sample emails, an SMTP server that sends nothing. | The service `mailbox`, image `saras/mailbox`, in the network of `saras`; never published |
 | [`world/fakesmtp`](../world/fakesmtp/) | The outgoing mail server, as the stack meets it: it delivers nothing and shows what it was given. | The service `fakesmtp`, image `saras/fakesmtp`, never published |
+| [`world/chart`](../world/chart/) | The Helm chart: how an operator runs the published image on Kubernetes. | Nowhere here: no stack names it, and no suite installs it |
 | [`tests/webspicy`](../tests/webspicy/) | The black-box specification of the API: what a URL answers, knowing nothing of what serves it. | The service `webspicy`, image `saras/webspicy`, never published: it sleeps, and the suite is run inside it |
 | [`tests/harness`](../tests/harness/) | The checks on the repository itself: links, import boundaries. | On a checkout, inside `emb run lint` |
 
-`world/` holds no deployment. PostgreSQL is a third party's image that needs no file of ours: it has no directory, and is pinned in `docker-compose.base.yml`. No deployment is described either: saras ships as an image ([decision 0004](decisions/0004-saras-ships-as-an-image.md)).
+PostgreSQL is a third party's image that needs no file of ours: it has no directory, and is pinned in `docker-compose.base.yml`. No deployment is described: saras ships as an image ([decision 0004](decisions/0004-saras-ships-as-an-image.md)), and as a chart an operator installs it with, which names no cluster, no address and no secret ([decision 0007](decisions/0007-a-helm-chart-for-operators.md)).
 
 Why saras is one component and not three is [decision 0002](decisions/0002-one-component.md).
 
@@ -100,6 +101,7 @@ Environment, by who reads it: `.env.commons` (the stack's vocabulary: shared, no
 | integration | An operation over HTTP, in an application the test starts itself, against local mail servers and a stand-in for the LLM | `software/saras/test/integration/` | `emb run test`; `emb run test:postgres` on the stack's PostgreSQL |
 | api | One operation and its refusals, as a client sees them: the assembled product over HTTP, black box | `tests/webspicy/formaldoc/` | `emb run test:webspicy`, against the running stack |
 | repository | Links, import boundaries | `tests/harness/` | `emb run lint` |
+| chart | What the Helm chart renders and what it refuses, without a cluster | `world/chart/` | `emb run lint`, `emb run test` |
 
 The black-box suite has only begun: it has no way yet to choose the state it starts from, so it specifies what reads and what refuses. Its status says what waits, and on what.
 

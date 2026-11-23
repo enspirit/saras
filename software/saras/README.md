@@ -68,7 +68,7 @@ Green means: `lint` clean, and every test passing on both databases.
 
 - Every operation of the inventory exists. Where the code does not do what the documents say is listed there, under Deviations.
 - The black-box specification of the operations has begun in [`tests/webspicy`](../../tests/webspicy/), with what reads and what refuses. For everything else the tests of `test/integration/` still play that part, inside this component.
-- The image is published on Docker Hub by CI, from `main` and from version tags ([decision 0006](../../doc/decisions/0006-the-image-is-published-on-docker-hub.md)); the repository describes no deployment ([decision 0004](../../doc/decisions/0004-saras-ships-as-an-image.md)).
+- The image is published on Docker Hub by CI, from `main` and from version tags ([decision 0006](../../doc/decisions/0006-the-image-is-published-on-docker-hub.md)); the repository describes no deployment ([decision 0004](../../doc/decisions/0004-saras-ships-as-an-image.md)), and holds a Helm chart for operators, [`world/chart`](../../world/chart/).
 - The pure functions live in `src/domain/computations/` and `shared/`, inside this component, not in a library of their own.
 
 ## Inside

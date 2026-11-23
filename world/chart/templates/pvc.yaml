@@ -1,0 +1,20 @@
+{{- if and .Values.embeddedDatabase.enabled (not .Values.embeddedDatabase.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "saras.fullname" . }}-data
+  labels:
+    {{- include "saras.labels" . | nindent 4 }}
+  annotations:
+    # The database: uninstalling the chart leaves it where it is.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- with .Values.embeddedDatabase.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.embeddedDatabase.size }}
+{{- end }}

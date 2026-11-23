@@ -1,0 +1,82 @@
+# What an installation says of itself. The server's own variables are described
+# in one place, software/saras/env/base.env, and are not repeated here: `config`
+# and `secrets` take them by name.
+
+image:
+  repository: enspirit/saras
+  # Empty: the chart's appVersion.
+  tag: ''
+  pullPolicy: Always
+imagePullSecrets: []
+
+nameOverride: ''
+fullnameOverride: ''
+
+# The public address (BASE_URL): OAuth redirects, invitation links, and the
+# Secure cookie when it is https. Empty: the address of the ingress when there
+# is one, and otherwise the server's own default, http://localhost:3000, which
+# is what `kubectl port-forward` gives.
+baseUrl: ''
+
+# The variables of env/base.env that are not secrets, by name. What is left
+# out keeps the server's default.
+#   config:
+#     ALLOW_SIGNUP: 'true'
+#     RETENTION_DAYS: 90
+config: {}
+
+# The secrets of env/base.env, by name. Those given a value here are kept in a
+# Secret the chart creates; the others are left out.
+secrets:
+  # Required, 32 characters at least: openssl rand -hex 32. Do not lose it and
+  # do not change it: connected mailboxes would become unreadable.
+  APP_SECRET: ''
+  # The PostgreSQL server: postgres://user:password@host:5432/saras. Required
+  # unless embeddedDatabase.enabled.
+  DATABASE_URL: ''
+  OPENROUTER_API_KEY: ''
+  SMTP_URL: ''
+  GOOGLE_CLIENT_SECRET: ''
+  MICROSOFT_CLIENT_SECRET: ''
+
+# A Secret of yours holding the same names, for values that must not pass
+# through Helm. The chart cannot read it: it is then yours to put APP_SECRET
+# in it, and DATABASE_URL unless embeddedDatabase.enabled.
+existingSecret: ''
+
+# The embedded PostgreSQL (PGlite) instead of a server, its files on a volume:
+# to try saras, not to run it for real. A single connection, and no access
+# from outside for backups. Nothing moves the data to a server afterwards.
+embeddedDatabase:
+  enabled: false
+  size: 1Gi
+  # Empty: the cluster's default class.
+  storageClass: ''
+  # A claim of yours instead of the one the chart creates (and keeps when it
+  # is uninstalled).
+  existingClaim: ''
+
+# A brand: the name of a ConfigMap holding the files of a brand folder
+# (theme.css, brand.json, logo, favicon), mounted and named by BRAND_DIR.
+#   kubectl create configmap saras-brand --from-file=software/saras/brands/example
+brand:
+  configMap: ''
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ''
+  host: ''
+  annotations: {}
+  # The Secret holding the certificate of `host`. Empty: no TLS at this
+  # ingress, and an address in http unless baseUrl says otherwise.
+  tlsSecret: ''
+
+resources: {}
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
