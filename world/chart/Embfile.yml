@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: The Helm chart — saras on Kubernetes, for an operator
+
+# Both tasks run on the host and need `helm` (3 or 4) on it, and no cluster:
+# nothing here installs anything anywhere.
+tasks:
+  lint:
+    description: helm lint, strictly, on values that install — on the embedded database, then with a PostgreSQL server of the release
+    executors:
+      - local
+    script: | # shell
+      helm lint --strict . --set secrets.APP_SECRET=0123456789abcdef0123456789abcdef --set embeddedDatabase.enabled=true
+      helm lint --strict . --set secrets.APP_SECRET=0123456789abcdef0123456789abcdef --set postgresql.enabled=true --set postgresql.password=only-for-the-lint
+
+  test:
+    description: What the chart renders and what it refuses; and that it knows every variable of env/base.env
+    executors:
+      - local
+    script: node --test --test-reporter=spec chart.test.ts

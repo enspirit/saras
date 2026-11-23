@@ -1,0 +1,186 @@
+{{- include "saras.validate" . }}
+{{- $given := include "saras.givenSecrets" . | fromJson }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "saras.fullname" . }}
+  labels:
+    {{- include "saras.labels" . | nindent 4 }}
+spec:
+  # One, and not a value: the server fetches the mailboxes on a timer of its
+  # own, which a second replica would run again; and the embedded database
+  # takes a single connection. For the same reasons the old pod is gone before
+  # the new one starts.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "saras.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "saras.selectorLabels" . | nindent 8 }}
+      annotations:
+        # A change of configuration is a new pod: the server reads it at start.
+        checksum/config: {{ toJson .Values.config | sha256sum }}
+        checksum/secrets: {{ toJson $given | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # It asks nothing of the cluster's API.
+      automountServiceAccountToken: false
+      securityContext:
+        # The `node` user of the image.
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if .Values.postgresql.enabled }}
+      initContainers:
+        # The server leaves when it finds no database: it is started once the
+        # one of the release answers.
+        - name: wait-for-postgresql
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          command:
+            - node
+            - -e
+            - |
+              const net = require('node:net');
+              const knock = () => net.connect(5432, process.env.HOST)
+                .on('connect', () => process.exit(0))
+                .on('error', () => setTimeout(knock, 2000));
+              knock();
+          env:
+            - name: HOST
+              value: {{ include "saras.postgresql.fullname" . }}
+      {{- end }}
+      containers:
+        - name: saras
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            # It writes its database in /data when that is the embedded one,
+            # Node's compile cache in /tmp, and nothing else.
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: 3000
+          # Later sources win; `env` below wins over all of them.
+          envFrom:
+            {{- if .Values.config }}
+            - configMapRef:
+                name: {{ include "saras.fullname" . }}
+            {{- end }}
+            {{- if $given }}
+            - secretRef:
+                name: {{ include "saras.fullname" . }}
+            {{- end }}
+            {{- with .Values.existingSecret }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+          env:
+            - name: PORT
+              value: "3000"
+            {{- with include "saras.baseUrl" . }}
+            - name: BASE_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.postgresql.enabled }}
+            # The server of the release, whatever another Secret says. Its
+            # address carries no password: the driver takes it from
+            # PGPASSWORD, read where the database reads it, as it is written.
+            - name: DATABASE_URL
+              value: postgres://saras@{{ include "saras.postgresql.fullname" . }}:5432/saras
+            - name: PGPASSWORD
+              valueFrom:
+                {{- include "saras.postgresql.passwordRef" . | nindent 16 }}
+            {{- end }}
+            {{- if .Values.embeddedDatabase.enabled }}
+            # Empty whatever a Secret says: the embedded database, in DATA_DIR.
+            - name: DATABASE_URL
+              value: ""
+            - name: DATA_DIR
+              value: /data
+            {{- end }}
+            {{- if .Values.brand.configMap }}
+            - name: BRAND_DIR
+              value: /brand
+            {{- end }}
+          # What visitors are told is read from the database: an answer means
+          # the server is up and reaches it.
+          startupProbe:
+            httpGet:
+              path: /api/public
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/public
+              port: http
+            periodSeconds: 10
+          # Only that it listens: a database that is away is not mended by a
+          # restart.
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 20
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.embeddedDatabase.enabled }}
+            - name: data
+              mountPath: /data
+            {{- end }}
+            {{- if .Values.brand.configMap }}
+            - name: brand
+              mountPath: /brand
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.embeddedDatabase.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.embeddedDatabase.existingClaim | default (printf "%s-data" (include "saras.fullname" .)) }}
+        {{- end }}
+        {{- with .Values.brand.configMap }}
+        - name: brand
+          configMap:
+            name: {{ . }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

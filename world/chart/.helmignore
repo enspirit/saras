@@ -1,0 +1,4 @@
+# What the component is held by, which is not the chart.
+Embfile.yml
+*.test.ts
+.DS_Store

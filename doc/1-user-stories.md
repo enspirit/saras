@@ -478,6 +478,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** an operator, **I want** to run saras with one command, with an embedded database to try it and a PostgreSQL server for real use, **so that** hosting it myself is not a project.
 
 - `npm start` with embedded PostgreSQL, or the Docker image, on its embedded database or with a PostgreSQL server of the operator's. The schema is created at startup.
+- On Kubernetes, a Helm chart ([`world/chart`](../world/chart/)) with the same two choices of database, and a third: a PostgreSQL server the chart runs beside saras.
 
 ### US-85 — Set the installation's policies
 **As** an operator, **I want** to decide who may sign up, how often mail is fetched, how long content is kept, and which OAuth applications are available, **so that** the installation fits my context.

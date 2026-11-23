@@ -1,0 +1,16 @@
+saras is starting as {{ include "saras.fullname" . }}, on {{ if .Values.embeddedDatabase.enabled }}its embedded database{{ else if .Values.postgresql.enabled }}the PostgreSQL server of the release, {{ include "saras.postgresql.fullname" . }}{{ else }}a PostgreSQL server{{ end }}.
+
+{{- if include "saras.baseUrl" . }}
+
+Open {{ include "saras.baseUrl" . }}
+{{- else }}
+
+No public address was given. To reach it from this machine:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "saras.fullname" . }} 3000:{{ .Values.service.port }}
+
+then open http://localhost:3000
+{{- end }}
+
+Create your organisation there: you become its administrator, then sign-up closes.
+Keep APP_SECRET somewhere safe: without it, connected mailboxes become unreadable.

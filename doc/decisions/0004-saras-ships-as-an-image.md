@@ -17,7 +17,7 @@ The compose files of the root are the stack saras is developed and tested in, an
 - Starting saras *and* a PostgreSQL server with one command is no longer something the repository offers (US-84 says so).
 - An installation made with the former compose file keeps its data in the volume `saras_saras-postgres`, which nothing here touches.
 
-The image has since been given a registry: [decision 0006](0006-the-image-is-published-on-docker-hub.md). This one stands, as no deployment is described.
+The image has since been given a registry: [decision 0006](0006-the-image-is-published-on-docker-hub.md). The repository has since been given a Helm chart, for operators: [decision 0007](0007-a-helm-chart-for-operators.md). This one stands: the chart names no cluster, no address and no secret, and no deployment is described.
 
 ## What would reverse this
 

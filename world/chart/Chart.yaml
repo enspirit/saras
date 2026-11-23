@@ -1,0 +1,13 @@
+apiVersion: v2
+name: saras
+description: A self-hosted web tool to answer email with the help of AI
+type: application
+home: https://github.com/enspirit/saras
+sources:
+  - https://github.com/enspirit/saras
+# The chart's own version: what changes when a template or a value does.
+version: 0.1.0
+# The tag of enspirit/saras installed when image.tag is empty. `latest` follows
+# main; no release has a tag of its own yet. Pin image.tag to choose when you
+# upgrade.
+appVersion: latest
