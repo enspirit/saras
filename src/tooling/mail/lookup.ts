@@ -1,43 +1,12 @@
-// Who hosts the mail of a domain, read from its MX records: enough to steer a newcomer to
-// the right way of connecting, and to propose the servers of the hosts we know.
-import type { MailHost } from '../../../shared/mailbox.ts';
-import { Resolver } from 'node:dns/promises';
-
-export interface MailServers {
-  imapHost: string;
-  imapPort: number;
-  smtpHost: string;
-  smtpPort: number;
-}
-
-/** 'google' and 'microsoft' can be connected by signing in at the provider; 'other' goes through IMAP / SMTP. */
-const servers = (imapHost: string, smtpHost: string, smtpPort = 465): MailServers => ({ imapHost, imapPort: 993, smtpHost, smtpPort });
-
-/** Hosts recognised by the end of their MX names. */
-const HOSTS: { suffixes: string[]; host: MailHost }[] = [
-  { suffixes: ['.google.com', '.googlemail.com'], host: { provider: 'google', servers: servers('imap.gmail.com', 'smtp.gmail.com') } },
-  { suffixes: ['.outlook.com', '.office365.com'], host: { provider: 'microsoft', servers: servers('outlook.office365.com', 'smtp.office365.com', 587) } },
-  { suffixes: ['.messagingengine.com'], host: { provider: 'other', servers: servers('imap.fastmail.com', 'smtp.fastmail.com') } },
-  { suffixes: ['.mail.ovh.net'], host: { provider: 'other', servers: servers('ssl0.ovh.net', 'ssl0.ovh.net') } },
-  { suffixes: ['.gandi.net'], host: { provider: 'other', servers: servers('mail.gandi.net', 'mail.gandi.net') } },
-  { suffixes: ['.infomaniak.ch', '.infomaniak.com'], host: { provider: 'other', servers: servers('mail.infomaniak.com', 'mail.infomaniak.com') } },
-  { suffixes: ['.zoho.eu'], host: { provider: 'other', servers: servers('imap.zoho.eu', 'smtp.zoho.eu') } },
-  { suffixes: ['.zoho.com'], host: { provider: 'other', servers: servers('imap.zoho.com', 'smtp.zoho.com') } },
-  { suffixes: ['.yahoodns.net'], host: { provider: 'other', servers: servers('imap.mail.yahoo.com', 'smtp.mail.yahoo.com') } },
-  { suffixes: ['.icloud.com'], host: { provider: 'other', servers: servers('imap.mail.me.com', 'smtp.mail.me.com', 587) } },
-];
+// Where the mail of an address is hosted, and the servers to reach it by. Only what is sure is
+// proposed: a host we know by the domain's MX records, servers the domain itself declares
+// (SRV records), or usual names that were just seen to answer as mail servers. Otherwise nothing.
+import type { MailHost, MailServers } from '../../../shared/mailbox.ts';
+import { classifyMx } from './known-hosts.ts';
+import { realNetwork } from './network.ts';
+import type { Endpoint, Network } from './network.ts';
 
 const UNKNOWN: MailHost = { provider: 'other', servers: null };
-
-/** Pure: the host that a list of MX names points at; unknown when none is recognised. */
-export function classifyMx(exchanges: string[]): MailHost {
-  for (const exchange of exchanges) {
-    const name = `.${exchange.toLowerCase().replace(/\.$/, '')}`;
-    const known = HOSTS.find((h) => h.suffixes.some((suffix) => name.endsWith(suffix)));
-    if (known) return known.host;
-  }
-  return UNKNOWN;
-}
 
 /** The domain of an address, when it looks like one that can be looked up. */
 export function domainOf(address: string): string | null {
@@ -45,14 +14,43 @@ export function domainOf(address: string): string | null {
   return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain) && domain.length <= 253 ? domain : null;
 }
 
-/** Looks the domain's MX records up, best first. A domain that does not answer in time is unknown, never an error. */
-export async function lookupMailHost(address: string): Promise<MailHost> {
+/** Pure: where a domain's servers usually are, most likely first. A mail exchanger of its own often serves the mailboxes too. */
+export function usualServers(domain: string, exchanges: string[]): { imap: Endpoint[]; smtp: Endpoint[] } {
+  const own = exchanges.map((name) => name.toLowerCase().replace(/\.$/, '')).filter((name) => name.endsWith(`.${domain}`));
+  const imapHosts = [...new Set([`imap.${domain}`, `mail.${domain}`, ...own])];
+  const smtpHosts = [...new Set([`smtp.${domain}`, `mail.${domain}`, ...own])];
+  return {
+    imap: imapHosts.map((host) => ({ host, port: 993 })),
+    smtp: [...smtpHosts.map((host) => ({ host, port: 465 })), ...smtpHosts.map((host) => ({ host, port: 587 }))],
+  };
+}
+
+const paired = (imap: Endpoint | null, smtp: Endpoint | null): MailServers | null =>
+  imap && smtp ? { imapHost: imap.host, imapPort: imap.port, smtpHost: smtp.host, smtpPort: smtp.port } : null;
+
+/** The first of these that answers as the mail server it should be; all are asked at once. */
+async function firstAnswering(net: Network, kind: 'imap' | 'smtp', candidates: Endpoint[]): Promise<Endpoint | null> {
+  const answers = await Promise.all(candidates.map((candidate) => net.answers(kind, candidate)));
+  return candidates.find((_, index) => answers[index]) ?? null;
+}
+
+/** What the domain declares for itself (RFC 6186), then its usual names, each kept only if it answers. */
+async function serversSeenToAnswer(net: Network, domain: string, exchanges: string[]): Promise<MailServers | null> {
+  const [imaps, submissions, submission] = await Promise.all([net.srv(`_imaps._tcp.${domain}`), net.srv(`_submissions._tcp.${domain}`), net.srv(`_submission._tcp.${domain}`)]);
+  const usual = usualServers(domain, exchanges);
+  const [imap, smtp] = await Promise.all([
+    firstAnswering(net, 'imap', [...imaps, ...usual.imap]),
+    firstAnswering(net, 'smtp', [...submissions, ...submission, ...usual.smtp]),
+  ]);
+  return paired(imap, smtp);
+}
+
+/** A domain that does not answer in time is unknown, never an error. */
+export async function lookupMailHost(address: string, net: Network = realNetwork): Promise<MailHost> {
   const domain = domainOf(address);
   if (!domain) return UNKNOWN;
-  try {
-    const records = await new Resolver({ timeout: 2000, tries: 1 }).resolveMx(domain);
-    return classifyMx(records.sort((a, b) => a.priority - b.priority).map((r) => r.exchange));
-  } catch {
-    return UNKNOWN;
-  }
+  const exchanges = await net.mx(domain);
+  const known = classifyMx(exchanges);
+  if (known.servers) return known;
+  return { provider: 'other', servers: await serversSeenToAnswer(net, domain, exchanges) };
 }

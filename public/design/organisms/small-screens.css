@@ -32,4 +32,7 @@
   .reading-head { padding: var(--space-2) var(--space-4) var(--space-3); }
   .reading__body { padding: var(--space-4); }
   .dock { margin: 0; border-width: var(--border-width) 0 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  /* On a phone the path shows its numbers, and the name of the step one is on. */
+  .steps { grid-auto-columns: auto; justify-content: start; }
+  .steps__step:not([aria-current="step"]) .steps__label { display: none; }
 }

@@ -1,15 +1,7 @@
-// Where the mail servers of an address are likely to be, so that a newcomer does not have
-// to look them up. This is the immediate proposal, from the address alone: a few large
-// providers are known, and for any other domain the usual names are proposed. The server
-// then says who really hosts the domain (GET /mail/host), which replaces it. Nothing is
-// trusted: the connection is tested before anything is saved.
-
-export interface MailServers {
-  imapHost: string;
-  imapPort: number;
-  smtpHost: string;
-  smtpPort: number;
-}
+// The mail servers of the few public domains we know for sure, proposed while the address is
+// typed. For any other domain nothing is guessed: the server is asked who hosts it
+// (GET /mail/host) and proposes servers only when it is sure of them.
+import type { MailServers } from '../shared/mailbox.ts';
 
 const server = (imapHost: string, smtpHost: string, smtpPort = 465): MailServers => ({ imapHost, imapPort: 993, smtpHost, smtpPort });
 
@@ -25,9 +17,11 @@ const KNOWN: Record<string, MailServers> = {
   'fastmail.com': server('imap.fastmail.com', 'smtp.fastmail.com'),
 };
 
-/** The servers to propose for an address, or null while it has no domain. */
-export function serversFor(address: string): MailServers | null {
+/** The domain of an address being typed, once it looks like one. */
+export function domainOf(address: string): string | null {
   const domain = address.trim().toLowerCase().split('@')[1] ?? '';
-  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain)) return null;
-  return KNOWN[domain] ?? server(`imap.${domain}`, `smtp.${domain}`);
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain) ? domain : null;
 }
+
+/** The servers of an address at a domain we know; null for any other. */
+export const serversFor = (address: string): MailServers | null => KNOWN[domainOf(address) ?? ''] ?? null;

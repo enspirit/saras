@@ -35,7 +35,7 @@
   "folderPending": "An administrator has yet to choose the folder to watch.",
   "intro": "Each mailbox watches one folder. A shared mailbox is used by every member; only administrators connect, change or disconnect one.",
   "step1": "Connect a mailbox",
-  "step2": "Choose the folder to watch",
+  "step2": "Choose the folder",
   "step3": "Try it on a first email",
   "connectTitle": "Connect a mailbox",
   "connectIntro": "The emails of one folder that you choose are fetched, and your replies are sent from the same address. Nothing else in the mailbox is read.",
@@ -62,12 +62,17 @@
   "keyHint": "Create one in your <link>OpenRouter account</link>. It is encrypted in the database and used by every member who has no key of their own.",
   "keySave": "Save and read my emails",
   "keyLater": "Later",
-  "serversProposed": "Filled in from the address. Check them with your mail provider if the connection fails.",
   "hostedSignIn": "{address} is hosted at {provider}: connect it by signing in there, no password is typed here.",
   "hostedPassword": "{address} is hosted at {provider}, which usually refuses the mailbox’s own password. Use an application password, or ask whoever hosts this server to set up sign-in with {provider}.",
   "renew": "Renew access",
   "renewTitle": "Renew access to {email}",
   "renewIntro": "After a password change, or when the access granted to saras was withdrawn or ran out. The folder watched and the emails kept do not change.",
   "renewed": "Access renewed.",
-  "newPassword": "New password"
+  "newPassword": "New password",
+  "servers": {
+    "unknown": "Your mail provider’s help lists them, as its IMAP and SMTP settings.",
+    "searching": "Looking for the mail servers of {domain}…",
+    "found": "Found for {domain}. Change them if your mail provider says otherwise.",
+    "notFound": "We could not find the mail servers of {domain}, and would rather not guess. Your mail provider’s help lists them, as its IMAP and SMTP settings."
+  }
 }

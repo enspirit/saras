@@ -48,7 +48,7 @@ function hostSignIn(kind: string, shared: boolean): HTMLElement[] {
 /** The form for a mailbox reached by its servers, with the advice about who really hosts its address. */
 function serversFormWithAdvice(first: boolean, shared: () => boolean, host: ChoicesHandle, onHostChosen: () => void) {
   const byServers = MailboxByServersForm(first, shared);
-  const advice = MailHostAdvice({ oauth: me().oauth, host, propose: byServers.propose, onHostChosen });
+  const advice = MailHostAdvice({ oauth: me().oauth, host, propose: byServers.propose, searching: byServers.searching, onHostChosen });
   byServers.email.addEventListener('change', () => void advice.find(byServers.email.value));
   return { form: byServers.form, advice };
 }

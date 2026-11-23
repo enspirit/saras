@@ -28,10 +28,18 @@ export interface MailFolder {
   name: string;
 }
 
-/** Who hosts the mail of an address, and the servers to propose when that host is known. */
+/** The servers a mailbox is reached by. */
+export interface MailServers {
+  imapHost: string;
+  imapPort: number;
+  smtpHost: string;
+  smtpPort: number;
+}
+
+/** Who hosts the mail of an address, and its servers when we are sure of them: nothing is proposed otherwise. */
 export interface MailHost {
   provider: 'google' | 'microsoft' | 'other';
-  servers: { imapHost: string; imapPort: number; smtpHost: string; smtpPort: number } | null;
+  servers: MailServers | null;
 }
 
 /** What a fetch brought in and had sorted, and what went wrong if anything did. */

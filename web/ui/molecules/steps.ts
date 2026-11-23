@@ -5,4 +5,4 @@ import { cx, h } from '../dom.ts';
 export const Steps = (labels: string[], current: number): HTMLOListElement =>
   h('ol', { class: 'steps' }, labels.map((label, i) =>
     h('li', { class: cx('steps__step', i < current && 'steps__step--done'), 'aria-current': i === current ? 'step' : null },
-      h('span', { class: 'steps__mark' }, i < current ? Icon('check', { size: 'small' }) : i + 1), label)));
+      h('span', { class: 'steps__mark' }, i < current ? Icon('check', { size: 'small' }) : i + 1), h('span', { class: 'steps__label' }, label))));
