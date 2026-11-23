@@ -55,6 +55,10 @@ export const MESSAGES = {
   'mailboxes.foldersFailed': 'Could not list the folders: {detail}',
 
   // Prompts and emails
+  'boards.notFound': 'Board not found.',
+  'boards.nameRequired': 'A board needs a name.',
+  'boards.sharedByAdministrators': 'Only administrators share a board with the organisation.',
+  'boards.notYours': 'A shared board is managed by administrators.',
   'prompts.notFound': 'Prompt not found.',
   'prompts.incomplete': 'Name and instructions are required.',
   'emails.notFound': 'Email not found.',

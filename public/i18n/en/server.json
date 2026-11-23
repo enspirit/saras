@@ -103,5 +103,11 @@
   "assist": {
     "nothingWritten": "Write something first: there is nothing to check or improve.",
     "invalidAction": "Unknown kind of assistance."
+  },
+  "boards": {
+    "notFound": "Board not found.",
+    "nameRequired": "A board needs a name.",
+    "sharedByAdministrators": "Only administrators share a board with the organisation.",
+    "notYours": "A shared board is managed by administrators."
   }
 }

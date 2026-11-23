@@ -66,10 +66,11 @@ export async function longestStandingAdministrator(db: Db, organizationId: numbe
   return found?.id;
 }
 
-/** The prompts a member created and the shared mailboxes they connected pass to another member. */
+/** The prompts a member created, the shared mailboxes they connected and the boards they shared pass to another member. */
 export async function handOverWhatTheyMade(db: Db, fromId: number, toId: number): Promise<void> {
   await db.run('UPDATE prompts SET user_id = $1 WHERE user_id = $2', [toId, fromId]);
   await db.run('UPDATE accounts SET user_id = $1 WHERE user_id = $2 AND shared', [toId, fromId]);
+  await db.run('UPDATE boards SET user_id = $1 WHERE user_id = $2 AND shared', [toId, fromId]);
 }
 
 /** Forgets a member; what is theirs alone (sessions, personal mailboxes and what was kept from them) goes with them. */

@@ -103,5 +103,11 @@
   "assist": {
     "nothingWritten": "Écrivez d’abord quelque chose : il n’y a rien à corriger ni à améliorer.",
     "invalidAction": "Type d’aide inconnu."
+  },
+  "boards": {
+    "notFound": "Tableau introuvable.",
+    "nameRequired": "Un tableau a besoin d’un nom.",
+    "sharedByAdministrators": "Seuls les administrateurs partagent un tableau avec l’organisation.",
+    "notYours": "Un tableau partagé est géré par les administrateurs."
   }
 }

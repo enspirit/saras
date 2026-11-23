@@ -4,6 +4,7 @@ import { readReason } from '../../tooling/messages.ts';
 import type { EmailStatus, EmailSummary, EmailWithItsReply, EmailsOfBox } from '../../../shared/email.ts';
 import type { Proposal, Reply } from '../../../shared/reply.ts';
 import type { DraftRow } from '../model/reply.ts';
+import type { Conditions } from '../computations/boards.ts';
 import { countsPerBox, statusesOf } from '../computations/boxes.ts';
 import { rowToEmail } from '../computations/emails.ts';
 import { replyRecipients } from '../computations/reply.ts';
@@ -14,23 +15,30 @@ import type { Actor } from '../world.ts';
 
 type Kept<T, K extends keyof T> = Omit<T, K> & Record<K, Date>;
 
-const listed = (db: Db, { member, organization }: Actor, statuses: readonly EmailStatus[]): Promise<Kept<EmailSummary, 'date'>[]> =>
-  db.query(
+/** The emails a member may see, among those of their organisation's mailboxes they may use: parameters $1 and $2. */
+export const SEEN_BY_MEMBER = `FROM emails e JOIN accounts a ON a.id = e.account_id WHERE ${mayUse('$1', '$2')}`;
+
+/** The 200 most recent emails a member may see that meet these conditions, whose parameters are numbered from $3. */
+export async function emailSummaries(db: Db, { member, organization }: Actor, { sql, params }: Conditions): Promise<EmailSummary[]> {
+  const emails = await db.query<Kept<EmailSummary, 'date'>>(
     `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status, e.priority,
             e.triage_source AS "triageSource", substr(e.body_text, 1, 160) AS snippet, a.email AS mailbox, a.shared,
             (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
-     FROM emails e JOIN accounts a ON a.id = e.account_id
-     WHERE ${mayUse('$1', '$2')} AND e.status = ANY($3)
+     ${[SEEN_BY_MEMBER, ...sql].join(' AND ')}
      ORDER BY e.date DESC LIMIT 200`,
-    [organization.id, member.id, statuses],
+    [organization.id, member.id, ...params],
   );
+  return emails.map((email) => ({ ...email, date: email.date.toISOString() }));
+}
+
+const listed = (db: Db, actor: Actor, statuses: readonly EmailStatus[]): Promise<EmailSummary[]> => emailSummaries(db, actor, { sql: ['e.status = ANY($3)'], params: [statuses] });
 
 const perStatus = (db: Db, { member, organization }: Actor): Promise<{ status: EmailStatus; n: number }[]> =>
   db.query(`SELECT e.status, count(*)::int AS n FROM emails e JOIN accounts a ON a.id = e.account_id WHERE ${mayUse('$1', '$2')} GROUP BY e.status`, [organization.id, member.id]);
 
 /** The 200 most recent emails of a box, with how many each box holds. */
 export const emailsOfBox = async (db: Db, actor: Actor, box: unknown): Promise<EmailsOfBox> => ({
-  emails: (await listed(db, actor, statusesOf(box))).map((email) => ({ ...email, date: email.date.toISOString() })),
+  emails: await listed(db, actor, statusesOf(box)),
   counts: countsPerBox(await perStatus(db, actor)),
 });
 
