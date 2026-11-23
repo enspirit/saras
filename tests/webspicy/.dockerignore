@@ -1,0 +1,9 @@
+# The image holds the suite and nothing else.
+Embfile.yml
+README.md
+.dockerignore
+env/
+
+# Written by a host-side `bundle install`, and the wrong architecture.
+.bundle
+vendor

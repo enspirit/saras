@@ -29,6 +29,7 @@ A component is a directory under one of the three, with a `README.md` that is it
 | Component | What it is | Runs as |
 | --- | --- | --- |
 | [`software/saras`](../software/saras/) | The server and the interface it serves: every operation, and the state. | The service `saras`, image `saras/saras`: the front door |
+| [`tests/webspicy`](../tests/webspicy/) | The black-box specification of the API: what a URL answers, knowing nothing of what serves it. | The service `webspicy`, image `saras/webspicy`, never published: it sleeps, and the suite is run inside it |
 | [`tests/harness`](../tests/harness/) | The checks on the repository itself: links, import boundaries. | On a checkout, inside `emb run lint` |
 | [`world/compose`](../world/compose/) | saras as an operator runs it: the application and a PostgreSQL server. | An operator's `docker compose up`, never by the suites |
 
@@ -39,7 +40,8 @@ Why saras is one component and not three is [decision 0002](decisions/0002-one-c
 ## Who may rely on whom
 
 ```
-tests/harness ──reads the files of──► everything          (imports nothing)
+tests/harness  ──reads the files of──► everything         (imports nothing)
+tests/webspicy ──HTTP, through the front door──► software/saras   (knows nothing else of it)
 world/compose ──builds──► software/saras ──► PostgreSQL, the mail providers, the LLM
 ```
 
@@ -77,7 +79,7 @@ The state is kept in PostgreSQL and controlled by `software/saras` alone, which 
 | | Compose files | Project | For |
 | --- | --- | --- | --- |
 | On a laptop | `base` + `devel` | `saras-dev` | Developing: saras on `localhost:3000` with its sources mounted and watched, PostgreSQL on `localhost:5432` |
-| Under the suites | `base` + `test` | `saras-dev` | CI: no published port, sources baked into the images, no secret read |
+| Under the suites | `base` + `test` | `saras-dev` | CI: no published port, sources baked into the images, no secret read, sign-up open |
 | An operator's | `world/compose/docker-compose.yml` | `saras` | Running saras for real |
 
 `emb up` starts the first; `COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up` the second. `base` names images and `emb` builds them, from each component's Embfile.
@@ -90,9 +92,10 @@ Environment, four files with one reader each: `.env.commons` (shared, non-secret
 | --- | --- | --- | --- |
 | unit | A computation: one pure function, a table of cases, no mock. And the checks that read the component's own sources. | `software/saras/test/unit/` | `emb run test` |
 | integration | An operation over HTTP, in an application the test starts itself, against local mail servers and a stand-in for the LLM | `software/saras/test/integration/` | `emb run test`; `emb run test:postgres` on the stack's PostgreSQL |
+| api | One operation and its refusals, as a client sees them: the assembled product over HTTP, black box | `tests/webspicy/formaldoc/` | `emb run test:webspicy`, against the running stack |
 | repository | Links, import boundaries | `tests/harness/` | `emb run lint` |
 
-There is no black-box suite through the front door yet: see the status of `software/saras`.
+The black-box suite has only begun: it has no way yet to choose the state it starts from, so it specifies what reads and what refuses. Its status says what waits, and on what.
 
 `emb` is the only entry point. Every build and every suite is a task; CI calls those tasks and nothing else (`.github/workflows/test.yml`), so a green CI and a green laptop mean the same thing. `emb run test` needs a checkout; a suite that needs the running stack has a name of its own.
 

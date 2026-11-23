@@ -291,4 +291,4 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 - **A shared mailbox that changes owner changes voice**: it is fetched with its owner's key, model, signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who sorts and writes for it.
 - Deviations 1 to 14 (9 aside), each of which is a rule to confirm or a behaviour to change.
 - The frontend asks for each operation through a function named after it (`web/api/`), and its pages are named after what a person does (`web/pages/`). Its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) could still be brought out as pure functions with unit tests.
-- Black-box specifications of the operations (webspicy) are still to write; the HTTP tests in `test/integration/` play that part for now.
+- Black-box specifications of the operations have begun in [`tests/webspicy`](../tests/webspicy/), with what reads and what refuses; the HTTP tests in `test/integration/` play that part for everything else.

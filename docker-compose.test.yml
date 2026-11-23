@@ -19,3 +19,8 @@ services:
     environment:
       # How the suites reach it: by service name, on the compose network.
       BASE_URL: http://saras:3000
+
+  webspicy:
+    env_file:
+      - ./.env.commons
+      - ./tests/webspicy/env/devel.env

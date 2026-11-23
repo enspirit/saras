@@ -30,6 +30,9 @@ services:
       # The default brand, unless SARAS_BRAND names a folder of
       # software/saras/brands (SARAS_BRAND=klaro in .env, or in the shell).
       BRAND_DIR: ${SARAS_BRAND:+/app/brands/}${SARAS_BRAND:-}
+      # Anyone on this machine may create an organisation: the port is
+      # published on localhost only, and the black-box suite starts from there.
+      ALLOW_SIGNUP: 'true'
     # `npm run dev` runs two watchers under a shell: an init process hands
     # them the signal that stops the container.
     init: true
@@ -46,3 +49,18 @@ services:
       # public/js is deliberately not the host's: the container bundles into
       # its own, so two builds never fight over one directory.
       - /app/public/js
+
+  webspicy:
+    env_file:
+      - ./.env.commons
+      - ./tests/webspicy/env/devel.env
+    volumes:
+      # The specifications are what is edited, so they are mounted rather than
+      # baked. `formaldoc/` is one mount for the whole URL space.
+      #
+      # config.rb and schema.fio are *file* mounts: an editor that replaces the
+      # file leaves the container on the old inode. `emb up -f webspicy` after
+      # editing either.
+      - ./tests/webspicy/config.rb:/home/app/config.rb:ro
+      - ./tests/webspicy/schema.fio:/home/app/schema.fio:ro
+      - ./tests/webspicy/formaldoc:/home/app/formaldoc:ro
