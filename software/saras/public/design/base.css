@@ -24,3 +24,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
   outline: var(--focus-width) solid var(--color-focus);
   outline-offset: 1px;
 }
+
+/* What opens under a button (a menu, a few colours) is a popover of the browser's own: in the
+   top layer, above every panel and scrolling area. It sits under the button it is anchored to,
+   and goes above it, or to its other side, where there is no room. */
+[popover] {
+  position: fixed; inset: auto;
+  margin: var(--space-1) 0;
+  position-area: bottom span-right;
+  position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+}
