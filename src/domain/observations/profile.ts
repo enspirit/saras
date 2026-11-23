@@ -21,15 +21,13 @@ function organizationSeenBy({ member, organization }: Actor): Organization {
   };
 }
 
-/** The member's own settings, with the model and key in force for them. */
+/** The member's own settings, with the model in force in their organisation and whether a key is. */
 function settingsOf({ config, vault }: Pick<Reach, 'config' | 'vault'>, { member, organization }: Actor) {
-  const { apiKey, model } = llmSettings(member, organization, { config, vault });
+  const { apiKey, model } = llmSettings(organization, { config, vault });
   return {
     language: member.language,
     signature: member.signature,
     model,
-    defaultModel: organization.model || config.openrouter.model,
-    hasOwnKey: Boolean(member.openrouter_key_enc),
     hasKey: Boolean(apiKey),
   };
 }

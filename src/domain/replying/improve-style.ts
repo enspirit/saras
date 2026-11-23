@@ -19,7 +19,7 @@ import type { Proposal } from './proposal.ts';
 export async function improveStyle(world: World, actor: Actor, request: { emailId: unknown; html: unknown }): Promise<Proposal> {
   const email = await emailFor(world.db, actor, request.emailId);
   const html = writtenSoFar(request.html);
-  const settings = llmSettings(actor.member, actor.organization, world);
+  const settings = llmSettings(actor.organization, world);
   accepted(hasSomethingWritten(html));
   return writeProposal(world, { emailId: email.id, action: 'style', promptId: null, messages: buildStyleMessages({ html }), ...settings });
 }

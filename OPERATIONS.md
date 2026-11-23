@@ -44,9 +44,9 @@ Essential state only: what another agent can observe.
 | Sorting | Who says whether a fetched email needs a reply: nobody (`none`: all are to handle) or the AI (`ai`). | Backend | Members | `organizations.triage_strategy`; `Organization.sorting` in `shared/` |
 | Writing | When a proposal is written for an email to handle: on demand (`none`), at fetch (`draft`), at fetch and filed in the mailbox's drafts (`mailbox`). | Backend | Members | `organizations.automation`; `Organization.writing` in `shared/` |
 | Automated mail first | Whether plainly automated mail is set aside by rule before anything else. | Backend | Members | `organizations.skip_automated` |
-| Organisation's AI | Its default model and its own key. | Backend | Administrators (key: presence only) | `organizations.model`, `.openrouter_key_enc` |
+| Organisation's AI | Its model and its own key, the same for every member. | Backend | Administrators (key: presence only) | `organizations.model`, `.openrouter_key_enc` |
 | Member | A person's account in one organisation: address, name, role, password. | Backend | Administrators, the member | `users.*`; `session.me` in the frontend |
-| Member's settings | Language, signature, own model, own key. | Backend (language also Frontend) | The member | `users.language`, `.signature`, `.model`, `.openrouter_key_enc`; `localStorage` (language) |
+| Member's settings | Language, signature. | Backend (language also Frontend) | The member | `users.language`, `.signature` (`.model` and `.openrouter_key_enc` remain from before and are no longer read); `localStorage` (language) |
 | Second factor | The secret a member's authenticator app shares with the server, the last code step accepted, and their recovery codes. | Backend | The member (at set-up only) | `users.totp_secret_enc` (sealed), `.totp_last_step`, `.recovery_codes_json` (hashes) |
 | Sign-in in progress | That a password was accepted and a second factor is awaited, for ten minutes. | Backend | Frontend | `sign_ins_in_progress`; the `signin` cookie |
 | Password reset | A pending right to choose a new password, for an hour. | Backend | Whoever holds the link | `password_resets` (the token as a hash only) |
@@ -78,7 +78,7 @@ Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`),
 | Manages a mailbox | Shared: the member is an administrator. Personal: it is theirs. | `manages` in `computations/mailboxes.ts` |
 | Box | To handle = `needs_reply` or `pending`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `shared/email.ts`; `computations/boxes.ts` counts by it |
 | Sign-up is open | The operator allows it, or no account exists yet. | `signUpIsOpen` in `computations/access.ts` |
-| Key in force | The member's own, else the organisation's, else the server's. Same order for the model. | `computations/key-in-force.ts` |
+| Key in force | The organisation's, else the server's. Same order for the model. | `computations/key-in-force.ts` |
 | Locked out | Ten wrong guesses from one origin within fifteen minutes. | `isLockedOut` in `computations/access.ts` |
 | Proposal was edited | The final text differs from the proposed one, whitespace aside. | `wasEdited` in `computations/reply.ts`; a second version in `web/pages/reply-in-progress.ts` (`norm`) |
 | Passage to complete | A passage in square brackets of 2 to 80 characters. | `TO_COMPLETE` in `web/pages/reply-in-progress.ts` only |
@@ -120,14 +120,12 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | --- | --- | --- | --- | --- | --- |
 | **SetOwnName** | Member | → the member's name | | | Settings → You · `PUT /settings` |
 | **ChooseLanguage** | Member, Frontend | → the language in use | A tag we recognise, else English | | language picker; also sent by the frontend at start when it differs · `PUT /settings` |
-| **ChooseOwnModel** | Member | → the member's model, or none (the organisation's applies) | Looks like `provider/model` | | Settings → You · `PUT /settings` |
 | **SetSignature** | Member | → the member's signature | | | same |
-| **SetOwnKey** / **RemoveOwnKey** | Member | → the member has a key / has none | | Stored sealed | same |
 | **RenameOrganization** | Administrator | → the organisation's name | Administrator | An empty name changes nothing | Settings → Organisation · `PUT /organization` |
 | **ChooseSorting** | Administrator | → fetched emails are sorted by nobody, or by the AI, from the next fetch on | Administrator · `none` or `ai` | What was fetched before stays as it was sorted | Settings → Organisation; step 1 of "Sorting and writing" in the tour · `PUT /organization` |
 | **ChooseWriting** | Administrator | → proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts | Administrator · one of those three | Nothing sends by itself | same; step 2 of "Sorting and writing" |
 | **SetAsideAutomatedFirst** | Administrator | → the rule of "Stands in" is applied, or not | Administrator | | Settings → Organisation · `PUT /organization`; the same as choosing who decides "Stands in" |
-| **SetOrganizationModel** | Administrator | → the default model, or none (the server's applies) | Administrator · looks like `provider/model` | | same |
+| **SetOrganizationModel** | Administrator | → the model that writes and sorts for every member, or none (the server's applies) | Administrator · looks like `provider/model` | | Settings → AI & privacy · `PUT /organization` |
 | **SetOrganizationKey** / **RemoveOrganizationKey** | Administrator | → the organisation has a key / has none | Administrator | Stored sealed | same; the key step of the tour |
 
 ### Mailboxes

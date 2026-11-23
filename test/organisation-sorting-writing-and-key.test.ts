@@ -51,11 +51,10 @@ test('the key of the organisation is sealed at rest', async () => {
   assert.ok(stored!.k.length > 20 && !stored!.k.includes('sk-or-acme'), 'encrypted at rest');
 });
 
-test('members draft with the key of the organisation, unless they have their own', async () => {
-  // Members now draft with the organisation's key, unless they have their own.
+test('every member drafts with the key of the organisation: none has one of their own', async () => {
   assert.equal(await keyUsedBy(bruno), 'Bearer sk-or-acme');
-  await chloe('PUT', '/settings', { openrouterKey: 'sk-or-chloe' });
-  assert.equal(await keyUsedBy(chloe), 'Bearer sk-or-chloe');
+  await chloe('PUT', '/settings', { openrouterKey: 'sk-or-chloe', model: 'chloe/model' });
+  assert.equal(await keyUsedBy(chloe), 'Bearer sk-or-acme', 'a key or a model sent as one\'s own is not taken');
 });
 
 test('an organisation without a key falls back to the server\'s', async () => {

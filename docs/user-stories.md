@@ -289,7 +289,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 
 - The field appears only when I changed a proposal made with a prompt; it is optional.
 - The reason is given to the AI for my next proposals with that prompt — mine only.
-- Administrators see these reasons per prompt (US-52); I am told so in **Settings → Privacy**.
+- Administrators see these reasons per prompt (US-52); I am told so in **Settings → AI & privacy**.
 
 ### US-39 — Look back at what was answered
 **As** a member, **I want** to reopen an answered email and see what was sent, to whom and when, **so that** I can check or recall my answer.
@@ -350,11 +350,11 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - Free text over several lines, added as is at the end of each proposal made with a prompt.
 - On the same page I set my name, shown to the other members in place of my address.
 
-### US-61 — Use my own model and API key
-**As** a member, **I want** to choose another OpenRouter model and enter my own key, **so that** I use the model I prefer and pay for my own usage.
+### US-61 — One model and one key for the organisation
+**As** a member, **I want** to see which AI works for my organisation, **so that** I know what my email is sent to without having anything to set up.
 
-- Model: an identifier "provider/model"; empty means the organisation's default.
-- Key: stored encrypted, never shown again, removable. A request uses my key, else the organisation's, else the server's.
+- The model and the key are the organisation's, chosen by its administrators (US-63): the same for every member. A member has no model or key of their own.
+- **Settings → AI & privacy** shows me the model in force, who sorts and when the AI writes, above what the product guarantees (US-70).
 - A model without a zero-data-retention provider is refused at the first request, with an explanation.
 
 ### US-62 — Choose my language
@@ -367,14 +367,15 @@ How the screens are designed and built is in [`design/`](design/README.md).
 ### US-63 — Configure the organisation
 **As** an administrator, **I want** to set my organisation's name, what the AI does at sorting and at writing, and its own model and key, **so that** every member works the same way at the organisation's expense.
 
-- Name; sorting and writing (US-66 — with the cost of AI sorting and what the AI is sent stated); whether automated mail is set aside first; default model; the organisation's OpenRouter key (encrypted, removable).
+- Settings has three tabs. **You**: my name and signature, my password, the language, deleting my account. **Organisation** (administrators): its name, its appearance, deleting it. **AI & privacy**: the AI and what is guaranteed about it, together.
+- In **AI & privacy**, an administrator sets the model (empty: the server's), the organisation's OpenRouter key (encrypted, never shown again, removable) and when the AI writes (US-66). Sorting is decided on the attribute **Stands in** (US-93); the tab says so and leads there. A request uses the organisation's key, else the server's.
 
 ### US-66 — Choose what the AI does at sorting and at writing
 **As** an administrator, **I want** to choose what the AI does at each of the two steps an email goes through, **so that** it does as much, or as little, before a member opens an email as suits us.
 
 - The page explains the two steps and asks one choice for each. **1. Sorting** — when emails are fetched, which need a reply: nobody sorts (every email of the watched folder is to handle), or the AI sorts. **2. Writing** — when the AI writes a proposal for an email to handle: when a member asks; at fetch, to review in saras; at fetch, also filed in the mailbox's Drafts folder (the email then moves to **Replied** as a draft).
 - Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
-- The two choices are independent. Afterwards, writing is changed in **Settings → Organisation**; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
+- The two choices are independent. Afterwards, writing is changed in **Settings → AI & privacy**; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
 - At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
 - A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at sorting or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
@@ -403,7 +404,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 ### US-64 — See the privacy guarantees in force
 **As** a member, **I want** to read, in the application, what happens to my emails, **so that** I can trust it — and explain it to a client who asks.
 
-- **Settings → Privacy** states: the retention policy sent with every AI request, the triage strategy in force and what it reads, the local retention period, the encryption of secrets, that nothing is sent without validation, and who sees my correction reasons.
+- **Settings → AI & privacy** states, under the AI in force: the retention policy sent with every AI request, the triage strategy in force and what it reads, the local retention period, the encryption of secrets, that nothing is sent without validation, and who sees my correction reasons.
 - A standing line in the navigation reminds that zero data retention is enforced on every AI request.
 
 ### US-65 — Be told when the AI cannot help

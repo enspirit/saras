@@ -1,17 +1,11 @@
 {
   "title": "Réglages",
   "noKey": "Aucune clé OpenRouter : le tri automatique et les propositions sont désactivés.",
-  "model": "Modèle",
-  "modelHint": "Identifiant « fournisseur/modèle ». Laisser vide pour le modèle de votre organisation ({model}). Le modèle doit avoir au moins un fournisseur ZDR, sinon la requête est refusée.",
   "signature": "Signature",
   "signaturePlaceholder": "Cordialement,\nPrénom Nom",
   "signatureHint": "Ajoutée telle quelle à la fin de chaque proposition.",
-  "key": "Clé API OpenRouter personnelle",
   "keySaved": "•••••••• (enregistrée)",
-  "keyServer": "Clé de l’organisation utilisée",
-  "keyHint": "Chiffrée en base. Laissez vide pour utiliser la clé de votre organisation.",
   "keyHintOwn": "Laissez vide pour conserver la clé actuelle.",
-  "deleteKey": "Supprimer ma clé",
   "keyDeleted": "Clé personnelle supprimée.",
   "saved": "Réglages enregistrés.",
   "display": "Affichage",
@@ -54,5 +48,9 @@
   "deleteAccountText": "Vos boîtes personnelles sont déconnectées et ce que saras en avait conservé est effacé ; les boîtes elles-mêmes ne sont pas touchées. Les prompts que vous avez créés et les boîtes partagées que vous avez connectées restent à l’organisation.",
   "deleteAccount": "Supprimer mon compte",
   "confirmDeleteAccount": "Supprimer votre compte {email} ? Cette action est définitive.",
-  "accountDeleted": "Votre compte a été supprimé."
+  "accountDeleted": "Votre compte a été supprimé.",
+  "aiPrivacy": "IA et confidentialité",
+  "factSorting": "Tri",
+  "factWriting": "Rédaction",
+  "aiSetBy": "Choisi par les administrateurs de {organization}, pour tous les membres."
 }

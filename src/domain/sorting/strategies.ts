@@ -29,7 +29,7 @@ export function createTriage({ config, vault, llm }: Dependencies) {
     /** @param owner who connected the mailbox: reasons are written in their language */
     gateFor(account: AccountRow, org: OrganizationRow, owner: UserRow): TriageGate {
       if (org.triage_strategy === 'ai') {
-        return aiTriage({ llm, ...llmSettings(owner, org, { config, vault }), ownAddress: account.email, language: owner.language });
+        return aiTriage({ llm, ...llmSettings(org, { config, vault }), ownAddress: account.email, language: owner.language });
       }
       return noTriage;
     },

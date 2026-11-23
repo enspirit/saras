@@ -1,21 +1,15 @@
 import type { Config } from '../../tooling/config.ts';
 import type { Vault } from '../../tooling/crypto.ts';
-import type { UserRow } from '../model/member.ts';
 import type { OrganizationRow } from '../model/organization.ts';
 
 /**
- * Which key and model does this user's LLM traffic use? Their own, else their organisation's,
- * else the server's. An operator hosting several organisations leaves the server key empty, so
- * that each one pays for its own usage.
+ * Which key and model does the LLM traffic of an organisation use? Its own, else the server's:
+ * the same for every one of its members. An operator hosting several organisations leaves the
+ * server key empty, so that each one pays for its own usage.
  */
-export function llmSettings(
-  user: Pick<UserRow, 'openrouter_key_enc' | 'model'>,
-  org: Pick<OrganizationRow, 'openrouter_key_enc' | 'model'>,
-  { config, vault }: { config: Config; vault: Vault },
-): { apiKey: string; model: string } {
-  const sealed = user.openrouter_key_enc || org.openrouter_key_enc;
+export function llmSettings(org: Pick<OrganizationRow, 'openrouter_key_enc' | 'model'>, { config, vault }: { config: Config; vault: Vault }): { apiKey: string; model: string } {
   return {
-    apiKey: sealed ? vault.open<string>(sealed) : config.openrouter.apiKey,
-    model: user.model || org.model || config.openrouter.model,
+    apiKey: org.openrouter_key_enc ? vault.open<string>(org.openrouter_key_enc) : config.openrouter.apiKey,
+    model: org.model || config.openrouter.model,
   };
 }

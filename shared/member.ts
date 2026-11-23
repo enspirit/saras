@@ -48,11 +48,9 @@ export interface Profile {
   /** The language the server last knew this member to use. */
   language: string;
   signature: string;
-  /** The model in force for them, and the one that applies when they choose none. */
+  /** The model that writes and sorts in their organisation: the one it chose, else the server's. */
   model: string;
-  defaultModel: string;
-  hasOwnKey: boolean;
-  /** A key is in force for them: their own, the organisation's or the server's. */
+  /** A key is in force: the organisation's or the server's. */
   hasKey: boolean;
   /** The mail hosts this server lets members sign in at. */
   oauth: { google: boolean; microsoft: boolean };

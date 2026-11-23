@@ -26,7 +26,7 @@ export async function writeWithPrompt(world: World, actor: Actor, request: { ema
   const { member, organization } = actor;
   const email = await emailFor(world.db, actor, request.emailId);
   const html = writtenSoFar(request.html);
-  const settings = llmSettings(member, organization, world);
+  const settings = llmSettings(organization, world);
   accepted(contentIsKept(email.body_text));
   const prompt = await promptOf(world.db, organization.id, request.promptId);
   const messages = buildPromptMessages({

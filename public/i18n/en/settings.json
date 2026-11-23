@@ -1,17 +1,11 @@
 {
   "title": "Settings",
   "noKey": "No OpenRouter key: automatic triage and proposals are disabled.",
-  "model": "Model",
-  "modelHint": "Identifier “provider/model”. Leave empty for your organisation's model ({model}). The model must have at least one ZDR provider, otherwise the request is refused.",
   "signature": "Signature",
   "signaturePlaceholder": "Kind regards,\nFirst Last",
   "signatureHint": "Added as is at the end of each proposal.",
-  "key": "Personal OpenRouter API key",
   "keySaved": "•••••••• (saved)",
-  "keyServer": "Using the organisation's key",
-  "keyHint": "Encrypted in the database. Leave empty to use your organisation's key.",
   "keyHintOwn": "Leave empty to keep the current key.",
-  "deleteKey": "Delete my key",
   "keyDeleted": "Personal key deleted.",
   "saved": "Settings saved.",
   "display": "Display",
@@ -54,5 +48,9 @@
   "deleteAccountText": "Your personal mailboxes are disconnected and what saras kept from them is erased; the mailboxes themselves are not touched. The prompts you created and the shared mailboxes you connected stay with the organisation.",
   "deleteAccount": "Delete my account",
   "confirmDeleteAccount": "Delete your account {email}? This cannot be undone.",
-  "accountDeleted": "Your account was deleted."
+  "accountDeleted": "Your account was deleted.",
+  "aiPrivacy": "AI & privacy",
+  "factSorting": "Sorting",
+  "factWriting": "Writing",
+  "aiSetBy": "Chosen by the administrators of {organization}, for every member."
 }

@@ -3,14 +3,12 @@
 // that is refused stops there, and those before it stay applied.
 import { profileOf } from '../../domain/observations/profile.ts';
 import { chooseLanguage } from '../../domain/settings/choose-language.ts';
-import { chooseOwnModel } from '../../domain/settings/choose-own-model.ts';
 import { chooseSorting } from '../../domain/settings/choose-sorting.ts';
 import { chooseWriting } from '../../domain/settings/choose-writing.ts';
 import { renameOrganization } from '../../domain/settings/rename-organization.ts';
 import { setAsideAutomatedFirst } from '../../domain/settings/set-aside-automated-first.ts';
 import { setOrganizationKey } from '../../domain/settings/set-organization-key.ts';
 import { setOrganizationModel } from '../../domain/settings/set-organization-model.ts';
-import { setOwnKey } from '../../domain/settings/set-own-key.ts';
 import { setOwnName } from '../../domain/settings/set-own-name.ts';
 import { setSignature } from '../../domain/settings/set-signature.ts';
 import { sortAgainUnsorted } from '../../domain/sorting/sort-again-unsorted.ts';
@@ -20,13 +18,11 @@ import type { Handle, Route } from './route.ts';
 const profile: Handle = ({ world }, req, res) => void res.json(profileOf(world, actorOf(req)));
 
 const ownSettings: Handle = async ({ world }, req, res) => {
-  const { model, signature, openrouterKey, language, name } = req.body;
+  const { signature, language, name } = req.body;
   const actor = actorOf(req);
   if (typeof name === 'string') await setOwnName(world, actor, name);
   if (typeof language === 'string') await chooseLanguage(world, actor, language);
-  if (typeof model === 'string') await chooseOwnModel(world, actor, model);
   if (typeof signature === 'string') await setSignature(world, actor, signature);
-  if (typeof openrouterKey === 'string') await setOwnKey(world, actor, openrouterKey);
   done(res);
 };
 

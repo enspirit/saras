@@ -50,10 +50,10 @@ saras is multi-tenant: everything lives inside an **organisation**, and nothing 
 - **A mailbox is personal or shared.** Any member connects their own address, which only they see — administrators included. An administrator may connect a mailbox as *shared* (contact@, info@…): every member, present and future, sees its emails and replies from it. Only administrators change its folder or disconnect it. An address is connected once per organisation.
 - **In a shared mailbox**, a reply by one member takes the email off everyone's list, and shows who replied. Each member keeps their own signature, and their corrections steer their own drafts only.
 - **Prompts belong to the organisation.** Only its administrators create and edit them; members see their name and description, not the instructions. Administrators also see the reasons members give when correcting drafts, prompt by prompt.
-- **The organisation's settings** (Settings → Organisation, for administrators): its name, what the AI does at sorting and at writing, and its own OpenRouter key and default model.
+- **The organisation's settings** (for administrators): its name in Settings → Organisation; its model, its OpenRouter key and when the AI writes in Settings → AI & privacy, above what the product guarantees. Members read that tab; none has a model or a key of their own.
 - **Administrators** can appoint others, at least one always remains, and can delete a member: their personal mailboxes are erased from saras, while the prompts and shared mailboxes they created stay with the organisation.
 
-**Who pays for the LLM.** A request uses the member's own key if they entered one, else the organisation's, else the server's (`OPENROUTER_API_KEY`). An operator hosting organisations that are not theirs leaves the server key empty.
+**Who pays for the LLM.** A request uses the organisation's key, else the server's (`OPENROUTER_API_KEY`). An operator hosting organisations that are not theirs leaves the server key empty.
 
 Not per organisation: the brand, the OAuth applications, the retention period and the fetch settings are the installation's.
 

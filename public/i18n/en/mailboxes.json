@@ -58,7 +58,7 @@
   "stepKey": "Give the AI its key",
   "keyTitle": "Give the AI its key",
   "keyIntro": "Sorting your emails and writing proposals go through OpenRouter, with your organisation’s own key. Without one you can still read and answer by hand.",
-  "keyHint": "Create one in your <link>OpenRouter account</link>. It is encrypted in the database and used by every member who has no key of their own.",
+  "keyHint": "Create one in your <link>OpenRouter account</link>. It is encrypted in the database and used for every member of the organisation.",
   "keySave": "Save and read my emails",
   "keyLater": "Later",
   "hostedSignIn": "{address} is hosted at {provider}: connect it by signing in there, no password is typed here.",

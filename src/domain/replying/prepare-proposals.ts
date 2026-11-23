@@ -35,7 +35,7 @@ const MAX_PREPARED = 10;
 export async function prepareProposals(world: Reach, mailbox: AccountRow, organization: OrganizationRow, owner: UserRow): Promise<ServerProblem | null> {
   const { db } = world;
   if (organization.automation === 'none') return null;
-  const settings = llmSettings(owner, organization, world);
+  const settings = llmSettings(organization, world);
   const prompts = await promptsOf(db, organization.id);
   if (!settings.apiKey || !prompts.length) return null;
   try {
