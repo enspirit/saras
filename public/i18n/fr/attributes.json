@@ -1,6 +1,6 @@
 {
-  "title": "Attributs",
-  "intro": "Ce que vous voulez savoir de chaque email pour vous organiser : où il se trouve, son urgence, qui s’en occupe, de quoi il parle. Les tableaux filtrent dessus. Chacun dit comment il est décidé lorsqu’un email est trié.",
+  "title": "Tri",
+  "intro": "Les attributs de vos emails : ce que vous voulez savoir de chacun pour vous organiser — où il se trouve, son urgence, qui s’en occupe, de quoi il parle. Chacun dit comment il est décidé lorsqu’un email est trié. Les tableaux filtrent dessus.",
   "new": "Nouvel attribut",
   "newTitle": "Nouvel attribut",
   "editTitle": "Attribut : {name}",

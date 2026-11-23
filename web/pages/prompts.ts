@@ -6,10 +6,11 @@ import { deletePrompt, readPrompts, readPromptTemplates } from '../api/prompts.t
 import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard } from './actions.ts';
 import { editPromptPage } from './edit-prompt.ts';
-import { promptUseCard } from './prompt-use.ts';
+import { promptUse } from './prompt-use.ts';
 import { ReadyMadePrompts } from './ready-made-prompts.ts';
 import { shell } from './shell.ts';
 import { refreshMe } from '../session.ts';
+import { Badge } from '../ui/atoms/badge.ts';
 import { ButtonLink } from '../ui/atoms/button.ts';
 import { Muted, Strong, Text } from '../ui/atoms/text.ts';
 import { Block } from '../ui/molecules/field.ts';
@@ -27,7 +28,7 @@ const deleteButton = (p: Prompt): HTMLButtonElement => ActionButton(t('common.de
 /** Each prompt, how often it was used and how often its proposals were changed. */
 const promptsTable = (prompts: Prompt[]): HTMLDivElement =>
   Table({ columns: [t('prompts.column'), t('prompts.usageColumn')], actions: t('common.actions') }, prompts.map((p) => [
-    [Strong(p.name), p.description && Text({ muted: true, small: true }, p.description)],
+    [Strong(p.name), ' ', p === prompts[0] && prompts.length > 1 && Badge(t('prompts.usedByDefault'), 'neutral'), p.description && Text({ muted: true, small: true }, p.description)],
     (p.used ?? 0) > 0 ? t('prompts.usage', { used: p.used ?? 0, edited: p.edited ?? 0 }) : Muted(t('prompts.unused')),
     [ButtonLink(t('common.edit'), { href: `#/prompts/${p.id}` }), deleteButton(p)],
   ]));
@@ -42,7 +43,7 @@ export const promptsPage = guard(async (open: number | 'new' | null = null) => {
     Page(
       PageHeader({ title: t('prompts.title'), intro: t('prompts.intro') }, ButtonLink(t('prompts.new'), { href: '#/prompts/new', variant: 'primary' })),
       promptsTable(prompts),
-      promptUseCard(who.organization),
+      promptUse(who.organization),
       templates.length > 0 && [Block(Text({ muted: true }, t('prompts.templatesHint'))), ReadyMadePrompts(templates, () => void promptsPage())],
     ),
   );

@@ -2,7 +2,7 @@
   "configuration": "Configuration",
   "mailboxes": "Comptes mail",
   "settings": "Réglages",
-  "prompts": "Prompts",
+  "prompts": "Rédaction",
   "members": "Utilisateurs",
   "signOut": "Déconnexion",
   "assurance": {
@@ -12,5 +12,5 @@
   "more": "Plus",
   "boards": "Tableaux",
   "newBoard": "Nouveau tableau",
-  "attributes": "Attributs"
+  "attributes": "Tri"
 }

@@ -25,7 +25,6 @@
   "you": "Vous",
   "name": "Votre nom",
   "nameHint": "Affiché aux autres membres de {organization}, à la place de votre adresse.",
-  "aiTitle": "L’IA",
   "privacyIntro": "Ce que {product} garantit pour vos emails. Rien de cela ne peut être désactivé.",
   "guarantee": {
     "zdr": "Aucune conservation, imposée",
@@ -53,5 +52,11 @@
   "factSorting": "Tri",
   "factWriting": "Rédaction",
   "aiSetBy": "Choisi par les administrateurs de {organization}, pour tous les membres.",
-  "aiDoes": "Ce que fait l’IA se choisit là où cela s’applique : <sorting>le tri</sorting> sur l’attribut Se trouve dans, <writing>quand elle rédige et avec quel prompt</writing> dans Prompts."
+  "aiOf": "L’IA de {organization}",
+  "aiDoesTitle": "Ce qu’elle fait pour vous",
+  "chosenIn": "{page} →",
+  "sentSortingNone": "Rien n’est envoyé à l’IA au tri.",
+  "sentSortingAi": "Elle reçoit l’expéditeur, l’objet, le début du texte et le nom des pièces jointes.",
+  "sentWritingAsked": "Un email n’est envoyé à l’IA qu’à ce moment-là.",
+  "sentWritingFetch": "Le contenu de chaque email à traiter est envoyé à l’IA au relevé."
 }

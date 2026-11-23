@@ -13,7 +13,5 @@
   "deletePassword": "Your password",
   "delete": "Delete the organisation",
   "confirmDelete": "Delete {organization} and everything saras holds for it, for all its members? This cannot be undone.",
-  "deleted": "The organisation was deleted.",
-  "writing": "Writing: when the AI writes a proposal",
-  "writingHint": "Writing at fetch sends the AI the content of each email to handle, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation."
+  "deleted": "The organisation was deleted."
 }

@@ -2,7 +2,7 @@
   "configuration": "Configuration",
   "mailboxes": "Mailboxes",
   "settings": "Settings",
-  "prompts": "Prompts",
+  "prompts": "Writing",
   "members": "Users",
   "signOut": "Sign out",
   "assurance": {
@@ -12,5 +12,5 @@
   "more": "More",
   "boards": "Boards",
   "newBoard": "New board",
-  "attributes": "Attributes"
+  "attributes": "Sorting"
 }

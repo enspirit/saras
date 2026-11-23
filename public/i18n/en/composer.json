@@ -23,7 +23,7 @@
   "restore": "Move back to “To handle”",
   "restored": "Moved back to To handle.",
   "noKey": "No OpenRouter key configured: add one in <link>Settings</link> to get proposals.",
-  "noPromptAdmin": "No prompt: create one in <link>Prompts</link>.",
+  "noPromptAdmin": "No prompt: create one in <link>Writing</link>.",
   "noPrompt": "No prompt available: ask an administrator to create one.",
   "placeholder": "Write your reply, or just a few notes on what to say.",
   "help": "Help from the AI",

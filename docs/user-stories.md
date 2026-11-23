@@ -368,14 +368,14 @@ How the screens are designed and built is in [`design/`](design/README.md).
 **As** an administrator, **I want** to set my organisation's name, what the AI does at sorting and at writing, and its own model and key, **so that** every member works the same way at the organisation's expense.
 
 - Settings has three tabs. **You**: my name and signature, my password, the language, deleting my account. **Organisation** (administrators): its name, its appearance, deleting it. **AI & privacy**: the AI and what is guaranteed about it, together.
-- In **AI & privacy**, an administrator sets the model (empty: the server's) and the organisation's OpenRouter key (encrypted, never shown again, removable). What the AI does is chosen where it applies, and the tab leads there: sorting on the attribute **Stands in** (US-93), when it writes and with which prompt in **Prompts** (US-66). A request uses the organisation's key, else the server's.
+- In **AI & privacy**, an administrator sets the model (empty: the server's) and the organisation's OpenRouter key (encrypted, never shown again, removable). What the AI does is chosen where it applies, and the tab leads there: sorting on the attribute **Stands in** (US-93), when it writes and with which prompt in **Writing** (US-66). The tab shows both as they stand now, with what the AI is sent at each, beside the model and the key. A request uses the organisation's key, else the server's.
 
 ### US-66 — Choose what the AI does at sorting and at writing
 **As** an administrator, **I want** to choose what the AI does at each of the two steps an email goes through, **so that** it does as much, or as little, before a member opens an email as suits us.
 
 - The page explains the two steps and asks one choice for each. **1. Sorting** — when emails are fetched, which need a reply: nobody sorts (every email of the watched folder is to handle), or the AI sorts. **2. Writing** — when the AI writes a proposal for an email to handle: when a member asks; at fetch, to review in saras; at fetch, also filed in the mailbox's Drafts folder (the email then moves to **Replied** as a draft).
 - Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
-- The two choices are independent. Afterwards, writing is changed in **Prompts**, under the list; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
+- The two choices are independent. Afterwards, writing is changed in **Configuration → Writing** (the page of the prompts), under the list, beside the explanation of which prompt is used; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
 - At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
 - **Prompts** also says which prompt a proposal is written with, and what applies now. When the AI sorts, it suggests for each email to handle the prompt that suits it best, from the “when to use it” of each prompt; a rule never suggests one. A member asking for a proposal finds the suggested prompt preselected and marked, and can pick another; with no suggestion, the first prompt of the list is offered first. A proposal written at fetch uses the suggested prompt, else the first of the list.
 - A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at sorting or else the organisation's first; at most ten per fetch and mailbox.
@@ -517,7 +517,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 ### US-93 — Give emails our own attributes
 **As** an administrator, **I want** to define the attributes we organise ourselves by (a topic, an assignee, urgent or not), **so that** boards can show our mail the way we work.
 
-- **Configuration → Attributes** lists the organisation's attributes. Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
+- **Configuration → Sorting** lists the organisation's attributes (the page was first called Attributes; its things are still attributes). Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
 - A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot; the values of the pre-configured attributes have theirs. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
 - Above the list, three steps say how an email gets a value: its rule, then the AI, then a member by hand.
 - Each attribute says who decides it when an email is sorted: nobody (set by hand), a rule, the AI, or the rule then the AI where the rule says nothing. The AI decides only the two pre-configured attributes for now.

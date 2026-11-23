@@ -23,7 +23,7 @@
   "restore": "Remettre dans « À traiter »",
   "restored": "Remis dans À traiter.",
   "noKey": "Aucune clé OpenRouter configurée : ajoutez-la dans <link>Réglages</link> pour obtenir des propositions.",
-  "noPromptAdmin": "Aucun prompt : créez-en un dans <link>Prompts</link>.",
+  "noPromptAdmin": "Aucun prompt : créez-en un dans <link>Rédaction</link>.",
   "noPrompt": "Aucun prompt disponible : demandez à un administrateur d’en créer.",
   "placeholder": "Écrivez votre réponse, ou simplement quelques notes sur ce qu’il faut dire.",
   "help": "Aide de l’IA",

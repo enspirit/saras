@@ -1,6 +1,6 @@
 {
-  "title": "Attributes",
-  "intro": "What you want to know of each email, to organise yourselves: where it stands, how urgent it is, who takes care of it, what it is about. Boards filter on them. Each says how it is decided when an email is sorted.",
+  "title": "Sorting",
+  "intro": "The attributes of your emails: what you want to know of each one, to organise yourselves — where it stands, how urgent it is, who takes care of it, what it is about. Each says how it is decided when an email is sorted. Boards filter on them.",
   "new": "New attribute",
   "newTitle": "New attribute",
   "editTitle": "Attribute: {name}",

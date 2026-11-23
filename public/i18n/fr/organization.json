@@ -13,7 +13,5 @@
   "deletePassword": "Votre mot de passe",
   "delete": "Supprimer l’organisation",
   "confirmDelete": "Supprimer {organization} et tout ce que saras détient pour elle, pour tous ses membres ? Cette action est définitive.",
-  "deleted": "L’organisation a été supprimée.",
-  "writing": "Rédaction : quand l’IA rédige une proposition",
-  "writingHint": "La rédaction au relevé envoie à l’IA le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre."
+  "deleted": "L’organisation a été supprimée."
 }
