@@ -4,3 +4,5 @@ data/
 *.log
 # Browser code compiled from web/ by `npm run build`
 public/js/
+# What emb remembers of its builds, and its logs
+.emb/

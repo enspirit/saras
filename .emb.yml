@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json
+project:
+  name: saras
+
+plugins:
+  # **Order is precedence, and the first file wins**: dotenv never overwrites a
+  # key it has already set. So `.env` is only useful for keys `.env.commons`
+  # does not name, and the process environment beats both.
+  - name: dotenv
+    config:
+      - .env.commons
+      - .env
+
+# Repository-wide tasks: what CI calls, and what a developer runs. Each one
+# calls through to the npm script of the same purpose, so there is one list of
+# commands.
+tasks:
+  lint:
+    description: The static checks — both TypeScript projects, server and browser
+    script: npm run typecheck
+
+  build:
+    description: Bundle what the browser loads into public/js/
+    script: npm run build
+
+  test:
+    description: Every test. Needs a checkout, not a stack; TEST_DATABASE_URL runs it on a PostgreSQL server
+    script: npm test
