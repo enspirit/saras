@@ -123,33 +123,6 @@ The server remembers each user's language (sent by the interface) for what it wr
 
 The prompts sent to the LLM are in English. The reply itself is always drafted in the language of the email received. Prompt names and descriptions are whatever the administrators wrote.
 
-## Design system
-
-The interface follows the hierarchy tokens → atoms → molecules → organisms → pages, one folder per tier and one file per component, in CSS and in TypeScript alike:
-
-| Tier | Styles (`public/design/`) | Components (`web/ui/`) | Content |
-| --- | --- | --- | --- |
-| Tokens | `tokens.css` | — | Brand inputs `--brand-*`, then semantic tokens `--color-*`, `--font-*`, `--space-*`, `--radius-*`… |
-| Base | `base.css` | `dom.ts` | HTML element defaults; the single element-creation function. |
-| Atoms | `atoms/*.css` | `atoms/*.ts` | `Icon`, `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Avatar`, `Chip`, `Text`, `BrandMark`… |
-| Molecules | `molecules/*.css` | `molecules/*.ts` | `Field`, `Card`, `PageHeader`, `Tabs`, `Table`, `Choices`, dialogs, `NavItem`, `EmailListItem`, `RichEditor`, `RecipientField`, toast… |
-| Organisms | `organisms/*.css` | `organisms/*.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `Reading`, `ReadingHeader`, `ReplyDock`. |
-| Pages | — | `web/app.ts`, `web/pages/`, `web/styleguide.ts` | Behaviour only, assembled from components; wording comes from the translation files. |
-
-Rules, enforced by `test/unit/design-system.test.ts`:
-
-- a colour or a font is written as a literal only in `tokens.css`;
-- components use semantic tokens only, never `--brand-*`;
-- pages write neither class names nor HTML elements: they call components;
-- dependencies only point downwards (an atom never imports a molecule);
-- a brand theme may only set tokens that exist.
-
-CSS cascade layers (`@layer`) make the hierarchy effective: a molecule always wins over an atom, and `theme.css`, loaded outside any layer, wins over everything without `!important`.
-
-To add a component: the function in `web/ui/<tier>/<component>.ts`, its style in `public/design/<tier>/<component>.css` (listed in `public/design/index.css`), an example in `web/styleguide/<tier>.ts`.
-
-The aims of the design, its tokens and components, and how each screen is put together are in [`doc/4-design.md`](doc/4-design.md).
-
 ## Privacy
 
 This is the main design constraint.
@@ -247,22 +220,28 @@ Every variable is described in [`software/saras/.env.example`](software/saras/.e
 
 ## The repository
 
-The directory says what a thing is for:
+The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architecture.md) says it in full.
 
 | | |
 | --- | --- |
-| [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it. |
+| [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it, and its [README](software/saras/README.md) says what it answers for and how it is built. |
+| [`tests/`](tests/) | What proves it, from outside. [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
 | [`world/`](world/) | What it runs in. [`compose/`](world/compose/) is saras as an operator runs it with Docker: the application and a PostgreSQL server. |
-| [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [design](doc/4-design.md). |
+| [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), and the [decisions](doc/decisions/). |
 
 Every build and every suite is a task of [`emb`](https://github.com/enspirit/emb) (`npm install -g @enspirit/emb`), declared in `.emb.yml` and in each component's `Embfile.yml`. `emb tasks` lists them; CI calls them and nothing else.
 
 ```sh
-emb run setup    # install the dependencies
-emb run lint     # the static checks
-emb run build    # bundle the browser code
-emb run test     # unit and integration tests
+emb run setup           # install the dependencies
+emb run lint            # the static checks
+emb run build           # bundle the browser code
+emb run test            # unit and integration tests, on a checkout
+emb up                  # saras and a PostgreSQL server in Docker, on http://localhost:3000, sources watched
+emb run test:postgres   # the integration tests on that PostgreSQL server
+emb down
 ```
+
+`emb up` needs no `.env`. With one at the root of the repository, the keys it holds (`OPENROUTER_API_KEY`, the OAuth applications) reach the server, and `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
 
 ## How it works
 
@@ -282,25 +261,9 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               sent in your name, or filed as a draft (SMTP / IMAP / Gmail API / Graph)
 ```
 
-- `shared/`: the domain objects as members see them (mailbox, email, proposal, reply, prompt, member, organisation), declared once for the server and the browser.
-- `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`doc/2-operations.md`](doc/2-operations.md) is the inventory.
-- `src/domain/sorting/`: the triage gate, its strategies, and the header rules applied before it.
-- `src/domain/mailboxes/fetch-mailbox.ts`: fetch, then sort, then prepare proposals.
-- `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (driver and schema), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
-- `web/`: the interface's TypeScript, one page file per subject under `pages/` and one function per operation under `api/` (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
-- Data: PostgreSQL (see "Database").
+How the code is laid out, and how it is built and tested, is in the component's own [`software/saras/README.md`](software/saras/README.md).
 
 The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
-
-## TypeScript
-
-Everything is TypeScript in strict mode.
-
-- **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
-- **Browser code** is bundled by `npm run build` ([esbuild](https://esbuild.github.io), `scripts/build.ts`) into `public/js/` (not committed): the interface from `web/` and `shared/` with the two browser libraries (see "Third-party software"), the design system's style sheets as one file, and the translations as one file per language. A first page load is about ten requests.
-- `npm run typecheck` checks both; the bundler itself does not check types. `npm run dev` rebuilds the bundles and restarts the server on change.
-- **What the server returns is typed once**, in `shared/`: the server's read queries and operations return those types, and `web/api/` reads them. A test (`test/unit/shared-types.test.ts`) keeps either side from declaring a domain object of its own.
-- **Small files, small functions**: no source file (TypeScript, CSS) has more than 200 lines, and no function more than 20. `test/unit/size.test.ts` enforces both, and lists what is over.
 
 ## Tests
 
@@ -310,7 +273,7 @@ emb run test   # or, in software/saras: npm test
 
 The computations are tested as pure functions (`test/unit/`), and the operations over HTTP (`test/integration/`). The latter start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
 
-GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database, then the tests once more against a PostgreSQL server.
+GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database; then, in the stack of `docker-compose.test.yml`, the integration tests once more against a PostgreSQL server, and the build of the image an operator runs.
 
 ## Known limitations
 

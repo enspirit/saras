@@ -53,6 +53,7 @@ tasks:
     pre:
       - saras:lint
       - compose:lint
+      - harness:lint
 
   build:
     description: Build every component
@@ -62,4 +63,5 @@ tasks:
   test:
     description: Unit and integration, every component. Needs a checkout, not a stack
     pre:
+      - harness:test
       - saras:test

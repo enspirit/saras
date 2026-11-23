@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: The checks on the repository itself — links, boundaries
+
+tasks:
+  lint:
+    description: Run the scanners over the repository
+    executors:
+      - local
+    script: node check.ts
+
+  test:
+    description: The scanners' own cases — a checker with a silent false negative is a rule that stopped checking
+    executors:
+      - local
+    script: node --test --test-reporter=spec "*.test.ts"
