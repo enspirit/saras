@@ -172,13 +172,14 @@ npm start
 
 Open http://localhost:3000 and create your organisation: you become its administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
 
-With Docker, which also starts a PostgreSQL server:
+With Docker, as an image, from the root of the repository and with the same `.env`:
 
 ```sh
-cd world/compose
-cp ../../software/saras/.env.example .env   # then set APP_SECRET, OPENROUTER_API_KEY and POSTGRES_PASSWORD
-docker compose up -d
+docker build --target saras-production -t saras software/saras
+docker run -d --name saras -p 127.0.0.1:3000:3000 --env-file software/saras/.env -v saras-data:/data saras
 ```
+
+The embedded database is then kept in the volume `saras-data`. For real use, give it a PostgreSQL server of yours with `DATABASE_URL` (see "Database").
 
 In production, put the application behind an HTTPS reverse proxy and set `BASE_URL=https://…` (the session cookie then becomes `Secure`).
 
@@ -207,7 +208,7 @@ The database is PostgreSQL, used in one of two ways with the same schema and que
 
 | Mode | When | Meant for |
 | --- | --- | --- |
-| **PostgreSQL server** | `DATABASE_URL` is set (`docker compose` sets it and starts the server) | Deployments |
+| **PostgreSQL server** | `DATABASE_URL` is set | Deployments |
 | **Embedded PostgreSQL** ([PGlite](https://pglite.dev)) | `DATABASE_URL` is empty; files go to `DATA_DIR/postgres` | Trying the tool, development, tests |
 
 The embedded mode runs PostgreSQL inside the application's own process: nothing to install, but a single connection and no outside access for backups or monitoring. Use a server for anything real. There is no automatic transfer between the two.
@@ -226,7 +227,6 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | --- | --- |
 | [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it, and its [README](software/saras/README.md) says what it answers for and how it is built. |
 | [`tests/`](tests/) | What proves it, from outside. [`webspicy/`](tests/webspicy/) is the black-box specification of the API, run through the front door of the stack; [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
-| [`world/`](world/) | What it runs in. [`compose/`](world/compose/) is saras as an operator runs it with Docker: the application and a PostgreSQL server. |
 | [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), and the [decisions](doc/decisions/). |
 
 Every build and every suite is a task of [`emb`](https://github.com/enspirit/emb) (`npm install -g @enspirit/emb`), declared in `.emb.yml` and in each component's `Embfile.yml`. `emb tasks` lists them; CI calls them and nothing else.
@@ -274,7 +274,7 @@ emb run test   # or, in software/saras: npm test
 
 The computations are tested as pure functions (`test/unit/`), and the operations over HTTP (`test/integration/`). The latter start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
 
-GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database; then, in the stack of `docker-compose.test.yml`, the integration tests once more against a PostgreSQL server, the black-box suite, and the build of the image an operator runs.
+GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database; then, in the stack of `docker-compose.test.yml`, the integration tests once more against a PostgreSQL server, the black-box suite, and the build of the production image.
 
 ## Known limitations
 

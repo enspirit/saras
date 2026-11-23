@@ -52,7 +52,6 @@ tasks:
     description: The static checks, every component
     pre:
       - saras:lint
-      - compose:lint
       - harness:lint
 
   build:

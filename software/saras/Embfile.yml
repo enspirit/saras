@@ -5,7 +5,7 @@ resources:
   image:
     type: 'docker/image'
     # The thing that ships. No registry is configured yet: an operator builds
-    # it from a checkout (world/compose).
+    # it from a checkout.
     publish: true
     params:
       # The context is this directory, and the Dockerfile the one beside it.
