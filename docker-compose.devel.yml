@@ -16,7 +16,7 @@ services:
       # The front door, and the one address worth bookmarking.
       - '127.0.0.1:${SARAS_PORT:-3000}:3000'
     env_file:
-      # Later files win.
+      # After env/base.env, which docker-compose.base.yml lists. Later files win.
       - ./.env.commons
       - ./software/saras/env/devel.env
       # A real key (OPENROUTER_API_KEY, the OAuth applications) reaches the
@@ -25,14 +25,11 @@ services:
       - path: ./.env
         required: false
     environment:
-      # Beats every env file: what is true of this stack, whatever .env says.
+      # Beats every env file: what is derived from this stack's own variables.
       BASE_URL: http://localhost:${SARAS_PORT:-3000}
       # The default brand, unless SARAS_BRAND names a folder of
       # software/saras/brands (SARAS_BRAND=klaro in .env, or in the shell).
       BRAND_DIR: ${SARAS_BRAND:+/app/brands/}${SARAS_BRAND:-}
-      # Anyone on this machine may create an organisation: the port is
-      # published on localhost only, and the black-box suite starts from there.
-      ALLOW_SIGNUP: 'true'
     # `npm run dev` runs two watchers under a shell: an init process hands
     # them the signal that stops the container.
     init: true
@@ -51,9 +48,6 @@ services:
       - /app/public/js
 
   webspicy:
-    env_file:
-      - ./.env.commons
-      - ./tests/webspicy/env/devel.env
     volumes:
       # The specifications are what is edited, so they are mounted rather than
       # baked. `formaldoc/` is one mount for the whole URL space.

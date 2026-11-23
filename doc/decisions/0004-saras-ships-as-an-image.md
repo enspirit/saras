@@ -8,7 +8,7 @@ A compose file kept for operators is not how we deploy: it is a second descripti
 
 ## Decision
 
-What ships is the image: the `saras-production` target of `software/saras/Dockerfile`, which CI builds on every push. The repository holds no deployment description. An operator runs the image with the configuration of `software/saras/.env.example`, on its embedded database or on a PostgreSQL server of their own, as the README shows; or runs `npm start` from a checkout.
+What ships is the image: the `saras-production` target of `software/saras/Dockerfile`, which CI builds on every push. The repository holds no deployment description. An operator runs the image with the configuration described in `software/saras/env/base.env`, on its embedded database or on a PostgreSQL server of their own, as the README shows; or runs `npm start` from a checkout.
 
 The compose files of the root are the stack saras is developed and tested in, and nothing else.
 

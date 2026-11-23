@@ -13,7 +13,7 @@ A component with no API of its own. It offers two tasks and one guarantee: **it 
 | `emb run test:webspicy` | the whole suite, against the running stack |
 | `S=api/public/get.yml emb run test:webspicy:one` | one specification, by its path under `formaldoc/` |
 
-`SARAS_API` names the target, an origin with no path, and has no default: a suite that silently falls back to localhost passes against whatever is listening. In the stack it is `http://saras:3000` ([`env/devel.env`](env/devel.env)).
+`SARAS_API` names the target, an origin with no path, and has no default: a suite that silently falls back to localhost passes against whatever is listening. In the stack it is `http://saras:3000` ([`env/base.env`](env/base.env)).
 
 The tree under [`formaldoc/`](formaldoc/) is the front door's URL space: `formaldoc/api/auth/signup/post.yml` specifies `POST /api/auth/signup`. Each file is one operation of [`doc/2-operations.md`](../../doc/2-operations.md), named after it, with its clauses as pre, post and errconditions.
 
