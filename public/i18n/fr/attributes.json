@@ -21,7 +21,7 @@
   "fixed": "Le nom et les valeurs d’un attribut préconfiguré sont fixes : l’application s’appuie dessus.",
   "ruleTitle": "La règle",
   "ruleIntro": "Écrite en <link>Elo</link>, un petit langage d’expressions : elle ne coûte rien à exécuter et dit exactement ce qu’elle fait. Elle reçoit l’email sous le nom <code>_</code> et répond une valeur, ou <code>null</code> pour ne rien dire.",
-  "ruleGiven": "_.from.name, _.from.address, _.to, _.cc, _.subject, _.text, _.attachments, _.mailbox, _.date, _.answered, _.headers.listUnsubscribe, .listId, .autoSubmitted, .precedence",
+  "ruleGiven": "Ce qu’une règle reçoit sous le nom _, dans les types d’Elo. Une règle qui nomme un champ qu’un email n’a pas, ou utilise un texte comme un nombre, est refusée à l’enregistrement.",
   "ruleExample": "if contains(lower(_.subject), 'facture') then 'Facturation' else null",
   "try": "L’essayer sur les emails récents",
   "tryHint": "Essayer une règle ne change rien : cela montre ce qu’elle dirait de vos vingt emails les plus récents.",
@@ -47,5 +47,7 @@
   "sortingAgain": "Nouveau tri…",
   "confirmSortAgain": "Enregistrer « {name} » et appliquer sa règle à tous les emails déjà conservés ? Les valeurs fixées à la main restent telles quelles.",
   "sortedAgain": "{examined, plural, one {# email examiné} other {# emails examinés}}, {changed, plural, =0 {aucun modifié} one {# modifié} other {# modifiés}}.",
-  "sortAgainHint": "Une règle s’applique aux emails relevés à partir de maintenant. Pour qu’elle revoie ceux déjà conservés, appliquez-la : les valeurs fixées à la main restent, les emails répondus ou placés par un membre restent où ils sont."
+  "sortAgainHint": "Une règle s’applique aux emails relevés à partir de maintenant. Pour qu’elle revoie ceux déjà conservés, appliquez-la : les valeurs fixées à la main restent, les emails répondus ou placés par un membre restent où ils sont.",
+  "skill": "Télécharger la compétence pour un agent IA",
+  "skillHint": "Vous préférez qu’un assistant IA écrive la règle ? Donnez-lui cette compétence (« skill ») : elle dit ce qu’une règle reçoit, ce qu’elle doit répondre, et assez d’Elo pour en écrire une — pour cet attribut et ses valeurs. Collez ci-dessus ce qu’il écrit, et essayez."
 }

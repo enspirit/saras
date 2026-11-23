@@ -185,7 +185,9 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **SortAgainByRule** | Administrator | An attribute decided by a rule, the emails kept → each has for it what the rule says now | Administrator · decided by a rule Elo can read | A value set by hand stays · a value the rule had given goes where it no longer speaks · "Stands in": emails replied, placed by a member, or fetched before their headers were kept stay; one the rule no longer places waits to be sorted, and the mailboxes are fetched at once | "Save and apply to the emails already kept" on the attribute · `POST /attributes/:key/sort-again` |
 | **SetEmailAttribute** | Member | An email → it has this value for the attribute, as the member's, or none | May use the email's mailbox · a value of the attribute · not "Stands in" | Not overwritten by later sorting | the selects above an email · `PUT /emails/:id/attributes/:key` |
 
-Observations: `GET /attributes`; `POST /attributes/try` (what a rule would say of the member's twenty most recent emails, changing none).
+Observations: `GET /attributes`; `POST /attributes/try` (what a rule would say of the member's twenty most recent emails, changing none). `GET /attributes/:key/skill` hands an AI agent what it needs to write the rule of that attribute (`computations/rule-writing-skill.ts`).
+
+A rule is type-checked against the email it is given: `EMAIL_FOR_RULES` in `shared/attribute.ts` is that type, in Elo's own notation, read by the checker (`tooling/elo.ts`) and shown beside the editor.
 
 The rule "Stands in" starts with is in `computations/default-rules.ts`: what used to be built-in header rules, now written in Elo and open to change.
 

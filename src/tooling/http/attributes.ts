@@ -3,9 +3,11 @@ import { createAttribute } from '../../domain/attributes/create-attribute.ts';
 import { deleteAttribute } from '../../domain/attributes/delete-attribute.ts';
 import { editAttribute } from '../../domain/attributes/edit-attribute.ts';
 import { setEmailAttribute } from '../../domain/attributes/set-email-attribute.ts';
+import { SKILL_NAME, ruleWritingSkill } from '../../domain/computations/rule-writing-skill.ts';
 import { tryRule } from '../../domain/observations/attributes.ts';
 import { sortAgainByRule } from '../../domain/sorting/sort-again-by-rule.ts';
-import { attributesOf } from '../../domain/state/attributes.ts';
+import { attributeOf, attributesOf } from '../../domain/state/attributes.ts';
+import { zip } from '../zip.ts';
 import { actorOf, done } from './route.ts';
 import type { Handle, Route } from './route.ts';
 
@@ -24,6 +26,13 @@ const tryIt: Handle = async ({ world }, req, res) => void res.json(await tryRule
 
 const sortAgain: Handle = async ({ world }, req, res) => void res.json(await sortAgainByRule(world, actorOf(req), req.params.key));
 
+/** The skill an AI agent is handed to write a rule: a folder with its one file, as an archive to download. For one attribute, it names it and its values. */
+const skill: Handle = async ({ world }, req, res) => {
+  const attribute = req.params.key ? await attributeOf(world.db, req.org, req.params.key) : null;
+  const archive = zip([{ path: `${SKILL_NAME}/SKILL.md`, content: ruleWritingSkill(attribute) }]);
+  res.set({ 'content-type': 'application/zip', 'content-disposition': `attachment; filename="${SKILL_NAME}.zip"` }).send(archive);
+};
+
 const setOnEmail: Handle = async ({ world }, req, res) => {
   await setEmailAttribute(world, actorOf(req), req.params.id, req.params.key, req.body.value);
   done(res);
@@ -33,6 +42,8 @@ export const ATTRIBUTES: Route[] = [
   { method: 'get', path: '/attributes', handle: list },
   { method: 'post', path: '/attributes', handle: create },
   { method: 'post', path: '/attributes/try', handle: tryIt, for: 'administrators' },
+  { method: 'get', path: '/attributes/skill', handle: skill, for: 'administrators' },
+  { method: 'get', path: '/attributes/:key/skill', handle: skill, for: 'administrators' },
   { method: 'put', path: '/attributes/:key', handle: edit },
   { method: 'delete', path: '/attributes/:key', handle: remove },
   { method: 'post', path: '/attributes/:key/sort-again', handle: sortAgain },

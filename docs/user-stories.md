@@ -520,6 +520,9 @@ These are behaviours of the system rather than screens, but they are what the pr
 - A rule is written in Elo (elo-lang.org). It is given the email (sender, recipients, subject, text, attachments, mailbox, date, a few headers) and answers one of the attribute's values, or nothing.
 - The rule that sets automated mail aside is the rule of **Stands in**: it is there to read, and I can change it.
 - **Try it on recent emails** shows what a rule would say of my twenty most recent emails, without changing any.
+- The rule is written in an editor that knows Elo: colours, matching brackets, completion of its functions.
+- The type of what a rule is given is shown under the editor, and the rule is checked against it: a field an email does not have, a text used as a number, a condition that is not true-or-false are refused when the rule is tried or saved, with the line and the column.
+- **Download the skill for an AI agent** gives a small archive (a folder with one `SKILL.md`) to hand to an AI assistant: it names the attribute and its values, says what a rule is given and must answer, and teaches enough Elo to write one. What the assistant writes is pasted in the editor and tried like any rule.
 - A rule Elo cannot read is refused with Elo's own message. A rule that fails or runs too long on an email leaves the attribute undecided for that email.
 - Rules apply to the emails fetched from then on. **Save and apply to the emails already kept** has a rule look again at those: it says how many it looked at and how many changed. Values set by hand stay; emails replied or placed by a member stay where they are; an email the rule of **Stands in** no longer places goes back to be sorted.
 

@@ -1,0 +1,25 @@
+/* ---- Elo editor: a rule being written, in the colours of the brand ---- */
+.elo-editor {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.elo-editor:focus-within { border-color: var(--color-accent); }
+.elo-editor .cm-editor { min-height: calc(var(--control-md) * 5); max-height: calc(var(--control-md) * 14); font-size: var(--text-sm); }
+.elo-editor .cm-editor.cm-focused { outline: none; }
+.elo-editor .cm-scroller { font-family: var(--font-mono); line-height: 1.6; }
+.elo-editor .cm-content { padding: var(--space-2) 0; caret-color: var(--color-text); }
+.elo-editor .cm-gutters { background: var(--color-surface-sunken); border-right: var(--border-width) solid var(--color-border); color: var(--color-text-muted); }
+.elo-editor .cm-activeLine, .elo-editor .cm-activeLineGutter { background: var(--color-surface-sunken); }
+.elo-editor .cm-placeholder { color: var(--color-text-muted); }
+.elo-editor .cm-tooltip { background: var(--color-surface); border: var(--border-width) solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); }
+.elo-editor .cm-tooltip-autocomplete ul li[aria-selected] { background: var(--color-accent); color: var(--color-on-accent); }
+
+/* What each word is, as the highlighter names it. */
+.elo-editor .tok-keyword, .elo-editor .tok-operatorKeyword { color: var(--color-accent); font-weight: var(--weight-strong); }
+.elo-editor .tok-string, .elo-editor .tok-string2 { color: var(--color-ok); }
+.elo-editor .tok-number, .elo-editor .tok-bool, .elo-editor .tok-null, .elo-editor .tok-literal { color: var(--color-warn); }
+.elo-editor .tok-typeName, .elo-editor .tok-className { color: var(--color-accent); }
+.elo-editor .tok-comment { color: var(--color-text-muted); font-style: italic; }
+.elo-editor .tok-operator, .elo-editor .tok-punctuation { color: var(--color-text-muted); }

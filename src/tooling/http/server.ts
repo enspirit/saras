@@ -16,6 +16,7 @@ import { BOARDS } from './boards.ts';
 import { EMAILS } from './emails.ts';
 import { MAILBOXES } from './mailboxes.ts';
 import { MEMBERS } from './members.ts';
+import { hardened, page } from './pages.ts';
 import { PROMPTS } from './prompts.ts';
 import { HttpError, tellRefusal, unknownRoute } from './refusals.ts';
 import { REPLYING } from './replying.ts';
@@ -25,15 +26,6 @@ import { SETTINGS } from './settings.ts';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
 const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES];
-
-const hardened: RequestHandler = (_req, res, next) => {
-  res.set({
-    'content-security-policy': "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
-    'x-content-type-options': 'nosniff',
-    'referrer-policy': 'no-referrer',
-  });
-  next();
-};
 
 /** Cross-site forms cannot send JSON: requiring it on writes is our CSRF barrier, with SameSite=Lax. */
 const jsonOnly: RequestHandler = (req, res, next) => {
@@ -45,7 +37,10 @@ const jsonOnly: RequestHandler = (req, res, next) => {
 /** The interface's files. A company's brand folder takes precedence, file by file: what it lacks falls back to the default brand. */
 function serveInterface(app: Express, config: Config): void {
   if (config.brandDir) app.use('/brand', express.static(resolve(config.brandDir)));
-  app.use(express.static(PUBLIC_DIR));
+  // The two pages are told their nonce; every other file is served as it is.
+  app.get(['/', '/index.html'], page(PUBLIC_DIR, 'index.html'));
+  app.get('/styleguide.html', page(PUBLIC_DIR, 'styleguide.html'));
+  app.use(express.static(PUBLIC_DIR, { index: false }));
 }
 
 /** Who a route lets through, before it is handled. */

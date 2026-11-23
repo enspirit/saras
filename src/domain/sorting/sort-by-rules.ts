@@ -6,6 +6,7 @@
 //   ReqPost  a rule that says nothing, fails or takes too long leaves the attribute undecided
 //            "Stands in" undecided, the email waits to be sorted (see SortWaitingEmails)
 //            a rule cannot mark an email as replied
+import { EMAIL_FOR_RULES } from '../../../shared/attribute.ts';
 import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
 import type { Attribute, ValueOfEmail } from '../../../shared/attribute.ts';
 import type { EmailStatus, Priority } from '../../../shared/email.ts';
@@ -26,7 +27,7 @@ export interface Ruled {
 export const ruled = (attributes: Attribute[]): Ruled[] =>
   attributes.filter((attribute) => decidedByRule(attribute.decidedBy) && attribute.elo).flatMap((attribute) => {
     try {
-      return [{ attribute, rule: compileRule(attribute.elo) }];
+      return [{ attribute, rule: compileRule(attribute.elo, EMAIL_FOR_RULES) }];
     } catch {
       return [];
     }

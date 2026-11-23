@@ -65,3 +65,21 @@ export interface SortedAgain {
   examined: number;
   changed: number;
 }
+
+/**
+ * The email as a rule is given it (`_`), as an Elo type. The type checker reads it, so that a
+ * rule naming a field an email does not have is refused when it is saved; the page shows it,
+ * so that who writes a rule knows what there is.
+ */
+export const EMAIL_FOR_RULES = `{
+  from: { name: String, address: String },
+  to: [{ name: String, address: String }],
+  cc: [{ name: String, address: String }],
+  subject: String,
+  text: String,
+  attachments: [{ name: String, type: String, size: Int }],
+  date: String,
+  mailbox: String,
+  answered: Bool,
+  headers: { listUnsubscribe: String, listId: String, autoSubmitted: String, precedence: String }
+}`;

@@ -10,6 +10,7 @@
 //            "Stands in": emails replied, placed by a member, or fetched before their headers
 //            were kept are left where they stand; one the rule no longer places waits to be sorted
 //   ReqTrig  for "Stands in": the mailboxes are fetched at once, so that what waits is sorted
+import { EMAIL_FOR_RULES } from '../../../shared/attribute.ts';
 import { STATUS } from '../../../shared/attribute.ts';
 import type { Attribute, SortedAgain } from '../../../shared/attribute.ts';
 import { EloError, compileRule } from '../../tooling/elo.ts';
@@ -56,7 +57,7 @@ export async function sortAgainByRule(world: World, actor: Actor, key: unknown):
   const attribute = await attributeOf(world.db, actor.organization, key);
   if (!decidedByRule(attribute.decidedBy) || !attribute.elo) throw new Refusal('invalid', 'attributes.ruleRequired');
   ruleReads(attribute.elo);
-  const rule = compileRule(attribute.elo);
+  const rule = compileRule(attribute.elo, EMAIL_FOR_RULES);
   const emails = await emailsKeptBy(world.db, actor.organization.id);
   let changed = 0;
   for (const email of emails) if (await sortAgain(world, attribute, rule, email)) changed += 1;

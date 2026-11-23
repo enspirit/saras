@@ -1,4 +1,5 @@
 // Observation: the attributes of an organisation, and what a rule would say of recent emails.
+import { EMAIL_FOR_RULES } from '../../../shared/attribute.ts';
 import type { AttributeValue, RuleTried } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
 import { EloError, compileRule } from '../../tooling/elo.ts';
@@ -26,7 +27,7 @@ async function valuesFor(db: Db, actor: Actor, given: { key?: unknown; values?: 
 export async function tryRule(db: Db, actor: Actor, given: { elo?: unknown; key?: unknown; values?: unknown }): Promise<RuleTried[]> {
   const values = await valuesFor(db, actor, given);
   try {
-    const rule = compileRule(String(given.elo ?? ''));
+    const rule = compileRule(String(given.elo ?? ''), EMAIL_FOR_RULES);
     return (await recentEmails(db, actor)).map((row) => {
       const decided = decidedFrom(rule.run(keptEmailForRules(row, row.mailbox)), values);
       return { subject: row.subject, from: row.from_name || row.from_addr, value: decided ? (values.find((v) => v.key === decided.value)?.label ?? null) : null };

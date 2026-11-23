@@ -288,10 +288,12 @@ GitHub Actions type-checks, builds and runs them on every push and pull request 
 
 ## Third-party software
 
-Two libraries run in the browser, both open source and bundled unmodified from their packages at build time, their licence notices kept at the end of the bundle:
+Two libraries run in the browser on every page, both open source and bundled unmodified from their packages at build time, their licence notices kept at the end of the bundle:
 
 - [Squire](https://github.com/fastmail/Squire), the rich-text editor Fastmail built for composing email — MIT.
 - [DOMPurify](https://github.com/cure53/DOMPurify), the HTML sanitiser — Apache-2.0 or MPL-2.0.
+
+The rule editor adds [CodeMirror 6](https://codemirror.net) (MIT) with Elo's own language support, `@enspirit/codemirror-lang-elo`; it is loaded only by the page that edits an attribute. The login QR code is drawn by `qrcode-generator` (MIT). On the server, rules are compiled and type-checked by [`@enspirit/elo`](https://elo-lang.org) (MIT).
 
 The server's dependencies are listed in `package.json`; all are under permissive licences.
 

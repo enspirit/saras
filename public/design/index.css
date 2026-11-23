@@ -37,6 +37,7 @@
 @import url("molecules/qr-code.css") layer(molecules);
 @import url("molecules/code-list.css") layer(molecules);
 @import url("molecules/check-group.css") layer(molecules);
+@import url("molecules/elo-editor.css") layer(molecules);
 @import url("molecules/form.css") layer(molecules);
 @import url("molecules/card.css") layer(molecules);
 @import url("molecules/page-header.css") layer(molecules);
