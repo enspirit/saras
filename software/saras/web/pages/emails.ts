@@ -55,8 +55,6 @@ export interface EmailsShown {
   /** Controls of this list, before the fetch button. */
   actions?: Child;
   selectedId: number | null;
-  /** The board the list is, when it is one: its emails are read from it. */
-  boardId?: number;
 }
 
 /** The values an email has for the attributes the organisation made, each as a small chip. */
@@ -92,7 +90,7 @@ const lastFetchOf = (mailboxes: Mailbox[]): string | undefined => mailboxes.map(
 export async function showEmails(shown: EmailsShown, prompts: Prompt[], mailboxes: Mailbox[]): Promise<void> {
   const { emails, selectedId, listHref } = shown;
   const lastFetch = lastFetchOf(mailboxes);
-  const detail = selectedId ? emailDetail(await readEmail(selectedId, shown.boardId), prompts, listHref) : null;
+  const detail = selectedId ? emailDetail(await readEmail(selectedId), prompts, listHref) : null;
   shell(MailboxView({
     title: shown.title,
     count: emails.length,

@@ -35,8 +35,5 @@
   "matches": "{count, plural, =0 {No email matches now} one {# email matches now} other {# emails match now}}",
   "matchesHint": "Follows the conditions as you change them. Nothing is saved yet.",
   "moreMatches": "{count, plural, one {and # more} other {and # more}}",
-  "movesNothing": "A board moves nothing.",
-  "prompt": "Its emails are replied with",
-  "promptNone": "No prompt in particular",
-  "promptHint": "Offered first to who writes a reply from this board. For a shared board, it also writes the proposals prepared at fetch for the emails the board shows. No AI is asked which prompt suits."
+  "movesNothing": "A board moves nothing."
 }

@@ -30,8 +30,6 @@ export interface Board {
   /** Whether this member may change or delete it: its owner; for a shared one, the administrators. */
   canManage: boolean;
   filter: BoardFilter;
-  /** The prompt its emails are replied with, when the board has one: offered first to who writes, and used for proposals written at fetch. */
-  promptId: number | null;
   /** How many emails it shows this member now. */
   count: number;
 }
@@ -41,7 +39,6 @@ export interface BoardGiven {
   name: string;
   shared: boolean;
   filter: BoardFilter;
-  promptId: number | null;
 }
 
 /** A board with the most recent emails it shows. */

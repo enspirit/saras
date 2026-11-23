@@ -11,7 +11,7 @@ import type { Handle, Route } from './route.ts';
 
 const box: Handle = async ({ world }, req, res) => void res.json(await emailsOfBox(world.db, actorOf(req), req.query.box));
 
-const read: Handle = async ({ world }, req, res) => void res.json(await emailWithItsReply(world.db, actorOf(req), req.params.id, req.query.board));
+const read: Handle = async ({ world }, req, res) => void res.json(await emailWithItsReply(world.db, actorOf(req), req.params.id));
 
 /** The status asked for says which of the three corrections it is. */
 const CORRECTIONS = { no_reply: markNoReplyNeeded, ignored: ignoreEmail, needs_reply: moveBackToHandle };

@@ -377,7 +377,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 - Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
 - The two choices are independent. Afterwards, writing is changed in **Configuration → Writing** (the page of the prompts), under the list; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
 - At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
-- When the AI sorts, it suggests for each email to handle the prompt that suits it best, from the “when to use it” of each prompt; a rule never suggests one. A member asking for a proposal finds the suggested prompt preselected and marked, and can pick another; with no suggestion, the first prompt of the list is offered first. A proposal written at fetch uses the suggested prompt, else the first of the list, which **Prompts** marks as the one used when none is suggested. A board with a prompt comes before both (US-90).
+- When the AI sorts, it suggests for each email to handle the prompt that suits it best, from the “when to use it” of each prompt; a rule never suggests one. A member asking for a proposal finds the suggested prompt preselected and marked, and can pick another; with no suggestion, the first prompt of the list is offered first. A proposal written at fetch uses the suggested prompt, else the first of the list, which **Prompts** marks as the one used when none is suggested.
 - A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at sorting or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
 
@@ -502,7 +502,6 @@ These are behaviours of the system rather than screens, but they are what the pr
 - An email is shown when it meets every condition there; within a condition made of several values, any of them. A condition with no value keeps every email, as does a board with no condition.
 - Beside the conditions, the form says how many emails match now and shows the five most recent, a moment after each change and before anything is saved.
 - A board is a view: it moves nothing, and deleting it leaves its emails where they are.
-- A board can name the prompt its emails are replied with. From that board, this prompt is offered first to who writes a reply, marked as the board's; for a shared board, it also writes the proposals prepared at fetch for the emails the board shows. It comes before the AI's suggestion, and needs no AI: the way the work is arranged chooses the prompt.
 
 ### US-91 — Work from a board
 **As** a member, **I want** to read and answer emails from a board, **so that** I stay in my view while I work.

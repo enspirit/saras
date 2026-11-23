@@ -49,6 +49,5 @@
   "toComplete": "{count, plural, one {# passage entre crochets reste à compléter.} other {# passages entre crochets restent à compléter.}}",
   "closedNone": "Aucune réponse n’est attendue : la zone de réponse reste fermée tant que vous ne la demandez pas.",
   "closedIgnored": "Cet email est ignoré : la zone de réponse reste fermée tant que vous ne la demandez pas.",
-  "replyAnyway": "Répondre quand même",
-  "boardTag": "De ce tableau"
+  "replyAnyway": "Répondre quand même"
 }

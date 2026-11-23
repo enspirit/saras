@@ -18,21 +18,16 @@ import { PromptPick } from '../ui/molecules/prompt-pick.ts';
 /** A kind of help: what is written goes in, a proposal comes back. */
 type Help = (emailId: number, html: string) => Promise<Proposal>;
 
-/**
- * The choice of the prompt to write with, on the one last used, else the one of the board the
- * email is read from, else the one the AI suggested; none without prompts. The one marked is
- * the board's when there is one: how the work is arranged comes before what the AI thought.
- */
+/** The choice of the prompt to write with, on the one the AI suggested or last used; none without prompts. */
 function promptPick(email: EmailWithItsReply, prompts: Prompt[]) {
-  const ofBoard = prompts.some((p) => p.id === email.boardPromptId) ? email.boardPromptId : null;
-  const suggested = ofBoard ?? email.suggestedPromptId;
+  const suggested = email.suggestedPromptId;
   if (!prompts.length) return null;
   return PromptPick({
     label: t('composer.applyPrompt'),
     selectLabel: t('composer.prompt'),
     title: t('composer.applyPromptTitle'),
     options: prompts.map((p) => ({ value: p.id, label: p.name, selected: p.id === (email.proposal?.promptId ?? suggested) })),
-    suggested: suggested ? { value: suggested, label: t(ofBoard ? 'composer.boardTag' : 'composer.suggestedTag') } : undefined,
+    suggested: suggested ? { value: suggested, label: t('composer.suggestedTag') } : undefined,
   });
 }
 
