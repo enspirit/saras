@@ -7,7 +7,7 @@ import { setEmailAttribute } from '../api/attributes.ts';
 import { t } from '../i18n.ts';
 import { messageOf, toast } from './actions.ts';
 import { attributeName } from './attribute-names.ts';
-import { chipFor, chipOf, noValueChip, signOf, signs } from './attribute-values.ts';
+import { chipFor, chipOf, noValueChip, signOf } from './attribute-values.ts';
 import type { Child } from '../ui/dom.ts';
 import { AttributeBar } from '../ui/molecules/attribute-bar.ts';
 import type { AttributeEntry } from '../ui/molecules/attribute-bar.ts';
@@ -66,6 +66,6 @@ function entryOf(email: EmailWithItsReply, attribute: Attribute, shown: () => vo
 export function attributesOfEmail(email: EmailWithItsReply, attributes: Attribute[]): Child {
   const others = attributes.filter((a) => a.key !== STATUS);
   if (!others.length) return null;
-  const bar: HTMLElement = AttributeBar(others.map((attribute) => entryOf(email, attribute, () => bar.replaceWith(attributesOfEmail(email, attributes) as Node))), { label: t('attributes.ofEmail'), legend: signs() });
+  const bar: HTMLElement = AttributeBar(others.map((attribute) => entryOf(email, attribute, () => bar.replaceWith(attributesOfEmail(email, attributes) as Node))), t('attributes.ofEmail'));
   return bar;
 }

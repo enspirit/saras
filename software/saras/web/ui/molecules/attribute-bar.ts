@@ -66,12 +66,9 @@ function AttributeProp(entry: AttributeEntry): HTMLSpanElement {
   return wrap;
 }
 
-/** The attributes of what is being read, on one line; `legend` says what each sign of who decided means. */
-export const AttributeBar = (entries: AttributeEntry[], { label, legend }: { label: string; legend: Sign[] }): HTMLDivElement =>
-  h('div', { class: 'attribute-bar', role: 'group', 'aria-label': label },
-    entries.map(AttributeProp),
-    h('span', { class: 'attribute-bar__legend' }, legend.map(({ icon, label: meaning }) => h('span', { class: 'attribute-bar__sign' }, Icon(icon, { size: 'small' }), meaning))),
-  );
+/** The attributes of what is being read, as a tool bar under its header. What each sign of who decided means is said by its tooltip, and in words when the attribute is opened. */
+export const AttributeBar = (entries: AttributeEntry[], label: string): HTMLDivElement =>
+  h('div', { class: 'attribute-bar', role: 'toolbar', 'aria-label': label }, entries.map(AttributeProp));
 
 /** Who decides, in a line of a table: the signs, then the words. */
 export const DecidedBy = (icons: IconName[], label: string): HTMLSpanElement =>

@@ -1,30 +1,29 @@
-/* ---- Attribute bar: the attributes of what is being read, each value with who decided it ---- */
+/* ---- Attribute bar: the attributes of what is being read, as a tool bar under its header ---- */
 .attribute-bar {
-  display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2);
-  margin-bottom: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid var(--color-line);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
+  flex: none;
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1);
+  padding: var(--space-1) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-line);
+  background: var(--color-surface);
 }
-.attribute-bar__legend { display: inline-flex; flex-wrap: wrap; gap: var(--space-3); margin-left: auto; font-size: var(--text-xs); color: var(--color-text-muted); }
-.attribute-bar__sign { display: inline-flex; align-items: center; gap: var(--space-1); }
 
 .attribute-prop { position: relative; display: inline-flex; }
 .attribute-prop__button {
   display: inline-flex; align-items: center; gap: var(--space-2);
-  min-height: var(--control-md);
-  padding: 0 var(--space-2) 0 var(--space-3);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  min-height: var(--control-sm);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--color-text-muted);
   font: inherit; font-size: var(--text-sm);
   cursor: pointer;
 }
 .attribute-prop__button:hover { background: var(--color-hover); }
-.attribute-prop__button[aria-expanded="true"] { border-color: var(--color-accent); box-shadow: 0 0 0 var(--focus-width) var(--color-accent-soft); }
-.attribute-prop__button--unset { border-style: dashed; background: transparent; padding-left: var(--space-2); }
+.attribute-prop__button[aria-expanded="true"] { background: var(--color-accent-soft); color: var(--color-text); }
+.attribute-prop__button > .icon:last-child { opacity: 0.7; }
+/* One hairline between two attributes, as between the tools of a bar. */
+.attribute-prop + .attribute-prop { margin-left: var(--space-1); padding-left: var(--space-1); border-left: var(--border-width) solid var(--color-line); }
 
 .value-menu {
   position: absolute; top: calc(100% + var(--space-1)); left: 0; z-index: var(--z-overlay);
