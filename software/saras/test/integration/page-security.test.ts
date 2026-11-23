@@ -15,7 +15,7 @@ test('a page allows only its own files, and one style sheet written with the non
     const page = await fetch(stack.url + path);
     const policy = page.headers.get('content-security-policy') ?? '';
     const html = await page.text();
-    assert.match(policy, /^default-src 'self'; style-src 'self' 'nonce-[^']+'; frame-ancestors 'none'/, path);
+    assert.match(policy, /^default-src 'self';style-src 'self' 'nonce-[^']+';frame-ancestors 'none';base-uri 'none';form-action 'self'$/, path);
     assert.ok(!policy.includes('unsafe-inline'), 'nothing inline is allowed');
     assert.ok(html.includes(`<meta name="csp-nonce" content="${nonceIn(policy)}" />`), `${path} carries the nonce of its own answer`);
     assert.ok(!html.includes('__CSP_NONCE__'));

@@ -1,8 +1,8 @@
 // The interface's two pages and the security headers every answer carries. A page is given
 // a nonce of its own: the one style sheet the rule editor writes itself is allowed by it, and
 // nothing else written into the page is.
-import type { RequestHandler } from 'express';
-import helmet from 'helmet';
+import type { RequestHandler, Response } from 'express';
+import type { HelmetOptions } from 'helmet';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,25 +10,29 @@ import { join } from 'node:path';
 /** What stands in a page for its nonce until the page is served. */
 const PLACEHOLDER = '__CSP_NONCE__';
 
-const policy = (nonce: string): string => `default-src 'self'; style-src 'self' 'nonce-${nonce}'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`;
-
-/**
- * The headers that keep an answer to itself, but for the policy below, which needs the nonce:
- * nothing frames a page, nothing of another origin reads a file or keeps a handle on a window,
- * no type is guessed, no address is told to where a link leads. Browsers keep to HTTPS once
- * they have met it; only for this host, since we cannot speak for the others of its domain.
- */
-const headers = helmet({ contentSecurityPolicy: false, xFrameOptions: { action: 'deny' }, strictTransportSecurity: { maxAge: 31536000, includeSubDomains: false } });
-
-/** A nonce of its own, and what the browser may run and style. */
-const nonced: RequestHandler = (_req, res, next) => {
+/** Every answer is given a nonce of its own, before its headers are written. */
+export const nonced: RequestHandler = (_req, res, next) => {
   res.locals.nonce = randomBytes(16).toString('base64');
-  res.set('content-security-policy', policy(res.locals.nonce));
   next();
 };
 
-/** Every answer carries both. */
-export const hardened: RequestHandler[] = [headers, nonced];
+const nonceOf = (_req: unknown, res: unknown): string => `'nonce-${(res as Response).locals.nonce}'`;
+
+/** What a page may run and style: our own files, and the one style sheet written with the nonce of the answer. */
+const POLICY = { defaultSrc: ["'self'"], styleSrc: ["'self'", nonceOf], frameAncestors: ["'none'"], baseUri: ["'none'"], formAction: ["'self'"] };
+
+/**
+ * The headers that keep an answer to itself, as helmet is asked for them: the policy above and
+ * nothing of helmet's own; no framing, for the browsers that do not read the policy; HTTPS kept
+ * once met, for this host only, since we cannot speak for the others of its domain. The rest is
+ * what helmet sends unasked: no type guessed, no address told to where a link leads, nothing of
+ * another origin reading a file or keeping a handle on a window.
+ */
+export const HEADERS: HelmetOptions = {
+  contentSecurityPolicy: { useDefaults: false, directives: POLICY },
+  xFrameOptions: { action: 'deny' },
+  strictTransportSecurity: { maxAge: 31536000, includeSubDomains: false },
+};
 
 /** A page of the interface, told its nonce. Never kept by the browser: the nonce is good once. */
 export function page(publicDir: string, file: string): RequestHandler {

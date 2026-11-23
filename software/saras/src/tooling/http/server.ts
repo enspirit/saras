@@ -1,6 +1,7 @@
 // The HTTP server: the interface's files, and under /api one route per operation or observation.
 import express from 'express';
 import type { Express, RequestHandler } from 'express';
+import helmet from 'helmet';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Sync } from '../../domain/mailboxes/fetch-mailbox.ts';
@@ -16,7 +17,7 @@ import { BOARDS } from './boards.ts';
 import { EMAILS } from './emails.ts';
 import { MAILBOXES } from './mailboxes.ts';
 import { MEMBERS } from './members.ts';
-import { hardened, page } from './pages.ts';
+import { HEADERS, nonced, page } from './pages.ts';
 import { PROMPTS } from './prompts.ts';
 import { HttpError, tellRefusal, unknownRoute } from './refusals.ts';
 import { REPLYING } from './replying.ts';
@@ -66,9 +67,9 @@ export interface Dependencies extends Reach {
 
 export function createApp({ sync, fetchImpl = fetch, postman, ...reach }: Dependencies): Express {
   const app = express();
-  app.disable('x-powered-by');
+  app.use(nonced);
+  app.use(helmet(HEADERS));
   app.set('trust proxy', 1);
-  app.use(hardened);
   serveInterface(app, reach.config);
   serveApi(app, { world: createWorld(reach, sync, postman ?? createPostman(reach.config)), fetchImpl });
   app.use(tellRefusal);
