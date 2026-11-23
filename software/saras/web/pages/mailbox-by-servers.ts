@@ -99,7 +99,8 @@ const serverSettings = (f: ServerFields, status: HTMLElement): HTMLDivElement =>
     status,
     FormRow(Field(t('mailboxes.imapServer'), f.imapHost), Field(t('mailboxes.port'), f.imapPort, { size: 'narrow' }), CheckField(t('mailboxes.directTls'), f.imapSecure, { size: 'narrow' })),
     FormRow(Field(t('mailboxes.smtpServer'), f.smtpHost), Field(t('mailboxes.port'), f.smtpPort, { size: 'narrow' }), CheckField(t('mailboxes.directTls'), f.smtpSecure, { size: 'narrow' })),
-    Field(t('mailboxes.username'), f.username, { hint: t('mailboxes.tlsHint') }),
+    Block(Text({ muted: true, small: true }, t('mailboxes.tlsHint'))),
+    Field(t('mailboxes.username'), f.username),
   );
 
 /** ConnectMailbox by its servers: tested, then connected, then on to its folder. */
@@ -110,8 +111,8 @@ function serversForm(f: ServerFields, status: HTMLElement, shared: () => boolean
     toast(t('mailboxes.connected'));
     goTo('#/mailboxes');
   },
-    FormRow(Field(t('mailboxes.email'), f.email), Field(t('mailboxes.password'), f.password)),
-    Field(t('mailboxes.name'), f.displayName, { hint: t('mailboxes.passwordHint') }),
+    FormRow(Field(t('mailboxes.email'), f.email), Field(t('mailboxes.password'), f.password, { hint: t('mailboxes.passwordHint') })),
+    Field(t('mailboxes.name'), f.displayName),
     serverSettings(f, status),
     Actions(connect, Muted(Small(t('mailboxes.connectHint')))),
   );

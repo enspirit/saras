@@ -76,7 +76,8 @@ function serversCard(mailbox: Mailbox, servers: MailboxServers): HTMLDivElement 
   },
     FormRow(Field(t('mailboxes.imapServer'), f.imapHost), Field(t('mailboxes.port'), f.imapPort, { size: 'narrow' }), CheckField(t('mailboxes.directTls'), f.imapSecure, { size: 'narrow' })),
     FormRow(Field(t('mailboxes.smtpServer'), f.smtpHost), Field(t('mailboxes.port'), f.smtpPort, { size: 'narrow' }), CheckField(t('mailboxes.directTls'), f.smtpSecure, { size: 'narrow' })),
-    Field(t('mailboxes.username'), f.username, { hint: t('mailboxes.tlsHint') }),
+    Block(Text({ muted: true, small: true }, t('mailboxes.tlsHint'))),
+    Field(t('mailboxes.username'), f.username),
     Field(t('mailboxes.password'), f.password, { hint: t('mailboxes.passwordKeptHint') }),
     Actions(save),
   ));
@@ -94,7 +95,7 @@ function signInCard(mailbox: Mailbox): HTMLDivElement {
 export async function editMailboxPage(mailbox: Mailbox): Promise<void> {
   const servers = mailbox.kind === 'imap' ? await readMailboxServers(mailbox.id) : null;
   shell(Page(
-    PageHeader({ title: mailbox.email, intro: t('mailboxes.editIntro'), crumbs: [{ label: t('mailboxes.title'), href: '#/mailboxes' }] }),
+    PageHeader({ title: mailbox.email, crumbs: [{ label: t('mailboxes.title'), href: '#/mailboxes' }] }),
     nameCard(mailbox),
     mailbox.folder && fetchedCard(mailbox),
     servers ? serversCard(mailbox, servers) : signInCard(mailbox),

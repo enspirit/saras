@@ -1,8 +1,8 @@
-// Beside a rule being written, and in the guide: what a rule can read, Elo in a few lines, and the
-// skill that has an AI assistant write the rule.
+// Beside a rule being written, and in the guide: what a rule can read and Elo in a few lines;
+// in the guide, the skill that has an AI assistant write a rule.
 
 import { EMAIL_FIELDS } from '../../shared/attribute.ts';
-import type { Attribute, EmailFieldPath } from '../../shared/attribute.ts';
+import type { EmailFieldPath } from '../../shared/attribute.ts';
 import { ELO_IN_BRIEF } from '../../shared/rule-recipes.ts';
 import { t, tRich } from '../i18n.ts';
 import { ButtonLink } from '../ui/atoms/button.ts';
@@ -53,8 +53,8 @@ export const fieldsCard = (onPick?: (path: string) => void): HTMLDivElement =>
 export const briefCard = (more: { label: string; href: string }): HTMLDivElement =>
   Card({ title: t('rules.briefTitle') }, ELO_IN_BRIEF.map(({ key, elo }) => Snippet(elo, t(BRIEF[key]))), Text({ small: true }, Link(more.label, more.href)));
 
-/** The skill to hand an AI assistant: for one attribute, it names it and its values. */
-export const skillCard = (attribute: Attribute | null): HTMLDivElement =>
+/** The skill to hand an AI assistant, in the guide: each attribute offers its own beside its rule. */
+export const skillCard = (): HTMLDivElement =>
   Card({ title: t('rules.skillTitle') },
-    Text({ muted: true, small: true }, t(attribute ? 'attributes.skillHint' : 'rules.skillGeneral')),
-    Actions(ButtonLink(t('attributes.skill'), { href: attribute ? `/api/attributes/${attribute.key}/skill` : '/api/attributes/skill' })));
+    Text({ muted: true, small: true }, t('rules.skillGeneral')),
+    Actions(ButtonLink(t('attributes.skill'), { href: '/api/attributes/skill' })));

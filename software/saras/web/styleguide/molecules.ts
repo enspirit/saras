@@ -31,6 +31,7 @@ const formsCard = (): HTMLDivElement =>
   Card({ title: t('styleguide.forms') },
     Form(
       FormRow(Field(t('styleguide.withHint'), Input(), { hint: t('styleguide.hint') }), Field(t('styleguide.narrow'), Input({ type: 'number', value: 993 }), { size: 'narrow' }), CheckField(t('styleguide.checkbox'), Checkbox({ checked: true }), { size: 'narrow' })),
+      CheckField(t('styleguide.checkbox'), Checkbox(), { hint: t('styleguide.hint') }),
       Actions(Button(t('styleguide.confirm'), { variant: 'primary', onClick: () => showToast(t('styleguide.toast')) }), Button(t('styleguide.error'), { onClick: () => showToast(t('styleguide.toastError'), true) }), Spacer(), Button(t('styleguide.atEnd'))),
     ),
   );

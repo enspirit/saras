@@ -1,20 +1,19 @@
-// Settings → Organisation (administrators): its name, its appearance, and deleting it. Its AI is
+// Settings → Organisation (administrators): its name, and deleting it. Its AI is
 // in the tab beside; how emails are sorted is decided on the attribute "Stands in".
 
 import type { Profile } from '../../shared/member.ts';
 import type { Organization } from '../../shared/organization.ts';
 import { deleteOrganization } from '../api/access.ts';
 import { changeOrganizationSettings } from '../api/settings.ts';
-import { t, tRich } from '../i18n.ts';
+import { t } from '../i18n.ts';
 import { showPage } from '../navigation.ts';
 import { SubmitForm, toast } from './actions.ts';
 import { LeavingForm } from './leaving.ts';
 import { Button } from '../ui/atoms/button.ts';
 import { Input } from '../ui/atoms/input.ts';
-import { Link, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
 import { Card } from '../ui/molecules/card.ts';
-import { Block, Field } from '../ui/molecules/field.ts';
+import { Field } from '../ui/molecules/field.ts';
 import { Actions } from '../ui/molecules/form.ts';
 
 /** RenameOrganization. */
@@ -40,7 +39,6 @@ const deleteOrganisationForm = (org: Organization): Child => LeavingForm({
 
 /** The organisation's own settings, for its administrators. */
 export const organisationSettings = (who: Profile): Child => [
-  Card({ form: true }, Block(Text({ muted: true }, t('organization.intro'))), organisationForm(who.organization)),
-  Card({ title: t('settings.appearance'), form: true }, Text({}, tRich('settings.appearanceText', {}, { link: (label) => Link(label, '/styleguide.html') }))),
+  Card({ form: true }, organisationForm(who.organization)),
   Card({ title: t('organization.deleteTitle'), form: true }, deleteOrganisationForm(who.organization)),
 ];

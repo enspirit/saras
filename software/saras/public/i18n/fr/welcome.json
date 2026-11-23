@@ -7,7 +7,7 @@
   "workTitle": "Le tri et la rédaction",
   "workIntro": "Un email passe par deux étapes avant votre réponse : il est trié, puis une réponse est rédigée. Choisissez ce que l’IA fait à chacune, pour tous les membres de l’organisation. Quel que soit votre choix, rien n’est envoyé sans la confirmation de quelqu’un.",
   "needsKey": "Nécessite une clé pour l’IA, qui n’a pas été donnée.",
-  "workLater": "Ces deux choix se modifient à tout moment dans Réglages → Organisation.",
+  "workLater": "Ces deux choix se modifient plus tard : qui trie dans Tri, quand l’IA rédige dans Rédaction.",
   "finish": "Appliquer et ouvrir un premier email",
   "tryIt": "Voici votre premier email ici. Écrivez quelques mots sur ce qu’il faut répondre, ou rien du tout, puis « Rédiger avec ». Rien n’est envoyé sans votre confirmation.",
   "tryPrepared": "Voici votre premier email ici, avec la proposition préparée pour lui. Lisez-la, modifiez ce que vous voulez, puis Envoyer. Rien n’est envoyé sans votre confirmation.",

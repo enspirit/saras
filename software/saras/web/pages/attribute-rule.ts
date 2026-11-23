@@ -7,6 +7,7 @@ import { t, tRich } from '../i18n.ts';
 import { ActionButton } from './actions.ts';
 import { chipFor, noValueChip } from './attribute-values.ts';
 import { Badge } from '../ui/atoms/badge.ts';
+import { ButtonLink } from '../ui/atoms/button.ts';
 import { Code, Link, Muted, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
 import { CardSection } from '../ui/molecules/card.ts';
@@ -63,11 +64,15 @@ const triedSection = (attribute: Attribute, tried: RuleTried[]): HTMLElement =>
     Table({ columns: [t('attributes.triedEmail'), t('rules.triedNow'), t('rules.triedSays')] },
       tried.map((one) => [[one.subject || t('mailbox.noSubject'), ' ', Muted(one.from)], chipOrNone(attribute, one.now?.value), [chipOrNone(attribute, one.value), ' ', remark(one)]])));
 
+/** The skill that has an AI assistant write the rule: of this attribute, with its name and its values, or of any. */
+const skillLink = (attribute: Attribute | null): HTMLElement =>
+  ButtonLink(t('attributes.skill'), { href: attribute ? `/api/attributes/${attribute.key}/skill` : '/api/attributes/skill', variant: 'link' });
+
 /** The rule: the editor, whether it fits the email, and a way to see it at work on recent emails before it is kept. */
 export function ruleSection(attribute: Attribute | null, EloEditor: EloEditorMaker, values: () => ValueGiven[]): { section: HTMLElement; editor: EloEditorHandle } {
   const status = slot(Badge(t('rules.unchecked'), 'neutral'));
   const problems = slot(Muted());
-  const result = slot(Block(Text({ muted: true, small: true }, t('attributes.tryHint'))));
+  const result = slot(Muted());
   const checked = (found: RuleProblem[]): void => (status.show(statusOf(found)), problems.show(found.length ? problemsOf(found, () => editor) : Muted()));
   const editor: EloEditorHandle = EloEditor({ value: attribute?.elo ?? '', label: t('attributes.ruleTitle'), hint: t('attributes.ruleExample'), check: checkRule, onChecked: checked });
   const tryIt = ActionButton(t('attributes.try'), '…', async () => {
@@ -76,6 +81,6 @@ export function ruleSection(attribute: Attribute | null, EloEditor: EloEditorMak
   }, { icon: 'play' });
   const section = CardSection(t('attributes.ruleTitle'),
     Block(Text({ muted: true, small: true }, tRich('attributes.ruleIntro', {}, { link: (label) => Link(label, 'https://elo-lang.org'), code: Code }), ' ', status.first)),
-    Field(null, [editor.element, problems.first]), Actions(tryIt), result.first);
+    Field(null, [editor.element, problems.first]), Actions(tryIt, skillLink(attribute)), result.first);
   return { section, editor };
 }

@@ -64,7 +64,7 @@ export function watchedFolderPage(account: Mailbox): void {
   offerFolders(account, folders, confirm);
   shell(Page(
     fresh && PathSteps('folder'),
-    PageHeader({ title: t('mailboxes.chooseFolderTitle'), intro: t('mailboxes.chooseFolder'), crumbs: fresh ? [] : [{ label: t('mailboxes.title'), href: '#/mailboxes' }, { label: account.email, href: `#/mailboxes/edit/${account.id}` }] }),
+    PageHeader({ title: t('mailboxes.chooseFolderTitle'), crumbs: fresh ? [] : [{ label: t('mailboxes.title'), href: '#/mailboxes' }, { label: account.email, href: `#/mailboxes/edit/${account.id}` }] }),
     fresh && Callout('ok', t('mailboxes.connectedShort', { email: account.email })),
     Card({ form: true }, folders.element,
       Field(t('mailboxes.fetchBack'), days, { hint: t('mailboxes.fetchBackHint'), size: 'narrow' }),

@@ -71,7 +71,7 @@ export const membersPage = guard(async (notice?: Child) => {
   const invite = InviteCard((invitation) => membersPage(InvitationLink(invitation)));
   shell(
     Page(
-      PageHeader({ title: t('members.title'), intro: t('members.intro', { organization: me().organization.name }) },
+      PageHeader({ title: t('members.title') },
         Button(t('members.invite'), { variant: 'primary', icon: 'user-plus', onClick: invite.open })),
       notice,
       invite.element,

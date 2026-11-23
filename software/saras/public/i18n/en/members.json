@@ -1,6 +1,5 @@
 {
   "title": "Users",
-  "intro": "Members of {organization}. Administrators manage the prompts, the invitations, the shared mailboxes and the organisation's settings. They have no access to a member's personal mailbox.",
   "invite": "Invite someone",
   "email": "Email address",
   "emailPlaceholder": "first.last@example.com",
@@ -25,5 +24,6 @@
   "newPassword": "Link to a new password",
   "newPasswordReady": "The link for <strong>{email}</strong> to choose a new password is ready. Hand it to them: it is good once, for {minutes} minutes, and cannot be shown again.",
   "resetSecondFactor": "Reset the second factor",
-  "confirmResetSecondFactor": "Take the second factor of {email} away? They are signed out everywhere, and set a new one up at their next sign-in."
+  "confirmResetSecondFactor": "Take the second factor of {email} away? They are signed out everywhere, and set a new one up at their next sign-in.",
+  "roleHint": "An administrator manages the prompts, the invitations, the shared mailboxes and the organisation’s settings, and has no access to a member’s personal mailbox."
 }

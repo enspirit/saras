@@ -7,7 +7,7 @@
   "workTitle": "Sorting and writing",
   "workIntro": "An email goes through two steps before you reply: it is sorted, then a reply is written. Choose what the AI does at each, for every member of the organisation. Whatever you choose, nothing is sent without someone’s confirmation.",
   "needsKey": "Needs an AI key, which was not given.",
-  "workLater": "These two choices can be changed at any time in Settings → Organisation.",
+  "workLater": "Both can be changed later: who sorts in Sorting, when the AI writes in Writing.",
   "finish": "Apply and open a first email",
   "tryIt": "This is your first email here. Write a few words on what to answer, or nothing at all, then “Write with”. Nothing is sent until you confirm.",
   "tryPrepared": "This is your first email here, with the proposal prepared for it. Read it, change what you want, then Send. Nothing is sent until you confirm.",

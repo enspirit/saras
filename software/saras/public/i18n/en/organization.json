@@ -1,6 +1,5 @@
 {
   "title": "Organisation",
-  "intro": "These settings apply to every member and every mailbox of the organisation.",
   "name": "Name",
   "model": "Model",
   "modelHint": "An OpenRouter identifier, “provider/model”: it writes and sorts for every member. Leave empty for the server’s. It must have a provider that keeps no data, otherwise requests are refused.",

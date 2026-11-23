@@ -18,9 +18,9 @@ export function Field(label: string | null, control: Child, { hint, error, size 
   );
 }
 
-/** A checkbox with its label on the same line. Pass your own Checkbox to keep a handle on it. */
-export function CheckField(label: string, checkbox: HTMLInputElement = Checkbox(), { size = 'fill' }: { size?: FieldSize } = {}): HTMLDivElement {
-  return h('div', { class: cx('field', 'field--check', size !== 'fill' && `field--${size}`) }, h('label', { class: 'field__label' }, checkbox, label));
+/** A checkbox with its label on the same line, and an optional hint under them. Pass your own Checkbox to keep a handle on it. */
+export function CheckField(label: string, checkbox: HTMLInputElement = Checkbox(), { size = 'fill', hint }: { size?: FieldSize; hint?: Child } = {}): HTMLDivElement {
+  return h('div', { class: cx('field', 'field--check', size !== 'fill' && `field--${size}`) }, h('label', { class: 'field__label' }, checkbox, label), hint && h('p', { class: 'field__hint' }, hint));
 }
 
 /** Gives any node (a notice, a paragraph) the vertical rhythm of a field. */

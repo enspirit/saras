@@ -17,19 +17,6 @@
   .split-panel__aside { border-left: 0; border-top: var(--border-width) solid var(--color-line); }
 }
 
-/* ---- Points: a few things that follow one another ---- */
-.points { display: grid; gap: var(--space-3); margin: var(--space-3) 0; padding: 0; list-style: none; }
-.points__point { display: flex; align-items: flex-start; gap: var(--space-3); }
-.points__mark {
-  flex: none; display: grid; place-items: center;
-  width: var(--space-6); height: var(--space-6);
-  border: var(--border-width) solid var(--color-border-strong); border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  font-size: var(--text-xs); font-weight: var(--weight-strong); color: var(--color-text-soft);
-}
-.points__text { display: grid; gap: 2px; }
-.points__detail { font-size: var(--text-sm); color: var(--color-text-muted); }
-
 /* ---- Standings: how a few things stand, each leading to where it is chosen ---- */
 .standings { display: grid; }
 .standings__row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-top: var(--border-width) solid var(--color-line); }

@@ -1,6 +1,5 @@
 {
   "title": "Utilisateurs",
-  "intro": "Membres de {organization}. Les administrateurs gèrent les prompts, les invitations, les boîtes partagées et les réglages de l’organisation. Ils n’ont pas accès à la boîte personnelle d’un membre.",
   "invite": "Inviter quelqu’un",
   "email": "Adresse email",
   "emailPlaceholder": "prenom.nom@exemple.com",
@@ -25,5 +24,6 @@
   "newPassword": "Lien vers un nouveau mot de passe",
   "newPasswordReady": "Le lien permettant à <strong>{email}</strong> de choisir un nouveau mot de passe est prêt. Transmettez-le : il sert une fois, pendant {minutes} minutes, et ne peut pas être réaffiché.",
   "resetSecondFactor": "Réinitialiser le second facteur",
-  "confirmResetSecondFactor": "Retirer le second facteur de {email} ? Cette personne est déconnectée partout et en configure un nouveau à sa prochaine connexion."
+  "confirmResetSecondFactor": "Retirer le second facteur de {email} ? Cette personne est déconnectée partout et en configure un nouveau à sa prochaine connexion.",
+  "roleHint": "Un administrateur gère les prompts, les invitations, les boîtes partagées et les réglages de l’organisation, et n’a pas accès à la boîte personnelle d’un membre."
 }

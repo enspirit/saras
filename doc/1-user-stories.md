@@ -367,17 +367,17 @@ How the screens are designed and built is in [the design document](4-design.md).
 ### US-63 — Configure the organisation
 **As** an administrator, **I want** to set my organisation's name, what the AI does at sorting and at writing, and its own model and key, **so that** every member works the same way at the organisation's expense.
 
-- Settings has three tabs. **You**: my name and signature, my password, the language, deleting my account. **Organisation** (administrators): its name, its appearance, deleting it. **AI & privacy**: the AI and what is guaranteed about it, together.
-- In **AI & privacy**, an administrator sets the model (empty: the server's) and the organisation's OpenRouter key (encrypted, never shown again, removable). What the AI does is chosen where it applies, and the tab leads there: sorting on the attribute **Stands in** (US-93), when it writes and with which prompt in **Writing** (US-66). The tab shows both as they stand now, with what the AI is sent at each, beside the model and the key. A request uses the organisation's key, else the server's.
+- Settings has three tabs. **You**: my name and signature, my password, the language, deleting my account. **Organisation** (administrators): its name, deleting it. **AI & privacy**: the AI and what is guaranteed about it, together.
+- In **AI & privacy**, an administrator sets the model (empty: the server's) and the organisation's OpenRouter key (encrypted, never shown again, removable). What the AI does is chosen where it applies, and the tab leads there: sorting on the attribute **Stands in** (US-93), when it writes in **Writing** (US-66). The tab shows both as they stand now, with what the AI is sent at each, beside the model and the key. A request uses the organisation's key, else the server's.
 
 ### US-66 — Choose what the AI does at sorting and at writing
 **As** an administrator, **I want** to choose what the AI does at each of the two steps an email goes through, **so that** it does as much, or as little, before a member opens an email as suits us.
 
 - The page explains the two steps and asks one choice for each. **1. Sorting** — when emails are fetched, which need a reply: nobody sorts (every email of the watched folder is to handle), or the AI sorts. **2. Writing** — when the AI writes a proposal for an email to handle: when a member asks; at fetch, to review in saras; at fetch, also filed in the mailbox's Drafts folder (the email then moves to **Replied** as a draft).
 - Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
-- The two choices are independent. Afterwards, writing is changed in **Configuration → Writing** (the page of the prompts), under the list, beside the explanation of which prompt is used; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
+- The two choices are independent. Afterwards, writing is changed in **Configuration → Writing** (the page of the prompts), under the list; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
 - At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
-- **Prompts** also says which prompt a proposal is written with, and what applies now. When the AI sorts, it suggests for each email to handle the prompt that suits it best, from the “when to use it” of each prompt; a rule never suggests one. A member asking for a proposal finds the suggested prompt preselected and marked, and can pick another; with no suggestion, the first prompt of the list is offered first. A proposal written at fetch uses the suggested prompt, else the first of the list.
+- When the AI sorts, it suggests for each email to handle the prompt that suits it best, from the “when to use it” of each prompt; a rule never suggests one. A member asking for a proposal finds the suggested prompt preselected and marked, and can pick another; with no suggestion, the first prompt of the list is offered first. A proposal written at fetch uses the suggested prompt, else the first of the list, which **Prompts** marks as the one used when none is suggested.
 - A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at sorting or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
 
@@ -405,7 +405,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 ### US-64 — See the privacy guarantees in force
 **As** a member, **I want** to read, in the application, what happens to my emails, **so that** I can trust it — and explain it to a client who asks.
 
-- **Settings → AI & privacy** states, under the AI in force: the retention policy sent with every AI request, the triage strategy in force and what it reads, the local retention period, the encryption of secrets, that nothing is sent without validation, and who sees my correction reasons.
+- **Settings → AI & privacy** states, with the AI in force: what it does at sorting and at writing and what it is sent at each, that every AI request demands zero retention, the local retention period, the encryption of secrets, that nothing is sent without validation, and who sees my correction reasons.
 - A standing line in the navigation reminds that zero data retention is enforced on every AI request.
 
 ### US-65 — Be told when the AI cannot help
@@ -462,7 +462,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 ### US-81 — Check the brand on a style guide
 **As** an operator tuning a brand, **I want** one page showing every token and component with my brand applied, **so that** I can judge the result at a glance.
 
-- `/styleguide.html`, built from the same components as the application, linked from **Settings → Appearance** for administrators.
+- `/styleguide.html`, built from the same components as the application, at its own address on any running instance.
 
 ### US-82 — Follow the visitor's light or dark preference
 **As** a member, **I want** the interface to follow my system's light or dark mode, **so that** it is comfortable at any hour.
@@ -519,8 +519,8 @@ These are behaviours of the system rather than screens, but they are what the pr
 
 - **Configuration → Sorting** lists the organisation's attributes (the page was first called Attributes; its things are still attributes). Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
 - A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot; the values of the pre-configured attributes have theirs. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
-- Above the list, three steps say how an email gets a value: its rule, then the AI, then a member by hand.
 - Each attribute says who decides it when an email is sorted: nobody (set by hand), a rule, the AI, or the rule then the AI where the rule says nothing. The AI decides only the two pre-configured attributes for now.
+- On the form of an attribute, a tick box asks for a rule; the two pre-configured ones have a second, which asks the AI where no rule has decided. With neither ticked, members set it by hand. A “member” attribute has no values to type.
 
 ### US-94 — Sort with rules that cost nothing and say what they do
 **As** an administrator, **I want** to write the rule that decides an attribute, **so that** sorting is transparent and uses no AI tokens.
@@ -530,11 +530,11 @@ These are behaviours of the system rather than screens, but they are what the pr
 - **Try it on recent emails** shows what a rule would say of my twenty most recent emails, without changing any.
 - The rule is written in an editor that knows Elo: colours, matching brackets, completion of its functions.
 - The rule is checked against the type of the email as I write it, a moment after I stop: **Fits the email**, or the number of problems. A field an email does not have, a text used as a number, a condition that is not true-or-false is underlined where it is and said under the editor with its line and column. Where a field was probably meant (`subjet` for `subject`), one click writes it. A rule with a problem is refused when it is tried or saved.
-- Beside the editor, **What a rule can read** lists the fields of the email with their types: a click writes one in the rule. **Elo in brief** gives the few constructs most rules need.
+- Beside the editor, **What a rule can read** lists the fields of the email with their types: a click writes one in the rule. **Elo in brief** gives the few constructs most rules need. The editor and what sits beside it show only while a rule is asked for.
 - A rule may answer `{value: …, reason: …}`: the reason is kept with the value and shown on the email.
 - Trying a rule shows, for each recent email, the value it has now beside what the rule says, and how many emails get each value. An email whose value was set by hand is marked as staying as it is.
 - **Writing a rule** (from the list of attributes, or beside the editor) is a guide: the shape of a rule, what it can read, rules to start from that can be copied, Elo in brief, what is checked, and the skill for an AI assistant.
-- **Download the skill for an AI agent** gives a small archive (a folder with one `SKILL.md`) to hand to an AI assistant: it names the attribute and its values, says what a rule is given and must answer, and teaches enough Elo to write one. What the assistant writes is pasted in the editor and tried like any rule.
+- **Download the skill for an AI agent**, beside the trial of a rule, gives a small archive (a folder with one `SKILL.md`) to hand to an AI assistant: it names the attribute and its values, says what a rule is given and must answer, and teaches enough Elo to write one. What the assistant writes is pasted in the editor and tried like any rule.
 - A rule Elo cannot read is refused with Elo's own message. A rule that fails or runs too long on an email leaves the attribute undecided for that email.
 - Rules apply to the emails fetched from then on. **Save and apply to the emails already kept** has a rule look again at those: it says how many it looked at and how many changed. Values set by hand stay; emails replied or placed by a member stay where they are; an email the rule of **Stands in** no longer places goes back to be sorted.
 
