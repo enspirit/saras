@@ -117,7 +117,7 @@ export function emailDetail(email: EmailWithItsReply, prompts: Prompt[], backHre
   const original = email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased'));
   const sent = replyOf(email);
   const attributes = attributesOfEmail(email, session.attributes);
-  if (sent) return Reading({ header }, attributes, original, sentReply(sent));
-  if (isWaiting(email)) return Reading({ header, dock: replyArea(email, prompts, done) }, attributes, original);
-  return Reading({ header, dock: closedReplyArea(email, prompts, done) }, attributes, original);
+  if (sent) return Reading({ header, toolbar: attributes }, original, sentReply(sent));
+  if (isWaiting(email)) return Reading({ header, toolbar: attributes, dock: replyArea(email, prompts, done) }, original);
+  return Reading({ header, toolbar: attributes, dock: closedReplyArea(email, prompts, done) }, original);
 }

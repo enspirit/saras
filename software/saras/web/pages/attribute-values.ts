@@ -17,9 +17,6 @@ const SOURCES: Record<ValueOfEmail['source'], { icon: IconName; label: string }>
 /** The sign of who decided a value, with the same in words. */
 export const signOf = (source: ValueOfEmail['source']): Sign => ({ icon: SOURCES[source].icon, label: t(SOURCES[source].label) });
 
-/** What each sign means, in the order they have a say. */
-export const signs = (): Sign[] => [signOf('rule'), signOf('ai'), signOf('user')];
-
 /** The signs of who decides an attribute. */
 export const DECIDER_ICONS: Record<Decider, IconName[]> = { nobody: ['pencil'], elo: ['code'], ai: ['sparkles'], eloAi: ['code', 'sparkles'] };
 

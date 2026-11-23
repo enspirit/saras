@@ -4,9 +4,9 @@ import { Heading } from '../atoms/text.ts';
 import { h } from '../dom.ts';
 import type { Child } from '../dom.ts';
 
-/** An open email: its header, its content (which scrolls), and what is docked under it. */
-export const Reading = ({ header, dock }: { header: Child; dock?: Child }, ...content: Child[]): HTMLDivElement =>
-  h('div', { class: 'reading' }, header, h('div', { class: 'reading__body' }, content), dock);
+/** An open email: its header, the tool bar that goes with it, its content (which scrolls), and what is docked under it. */
+export const Reading = ({ header, toolbar, dock }: { header: Child; toolbar?: Child; dock?: Child }, ...content: Child[]): HTMLDivElement =>
+  h('div', { class: 'reading' }, header, toolbar, h('div', { class: 'reading__body' }, content), dock);
 
 export interface ReadingHeaderOptions {
   subject: string;

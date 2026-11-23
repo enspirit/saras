@@ -541,7 +541,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 ### US-95 — Set an attribute by hand
 **As** a member, **I want** to set or correct the value of an attribute on an email, **so that** it shows on the right boards whatever the rules said.
 
-- Above an email, each attribute but **Stands in** is on one line: its name, its value as a chip, and the sign of who decided it (a rule, the AI, by hand); an attribute without a value is offered with a “+”. The line says what each sign means.
+- Under the header of an email, a tool bar as wide as the email holds each attribute but **Stands in**: its name, its value as a chip, and the sign of who decided it (a rule, the AI, by hand), which its tooltip says in words; an attribute without a value is offered with a “+”.
 - A click on an attribute opens its values to choose from, “no value” included, and says who decided the current one and why when that is known: the reason its rule gave, or what the AI said when it sorted, for the priority.
 - In a list of emails, each email shows its values for the attributes the organisation made.
 - A value I set is recorded as set by hand and is not overwritten by later sorting.
