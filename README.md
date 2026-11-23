@@ -229,6 +229,7 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | --- | --- |
 | [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it, and its [README](software/saras/README.md) says what it answers for and how it is built. |
 | | [`storage/`](software/storage/) holds the seeds: the datasets the stack's database is put into, the demo among them. |
+| [`world/`](world/) | What it runs in. [`fakesmtp/`](world/fakesmtp/) is the outgoing mail server of the stack: it delivers nothing, and shows what saras gave it on `http://localhost:1080`. |
 | [`tests/`](tests/) | What proves it, from outside. [`webspicy/`](tests/webspicy/) is the black-box specification of the API, run through the front door of the stack; [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
 | [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), and the [decisions](doc/decisions/). |
 
@@ -246,7 +247,7 @@ emb run storage:demo    # add the demo organisation and its sample emails to the
 emb down
 ```
 
-`emb up` needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail. `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
+`emb up` needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail (the stack's own mail server otherwise, which delivers nothing). `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
 
 ## How it works
 

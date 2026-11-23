@@ -10,7 +10,7 @@ The directory says what a thing is for.
 doc/            what saras is for, what it does, and the decisions taken
 software/       what we write and ship          one directory per component
 tests/          what proves it, from outside    each a component too
-world/          what it runs in                 nothing yet
+world/          what it runs in                 stand-ins for third parties
 
 .emb.yml                    project, plugins, flavors, repository-wide tasks
 .env.commons                committed, non-secret defaults: the stack's vocabulary
@@ -30,10 +30,11 @@ A component is a directory under one of the three, with a `README.md` that is it
 | --- | --- | --- |
 | [`software/saras`](../software/saras/) | The server and the interface it serves: every operation, and the state. | The service `saras`, image `saras/saras`: the front door |
 | [`software/storage`](../software/storage/) | The seeds: the datasets the stack's database is put into, the demo among them. | The service `storage`, which is `dbagent`: never deployed, never published |
+| [`world/fakesmtp`](../world/fakesmtp/) | The outgoing mail server, as the stack meets it: it delivers nothing and shows what it was given. | The service `fakesmtp`, image `saras/fakesmtp`, never published |
 | [`tests/webspicy`](../tests/webspicy/) | The black-box specification of the API: what a URL answers, knowing nothing of what serves it. | The service `webspicy`, image `saras/webspicy`, never published: it sleeps, and the suite is run inside it |
 | [`tests/harness`](../tests/harness/) | The checks on the repository itself: links, import boundaries. | On a checkout, inside `emb run lint` |
 
-`world/` is empty for now. PostgreSQL is a third party's image that needs no file of ours: it has no directory, and is pinned in `docker-compose.base.yml`. No deployment is described either: saras ships as an image ([decision 0004](decisions/0004-saras-ships-as-an-image.md)).
+`world/` holds no deployment. PostgreSQL is a third party's image that needs no file of ours: it has no directory, and is pinned in `docker-compose.base.yml`. No deployment is described either: saras ships as an image ([decision 0004](decisions/0004-saras-ships-as-an-image.md)).
 
 Why saras is one component and not three is [decision 0002](decisions/0002-one-component.md).
 
@@ -65,10 +66,11 @@ A new arrow is a decision, not an edit.
 | Agent | In production | Under the suites |
 | --- | --- | --- |
 | PostgreSQL | A server | The same image in the stack; the embedded PostgreSQL in the tests that need only a checkout |
+| The server's own outgoing mail server | A real one, when `SMTP_URL` names it | `world/fakesmtp` in the stack; an SMTP server started by the tests that need only a checkout |
 | Mail providers, identity providers | The real ones | A real IMAP server and a real SMTP server started by the tests, in their own process |
 | The LLM (OpenRouter) | The real one, zero retention enforced | A stand-in started by the tests, recording what it is sent; none in the stack, which has no key |
 
-No suite talks to a real one. Why the stand-ins live inside the tests and not in `world/` is [decision 0003](decisions/0003-third-parties-stood-in-inside-the-tests.md).
+No suite talks to a real one. Why the stand-ins of the mailboxes and of the LLM live inside the tests and not in `world/` is [decision 0003](decisions/0003-third-parties-stood-in-inside-the-tests.md).
 
 ## State
 

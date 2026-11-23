@@ -40,6 +40,11 @@ services:
       # its own, so two builds never fight over one directory.
       - /app/public/js
 
+  fakesmtp:
+    ports:
+      # The page that shows what saras gave it to send.
+      - '127.0.0.1:${FAKESMTP_PORT:-1080}:1080'
+
   webspicy:
     volumes:
       # The specifications are what is edited, so they are mounted rather than

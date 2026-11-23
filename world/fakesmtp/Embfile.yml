@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: The outgoing mail server, as the stack meets it — it delivers nothing
+
+resources:
+  image:
+    type: 'docker/image'
+    # Not published: a stand-in in a registry next to the product is a
+    # stand-in somebody eventually deploys.
+    publish: false
+
+flavors:
+  dev:
+    patches:
+      - path: /resources/image/rebuildTrigger
+        op: add
+        value:
+          strategy: watch-paths
+          paths:
+            - world/fakesmtp/Dockerfile
+            - world/fakesmtp/package.json
+            - world/fakesmtp/package-lock.json
+
+# Both tasks run on the host and exec into the container themselves: its image
+# has no bash for emb to run a script with, and its page is published on a
+# laptop only.
+tasks:
+  mails:
+    description: What it was given to send — when, to whom, and the subject
+    executors:
+      - local
+    script: | # shell
+      cd ../.. && docker compose exec -T fakesmtp node -e "
+        const mails = await (await fetch('http://127.0.0.1:1080/api/emails')).json();
+        for (const mail of mails) console.log(mail.date, '|', mail.to.text, '|', mail.subject);
+        console.log(mails.length + ' mail(s)');"
+
+  purge:
+    description: Forget every mail it was given
+    executors:
+      - local
+    script: | # shell
+      cd ../.. && docker compose exec -T fakesmtp node -e "
+        const answer = await fetch('http://127.0.0.1:1080/api/emails', { method: 'DELETE' });
+        if (!answer.ok) { console.error('fakesmtp answered ' + answer.status); process.exit(1); }"

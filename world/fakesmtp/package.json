@@ -1,0 +1,11 @@
+{
+  "name": "fakesmtp",
+  "private": true,
+  "description": "Fake SMTP server for test purposes",
+  "dependencies": {
+    "fake-smtp-server": "0.8.0"
+  },
+  "overrides": {
+    "mailparser": "3.9.38"
+  }
+}

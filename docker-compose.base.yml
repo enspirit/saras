@@ -58,6 +58,20 @@ services:
       start_period: 20s
 
   # -------------------------------------------------------------------------
+  # fakesmtp — the mail server saras hands its own mail to (the link of a lost
+  # password), as the stack meets it: it accepts everything on port 25,
+  # delivers nothing, and shows what it was given on port 1080.
+  # Never published and never deployed.
+  # -------------------------------------------------------------------------
+  fakesmtp:
+    image: saras/fakesmtp:${DOCKER_TAG:-latest}
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:1080/api/emails']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # -------------------------------------------------------------------------
   # storage — dbagent, long-running: `emb run storage:…` execs here. It owns
   # the seeds (software/storage/data), the datasets the database is put into.
   #

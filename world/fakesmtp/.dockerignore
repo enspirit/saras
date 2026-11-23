@@ -1,0 +1,5 @@
+# The image holds the server and nothing else.
+node_modules
+Embfile.yml
+README.md
+.dockerignore

@@ -39,8 +39,8 @@ test('a stack changes only variables that env/base.env describes', () => {
   assert.deepEqual([...namesOf('env/devel.env'), ...namesOf('env/test.env')].filter((name) => !(name in described)), []);
 });
 
-/** What the development stack says of itself when `.env` does not: its secret, and where it publishes the server. */
-const ITS_OWN = ['APP_SECRET', 'BASE_URL'];
+/** What the development stack says of itself when `.env` does not: its secret, where it publishes the server, and its mail server. */
+const ITS_OWN = ['APP_SECRET', 'BASE_URL', 'SMTP_URL', 'MAIL_FROM'];
 
 test('what env/devel.env takes from the environment is, without it, the stack’s own or what env/base.env says', () => {
   assert.ok(takenFromTheEnvironment.some((taken) => taken.name === 'OPENROUTER_API_KEY'));

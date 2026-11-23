@@ -27,7 +27,7 @@ No other component of ours. Third parties, each reached through one place:
 | An identity provider: Google, Microsoft | `src/tooling/mail/oauth.ts` | Grants lasting access to a mailbox by sign-in. |
 | The LLM, through OpenRouter | `src/tooling/llm/openrouter.ts`, the only place where email content leaves the application | Honours `zdr` and `data_collection: deny`, or refuses the request. This is contractual: it cannot be verified from here. |
 | The DNS | `src/tooling/mail/lookup.ts` | Says who hosts the mail of a domain. |
-| An outgoing mail server of its own, optional (`SMTP_URL`) | `src/tooling/postman.ts` | Delivers the link of a lost password. |
+| An outgoing mail server of its own, optional (`SMTP_URL`) | `src/tooling/postman.ts` | Delivers the link of a lost password. In the stack, [`world/fakesmtp`](../../world/fakesmtp/). |
 
 ## Must not
 
