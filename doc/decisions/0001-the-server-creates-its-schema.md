@@ -18,9 +18,9 @@ The server creates its schema when it starts: `software/saras/src/tooling/db/sch
 ## Consequences
 
 - The schema only ever grows by statements that are safe to run on a database that already has them. A change that is not (renaming a column, moving data) has no place to live yet.
-- A black-box suite cannot reset the state through a seed endpoint: there is none. Until there is, the tests that need a known state start their own application, in `software/saras/test/integration/`.
+- A black-box suite cannot reset the state through a seed endpoint: there is none. `tests/webspicy` therefore specifies only what reads and what refuses; the tests that need a known state start their own application, in `software/saras/test/integration/`.
 - The server needs the right to create tables in production.
 
 ## What would reverse this
 
-The first change of schema that cannot be written as a statement safe to repeat; or a black-box suite (`tests/webspicy`) that needs to put the database in a named state. Either one is the moment to give the schema to `dbagent` for the server mode, and to decide then whether the embedded mode is created from the same files or let go.
+The first change of schema that cannot be written as a statement safe to repeat; or the day `tests/webspicy` is to specify an operation that succeeds in writing, and so needs to put the database in a named state. Either one is the moment to give the schema to `dbagent` for the server mode, and to decide then whether the embedded mode is created from the same files or let go.

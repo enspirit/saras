@@ -58,5 +58,15 @@ services:
       retries: 20
       start_period: 20s
 
+  # -------------------------------------------------------------------------
+  # webspicy — the black-box specification of the API. It sleeps, and the
+  # suite is `exec`ed into it. Not published to any registry.
+  # -------------------------------------------------------------------------
+  webspicy:
+    image: saras/webspicy:${DOCKER_TAG:-latest}
+    depends_on:
+      saras:
+        condition: service_healthy
+
 volumes:
   postgres-data:

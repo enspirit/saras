@@ -225,7 +225,7 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | | |
 | --- | --- |
 | [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it, and its [README](software/saras/README.md) says what it answers for and how it is built. |
-| [`tests/`](tests/) | What proves it, from outside. [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
+| [`tests/`](tests/) | What proves it, from outside. [`webspicy/`](tests/webspicy/) is the black-box specification of the API, run through the front door of the stack; [`harness/`](tests/harness/) checks the repository itself: links, and who may import whom. |
 | [`world/`](world/) | What it runs in. [`compose/`](world/compose/) is saras as an operator runs it with Docker: the application and a PostgreSQL server. |
 | [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), and the [decisions](doc/decisions/). |
 
@@ -238,6 +238,7 @@ emb run build           # bundle the browser code
 emb run test            # unit and integration tests, on a checkout
 emb up                  # saras and a PostgreSQL server in Docker, on http://localhost:3000, sources watched
 emb run test:postgres   # the integration tests on that PostgreSQL server
+emb run test:webspicy   # the API's contract, from a container of its own
 emb down
 ```
 
@@ -273,7 +274,7 @@ emb run test   # or, in software/saras: npm test
 
 The computations are tested as pure functions (`test/unit/`), and the operations over HTTP (`test/integration/`). The latter start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
 
-GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database; then, in the stack of `docker-compose.test.yml`, the integration tests once more against a PostgreSQL server, and the build of the image an operator runs.
+GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database; then, in the stack of `docker-compose.test.yml`, the integration tests once more against a PostgreSQL server, the black-box suite, and the build of the image an operator runs.
 
 ## Known limitations
 

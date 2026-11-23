@@ -1,0 +1,65 @@
+---
+name: |-
+  CreateOrganization
+
+url: |-
+  /api/auth/signup
+
+services:
+  - method: |-
+      POST
+
+    description: |-
+      A visitor signs up: their team gets its own space, and they administer
+      it. The clauses are those of CreateOrganization in doc/2-operations.md.
+
+    preconditions:
+      - Nobody has this address
+      - Sign-up is open - the operator allows it, or nobody has an account yet
+      - The address is one
+      - The password has ten characters or more
+      - ( ) The origin is not locked out
+
+    postconditions:
+      - ( ) An organisation exists, with this person as its administrator, signed in
+
+    errconditions:
+      - ( ) A refused sign-up leaves no organisation behind
+
+    input_schema: |-
+      SignUp
+    output_schema: |-
+      Admitted
+    error_schema: |-
+      Error
+
+    counterexamples:
+      - for: |-
+          The address is one
+        when: |-
+          what is given as an address is not one
+        it: |-
+          is refused as invalid, and says why in a code the interface translates
+        input:
+          email: not-an-address
+          password: a-long-enough-password
+        expected:
+          content_type: application/json
+          status: 400
+        assert:
+          - "pathFD('', code: 'auth.invalidEmail')"
+
+      - for: |-
+          The password has ten characters or more
+        when: |-
+          the password has nine characters
+        it: |-
+          is refused as invalid
+        input:
+          email: someone@webspicy.example
+          password: "123456789"
+        expected:
+          content_type: application/json
+          status: 400
+        assert:
+          - "pathFD('', code: 'auth.passwordTooShort')"

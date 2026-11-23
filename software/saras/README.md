@@ -51,6 +51,7 @@ emb run saras:test               # unit + integration, on a checkout
 emb run saras:test:unit          # the computations and the checks on the sources: no server started
 emb run saras:test:integration   # the operations over HTTP
 emb run test:postgres            # the integration tests on the stack's PostgreSQL server; needs `emb up`
+emb run test:webspicy            # its contract over HTTP, from outside; needs `emb up`
 ```
 
 Each task calls the npm script of the same name, so `npm test` in this directory is the same run.
@@ -66,7 +67,7 @@ Green means: `lint` clean, and every test passing on both databases.
 > **In flight:** nothing.
 
 - Every operation of the inventory exists. Where the code does not do what the documents say is listed there, under Deviations.
-- The operations have no black-box specification yet: the tests of `test/integration/` play that part, inside this component. A `tests/webspicy` suite through the front door is next.
+- The black-box specification of the operations has begun in [`tests/webspicy`](../../tests/webspicy/), with what reads and what refuses. For everything else the tests of `test/integration/` still play that part, inside this component.
 - The image is not published to a registry: an operator builds it from a checkout ([`world/compose`](../../world/compose/)).
 - The pure functions live in `src/domain/computations/` and `shared/`, inside this component, not in a library of their own.
 

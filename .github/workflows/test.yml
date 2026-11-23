@@ -53,6 +53,8 @@ jobs:
       - run: emb ps
       # The operations over HTTP once more, against a PostgreSQL server, as in production.
       - run: emb run test:postgres
+      # The API's contract, through the front door, from a container of its own.
+      - run: emb run test:webspicy
       # The image an operator builds: nothing else in CI builds that target.
       - run: emb resources build --flavor production --publishable
       - if: always()

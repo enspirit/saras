@@ -1,0 +1,54 @@
+@import webspicy/scalars
+
+# The data the API exchanges, as a client sees it. A deliberate restatement of
+# the server's types in the client's type system: every response is dressed
+# through it, so a divergence is a finding.
+
+# Dresses to itself. Values typed `Any` arrive with *string* keys.
+Any = .
+
+# A closed union rather than one record with every key optional: a body
+# carrying two answers then fails to dress, instead of saying nothing.
+Error = Error.Refusal|Error.Plain
+
+/- What saras says when it refuses: a sentence in English, and the code and
+   parameters the interface translates it from. -/
+Error.Refusal = {
+  error  : String
+  code   : String
+  params : Any
+}
+
+/- A request refused before saras read it (a body that is not JSON): the
+   framework's own sentence, without a code. -/
+Error.Plain = {
+  error : String
+}
+
+/- What anyone is told before signing in. -/
+WhatVisitorsAreTold = {
+  /- Whether a visitor may create an organisation. -/
+  allowSignup          : Boolean
+  /- Whether a lost password is replaced by a link sent by email; an administrator gives the link otherwise. -/
+  passwordResetByEmail : Boolean
+  /- No account exists yet: the next one created administers the installation. -/
+  firstAccount         : Boolean
+  /- After how many days the content of an email is erased; 0 for never. -/
+  retentionDays        : Integer
+}
+
+/- A new member's account, as a visitor asks for it. -/
+SignUp = {
+  email        :  String
+  password     :  String
+  organization :? String
+  name         :? String
+  language     :? String
+}
+
+/- Signed in, or one step short of it: a second factor is asked for. -/
+Admitted = {
+  ok             :  Boolean
+  secondFactor   :? Any
+  recoveryCodes  :? [String]
+}

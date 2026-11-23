@@ -1,0 +1,39 @@
+---
+name: |-
+  What visitors are told
+
+url: |-
+  /api/public
+
+services:
+  - method: |-
+      GET
+
+    description: |-
+      Tells anyone, signed in or not, what the sign-in pages need to know of
+      this installation: whether an organisation may be created, how a lost
+      password is replaced, and how long the content of emails is kept.
+
+    postconditions:
+      - Nothing is changed
+      - Nothing of any organisation is told
+
+    input_schema: |-
+      {}
+    output_schema: |-
+      WhatVisitorsAreTold
+    error_schema: |-
+      Error
+
+    examples:
+      - when: |-
+          asked by a visitor
+        it: |-
+          tells the installation's policies
+        input: {}
+        expected:
+          content_type: application/json
+          status: 200
+        assert:
+          - exists('allowSignup')
+          - exists('retentionDays')
