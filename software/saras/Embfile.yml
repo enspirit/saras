@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: saras — the server, and the interface it serves
+
+# Every task runs on the host, in this directory, and calls the npm script of
+# the same name: package.json holds the one list of commands.
+tasks:
+  setup:
+    description: Install the dependencies, as the lock file states them
+    executors:
+      - local
+    script: npm ci
+
+  lint:
+    description: Type-check the server and the browser code
+    executors:
+      - local
+    script: npm run typecheck
+
+  build:
+    description: Bundle what the browser loads into public/js/
+    executors:
+      - local
+    script: npm run build
+
+  test:
+    description: Unit and integration tests. TEST_DATABASE_URL runs them on a PostgreSQL server
+    executors:
+      - local
+    script: npm test
+
+  test:unit:
+    description: The computations, and the checks on the sources — no server started
+    executors:
+      - local
+    script: npm run test:unit
+
+  test:integration:
+    description: The operations over HTTP, against local mail servers and a stand-in for the LLM
+    executors:
+      - local
+    script: npm run test:integration
+
+  start:
+    description: Run the server on this machine, on the embedded database unless DATABASE_URL is set
+    executors:
+      - local
+    script: npm start
+
+  demo:
+    description: saras with a mailbox of sample emails, nothing kept when it stops
+    executors:
+      - local
+    script: npm run demo

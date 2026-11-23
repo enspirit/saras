@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: saras as an operator runs it — the application and a PostgreSQL server
+
+tasks:
+  lint:
+    description: The deployment's compose file is one docker compose accepts
+    executors:
+      - local
+    # Without an operator's .env: the one variable the file requires is given
+    # here, and the file it reads is not asked for.
+    script: | # shell
+      POSTGRES_PASSWORD=lint docker compose --env-file /dev/null -f docker-compose.yml config --quiet --no-env-resolution

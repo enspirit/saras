@@ -3,6 +3,6 @@ data/
 .env
 *.log
 # Browser code compiled from web/ by `npm run build`
-public/js/
+software/saras/public/js/
 # What emb remembers of its builds, and its logs
 .emb/
