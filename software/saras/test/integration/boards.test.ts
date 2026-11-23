@@ -22,8 +22,7 @@ test('a filter is kept reduced to the attributes we know, and to the conditions 
 
 test('a board needs a name; only administrators share one; its owner manages it, administrators when it is shared', () => {
   assert.equal(outcome(boardGiven({ name: ' ' })), 'invalid: boards.nameRequired');
-  assert.deepEqual(boardGiven({ name: ' Quotes ', filter: { attributes: { status: ['todo'] } } }), { ok: true, value: { name: 'Quotes', shared: false, filter: { attributes: { status: ['todo'] } }, promptId: null } });
-  assert.deepEqual([boardGiven({ name: 'x', promptId: '12' }), boardGiven({ name: 'x', promptId: 'none' })].map((v) => v.ok && v.value.promptId), [12, null]);
+  assert.deepEqual(boardGiven({ name: ' Quotes ', filter: { attributes: { status: ['todo'] } } }), { ok: true, value: { name: 'Quotes', shared: false, filter: { attributes: { status: ['todo'] } } } });
   assert.equal(outcome(mayShare(actorWith(1, 'user'), true)), 'forbidden: boards.sharedByAdministrators');
   assert.deepEqual([outcome(mayShare(actorWith(1, 'user'), false)), outcome(mayShare(actorWith(1, 'admin'), true))], ['ok', 'ok']);
   assert.equal(managesBoard(actorWith(7, 'user'), { shared: false, user_id: 7 }), true);
