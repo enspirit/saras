@@ -74,6 +74,8 @@ docker run -d --name saras -p 127.0.0.1:3000:3000 --env-file .env -v saras-data:
 
 To build it yourself, from the root of a checkout: `docker build --target saras-production -t saras software/saras`.
 
+Or on Kubernetes, with the Helm chart of [`world/chart`](world/chart/), whose README gives the commands.
+
 Open http://localhost:3000 and create your organisation: you become its administrator, then sign-up closes. Connect a mailbox in **Mailboxes** and invite your colleagues from **Users**.
 
 For real use:

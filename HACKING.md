@@ -12,6 +12,7 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | [`software/storage/`](software/storage/) | The seeds: the datasets the stack's database is put into, loaded by `dbagent`. |
 | [`world/mailbox/`](world/mailbox/) | A member's mailbox, as the stack meets it: sample emails, and replies that go nowhere. |
 | [`world/fakesmtp/`](world/fakesmtp/) | The outgoing mail server of the stack: it delivers nothing, and shows what it was given. |
+| [`world/chart/`](world/chart/) | The Helm chart: saras on Kubernetes, for an operator. Nothing of the stack. |
 | [`tests/webspicy/`](tests/webspicy/) | The black-box specification of the API, run through the front door of the stack. |
 | [`tests/harness/`](tests/harness/) | The checks on the repository itself: links, and who may import whom. |
 | [`doc/`](doc/) | The [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), the [decisions](doc/decisions/). |
@@ -25,7 +26,7 @@ Every build and every suite is a task of [`emb`](https://github.com/enspirit/emb
 
 ```sh
 emb run setup           # install the dependencies
-emb run lint            # type-check, links, import boundaries
+emb run lint            # type-check, links, import boundaries, the chart
 emb run build           # bundle the browser code
 emb run test            # unit and integration tests: needs a checkout, not a stack
 
@@ -36,7 +37,7 @@ emb run test:webspicy   # the API's contract, from a container of its own
 emb down
 ```
 
-In `software/saras`, each task is the npm script of the same name (`npm test`, `npm run dev`…).
+In `software/saras`, each task is the npm script of the same name (`npm test`, `npm run dev`…). `lint` and `test` also hold the Helm chart, and need [`helm`](https://helm.sh/docs/intro/install/) on the machine for it; no cluster.
 
 ## The stack
 
@@ -73,6 +74,7 @@ A seed is not written by hand: `emb run storage:demo.rebuild` sets the organisat
 | integration | The operations over HTTP, in an application each test starts itself, against a real local IMAP server, a real local SMTP server and a stand-in for OpenRouter that records what it is sent | `software/saras/test/integration/` | `emb run test`; `emb run test:postgres` on a PostgreSQL server |
 | api | An operation as a client sees it, black box | `tests/webspicy/formaldoc/` | `emb run test:webspicy` |
 | repository | Links, import boundaries | `tests/harness/` | `emb run lint` |
+| chart | What the Helm chart renders and refuses, and that it knows every variable of `env/base.env` | `world/chart/` | `emb run lint`, `emb run test` |
 
 Green means `emb run lint` clean and `emb run test` passing; and, for what touches the stack, the suites that need it. GitHub Actions runs all of it on every push, without any secret (`.github/workflows/test.yml`). Once it is green on `main` or on a version tag, a last job publishes the image with `emb run publish`: the only one that reads a secret, the Docker Hub login ([decision 0006](doc/decisions/0006-the-image-is-published-on-docker-hub.md)).
 

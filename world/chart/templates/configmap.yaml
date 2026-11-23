@@ -1,0 +1,12 @@
+{{- if .Values.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "saras.fullname" . }}
+  labels:
+    {{- include "saras.labels" . | nindent 4 }}
+data:
+  {{- range $name, $value := .Values.config }}
+  {{ $name }}: {{ toString $value | quote }}
+  {{- end }}
+{{- end }}
