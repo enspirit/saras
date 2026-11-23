@@ -9,7 +9,8 @@
   font-weight: var(--weight-regular);
 }
 .value-editor:focus-within { border-color: var(--color-accent); }
-.value-editor > span { min-height: var(--control-sm); padding: 0 var(--space-1) 0 var(--space-2); font-size: var(--text-sm); }
+.value-editor__item { position: relative; display: inline-flex; }
+.value-editor__item > span { min-height: var(--control-sm); padding: 0 var(--space-1) 0 var(--space-2); font-size: var(--text-sm); }
 .value-editor__dot {
   flex: none;
   width: var(--space-3); height: var(--space-3);
@@ -29,3 +30,23 @@
 }
 .value-editor__remove:hover { background: color-mix(in srgb, var(--value) 18%, transparent); }
 .value-editor__input { flex: 1; min-width: 140px; min-height: var(--control-sm); border: 0; outline: 0; background: transparent; color: var(--color-text); font: inherit; }
+
+/* The colours a value can take, opened from its dot. */
+.value-editor__palette {
+  position: absolute; top: calc(100% + var(--space-1)); left: 0; z-index: var(--z-overlay);
+  display: flex; gap: var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-2);
+}
+.value-editor__swatch {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--control-sm); height: var(--control-sm);
+  padding: 0;
+  border: 0; border-radius: var(--radius-pill);
+  background: var(--value); color: var(--color-surface);
+  cursor: pointer;
+}
+.value-editor__swatch:hover, .value-editor__swatch[aria-pressed="true"] { box-shadow: 0 0 0 var(--focus-width) var(--color-surface), 0 0 0 calc(var(--focus-width) * 2) var(--value); }

@@ -179,7 +179,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 
 - Header rules catch: no-reply and notification addresses, mailing lists, automatic replies, bulk mail, my own messages, and (over IMAP) what I already answered in my mail client.
 - These emails go to **No reply needed** with the rule's reason, and never reach an LLM.
-- An organisation can turn the rules off (US-63).
+- An organisation can turn the rule off, or change it: it is the rule of the attribute **Stands in** (US-94).
 
 ### US-21 — No triage by default
 **As** a member, **I want** every remaining email of the folder I watch to be "to handle" unless I say otherwise, **so that** no content leaves the server until I ask for a draft.
@@ -369,7 +369,7 @@ How the screens are designed and built is in [`design/`](design/README.md).
 
 - The page explains the two steps and asks one choice for each. **1. Sorting** — when emails are fetched, which need a reply: nobody sorts (every email of the watched folder is to handle), or the AI sorts. **2. Writing** — when the AI writes a proposal for an email to handle: when a member asks; at fetch, to review in saras; at fetch, also filed in the mailbox's Drafts folder (the email then moves to **Replied** as a draft).
 - Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
-- The two choices are independent, and are also in **Settings → Organisation**.
+- The two choices are independent. Afterwards, writing is changed in **Settings → Organisation**; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
 - At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
 - A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at sorting or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
@@ -511,7 +511,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** an administrator, **I want** to define the attributes we organise ourselves by (a topic, an assignee, urgent or not), **so that** boards can show our mail the way we work.
 
 - **Configuration → Attributes** lists the organisation's attributes. Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
-- A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, changed by a click on its dot; the values of the pre-configured attributes have theirs. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
+- A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot; the values of the pre-configured attributes have theirs. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
 - Above the list, three steps say how an email gets a value: its rule, then the AI, then a member by hand.
 - Each attribute says who decides it when an email is sorted: nobody (set by hand), a rule, the AI, or the rule then the AI where the rule says nothing. The AI decides only the two pre-configured attributes for now.
 

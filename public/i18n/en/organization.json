@@ -2,7 +2,6 @@
   "title": "Organisation",
   "intro": "These settings apply to every member and every mailbox of the organisation.",
   "name": "Name",
-  "skipAutomated": "Set plainly automated mail aside first (newsletters, notifications)",
   "model": "Default model",
   "modelPlaceholder": "Server default",
   "modelHint": "Used by members who have not chosen their own. Leave empty for the server's.",
@@ -16,8 +15,7 @@
   "delete": "Delete the organisation",
   "confirmDelete": "Delete {organization} and everything saras holds for it, for all its members? This cannot be undone.",
   "deleted": "The organisation was deleted.",
-  "sorting": "Sorting: which emails need a reply",
   "writing": "Writing: when the AI writes a proposal",
-  "sortingHint": "Sorting by the AI costs one request per 20 emails fetched, and sends it their sender, subject, beginning of text and attachment names.",
-  "writingHint": "Writing at fetch sends the AI the content of each email to handle, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation."
+  "writingHint": "Writing at fetch sends the AI the content of each email to handle, at most ten per fetch and mailbox. Nothing is ever sent to the correspondent without a member’s confirmation.",
+  "sortingMoved": "Sorting — which emails need a reply — is decided on the <link>Stands in</link> attribute: by its rule, by the AI, or by both."
 }

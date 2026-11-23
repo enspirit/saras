@@ -2,7 +2,6 @@
   "title": "Organisation",
   "intro": "Ces réglages s’appliquent à tous les membres et à toutes les boîtes de l’organisation.",
   "name": "Nom",
-  "skipAutomated": "Écarter d’abord le courrier manifestement automatique (newsletters, notifications)",
   "model": "Modèle par défaut",
   "modelPlaceholder": "Modèle du serveur",
   "modelHint": "Utilisé par les membres qui n’ont pas choisi le leur. Laisser vide pour celui du serveur.",
@@ -16,8 +15,7 @@
   "delete": "Supprimer l’organisation",
   "confirmDelete": "Supprimer {organization} et tout ce que saras détient pour elle, pour tous ses membres ? Cette action est définitive.",
   "deleted": "L’organisation a été supprimée.",
-  "sorting": "Tri : quels emails appellent une réponse",
   "writing": "Rédaction : quand l’IA rédige une proposition",
-  "sortingHint": "Le tri par l’IA coûte une requête par 20 emails relevés, et lui transmet leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes.",
-  "writingHint": "La rédaction au relevé envoie à l’IA le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre."
+  "writingHint": "La rédaction au relevé envoie à l’IA le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre.",
+  "sortingMoved": "Le tri — quels emails demandent une réponse — se décide sur l’attribut <link>Se trouve dans</link> : par sa règle, par l’IA, ou par les deux."
 }

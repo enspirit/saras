@@ -7,7 +7,7 @@
   "formIntro": "Un attribut a quelques valeurs. Lorsqu’un email est relevé, une règle peut lui en donner une ; les membres peuvent toujours la fixer à la main.",
   "name": "Nom",
   "values": "Valeurs",
-  "valuesHint": "Tapez une valeur puis Entrée. Cliquez sur sa pastille pour lui donner une couleur. Un attribut « membre » prend les membres de l’organisation.",
+  "valuesHint": "Tapez une valeur puis Entrée. Cliquez sur sa pastille pour choisir sa couleur. Un attribut « membre » prend les membres de l’organisation.",
   "kind": "Type",
   "kindChoice": "Un choix parmi des valeurs",
   "kindMember": "Un membre de l’organisation",
@@ -64,6 +64,16 @@
   "hintEloAi": "L’IA seulement là où la règle ne dit rien.",
   "hintNotYet": "Pas encore pour un attribut que vous avez créé : l’IA ne décide que les deux préconfigurés.",
   "addValue": "Ajouter une valeur…",
-  "colorOf": "Couleur de « {label} » : cliquez pour la changer",
-  "removeValue": "Retirer « {label} »"
+  "colorOf": "Couleur de « {label} »",
+  "removeValue": "Retirer « {label} »",
+  "hintAiSorting": "Une requête par 20 emails relevés ; l’IA reçoit leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes.",
+  "color": {
+    "grey": "Gris",
+    "red": "Rouge",
+    "orange": "Orange",
+    "yellow": "Jaune",
+    "green": "Vert",
+    "blue": "Bleu",
+    "purple": "Violet"
+  }
 }

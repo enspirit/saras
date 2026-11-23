@@ -1,8 +1,8 @@
 // Making an attribute, or changing one: what it is, its values and their colours, and how it is
 // decided when an email is sorted — by hand, by a rule written in Elo, by the AI.
 
-import { ATTRIBUTE_KINDS, DECIDERS, VALUE_COLORS } from '../../shared/attribute.ts';
-import type { Attribute, AttributeGiven, AttributeKind, Decider } from '../../shared/attribute.ts';
+import { ATTRIBUTE_KINDS, DECIDERS, STATUS, VALUE_COLORS } from '../../shared/attribute.ts';
+import type { Attribute, AttributeGiven, AttributeKind, Decider, ValueColor } from '../../shared/attribute.ts';
 import { createAttribute, deleteAttribute, editAttribute, readAttributes, sortAgainByRule } from '../api/attributes.ts';
 import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard, SubmitForm, toast } from './actions.ts';
@@ -29,6 +29,8 @@ import { Columns, Page } from '../ui/organisms/page.ts';
 const KIND_LABEL: Record<AttributeKind, string> = { choice: 'attributes.kindChoice', member: 'attributes.kindMember' };
 const DECIDER_HINT: Record<Decider, string> = { nobody: 'attributes.hintNobody', elo: 'attributes.hintElo', ai: 'attributes.hintAi', eloAi: 'attributes.hintEloAi' };
 
+const COLOR_NAME: Record<ValueColor, string> = { grey: 'attributes.color.grey', red: 'attributes.color.red', orange: 'attributes.color.orange', yellow: 'attributes.color.yellow', green: 'attributes.color.green', blue: 'attributes.color.blue', purple: 'attributes.color.purple' };
+
 interface AttributeFields {
   name: HTMLInputElement;
   kind: HTMLSelectElement;
@@ -43,6 +45,7 @@ const valuesField = (attribute: Attribute | null): ValueEditorHandle => ValueEdi
   fixed: attribute?.system,
   placeholder: t('attributes.addValue'),
   colorLabel: (label) => t('attributes.colorOf', { label }),
+  colorName: (color) => t(COLOR_NAME[color]),
   removeLabel: (label) => t('attributes.removeValue', { label }),
 });
 
@@ -53,7 +56,9 @@ const decidedByField = (attribute: Attribute | null): ChoicesHandle => Choices({
   value: attribute?.decidedBy ?? 'nobody',
   options: DECIDERS.map((decider) => {
     const notYet = !attribute?.system && (decider === 'ai' || decider === 'eloAi');
-    return { value: decider, title: t(DECIDER_LABEL[decider]), hint: t(notYet ? 'attributes.hintNotYet' : DECIDER_HINT[decider]), disabled: notYet };
+    // Where an email stands is the one thing the AI is asked at sorting: what that costs and sends is said there.
+    const hint = notYet ? 'attributes.hintNotYet' : decider === 'ai' && attribute?.key === STATUS ? 'attributes.hintAiSorting' : DECIDER_HINT[decider];
+    return { value: decider, title: t(DECIDER_LABEL[decider]), hint: t(hint), disabled: notYet };
   }),
 });
 

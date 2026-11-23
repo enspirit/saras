@@ -1,7 +1,7 @@
 import { Icon } from '../atoms/icon.ts';
-import { ValueChip } from '../atoms/value-chip.ts';
+import { ValueChip, toneClass } from '../atoms/value-chip.ts';
 import type { Tone } from '../atoms/value-chip.ts';
-import { h } from '../dom.ts';
+import { cx, h } from '../dom.ts';
 
 export interface EditedValue {
   label: string;
@@ -16,30 +16,55 @@ export interface ValueEditorHandle {
 
 export interface ValueEditorOptions {
   values: EditedValue[];
-  /** The colours a value can take, in the order a click goes through them. */
+  /** The colours a value can take, in the order they are offered. */
   colors: readonly Tone[];
   /** Shown as they are, with nothing to change. */
   fixed?: boolean;
   placeholder: string;
-  /** The accessible names of the two buttons of a value. */
+  /** The accessible names: of the button that opens the colours of a value, of each colour, of the button that removes a value. */
   colorLabel: (label: string) => string;
+  colorName: (color: Tone) => string;
   removeLabel: (label: string) => string;
 }
 
 type Change = () => void;
 
-/** One value: its dot, which changes its colour, its label, and the way to remove it. */
-function EditedChip(value: EditedValue, { colors, colorLabel, removeLabel }: ValueEditorOptions, values: EditedValue[], changed: Change): HTMLSpanElement {
-  const recolour = (): void => {
-    value.color = colors[(colors.indexOf(value.color) + 1) % colors.length] ?? value.color;
-    changed();
+/** The colours to choose from, the one the value has marked. */
+const Palette = (value: EditedValue, { colors, colorLabel, colorName }: ValueEditorOptions, pick: (color: Tone) => void): HTMLDivElement =>
+  h('div', { class: 'value-editor__palette', role: 'dialog', 'aria-label': colorLabel(value.label) }, colors.map((color) =>
+    h('button', { class: cx('value-editor__swatch', toneClass(color)), type: 'button', 'aria-label': colorName(color), title: colorName(color), 'aria-pressed': String(color === value.color), onclick: () => pick(color) },
+      color === value.color && Icon('check', { size: 'small' }))));
+
+/** Opens the colours under the dot of a value, and closes them on a choice, a click elsewhere or Escape. */
+function choosing(item: HTMLElement, dot: HTMLButtonElement, value: EditedValue, options: ValueEditorOptions, changed: Change): () => void {
+  let palette: HTMLElement | null = null;
+  const outside = (event: Event): void => void (!item.contains(event.target as Node) && close());
+  const escape = (event: KeyboardEvent): void => void (event.key === 'Escape' && (close(), dot.focus()));
+  function close(): void {
+    palette?.remove();
+    palette = null;
+    dot.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', outside);
+    document.removeEventListener('keydown', escape);
+  }
+  return () => {
+    if (palette) return close();
+    palette = item.appendChild(Palette(value, options, (color) => (close(), (value.color = color), changed())));
+    dot.setAttribute('aria-expanded', 'true');
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
   };
+}
+
+/** One value: its dot, which opens its colours, its label, and the way to remove it. */
+function EditedChip(value: EditedValue, options: ValueEditorOptions, values: EditedValue[], changed: Change): HTMLSpanElement {
+  const { colorLabel, removeLabel } = options;
+  const dot = h('button', { class: 'value-editor__dot', type: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-label': colorLabel(value.label), title: colorLabel(value.label) });
   const remove = (): void => void (values.splice(values.indexOf(value), 1), changed());
-  return ValueChip([
-    h('button', { class: 'value-editor__dot', type: 'button', 'aria-label': colorLabel(value.label), title: colorLabel(value.label), onclick: recolour }),
-    value.label,
-    h('button', { class: 'value-editor__remove', type: 'button', 'aria-label': removeLabel(value.label), title: removeLabel(value.label), onclick: remove }, Icon('x', { size: 'small' })),
-  ], { color: value.color, plain: true });
+  const chip = ValueChip([dot, value.label, h('button', { class: 'value-editor__remove', type: 'button', 'aria-label': removeLabel(value.label), title: removeLabel(value.label), onclick: remove }, Icon('x', { size: 'small' }))], { color: value.color, plain: true });
+  const item = h('span', { class: 'value-editor__item' }, chip);
+  dot.addEventListener('click', choosing(item, dot, value, options, changed));
+  return item;
 }
 
 /** Takes what is typed as one more value, unless it is empty or already there. */
@@ -62,7 +87,7 @@ function AddInput(placeholder: string, values: EditedValue[], changed: Change): 
   return input;
 }
 
-/** The values of a choice: typed one by one, each with a colour, in the order they are given. */
+/** The values of a choice: typed one by one, each with a colour chosen among a few, in the order they are given. */
 export function ValueEditor(options: ValueEditorOptions): ValueEditorHandle {
   const values = options.values.map((value) => ({ ...value }));
   const element = h('div', { class: 'value-editor' });

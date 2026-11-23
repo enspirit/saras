@@ -7,7 +7,7 @@
   "formIntro": "An attribute has a few values. When an email is fetched, a rule can give it one; members can always set it by hand.",
   "name": "Name",
   "values": "Values",
-  "valuesHint": "Type a value and press Enter. Click its dot to give it a colour. A “member” attribute takes the members of the organisation.",
+  "valuesHint": "Type a value and press Enter. Click its dot to choose its colour. A “member” attribute takes the members of the organisation.",
   "kind": "Kind",
   "kindChoice": "A choice among values",
   "kindMember": "A member of the organisation",
@@ -64,6 +64,16 @@
   "hintEloAi": "The AI only where the rule says nothing.",
   "hintNotYet": "Not yet for an attribute you made: the AI decides only the two pre-configured ones.",
   "addValue": "Add a value…",
-  "colorOf": "Colour of “{label}”: click to change it",
-  "removeValue": "Remove “{label}”"
+  "colorOf": "Colour of “{label}”",
+  "removeValue": "Remove “{label}”",
+  "hintAiSorting": "One request per 20 emails fetched; the AI is sent their sender, subject, beginning of text and attachment names.",
+  "color": {
+    "grey": "Grey",
+    "red": "Red",
+    "orange": "Orange",
+    "yellow": "Yellow",
+    "green": "Green",
+    "blue": "Blue",
+    "purple": "Purple"
+  }
 }
