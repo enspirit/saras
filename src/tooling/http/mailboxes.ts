@@ -15,7 +15,7 @@ import type { MessageCode } from '../messages.ts';
 import { actorOf, done } from './route.ts';
 import type { Handle, Route } from './route.ts';
 
-const list: Handle = async ({ world }, req, res) => void res.json(await mailboxesOf(world.db, actorOf(req)));
+const list: Handle = async ({ world }, req, res) => void res.json(await mailboxesOf(world.db, actorOf(req), world.config));
 
 const connectByServers: Handle = async ({ world }, req, res) => void res.status(201).json({ id: (await connectMailboxByServers(world, actorOf(req), req.body)).id });
 
@@ -25,7 +25,7 @@ const mailHost: Handle = async (_http, req, res) => void res.json(await lookupMa
 const folders: Handle = async ({ world }, req, res) => void res.json(await listFolders(world, actorOf(req), req.params.id));
 
 const watchFolder: Handle = async ({ world }, req, res) => {
-  const folder = await chooseWatchedFolder(world, actorOf(req), req.params.id, req.body.folder);
+  const folder = await chooseWatchedFolder(world, actorOf(req), req.params.id, req.body);
   res.json({ ok: true, folder: folder.id, folderName: folder.name });
 };
 

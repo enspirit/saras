@@ -33,9 +33,9 @@ async function listFolders(api: Api): Promise<MailFolder[]> {
 
 const SELECTED = 'id,internetMessageId,conversationId,subject,from,replyTo,toRecipients,ccRecipients,receivedDateTime,body,internetMessageHeaders';
 
-async function listNew(api: Api, { folder, since, limit, known }: ListQuery): Promise<IncomingEmail[]> {
+async function listNew(api: Api, { folder, since, unreadOnly, limit, known }: ListQuery): Promise<IncomingEmail[]> {
   const params = new URLSearchParams({
-    $filter: `receivedDateTime ge ${since.toISOString()}`,
+    $filter: `receivedDateTime ge ${since.toISOString()}${unreadOnly ? ' and isRead eq false' : ''}`,
     $orderby: 'receivedDateTime desc',
     $top: String(limit),
     $select: SELECTED,

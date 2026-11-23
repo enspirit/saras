@@ -1,4 +1,5 @@
 // Pure decisions about mailboxes.
+import { FETCH_DAYS } from '../../../shared/mailbox.ts';
 import { isEmailAddress } from '../../tooling/text.ts';
 import type { AccountRow, ImapCredentials, MailFolder, ServerCredentials } from '../model/mailbox.ts';
 import { accept, refuse } from '../refusal.ts';
@@ -80,6 +81,13 @@ export function folderAmong<F extends Pick<MailFolder, 'id'>>(folders: F[], want
   const folder = folders.find((f) => f.id === wanted);
   return folder ? accept(folder) : refuse('invalid', 'mailboxes.unknownFolder');
 }
+
+/** How many days back a mailbox is fetched: what was chosen for it, else what the server is set up for; never further than what the server keeps. */
+export const daysFetched = (chosen: number | null, { syncDays, retentionDays }: { syncDays: number; retentionDays: number }): number => Math.min(chosen ?? syncDays, retentionDays);
+
+/** What is fetched, as it was given: a number of days among those offered, else left to the server; unread only when said so. */
+export const whatIsFetchedGiven = (given: { days?: unknown; unreadOnly?: unknown }): { days: number | null; unreadOnly: boolean } =>
+  ({ days: FETCH_DAYS.find((days) => days === Number(given.days)) ?? null, unreadOnly: given.unreadOnly === true });
 
 /** What we remember, on our side, of a sign-in under way at a mail host: to connect a mailbox, or to renew one. */
 export interface HostSignIn {

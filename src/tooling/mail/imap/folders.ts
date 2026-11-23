@@ -17,9 +17,9 @@ export const listFolders = (cfg: ImapCredentials): Promise<MailFolder[]> =>
   });
 
 /** The messages of a folder received since a date that we do not know yet: the most recent ones, up to the limit. */
-export const listNew = (cfg: ImapCredentials, { folder, since, limit, known }: ListQuery): Promise<IncomingEmail[]> =>
+export const listNew = (cfg: ImapCredentials, { folder, since, unreadOnly, limit, known }: ListQuery): Promise<IncomingEmail[]> =>
   withFolder(cfg, folder, async (client, validity) => {
-    const uids = (await client.search({ since }, { uid: true })) || [];
+    const uids = (await client.search(unreadOnly ? { since, seen: false } : { since }, { uid: true })) || [];
     const fresh = uids.filter((uid) => !known.has(`${validity}:${uid}`)).slice(-limit);
     if (!fresh.length) return [];
     const out: IncomingEmail[] = [];

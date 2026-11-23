@@ -26,7 +26,7 @@
   "connect": "Test and connect",
   "connecting": "Testing the connection…",
   "connected": "Mailbox connected. Now choose the folder to watch.",
-  "chooseFolder": "These are the folders of your own mailbox, as your mail provider lists them. Only the emails of the one you choose are fetched.",
+  "chooseFolder": "These are the folders of your own mailbox, as your mail provider lists them. Only the emails of the one you choose are fetched, as far back as you say below.",
   "loadingFolders": "Loading the folders…",
   "useFolder": "Watch this folder",
   "changeFolder": "Change folder",
@@ -74,5 +74,9 @@
     "searching": "Looking for the mail servers of {domain}…",
     "found": "Found for {domain}. Change them if your mail provider says otherwise.",
     "notFound": "We could not find the mail servers of {domain}, and would rather not guess. Your mail provider’s help lists them, as its IMAP and SMTP settings."
-  }
+  },
+  "fetchBack": "Fetch the emails received in",
+  "fetchDays": "{days, plural, one {the last day} other {the last # days}}",
+  "fetchBackHint": "Read or not, unless you tick the box below. A fetch brings in the most recent first, a limited number at a time; what is already here stays.",
+  "unreadOnly": "Only the emails I have not read yet in my mailbox"
 }

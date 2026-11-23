@@ -35,9 +35,9 @@ async function listFolders(api: Api): Promise<MailFolder[]> {
     .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
 }
 
-async function listNew(api: Api, { folder, since, limit, known }: ListQuery): Promise<IncomingEmail[]> {
+async function listNew(api: Api, { folder, since, unreadOnly, limit, known }: ListQuery): Promise<IncomingEmail[]> {
   const after = Math.floor(since.getTime() / 1000);
-  const q = encodeURIComponent(`after:${after} -from:me`);
+  const q = encodeURIComponent(`after:${after} -from:me${unreadOnly ? ' is:unread' : ''}`);
   const list = await api<{ messages?: { id: string }[] }>(`/messages?labelIds=${encodeURIComponent(folder)}&q=${q}&maxResults=${limit}`);
   const fresh = (list.messages || []).filter((m) => !known.has(m.id));
   const out: IncomingEmail[] = [];

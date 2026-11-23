@@ -5,7 +5,7 @@ import { SMTPServer } from 'smtp-server';
 import type { SMTPServerDataStream, SMTPServerSession } from 'smtp-server';
 import { listen } from './listen.ts';
 
-export type Messages = { raw: string }[];
+export type Messages = { raw: string; flags?: string[]; internaldate?: Date }[];
 
 /** A message accepted by the SMTP test server. */
 export interface SentMail {

@@ -22,6 +22,10 @@ export interface AccountRow {
   /** The one folder watched, by its provider id. Null until the user has chosen it. */
   folder: string | null;
   folder_name: string;
+  /** How many days back it is fetched; null for what the server is set up for. */
+  fetch_days: number | null;
+  /** Only what is unread in the mailbox is fetched. */
+  unread_only: boolean;
   last_sync_at: Date | null;
   last_error: string | null;
   created_at: Date;
@@ -55,6 +59,8 @@ export interface ListQuery {
   /** Provider id of the folder to read. */
   folder: string;
   since: Date;
+  /** Only the messages not yet read in the mailbox. */
+  unreadOnly: boolean;
   limit: number;
   /** Provider ids already stored, not to be fetched again. */
   known: Set<string>;

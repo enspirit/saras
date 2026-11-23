@@ -17,6 +17,9 @@ export interface Mailbox {
   /** The watched folder; null until it has been chosen. */
   folder: string | null;
   folderName: string;
+  /** What is fetched from that folder: how many days back, and whether only what is unread. */
+  fetchDays: number;
+  unreadOnly: boolean;
   lastSyncAt: string | null;
   lastError: Problem | null;
   /** Emails of this mailbox that are to handle. */
@@ -47,4 +50,14 @@ export interface FetchResult {
   fetched: number;
   triaged: number;
   error: Problem | null;
+}
+
+/** How far back a mailbox can be fetched, in days. Never further than what the server keeps. */
+export const FETCH_DAYS = [1, 7, 14, 30] as const;
+
+/** What is fetched from the watched folder of a mailbox. */
+export interface WhatIsFetched {
+  days: number;
+  /** Only the emails not yet read in the mailbox; otherwise all of them, read or not. */
+  unreadOnly: boolean;
 }

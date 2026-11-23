@@ -26,7 +26,7 @@
   "connect": "Tester et connecter",
   "connecting": "Test de connexion…",
   "connected": "Boîte connectée. Choisissez maintenant le dossier à surveiller.",
-  "chooseFolder": "Voici les dossiers de votre propre boîte, tels que votre fournisseur les liste. Seuls les emails de celui que vous choisissez sont relevés.",
+  "chooseFolder": "Voici les dossiers de votre propre boîte, tels que votre fournisseur les liste. Seuls les emails de celui que vous choisissez sont relevés, aussi loin en arrière que vous le dites ci-dessous.",
   "loadingFolders": "Chargement des dossiers…",
   "useFolder": "Surveiller ce dossier",
   "changeFolder": "Changer de dossier",
@@ -74,5 +74,9 @@
     "searching": "Recherche des serveurs de messagerie de {domain}…",
     "found": "Trouvés pour {domain}. Modifiez-les si votre fournisseur de messagerie en indique d’autres.",
     "notFound": "Nous n’avons pas trouvé les serveurs de messagerie de {domain}, et préférons ne rien deviner. L’aide de votre fournisseur de messagerie les indique, comme ses réglages IMAP et SMTP."
-  }
+  },
+  "fetchBack": "Relever les emails reçus pendant",
+  "fetchDays": "{days, plural, one {le dernier jour} other {les # derniers jours}}",
+  "fetchBackHint": "Lus ou non, sauf si vous cochez la case ci-dessous. Une relève apporte les plus récents d’abord, un nombre limité à la fois ; ce qui est déjà ici reste.",
+  "unreadOnly": "Seulement les emails que je n’ai pas encore lus dans ma boîte"
 }

@@ -1,6 +1,6 @@
 // Mailboxes: connecting one, renewing its access, choosing the folder to watch, fetching it,
 // disconnecting it. One function per operation of OPERATIONS.md.
-import type { FetchResult, MailFolder, MailHost, Mailbox } from '../../shared/mailbox.ts';
+import type { FetchResult, MailFolder, MailHost, Mailbox, WhatIsFetched } from '../../shared/mailbox.ts';
 import { api } from '../api.ts';
 
 /** What "Test and connect" sends for a mailbox reached by its servers. */
@@ -27,6 +27,6 @@ export const connectMailboxByServers = (mailbox: MailboxByServers): Promise<unkn
 /** Where the browser goes to connect a mailbox by signing in at its host, or with `renew` to give one access again. */
 export const hostSignInAddress = (kind: string, query = ''): string => `/api/oauth/${kind}/start${query}`;
 export const renewMailboxCredentials = (id: number, password: string): Promise<unknown> => api('PUT', `/mailboxes/${id}/password`, { password });
-export const chooseWatchedFolder = (id: number, folder: string): Promise<unknown> => api('PUT', `/mailboxes/${id}/folder`, { folder });
+export const chooseWatchedFolder = (id: number, folder: string, fetched: WhatIsFetched): Promise<unknown> => api('PUT', `/mailboxes/${id}/folder`, { folder, ...fetched });
 export const disconnectMailbox = (id: number): Promise<unknown> => api('DELETE', `/mailboxes/${id}`);
 export const fetchMailbox = (id: number): Promise<FetchResult> => api<FetchResult>('POST', `/mailboxes/${id}/fetch`);

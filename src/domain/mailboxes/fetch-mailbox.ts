@@ -7,7 +7,8 @@
 //            wants that done first
 //   ReqPre   (none: a mailbox that watches no folder is not fetched, and says so as its last error)
 //   ReqPost  an email already kept is left as it is
-//            no further back than the days, and no more than the number, this server is set up for
+//            no further back than the days chosen for the mailbox (those the server is set up for, when none were),
+//            only what is unread when the mailbox says so, and no more at a time than the number the server is set up for
 //            what went wrong, fetching, sorting or preparing, is kept as the mailbox's last error
 //            one fetch at a time per mailbox: whoever asks meanwhile shares the one under way
 //   ReqTrig  on the server's clock, for every mailbox that watches a folder
@@ -21,6 +22,7 @@ import { errorMessage } from '../../tooling/errors.ts';
 import type { MailService } from '../../tooling/mail/mail-service.ts';
 import { problem } from '../../tooling/messages.ts';
 import type { ServerProblem } from '../../tooling/messages.ts';
+import { daysFetched } from '../computations/mailboxes.ts';
 import type { Llm } from '../model/llm.ts';
 import type { AccountRow } from '../model/mailbox.ts';
 import { prepareProposals } from '../replying/prepare-proposals.ts';
@@ -55,8 +57,8 @@ interface Dependencies {
 /** Brings in what arrived in the folder and keeps it, sorted at once by the rules of the organisation's attributes (SortByRules). */
 async function bringIn({ db, mail, config }: Dependencies, account: AccountRow, folder: string): Promise<number> {
   const known = await knownIn(db, account.id, folder);
-  const since = new Date(Date.now() - config.syncDays * 86_400_000);
-  const emails = await mail.providerFor(account).listNew({ folder, since, limit: config.syncMaxEmails, known });
+  const since = new Date(Date.now() - daysFetched(account.fetch_days, config) * 86_400_000);
+  const emails = await mail.providerFor(account).listNew({ folder, since, unreadOnly: account.unread_only, limit: config.syncMaxEmails, known });
   const rules = ruled(await attributesOf(db, await organizationById(db, account.org_id)));
   await db.transaction(async (tx) => {
     for (const email of emails) await keepFetched(tx, account.id, folder, email, sortByRules(rules, email, account.email));

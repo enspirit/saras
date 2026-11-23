@@ -281,7 +281,7 @@ GitHub Actions type-checks, builds and runs them on every push and pull request 
 
 - The Gmail and Microsoft Graph connectors are covered by message-conversion tests but have not been exercised against the real services: validate them with your own OAuth credentials.
 - Replies cannot carry attachments or images, and received emails are shown as plain text. Of received attachments only the name, type and size are kept and shown; their content is neither stored nor sent to the LLM.
-- One folder per mailbox is fetched (the `SYNC_MAX_EMAILS` most recent over `SYNC_DAYS` days). For Outlook, only top-level folders are offered.
+- One folder per mailbox is fetched (the `SYNC_MAX_EMAILS` most recent at a time; how far back, and whether only unread mail, is chosen per mailbox with its folder, `SYNC_DAYS` days until then). For Outlook, only top-level folders are offered.
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
 - No password reset and no two-factor authentication for the saras account.
 - A Google mailbox connected before drafts were added must be reconnected (new scope).

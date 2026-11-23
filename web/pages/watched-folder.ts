@@ -1,7 +1,8 @@
-// Choosing the one folder of a mailbox to watch: the second step of getting started, and
-// later a change made from the list of mailboxes.
+// Choosing the one folder of a mailbox to watch, and what is fetched from it (how far back, unread only
+// or not): the second step of getting started, and later a change made from the list of mailboxes.
 
-import type { Mailbox } from '../../shared/mailbox.ts';
+import { FETCH_DAYS } from '../../shared/mailbox.ts';
+import type { Mailbox, WhatIsFetched } from '../../shared/mailbox.ts';
 import { problemText } from '../api.ts';
 import { chooseWatchedFolder, fetchMailbox, readFolders } from '../api/mailboxes.ts';
 import { t } from '../i18n.ts';
@@ -10,17 +11,19 @@ import { ActionButton, messageOf, toast } from './actions.ts';
 import { leaveStep, PathSteps } from './getting-started/path.ts';
 import { shell } from './shell.ts';
 import { ButtonLink } from '../ui/atoms/button.ts';
+import { Checkbox, Select } from '../ui/atoms/input.ts';
 import { Callout } from '../ui/molecules/callout.ts';
 import { Card } from '../ui/molecules/card.ts';
 import { Choices } from '../ui/molecules/choices.ts';
 import type { ChoicesHandle } from '../ui/molecules/choices.ts';
+import { CheckField, Field } from '../ui/molecules/field.ts';
 import { Actions } from '../ui/molecules/form.ts';
 import { PageHeader } from '../ui/molecules/page-header.ts';
 import { Page } from '../ui/organisms/page.ts';
 
 /** ChooseWatchedFolder. A change goes back to the mailboxes; the first choice goes on with the path. */
-async function watchFolder(account: Mailbox, folder: string): Promise<void> {
-  await chooseWatchedFolder(account.id, folder);
+async function watchFolder(account: Mailbox, folder: string, what: WhatIsFetched): Promise<void> {
+  await chooseWatchedFolder(account.id, folder, what);
   if (account.folder !== null) {
     toast(t('mailboxes.folderChosen'));
     return goTo('#/mailboxes');
@@ -43,20 +46,29 @@ function offerFolders(account: Mailbox, folders: ChoicesHandle, confirm: HTMLBut
     .catch((e) => toast(messageOf(e), true));
 }
 
+/** How far back: the spans offered, with the one the mailbox has (the server's, until one is chosen) even when it is not among them. */
+const daysField = (account: Mailbox): HTMLSelectElement =>
+  Select([...new Set([...FETCH_DAYS, account.fetchDays])].sort((a, b) => a - b).map((days) => ({ value: String(days), label: t('mailboxes.fetchDays', { days }), selected: days === account.fetchDays })));
+
 /**
- * Choosing the one folder of a mailbox to watch. The folders are asked of the mailbox when
- * the page appears, with the inbox first and preselected.
+ * Choosing the one folder of a mailbox to watch, and what is fetched from it. The folders are
+ * asked of the mailbox when the page appears, with the inbox first and preselected.
  */
 export function watchedFolderPage(account: Mailbox): void {
   const fresh = account.folder === null;
   const folders = Choices({ legend: t('mailboxes.folders'), name: 'folder', rows: true, options: [{ value: '', title: t('mailboxes.loadingFolders'), disabled: true }] });
-  const confirm = ActionButton(t('mailboxes.useFolder'), t('mailbox.refreshing'), () => watchFolder(account, folders.value()), { variant: 'primary' });
+  const days = daysField(account);
+  const unreadOnly = Checkbox({ checked: account.unreadOnly });
+  const confirm = ActionButton(t('mailboxes.useFolder'), t('mailbox.refreshing'), () => watchFolder(account, folders.value(), { days: Number(days.value), unreadOnly: unreadOnly.checked }), { variant: 'primary' });
   confirm.disabled = true;
   offerFolders(account, folders, confirm);
   shell(Page(
     fresh && PathSteps('folder'),
     PageHeader({ title: t('mailboxes.chooseFolderTitle'), intro: t('mailboxes.chooseFolder'), crumbs: fresh ? [] : [{ label: t('mailboxes.title'), href: '#/mailboxes' }] }),
     fresh && Callout('ok', t('mailboxes.connectedShort', { email: account.email })),
-    Card({ form: true }, folders.element, Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/mailboxes' }))),
+    Card({ form: true }, folders.element,
+      Field(t('mailboxes.fetchBack'), days, { hint: t('mailboxes.fetchBackHint'), size: 'narrow' }),
+      CheckField(t('mailboxes.unreadOnly'), unreadOnly),
+      Actions(confirm, !fresh && ButtonLink(t('common.cancel'), { href: '#/mailboxes' }))),
   ));
 }
