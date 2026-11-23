@@ -14,6 +14,10 @@ RUN npm ci
 
 ENV PATH=/home/app/node_modules/.bin:$PATH
 
+# Not root: it only listens, and keeps what it was given in memory. A container
+# may bind port 25 without being root (Docker 20.10 and later).
+USER node
+
 EXPOSE 25 1080
 
 CMD ["fake-smtp-server", "-s", "25"]
