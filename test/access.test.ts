@@ -23,7 +23,7 @@ test('signing up creates an organisation and makes its creator the administrator
   assert.equal((await signUp(alice, 'alice@acme.example', 'Acme')).status, 201);
   assert.equal((await signUp(zoe, 'zoe@other.example', '')).status, 201);
   const a = await profile(alice);
-  assert.deepEqual([a.role, a.organization.name, a.organization.way], ['admin', 'Acme', 'manual']);
+  assert.deepEqual([a.role, a.organization.name, a.organization.sorting, a.organization.writing], ['admin', 'Acme', 'none', 'none']);
   const z = await profile(zoe);
   assert.deepEqual([z.role, z.organization.name], ['admin', 'other.example'], 'named after the address when no name is given');
   assert.equal((await signUp(client(), 'alice@acme.example', 'Imposter')).status, 409, 'an address has one account');

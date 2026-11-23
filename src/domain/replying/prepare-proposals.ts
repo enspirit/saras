@@ -3,13 +3,13 @@
 //
 //   DomPre   emails to handle, with content and no proposal
 //   DomPost  each has a proposal
-//   ReqPre   the organisation's way of working asks for it
+//   ReqPre   the organisation has proposals written at fetch
 //            a key is in force, as the mailbox's owner
 //            the organisation has a prompt
 //   ReqPost  written with the prompt suggested at triage, else the organisation's first
 //            as the mailbox's owner: their model, signature and past corrections
 //            at most MAX_PREPARED per fetch, most recent first
-//            when the way of working says so, each is then filed: FileProposalAsDraft
+//            when the organisation has them filed in the mailbox, each is then filed: FileProposalAsDraft
 //   ReqTrig  part of every fetch, after sorting
 import { errorMessage } from '../../tooling/errors.ts';
 import { LlmError } from '../../tooling/llm/openrouter.ts';

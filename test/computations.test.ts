@@ -5,8 +5,7 @@ import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, 
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../src/domain/computations/given.ts';
 import { addressIsNotConnected, answersSignIn, connectsAsShared, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../src/domain/computations/mailboxes.ts';
 import { promptContent } from '../src/domain/computations/prompts.ts';
-import { modelGiven } from '../src/domain/computations/settings.ts';
-import { WAYS, wayGiven, wayOf } from '../src/domain/computations/way-of-working.ts';
+import { modelGiven, sortingGiven, writingGiven } from '../src/domain/computations/settings.ts';
 import { mayBeSortedAgain } from '../src/domain/computations/sorting.ts';
 import type { Verdict } from '../src/domain/refusal.ts';
 import type { Actor } from '../src/domain/world.ts';
@@ -112,13 +111,11 @@ test('a model is named "provider/model", or not at all', () => {
   assert.equal(outcome(modelGiven('open ai/gpt')), 'invalid: settings.invalidModel');
 });
 
-test('an organisation works one of four ways, each adding to the one before', () => {
-  assert.deepEqual(Object.keys(WAYS), ['manual', 'sort', 'draft', 'mailbox']);
-  assert.equal(outcome(wayGiven('draft')), 'ok');
-  assert.deepEqual(['send', '', undefined, 'toString'].map((w) => outcome(wayGiven(w))), Array(4).fill('invalid: organization.invalidWay'));
-  for (const [way, { sorting, proposals }] of Object.entries(WAYS)) assert.equal(wayOf({ triage_strategy: sorting, automation: proposals }), way);
-  assert.equal(WAYS.manual.sorting, 'none', 'only the first way keeps the AI away from what is fetched');
-  assert.ok(Object.values(WAYS).every((w) => w.proposals === 'none' || w.sorting === 'ai'), 'proposals at fetch come with sorting by the AI');
+test('an organisation chooses who sorts and when proposals are written, each for itself', () => {
+  assert.deepEqual(['none', 'ai'].map((s) => outcome(sortingGiven(s))), ['ok', 'ok']);
+  assert.deepEqual(['magic', '', undefined].map((s) => outcome(sortingGiven(s))), Array(3).fill('invalid: organization.invalidSorting'));
+  assert.deepEqual(['none', 'draft', 'mailbox'].map((w) => outcome(writingGiven(w))), ['ok', 'ok', 'ok']);
+  assert.deepEqual(['send', '', undefined].map((w) => outcome(writingGiven(w))), Array(3).fill('invalid: organization.invalidWriting'), 'nothing sends by itself');
 });
 
 const actorWith = (id: number, role: 'admin' | 'user') => ({ member: { id, role }, organization: { id: 1 } }) as Actor;

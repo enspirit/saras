@@ -5,7 +5,6 @@ import { PRIVACY } from '../../tooling/llm/openrouter.ts';
 import { isConfigured } from '../../tooling/mail/oauth.ts';
 import { signUpIsOpen } from '../computations/access.ts';
 import { llmSettings } from '../computations/key-in-force.ts';
-import { wayOf } from '../computations/way-of-working.ts';
 import { installationIsEmpty } from '../state/members.ts';
 import type { Actor, Reach } from '../world.ts';
 
@@ -14,7 +13,8 @@ function organizationSeenBy({ member, organization }: Actor): Organization {
   const admin = member.role === 'admin';
   return {
     name: organization.name,
-    way: wayOf(organization),
+    sorting: organization.triage_strategy === 'ai' ? 'ai' : 'none',
+    writing: organization.automation,
     skipAutomated: organization.skip_automated,
     model: admin ? organization.model || '' : undefined,
     hasKey: admin ? Boolean(organization.openrouter_key_enc) : undefined,

@@ -10,8 +10,9 @@ export const changeOwnSettings = (settings: { name: string; model: string; signa
   api('PUT', '/settings', settings);
 export const removeOwnKey = (): Promise<unknown> => api('PUT', '/settings', { openrouterKey: '' });
 
-/** RenameOrganization, ChooseWayOfWorking, SetAsideAutomatedFirst, SetOrganizationModel, and SetOrganizationKey when a key is given. */
+/** RenameOrganization, ChooseSorting, ChooseWriting, SetAsideAutomatedFirst, SetOrganizationModel, and SetOrganizationKey when a key is given. */
 export const changeOrganizationSettings = (settings: Record<string, unknown>): Promise<unknown> => api('PUT', '/organization', settings);
-export const chooseWayOfWorking = (way: string): Promise<unknown> => api('PUT', '/organization', { way });
+/** ChooseSorting and ChooseWriting: what the AI does at each of the two steps an email goes through. */
+export const chooseSortingAndWriting = (sorting: string, writing: string): Promise<unknown> => api('PUT', '/organization', { sorting, writing });
 export const setOrganizationKey = (openrouterKey: string): Promise<unknown> => api('PUT', '/organization', { openrouterKey });
 export const removeOrganizationKey = (): Promise<unknown> => api('PUT', '/organization', { openrouterKey: '' });

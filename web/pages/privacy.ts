@@ -2,7 +2,7 @@
 // remains the organisation's part.
 
 import type { Profile } from '../../shared/member.ts';
-import type { WayOfWorking } from '../../shared/organization.ts';
+import type { Organization } from '../../shared/organization.ts';
 import { t, tRich } from '../i18n.ts';
 import { session } from '../session.ts';
 import { Code, Strong, Text } from '../ui/atoms/text.ts';
@@ -12,15 +12,15 @@ import { Card } from '../ui/molecules/card.ts';
 import { Features } from '../ui/molecules/features.ts';
 import { Block } from '../ui/molecules/field.ts';
 
-/** What the AI is sent, which depends on the organisation's way of working. */
-const whatIsSent = (way: WayOfWorking): Child => [
-  way === 'manual' ? t('settings.privacyTriageNone') : t('settings.privacyTriageAi'),
-  (way === 'draft' || way === 'mailbox') && ` ${t('settings.privacyPrepared')}`,
+/** What the AI is sent, which depends on what the organisation has it do at sorting and at writing. */
+const whatIsSent = ({ sorting, writing }: Organization): Child => [
+  sorting === 'ai' ? t('settings.privacyTriageAi') : t('settings.privacyTriageNone'),
+  writing !== 'none' && ` ${t('settings.privacyPrepared')}`,
 ];
 
 const guaranteeFeatures = (who: Profile): HTMLDivElement => Features([
   { icon: 'lock', title: t('settings.guarantee.zdr'), text: t('settings.privacyZdr') },
-  { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: whatIsSent(who.organization.way) },
+  { icon: 'eye-off', title: t('settings.guarantee.minimal'), text: whatIsSent(who.organization) },
   { icon: 'timer', title: t('settings.guarantee.retention'), text: who.retentionDays ? t('settings.privacyRetention', { days: who.retentionDays }) : t('settings.privacyNoRetention') },
   { icon: 'key', title: t('settings.guarantee.encryption'), text: t('settings.privacyEncryption') },
   { icon: 'check', title: t('settings.guarantee.validation'), text: t('settings.privacyValidation') },

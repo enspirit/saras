@@ -35,7 +35,7 @@ interface TriageGate {
 | `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a draft is asked for. |
 | `ai` | An LLM decides and suggests a prompt. It reads the sender, subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
 
-The strategy comes with the **way of working** each organisation's administrators choose (every email to handle; the AI sorts; proposals also written at fetch; those also filed in the mailbox's drafts); `TRIAGE_STRATEGY` only sets what a new organisation starts with. To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/domain/sorting/index.ts`.
+The strategy is chosen **per organisation** by its administrators, as the first of two choices (sorting, then when proposals are written: on demand, at fetch, or at fetch and filed in the mailbox's drafts); `TRIAGE_STRATEGY` only sets what a new organisation starts with. To add a strategy (a rules engine, for instance), implement `TriageGate` and return it from `src/domain/sorting/index.ts`.
 
 **Before the gate**, header rules set plainly automated mail aside (no-reply senders, mailing lists, automatic replies, bulk mail, and over IMAP what you already answered), so that no strategy spends anything on it. Those emails stay visible under "No reply needed" and can be moved back. An organisation can turn the rules off in its settings.
 
@@ -48,7 +48,7 @@ saras is multi-tenant: everything lives inside an **organisation**, and nothing 
 - **A mailbox is personal or shared.** Any member connects their own address, which only they see — administrators included. An administrator may connect a mailbox as *shared* (contact@, info@…): every member, present and future, sees its emails and replies from it. Only administrators change its folder or disconnect it. An address is connected once per organisation.
 - **In a shared mailbox**, a reply by one member takes the email off everyone's list, and shows who replied. Each member keeps their own signature, and their corrections steer their own drafts only.
 - **Prompts belong to the organisation.** Only its administrators create and edit them; members see their name and description, not the instructions. Administrators also see the reasons members give when correcting drafts, prompt by prompt.
-- **The organisation's settings** (Settings → Organisation, for administrators): its name, its way of working, and its own OpenRouter key and default model.
+- **The organisation's settings** (Settings → Organisation, for administrators): its name, what the AI does at sorting and at writing, and its own OpenRouter key and default model.
 - **Administrators** can appoint others, at least one always remains, and can delete a member: their personal mailboxes are erased from saras, while the prompts and shared mailboxes they created stay with the organisation.
 
 **Who pays for the LLM.** A request uses the member's own key if they entered one, else the organisation's, else the server's (`OPENROUTER_API_KEY`). An operator hosting organisations that are not theirs leaves the server key empty.

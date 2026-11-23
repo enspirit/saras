@@ -120,8 +120,6 @@ CREATE TABLE IF NOT EXISTS replies (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT '';
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS automation TEXT NOT NULL DEFAULT 'none';
--- An organisation works one of four ways: proposals at fetch come with sorting by the AI.
-UPDATE organizations SET triage_strategy = 'ai' WHERE triage_strategy = 'none' AND automation <> 'none';
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS folder TEXT;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS folder_name TEXT NOT NULL DEFAULT '';
 ALTER TABLE emails ADD COLUMN IF NOT EXISTS folder TEXT NOT NULL DEFAULT 'INBOX';

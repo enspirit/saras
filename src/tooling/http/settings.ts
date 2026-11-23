@@ -4,7 +4,8 @@
 import { profileOf } from '../../domain/observations/profile.ts';
 import { chooseLanguage } from '../../domain/settings/choose-language.ts';
 import { chooseOwnModel } from '../../domain/settings/choose-own-model.ts';
-import { chooseWayOfWorking } from '../../domain/settings/choose-way-of-working.ts';
+import { chooseSorting } from '../../domain/settings/choose-sorting.ts';
+import { chooseWriting } from '../../domain/settings/choose-writing.ts';
 import { renameOrganization } from '../../domain/settings/rename-organization.ts';
 import { setAsideAutomatedFirst } from '../../domain/settings/set-aside-automated-first.ts';
 import { setOrganizationKey } from '../../domain/settings/set-organization-key.ts';
@@ -30,10 +31,11 @@ const ownSettings: Handle = async ({ world }, req, res) => {
 };
 
 const organizationSettings: Handle = async ({ world }, req, res) => {
-  const { name, way, skipAutomated, model, openrouterKey } = req.body;
+  const { name, sorting, writing, skipAutomated, model, openrouterKey } = req.body;
   const actor = actorOf(req);
   if (typeof name === 'string') await renameOrganization(world, actor, name);
-  if (way !== undefined) await chooseWayOfWorking(world, actor, way);
+  if (sorting !== undefined) await chooseSorting(world, actor, sorting);
+  if (writing !== undefined) await chooseWriting(world, actor, writing);
   if (typeof skipAutomated === 'boolean') await setAsideAutomatedFirst(world, actor, skipAutomated);
   if (typeof model === 'string') await setOrganizationModel(world, actor, model);
   if (typeof openrouterKey === 'string') await setOrganizationKey(world, actor, openrouterKey);

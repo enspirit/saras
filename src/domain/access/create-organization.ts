@@ -7,7 +7,7 @@
 //            the address is one
 //            the password has ten characters or more
 //   ReqPost  named after the domain of the address when no name is given
-//            it starts with the installation's way of working and one prompt, in the person's language
+//            it starts with the installation's way of sorting and one prompt, in the person's language
 //            a refused sign-up leaves no organisation behind
 import { addressGiven, clipped, languageGiven } from '../computations/given.ts';
 import { isAnAddress, maySignUp, organizationNameFor, signUpIsOpen } from '../computations/access.ts';

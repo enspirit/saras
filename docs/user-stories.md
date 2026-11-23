@@ -342,18 +342,18 @@ How the screens are designed and built is in [`design/`](design/README.md).
 - The reply itself is always in the language of the email received.
 
 ### US-63 — Configure the organisation
-**As** an administrator, **I want** to set my organisation's name, its way of working, and its own model and key, **so that** every member works the same way at the organisation's expense.
+**As** an administrator, **I want** to set my organisation's name, what the AI does at sorting and at writing, and its own model and key, **so that** every member works the same way at the organisation's expense.
 
-- Name; way of working (US-66 — with the cost of AI sorting and what the AI is sent stated); whether automated mail is set aside first; default model; the organisation's OpenRouter key (encrypted, removable).
+- Name; sorting and writing (US-66 — with the cost of AI sorting and what the AI is sent stated); whether automated mail is set aside first; default model; the organisation's OpenRouter key (encrypted, removable).
 
-### US-66 — Choose how the tool works for the team
-**As** an administrator, **I want** to choose among a few ready-made ways of working, **so that** the AI does as much, or as little, before a member opens an email as suits us.
+### US-66 — Choose what the AI does at sorting and at writing
+**As** an administrator, **I want** to choose what the AI does at each of the two steps an email goes through, **so that** it does as much, or as little, before a member opens an email as suits us.
 
-- Four ways, shown when getting started: *I decide everything* (no AI sorting, proposals on demand); *The AI sorts, I write*; *Proposals waiting for me* (a proposal is written at fetch for each email to handle, to review in saras); *Drafts in my mailbox* (that proposal is also filed in the mailbox's Drafts folder, and the email moves to **Replied** as a draft).
-- Each says what the AI is sent. The ways that need the AI cannot be chosen without a key.
-- The same four ways are in **Settings → Organisation**, as one setting.
-- At the end of getting started, what the first fetch let through unsorted is sorted again the chosen way.
-- A proposal prepared at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at triage or else the organisation's first; at most ten per fetch and mailbox.
+- The page explains the two steps and asks one choice for each. **1. Sorting** — when emails are fetched, which need a reply: nobody sorts (every email of the watched folder is to handle), or the AI sorts. **2. Writing** — when the AI writes a proposal for an email to handle: when a member asks; at fetch, to review in saras; at fetch, also filed in the mailbox's Drafts folder (the email then moves to **Replied** as a draft).
+- Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
+- The two choices are independent, and are also in **Settings → Organisation**.
+- At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
+- A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at sorting or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
 
 ### US-67 — Change my password

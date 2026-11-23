@@ -41,7 +41,8 @@ Essential state only: what another agent can observe.
 | Variable | Meaning | Controlled by | Monitored by | Concrete copies |
 | --- | --- | --- | --- | --- |
 | Organisation | A team's private space: its name. | Backend | Members | `organizations.name` |
-| Way of working | One of four: `manual` (every fetched email is to handle, the AI writes on demand), `sort` (the AI sorts), `draft` (and proposals are written at fetch), `mailbox` (and filed in the mailbox's drafts). | Backend | Members | `organizations.triage_strategy` and `.automation` together (`computations/way-of-working.ts`); `Me.organization.way` in the frontend |
+| Sorting | Who says whether a fetched email needs a reply: nobody (`none`: all are to handle) or the AI (`ai`). | Backend | Members | `organizations.triage_strategy`; `Organization.sorting` in `shared/` |
+| Writing | When a proposal is written for an email to handle: on demand (`none`), at fetch (`draft`), at fetch and filed in the mailbox's drafts (`mailbox`). | Backend | Members | `organizations.automation`; `Organization.writing` in `shared/` |
 | Automated mail first | Whether plainly automated mail is set aside by rule before anything else. | Backend | Members | `organizations.skip_automated` |
 | Organisation's AI | Its default model and its own key. | Backend | Administrators (key: presence only) | `organizations.model`, `.openrouter_key_enc` |
 | Member | A person's account in one organisation: address, name, role, password. | Backend | Administrators, the member | `users.*`; `session.me` in the frontend |
@@ -75,7 +76,6 @@ Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`),
 | Locked out | Ten wrong guesses from one origin within fifteen minutes. | `isLockedOut` in `computations/access.ts` |
 | Proposal was edited | The final text differs from the proposed one, whitespace aside. | `wasEdited` in `computations/reply.ts`; a second version in `web/pages/reply-in-progress.ts` (`norm`) |
 | Passage to complete | A passage in square brackets of 2 to 80 characters. | `TO_COMPLETE` in `web/pages/reply-in-progress.ts` only |
-| Sorting, proposals | What a way of working means for a fetch: who sorts, and whether proposals are written and filed. | `WAYS` in `computations/way-of-working.ts` |
 | Automated mail | Mailing-list headers, `no-reply` senders, bulk precedence. | `sorting/rules.ts` |
 
 ## Operations
@@ -113,7 +113,8 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **SetSignature** | Member | → the member's signature | | | same |
 | **SetOwnKey** / **RemoveOwnKey** | Member | → the member has a key / has none | | Stored sealed | same |
 | **RenameOrganization** | Administrator | → the organisation's name | Administrator | An empty name changes nothing | Settings → Organisation · `PUT /organization` |
-| **ChooseWayOfWorking** | Administrator | → one of the four ways, from the next fetch on | Administrator · one of the four | What was fetched before stays as it was sorted | same; "Choose how it works" in the tour |
+| **ChooseSorting** | Administrator | → fetched emails are sorted by nobody, or by the AI, from the next fetch on | Administrator · `none` or `ai` | What was fetched before stays as it was sorted | Settings → Organisation; step 1 of "Sorting and writing" in the tour · `PUT /organization` |
+| **ChooseWriting** | Administrator | → proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts | Administrator · one of those three | Nothing sends by itself | same; step 2 of "Sorting and writing" |
 | **SetAsideAutomatedFirst** | Administrator | → on or off | Administrator | | Settings → Organisation · `PUT /organization` |
 | **SetOrganizationModel** | Administrator | → the default model, or none (the server's applies) | Administrator · looks like `provider/model` | | same |
 | **SetOrganizationKey** / **RemoveOrganizationKey** | Administrator | → the organisation has a key / has none | Administrator | Stored sealed | same; the key step of the tour |
@@ -147,8 +148,8 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **CheckTypos** | Member | A text in the reply area → a proposal: the same text, corrected | May use the mailbox · something is written · a key in force · the model has a zero-retention provider | The received email is not sent to the LLM · only what a reply may contain is kept of the answer | "Check typos" · `POST /emails/:id/assist` |
 | **ImproveStyle** | Member | A text in the reply area → a proposal: the same text, reworded | same | same | "Improve style" · same route |
 | **WriteWithPrompt** | Member | An email whose content is kept → a proposal written with a prompt, from the email and from what the member wrote | May use the mailbox · the prompt is the organisation's · a key in force · zero-retention provider | In the language of the email · ends with the member's signature · takes their past corrections on this prompt into account · only what a reply may contain is kept | "Write with" · same route |
-| **PrepareProposals** | Backend | Emails to handle with content and no proposal → each has one | The organisation's way is `draft` or `mailbox` · a key in force as the mailbox's owner · it has a prompt | With the prompt suggested at triage, else the organisation's first · at most ten per fetch, most recent first | part of FetchMailbox (`replying/prepare-proposals.ts`) |
-| **FileProposalAsDraft** | Backend | A proposal just prepared → a draft in the mailbox; the email is replied, as a draft, by the mailbox's owner | The organisation's way is `mailbox` · the email has someone to reply to | Recorded as not edited | part of PrepareProposals |
+| **PrepareProposals** | Backend | Emails to handle with content and no proposal → each has one | The organisation's writing is `draft` or `mailbox` · a key in force as the mailbox's owner · it has a prompt | With the prompt suggested at triage, else the organisation's first · at most ten per fetch, most recent first | part of FetchMailbox (`replying/prepare-proposals.ts`) |
+| **FileProposalAsDraft** | Backend | A proposal just prepared → a draft in the mailbox; the email is replied, as a draft, by the mailbox's owner | The organisation's writing is `mailbox` · the email has someone to reply to | Recorded as not edited | part of PrepareProposals |
 | **PutMyTextBack** | Member (Frontend) | A proposal shown, with the text it replaced → that text again | | | "Put my text back"; frontend only |
 | **SendReply** | Member | An email not replied, with none of its replies in flight → replied: the reply is sent from the mailbox | May use the mailbox · the reply is not empty · at least one recipient · every address valid · the member confirmed (frontend) | Quoted and threaded on the original, HTML with a text alternative · flagged answered over IMAP · whether the proposal was edited, and the reason only if it was, are recorded with who replied | "Send", then the confirmation · `POST /emails/:id/send` |
 | **FileReplyAsDraft** | Member | The same → replied, as a draft: the reply is in the mailbox's Drafts folder | The same, without the confirmation | Nothing is sent · the same record | "Save as draft" · `POST /emails/:id/file-as-draft` |
@@ -179,7 +180,7 @@ Sequences of operations that the interface or the server runs as one story.
 | Chain | Operations |
 | --- | --- |
 | A fetch | FetchMailbox → SortWaitingEmails → PrepareProposals (→ FileProposalAsDraft) |
-| Getting started | CreateOrganization → ConnectMailbox → ChooseWatchedFolder → FetchMailbox → (SetOrganizationKey) → EditPrompt, AddReadyMadePrompt → ChooseWayOfWorking → SortAgainUnsorted → FetchMailbox |
+| Getting started | CreateOrganization → ConnectMailbox → ChooseWatchedFolder → FetchMailbox → (SetOrganizationKey) → EditPrompt, AddReadyMadePrompt → ChooseSorting + ChooseWriting → SortAgainUnsorted → FetchMailbox |
 | Answering | (WriteWithPrompt \| CheckTypos \| ImproveStyle)* → SendReply \| FileReplyAsDraft |
 
 ## Computations
@@ -190,8 +191,7 @@ Pure, in `src/domain/computations/` unless said otherwise.
 | --- | --- |
 | `access.ts` | Is sign-up open; may this account be opened (address, password length); is the address free; the name of a new organisation; the role an invitation gives; may the last administrator be demoted; may one delete oneself; is this origin locked out. |
 | `mailboxes.ts` | Who manages a mailbox; shared or personal; is the address already connected; what is given to connect by servers; the same servers with a new password; is it the very mailbox to renew; is the folder one of the mailbox's; what a session remembers of a sign-in at a host, and whether an answer is to it. |
-| `way-of-working.ts` | The four ways, what each means for sorting and proposals, the way an organisation is in. |
-| `settings.ts` | Is this a model identifier. |
+| `settings.ts` | Is this a model identifier; a way of sorting; a way of writing. |
 | `sorting.ts` | May an email be sorted again by a member. |
 | `replying.ts` | The proposal as HTML; is something written; is the email's content kept; may the reply be handed over (recipients, text, status, none in flight); what a hand-over records (edited or not, the reason kept or dropped); which prompt a prepared proposal uses. |
 | `reply.ts` | Who to reply to, the subject, the threading headers, the quoted body; whether the proposal was edited. |
@@ -242,7 +242,7 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 | --- | --- | --- | --- |
 | 1 | Connecting an address already connected renewed its credentials. | **RenewMailboxCredentials** is an operation of its own, on the mailbox. **ConnectMailbox** refuses an address already connected. | Done. A second connection is refused where it was accepted; the mailbox list offers "Renew access". |
 | 2 | Sorting again what the first fetch let through was a flag on the organisation's settings. | **SortAgainUnsorted** is an operation of its own, with its own entry. | Done: `POST /organization/sort-again`. |
-| 3 | Sorting and proposals were two settings; the interface showed four ways of working. | The **way of working** is the state variable, with four values and one operation, **ChooseWayOfWorking**. | Done. The two combinations outside the four (no sorting, with proposals at fetch) are no longer possible; an organisation kept in one is given sorting by the AI when the server starts. |
+| 3 | Sorting and proposals were two settings; the interface showed four ways of working. | First merged into one way of working of four values; then **reversed**: the four ways did not explain themselves. An email goes through two steps, sorting then writing, and the organisation chooses what the AI does at each: **ChooseSorting** and **ChooseWriting**. | Done. The two choices are independent: writing at fetch without sorting is possible again. |
 | 4 | The reply in progress is lost when the member leaves the page. | It stays in the browser. Nothing unsent reaches the server. | Nothing to do. |
 | 5 | Checking an invitation link counts a wrong token towards the lock-out. | **CheckInvitation** is an operation. | Done: listed and filed as one. |
 | 6 | Nothing changed a password, deleted one's own account, or deleted an organisation. | **ChangePassword**, **DeleteOwnAccount** (refused to the last administrator; what the member made passes to the longest-standing other administrator), **DeleteOrganization** (confirmed by the password and the organisation's name). | Done, all three. |
