@@ -21,9 +21,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: software/saras/package-lock.json
       # Every step below is an emb task (.emb.yml): CI runs what a developer runs.
       - run: npm install -g @enspirit/emb
-      - run: npm ci
+      - run: emb run setup
       - run: emb run lint
       - run: emb run build
       # Starts local IMAP, SMTP and OpenRouter stand-ins, on the embedded PostgreSQL:
@@ -54,8 +55,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: software/saras/package-lock.json
       - run: npm install -g @enspirit/emb
-      - run: npm ci
+      - run: emb run setup
       - run: emb run test
         env:
           TEST_DATABASE_URL: postgres://saras:saras@localhost:5432/saras

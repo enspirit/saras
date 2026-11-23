@@ -11,18 +11,36 @@ plugins:
       - .env.commons
       - .env
 
-# Repository-wide tasks: what CI calls, and what a developer runs. Each one
-# calls through to the npm script of the same purpose, so there is one list of
-# commands.
+  - name: embfiles
+    config:
+      glob:
+        # The whole map of the repository: what we write, what tests it, what
+        # it runs in.
+        - 'software/*/Embfile.{yaml,yml}'
+        - 'tests/*/Embfile.{yaml,yml}'
+        - 'world/*/Embfile.{yaml,yml}'
+
+# Repository-wide tasks: what CI calls. A component's own tasks live in its
+# Embfile.yml; the `pre:` entries are qualified, because several components
+# may define a task of the same name.
 tasks:
+  setup:
+    description: Install what every component needs to be built and tested
+    pre:
+      - saras:setup
+
   lint:
-    description: The static checks — both TypeScript projects, server and browser
-    script: npm run typecheck
+    description: The static checks, every component
+    pre:
+      - saras:lint
+      - compose:lint
 
   build:
-    description: Bundle what the browser loads into public/js/
-    script: npm run build
+    description: Build every component
+    pre:
+      - saras:build
 
   test:
-    description: Every test. Needs a checkout, not a stack; TEST_DATABASE_URL runs it on a PostgreSQL server
-    script: npm test
+    description: Unit and integration, every component. Needs a checkout, not a stack
+    pre:
+      - saras:test

@@ -105,7 +105,7 @@ Every word of the interface comes from a translation file; none is written in th
 
 In the code, `t('key', params)` returns a string and `tRich('key', params, { link: … })` returns nodes for messages with tags (`web/i18n.ts`). The formatter itself (`web/i18n/format.ts`) is a small dependency-free implementation of the ICU subset above.
 
-`test/i18n.test.ts` checks that every language has exactly the keys of the source language, with the same parameters and tags; that every key used in the code exists; and that no key is left unused.
+`test/unit/i18n.test.ts` checks that every language has exactly the keys of the source language, with the same parameters and tags; that every key used in the code exists; and that no key is left unused.
 
 ### With Tolgee
 
@@ -136,7 +136,7 @@ The interface follows the hierarchy tokens → atoms → molecules → organisms
 | Organisms | `organisms/*.css` | `organisms/*.ts` | `AppShell`, `AuthPanel`, `Page`, `Mailbox`, `Reading`, `ReadingHeader`, `ReplyDock`. |
 | Pages | — | `web/app.ts`, `web/pages/`, `web/styleguide.ts` | Behaviour only, assembled from components; wording comes from the translation files. |
 
-Rules, enforced by `test/design-system.test.ts`:
+Rules, enforced by `test/unit/design-system.test.ts`:
 
 - a colour or a font is written as a literal only in `tokens.css`;
 - components use semantic tokens only, never `--brand-*`;
@@ -148,7 +148,7 @@ CSS cascade layers (`@layer`) make the hierarchy effective: a molecule always wi
 
 To add a component: the function in `web/ui/<tier>/<component>.ts`, its style in `public/design/<tier>/<component>.css` (listed in `public/design/index.css`), an example in `web/styleguide/<tier>.ts`.
 
-The aims of the design, its tokens and components, and how each screen is put together are in [`docs/design/`](docs/design/README.md).
+The aims of the design, its tokens and components, and how each screen is put together are in [`doc/4-design.md`](doc/4-design.md).
 
 ## Privacy
 
@@ -173,6 +173,7 @@ This is the main design constraint.
 ## Trying it with sample emails
 
 ```bash
+cd software/saras
 npm install
 npm run demo
 ```
@@ -188,6 +189,7 @@ With `OPENROUTER_API_KEY` in the environment or in `.env`, the AI is the real on
 Requires Node.js ≥ 22.18.
 
 ```sh
+cd software/saras
 npm install
 cp .env.example .env
 # set APP_SECRET (openssl rand -hex 32) and OPENROUTER_API_KEY
@@ -200,7 +202,8 @@ Open http://localhost:3000 and create your organisation: you become its administ
 With Docker, which also starts a PostgreSQL server:
 
 ```sh
-cp .env.example .env   # then set APP_SECRET, OPENROUTER_API_KEY and POSTGRES_PASSWORD
+cd world/compose
+cp ../../software/saras/.env.example .env   # then set APP_SECRET, OPENROUTER_API_KEY and POSTGRES_PASSWORD
 docker compose up -d
 ```
 
@@ -240,7 +243,26 @@ The schema is created at startup (`src/tooling/db/schema.ts`). The tests run on 
 
 ## Configuration
 
-Every variable is described in [`.env.example`](.env.example). The default model (`OPENROUTER_MODEL`) and the OpenRouter key can be overridden per organisation and per user in **Settings**.
+Every variable is described in [`software/saras/.env.example`](software/saras/.env.example). The default model (`OPENROUTER_MODEL`) and the OpenRouter key can be overridden per organisation and per user in **Settings**.
+
+## The repository
+
+The directory says what a thing is for:
+
+| | |
+| --- | --- |
+| [`software/`](software/) | What we write and ship. [`saras/`](software/saras/) is the server and the interface it serves: the paths given in this document (`src/…`, `web/…`, `shared/…`, `public/…`, `test/…`, `brands/…`) are relative to it. |
+| [`world/`](world/) | What it runs in. [`compose/`](world/compose/) is saras as an operator runs it with Docker: the application and a PostgreSQL server. |
+| [`doc/`](doc/) | What saras is for and what it does: the [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [design](doc/4-design.md). |
+
+Every build and every suite is a task of [`emb`](https://github.com/enspirit/emb) (`npm install -g @enspirit/emb`), declared in `.emb.yml` and in each component's `Embfile.yml`. `emb tasks` lists them; CI calls them and nothing else.
+
+```sh
+emb run setup    # install the dependencies
+emb run lint     # the static checks
+emb run build    # bundle the browser code
+emb run test     # unit and integration tests
+```
 
 ## How it works
 
@@ -261,7 +283,7 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
 ```
 
 - `shared/`: the domain objects as members see them (mailbox, email, proposal, reply, prompt, member, organisation), declared once for the server and the browser.
-- `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`OPERATIONS.md`](OPERATIONS.md) is the inventory.
+- `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`doc/2-operations.md`](doc/2-operations.md) is the inventory.
 - `src/domain/sorting/`: the triage gate, its strategies, and the header rules applied before it.
 - `src/domain/mailboxes/fetch-mailbox.ts`: fetch, then sort, then prepare proposals.
 - `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (driver and schema), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
@@ -277,18 +299,18 @@ Everything is TypeScript in strict mode.
 - **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
 - **Browser code** is bundled by `npm run build` ([esbuild](https://esbuild.github.io), `scripts/build.ts`) into `public/js/` (not committed): the interface from `web/` and `shared/` with the two browser libraries (see "Third-party software"), the design system's style sheets as one file, and the translations as one file per language. A first page load is about ten requests.
 - `npm run typecheck` checks both; the bundler itself does not check types. `npm run dev` rebuilds the bundles and restarts the server on change.
-- **What the server returns is typed once**, in `shared/`: the server's read queries and operations return those types, and `web/api/` reads them. A test (`test/shared-types.test.ts`) keeps either side from declaring a domain object of its own.
-- **Small files, small functions**: no source file (TypeScript, CSS) has more than 200 lines, and no function more than 20. `test/size.test.ts` enforces both, and lists what is over.
+- **What the server returns is typed once**, in `shared/`: the server's read queries and operations return those types, and `web/api/` reads them. A test (`test/unit/shared-types.test.ts`) keeps either side from declaring a domain object of its own.
+- **Small files, small functions**: no source file (TypeScript, CSS) has more than 200 lines, and no function more than 20. `test/unit/size.test.ts` enforces both, and lists what is over.
 
 ## Tests
 
 ```sh
-npm test
+emb run test   # or, in software/saras: npm test
 ```
 
-The end-to-end tests start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
+The computations are tested as pure functions (`test/unit/`), and the operations over HTTP (`test/integration/`). The latter start a real local IMAP server and a real local SMTP server, plus a stand-in for OpenRouter that records the requests it receives; among other things they check that every request carries the ZDR policy and that a newsletter never reaches the LLM.
 
-GitHub Actions type-checks, builds and runs them on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: once on the embedded database and once against a PostgreSQL server.
+GitHub Actions calls the same tasks on every push and pull request (`.github/workflows/test.yml`), on Node.js 22, without any secret: lint, build and test on the embedded database, then the tests once more against a PostgreSQL server.
 
 ## Known limitations
 

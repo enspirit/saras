@@ -1,0 +1,44 @@
+# saras as an operator runs it: the application and a PostgreSQL server.
+#
+#   cd world/compose
+#   cp ../../software/saras/.env.example .env    # then set APP_SECRET, OPENROUTER_API_KEY and POSTGRES_PASSWORD
+#   docker compose up -d
+#
+# Run from this directory: `.env` is read from here.
+
+# The project's name, whatever the directory is called: the database's volume is named after it.
+name: saras
+
+services:
+  saras:
+    build: ../../software/saras
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://saras:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/saras
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    # Your brand: uncomment, and add BRAND_DIR=/brand to .env
+    # volumes:
+    #   - ../../software/saras/brands/example:/brand:ro
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: saras
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: saras
+    volumes:
+      - saras-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saras -d saras"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  saras-postgres:
