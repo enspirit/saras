@@ -498,7 +498,9 @@ These are behaviours of the system rather than screens, but they are what the pr
 
 - **New board** in the menu, under **Boards**, above Configuration. A board has a name and a filter.
 - The filter is made of the organisation's attributes (US-93: where the email stands, its priority, and those the organisation made) and of the facts of an email: the mailboxes it arrived in, how recently it was received, its sender (part of a name, an address or a domain), keywords (every word must appear in the subject or the text), and whether it has attachments.
-- An email is shown when it meets every condition given; within a condition made of several values, any of them. A condition left empty keeps every email.
+- The conditions are a list I add to: a board starts with none, and **Add a condition** offers what it has no condition on yet, my attributes first, then the facts of the email. A condition on an attribute or on the mailboxes holds values I pick one by one, each a chip I can take away; a bin removes the whole condition.
+- An email is shown when it meets every condition there; within a condition made of several values, any of them. A condition with no value keeps every email, as does a board with no condition.
+- Beside the conditions, the form says how many emails match now and shows the five most recent, a moment after each change and before anything is saved.
 - A board is a view: it moves nothing, and deleting it leaves its emails where they are.
 
 ### US-91 — Work from a board

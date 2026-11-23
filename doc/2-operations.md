@@ -199,7 +199,7 @@ The rule "Stands in" starts with is in `computations/default-rules.ts`: what use
 | **EditBoard** | Member | A board → with this name, this filter, shared or not | Manages it (its owner; a shared one, an administrator) · a name · only an administrator shares | | pencil on the board · `PUT /boards/:id` |
 | **DeleteBoard** | Member | A board → none | Manages it | The emails it showed are untouched | "Delete the board" in its form · `DELETE /boards/:id` |
 
-Observations: `GET /boards` (the boards a member sees, each with how many emails it shows them), `GET /boards/:id/emails`.
+Observations: `GET /boards` (the boards a member sees, each with how many emails it shows them), `GET /boards/:id/emails`, `POST /boards/try` (what a filter being written would show: how many emails, and the five most recent; nothing is kept).
 
 ### Retention
 

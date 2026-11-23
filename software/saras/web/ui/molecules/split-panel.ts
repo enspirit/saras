@@ -1,10 +1,16 @@
 import { Heading } from '../atoms/text.ts';
-import { h } from '../dom.ts';
+import { append, h } from '../dom.ts';
 import type { Child } from '../dom.ts';
 
 /** A panel as wide as its page, in two parts: what is chosen, and beside it, set back, what the choice governs. */
 export const SplitPanel = (main: Child, aside: Child): HTMLElement =>
   h('section', { class: 'split-panel' }, h('div', { class: 'split-panel__main' }, main), h('div', { class: 'split-panel__aside' }, aside));
+
+/** A part whose content follows what is being done beside it: what it shows is replaced, and said to who cannot see it. */
+export function Live(...initial: Child[]): { element: HTMLDivElement; show(...content: Child[]): void } {
+  const element = h('div', { class: 'live', 'aria-live': 'polite' }, initial);
+  return { element, show: (...content) => void append((element.replaceChildren(), element), content) };
+}
 
 /** The heading of one part of a split panel. */
 export const PartTitle = (title: string): HTMLHeadingElement => Heading(2, title);

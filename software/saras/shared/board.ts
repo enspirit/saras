@@ -46,3 +46,9 @@ export interface EmailsOfBoard {
   board: Board;
   emails: EmailSummary[];
 }
+
+/** What a filter being written would show: how many emails, and the most recent of them. */
+export interface FilterTried {
+  count: number;
+  emails: EmailSummary[];
+}

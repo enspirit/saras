@@ -2,6 +2,7 @@ import { Icon } from '../atoms/icon.ts';
 import { ValueChip, toneClass } from '../atoms/value-chip.ts';
 import type { Tone } from '../atoms/value-chip.ts';
 import { cx, h } from '../dom.ts';
+import { popover } from '../popover.ts';
 
 export interface EditedValue {
   label: string;
@@ -35,27 +36,6 @@ const Palette = (value: EditedValue, { colors, colorLabel, colorName }: ValueEdi
     h('button', { class: cx('value-editor__swatch', toneClass(color)), type: 'button', 'aria-label': colorName(color), title: colorName(color), 'aria-pressed': String(color === value.color), onclick: () => pick(color) },
       color === value.color && Icon('check', { size: 'small' }))));
 
-/** Opens the colours under the dot of a value, and closes them on a choice, a click elsewhere or Escape. */
-function choosing(item: HTMLElement, dot: HTMLButtonElement, value: EditedValue, options: ValueEditorOptions, changed: Change): () => void {
-  let palette: HTMLElement | null = null;
-  const outside = (event: Event): void => void (!item.contains(event.target as Node) && close());
-  const escape = (event: KeyboardEvent): void => void (event.key === 'Escape' && (close(), dot.focus()));
-  function close(): void {
-    palette?.remove();
-    palette = null;
-    dot.setAttribute('aria-expanded', 'false');
-    document.removeEventListener('pointerdown', outside);
-    document.removeEventListener('keydown', escape);
-  }
-  return () => {
-    if (palette) return close();
-    palette = item.appendChild(Palette(value, options, (color) => (close(), (value.color = color), changed())));
-    dot.setAttribute('aria-expanded', 'true');
-    document.addEventListener('pointerdown', outside);
-    document.addEventListener('keydown', escape);
-  };
-}
-
 /** One value: its dot, which opens its colours, its label, and the way to remove it. */
 function EditedChip(value: EditedValue, options: ValueEditorOptions, values: EditedValue[], changed: Change): HTMLSpanElement {
   const { colorLabel, removeLabel } = options;
@@ -63,7 +43,7 @@ function EditedChip(value: EditedValue, options: ValueEditorOptions, values: Edi
   const remove = (): void => void (values.splice(values.indexOf(value), 1), changed());
   const chip = ValueChip([dot, value.label, h('button', { class: 'value-editor__remove', type: 'button', 'aria-label': removeLabel(value.label), title: removeLabel(value.label), onclick: remove }, Icon('x', { size: 'small' }))], { color: value.color, plain: true });
   const item = h('span', { class: 'value-editor__item' }, chip);
-  dot.addEventListener('click', choosing(item, dot, value, options, changed));
+  dot.addEventListener('click', popover(item, dot, (close) => Palette(value, options, (color) => (close(), (value.color = color), changed()))));
   return item;
 }
 
