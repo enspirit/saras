@@ -6,21 +6,15 @@
 #
 # Images are named, never built here: `emb` builds them from each component's
 # Embfile.yml, so the target is chosen in one place.
-#
-# This is the stack saras is developed and tested in. The one an operator runs
-# is world/compose, under another project name: the two never share a
-# container or a volume.
-name: saras-dev
 
 services:
   # -------------------------------------------------------------------------
-  # postgres — the database. A third-party image, pinned here; world/compose
-  # names the same one, and `emb run lint` holds the two equal.
+  # postgres — the database. A third-party image, pinned here and nowhere else.
   # -------------------------------------------------------------------------
   postgres:
     image: postgres:16
     environment:
-      # Visibly dev defaults. world/compose defaults none of them.
+      # Visibly dev defaults.
       POSTGRES_DB: ${POSTGRES_DB:-saras}
       POSTGRES_USER: ${POSTGRES_USER:-saras}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-saras}

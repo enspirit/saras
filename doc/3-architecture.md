@@ -10,7 +10,7 @@ The directory says what a thing is for.
 doc/            what saras is for, what it does, and the decisions taken
 software/       what we write and ship          one directory per component
 tests/          what proves it, from outside    each a component too
-world/          what it runs in                 the deployment
+world/          what it runs in                 nothing yet
 
 .emb.yml                    project, plugins, flavors, repository-wide tasks
 .env.commons                committed, non-secret defaults: the stack's vocabulary
@@ -31,9 +31,8 @@ A component is a directory under one of the three, with a `README.md` that is it
 | [`software/saras`](../software/saras/) | The server and the interface it serves: every operation, and the state. | The service `saras`, image `saras/saras`: the front door |
 | [`tests/webspicy`](../tests/webspicy/) | The black-box specification of the API: what a URL answers, knowing nothing of what serves it. | The service `webspicy`, image `saras/webspicy`, never published: it sleeps, and the suite is run inside it |
 | [`tests/harness`](../tests/harness/) | The checks on the repository itself: links, import boundaries. | On a checkout, inside `emb run lint` |
-| [`world/compose`](../world/compose/) | saras as an operator runs it: the application and a PostgreSQL server. | An operator's `docker compose up`, never by the suites |
 
-PostgreSQL is a third party's image that needs no file of ours: it has no directory, and is pinned in `docker-compose.base.yml`.
+`world/` is empty for now. PostgreSQL is a third party's image that needs no file of ours: it has no directory, and is pinned in `docker-compose.base.yml`. No deployment is described either: saras ships as an image ([decision 0004](decisions/0004-saras-ships-as-an-image.md)).
 
 Why saras is one component and not three is [decision 0002](decisions/0002-one-component.md).
 
@@ -42,7 +41,7 @@ Why saras is one component and not three is [decision 0002](decisions/0002-one-c
 ```
 tests/harness  ──reads the files of──► everything         (imports nothing)
 tests/webspicy ──HTTP, through the front door──► software/saras   (knows nothing else of it)
-world/compose ──builds──► software/saras ──► PostgreSQL, the mail providers, the LLM
+software/saras ──► PostgreSQL, the mail providers, the LLM
 ```
 
 Inside `software/saras`, dependencies point one way, and `tests/harness` holds each arrow that is listed there:
@@ -74,13 +73,12 @@ No suite talks to a real one. Why the stand-ins live inside the tests and not in
 
 The state is kept in PostgreSQL and controlled by `software/saras` alone, which creates its schema when it starts: [decision 0001](decisions/0001-the-server-creates-its-schema.md).
 
-## The two stacks, and the deployment
+## The two stacks
 
-| | Compose files | Project | For |
-| --- | --- | --- | --- |
-| On a laptop | `base` + `devel` | `saras-dev` | Developing: saras on `localhost:3000` with its sources mounted and watched, PostgreSQL on `localhost:5432` |
-| Under the suites | `base` + `test` | `saras-dev` | CI: no published port, sources baked into the images, no secret read, sign-up open |
-| An operator's | `world/compose/docker-compose.yml` | `saras` | Running saras for real |
+| | Compose files | For |
+| --- | --- | --- |
+| On a laptop | `base` + `devel` | Developing: saras on `localhost:3000` with its sources mounted and watched, PostgreSQL on `localhost:5432` |
+| Under the suites | `base` + `test` | CI: no published port, sources baked into the images, no secret read, sign-up open |
 
 `emb up` starts the first; `COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up` the second. `base` names images and `emb` builds them, from each component's Embfile.
 

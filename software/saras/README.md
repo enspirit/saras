@@ -68,7 +68,7 @@ Green means: `lint` clean, and every test passing on both databases.
 
 - Every operation of the inventory exists. Where the code does not do what the documents say is listed there, under Deviations.
 - The black-box specification of the operations has begun in [`tests/webspicy`](../../tests/webspicy/), with what reads and what refuses. For everything else the tests of `test/integration/` still play that part, inside this component.
-- The image is not published to a registry: an operator builds it from a checkout ([`world/compose`](../../world/compose/)).
+- The image is not published to a registry: an operator builds it from a checkout, and the repository describes no deployment ([decision 0004](../../doc/decisions/0004-saras-ships-as-an-image.md)).
 - The pure functions live in `src/domain/computations/` and `shared/`, inside this component, not in a library of their own.
 
 ## Inside

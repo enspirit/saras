@@ -1,9 +1,0 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
-description: saras as an operator runs it — the application and a PostgreSQL server
-
-tasks:
-  lint:
-    description: The deployment's compose file is one docker compose accepts, on the PostgreSQL the stack is tested with
-    executors:
-      - local
-    script: ./lint
