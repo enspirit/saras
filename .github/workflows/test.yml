@@ -21,6 +21,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+        with:
+          # No later step pushes or fetches: the token is not left in .git/config.
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -45,6 +48,9 @@ jobs:
       COMPOSE_FILE: docker-compose.base.yml:docker-compose.test.yml
     steps:
       - uses: actions/checkout@v5
+        with:
+          # No later step pushes or fetches: the token is not left in .git/config.
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: 22
