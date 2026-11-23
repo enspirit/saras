@@ -16,10 +16,10 @@
 //   ReqPre   this server is set up for that host
 //            the host did not report a refusal
 //            the answer is to the sign-in the session remembers
-//            the host gives us lasting access
+//            the host gives us lasting access, and all of what was asked: reading, drafts and sending
 //            to renew: the member signed in to that very mailbox
 import { randomToken } from '../../tooling/crypto.ts';
-import { authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from '../../tooling/mail/oauth.ts';
+import { PartialGrant, authorizationUrl, exchangeCode, fetchIdentity, isConfigured, isOAuthKind } from '../../tooling/mail/oauth.ts';
 import { answersSignIn, connectsAsShared, isSameMailbox, rememberedSignIn, signInRemembered } from '../computations/mailboxes.ts';
 import type { HostSignIn } from '../computations/mailboxes.ts';
 import { clipped } from '../computations/given.ts';
@@ -59,6 +59,7 @@ async function grantedBy({ config }: World, kind: OAuthKind, code: unknown, fetc
     if (!tokens.refreshToken) throw new Error('no refresh token received');
     return { tokens, identity: await fetchIdentity(kind, tokens.accessToken, fetchImpl) };
   } catch (e) {
+    if (e instanceof PartialGrant) throw new Refusal('forbidden', 'oauth.partialGrant');
     throw new Refusal('upstream', 'oauth.failed', { detail: e instanceof Error ? e.message : String(e) });
   }
 }

@@ -50,7 +50,8 @@
     "notConfigured": "This OAuth provider is not configured on this server.",
     "denied": "Authorisation refused ({detail}).",
     "expired": "The OAuth session expired, start again.",
-    "failed": "Connection failed: {detail}"
+    "failed": "Connection failed: {detail}",
+    "partialGrant": "Access was granted only in part. Start again and tick every permission asked: reading the mailbox, and creating and sending replies."
   },
   "sync": {
     "fetchFailed": "Could not read the mailbox: {detail}",

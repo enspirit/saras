@@ -39,6 +39,7 @@ export const MESSAGES = {
   'oauth.denied': 'Authorisation refused ({detail}).',
   'oauth.expired': 'The OAuth session expired, start again.',
   'oauth.failed': 'Connection failed: {detail}',
+  'oauth.partialGrant': 'Access was granted only in part. Start again and tick every permission asked: reading the mailbox, and creating and sending replies.',
   'sync.fetchFailed': 'Could not read the mailbox: {detail}',
   'sync.triageFailed': 'Triage failed: {detail}',
   'sync.prepareFailed': 'Could not prepare a proposal: {detail}',

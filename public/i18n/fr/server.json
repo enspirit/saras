@@ -50,7 +50,8 @@
     "notConfigured": "Ce fournisseur OAuth n’est pas configuré sur ce serveur.",
     "denied": "Autorisation refusée ({detail}).",
     "expired": "Session OAuth expirée, recommencez.",
-    "failed": "Connexion échouée : {detail}"
+    "failed": "Connexion échouée : {detail}",
+    "partialGrant": "L’accès n’a été accordé qu’en partie. Recommencez en cochant toutes les autorisations demandées : lire la boîte, et créer et envoyer des réponses."
   },
   "sync": {
     "fetchFailed": "Lecture de la boîte impossible : {detail}",

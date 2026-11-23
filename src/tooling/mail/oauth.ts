@@ -52,8 +52,20 @@ interface TokenResponse {
   access_token?: string;
   refresh_token?: string;
   expires_in?: number | string;
+  /** What was actually granted, space-separated: a member may untick part of what is asked. */
+  scope?: string;
   error?: string;
   error_description?: string;
+}
+
+/** The member granted only part of what was asked: the mailbox could not be read, or replies not filed. */
+export class PartialGrant extends Error {}
+
+/** Google lets a member untick permissions one by one, and says which were granted. Without all of them nothing works. */
+function grantedInFull(kind: OAuthKind, granted: string | undefined): boolean {
+  if (kind !== 'google' || !granted) return true;
+  const have = new Set(granted.split(' '));
+  return PROVIDERS.google.scope.split(' ').every((scope) => have.has(scope));
 }
 
 async function tokenRequest(config: OAuthConfig, kind: OAuthKind, params: Record<string, string>, fetchImpl: Fetch): Promise<OAuthTokens> {
@@ -66,6 +78,7 @@ async function tokenRequest(config: OAuthConfig, kind: OAuthKind, params: Record
   if (!res.ok || !body.access_token) {
     throw new Error(`${kind} OAuth failed: ${body.error_description || body.error || res.status}`);
   }
+  if (!grantedInFull(kind, body.scope)) throw new PartialGrant(`${kind} granted only: ${body.scope}`);
   return {
     accessToken: body.access_token,
     refreshToken: body.refresh_token || null,
@@ -79,14 +92,21 @@ export const exchangeCode = (config: OAuthConfig, kind: OAuthKind, code: string,
 export const refreshTokens = (config: OAuthConfig, kind: OAuthKind, refreshToken: string, fetchImpl: Fetch = fetch) =>
   tokenRequest(config, kind, { grant_type: 'refresh_token', refresh_token: refreshToken }, fetchImpl);
 
+const PROFILE_URL: Record<OAuthKind, string> = {
+  google: 'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+  microsoft: 'https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName',
+};
+
+/** What the host itself says went wrong, which names the cause: an API not enabled, a permission missing. */
+async function refusalOf(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+  return body?.error?.message ? `${res.status}: ${body.error.message}` : String(res.status);
+}
+
 /** Which mailbox did the user just authorize? */
 export async function fetchIdentity(kind: OAuthKind, accessToken: string, fetchImpl: Fetch = fetch): Promise<{ email: string; name: string }> {
-  const url =
-    kind === 'google'
-      ? 'https://gmail.googleapis.com/gmail/v1/users/me/profile'
-      : 'https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName';
-  const res = await fetchImpl(url, { headers: { authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) throw new Error(`could not read the ${kind} profile (${res.status})`);
+  const res = await fetchImpl(PROFILE_URL[kind], { headers: { authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) throw new Error(`could not read the ${kind} profile (${await refusalOf(res)})`);
   const body = (await res.json()) as { emailAddress?: string; mail?: string; userPrincipalName?: string; displayName?: string };
   return kind === 'google'
     ? { email: String(body.emailAddress).toLowerCase(), name: '' }
