@@ -1,0 +1,124 @@
+{{- if .Values.postgresql.enabled }}
+{{- if not .Values.postgresql.existingSecret }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "saras.postgresql.fullname" . }}
+  labels:
+    {{- include "saras.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: {{ toString .Values.postgresql.password | quote }}
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "saras.postgresql.fullname" . }}
+  labels:
+    {{- include "saras.labels" . | nindent 4 }}
+spec:
+  # Inside the cluster only: saras is its one client.
+  type: ClusterIP
+  selector:
+    {{- include "saras.postgresql.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: postgresql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "saras.postgresql.fullname" . }}
+  labels:
+    {{- include "saras.labels" . | nindent 4 }}
+spec:
+  # One server, and not a value: nothing here replicates it.
+  replicas: 1
+  serviceName: {{ include "saras.postgresql.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "saras.postgresql.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "saras.postgresql.selectorLabels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        # The `postgres` user of the image.
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgresql
+          image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
+          imagePullPolicy: {{ .Values.postgresql.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: saras
+            - name: POSTGRES_USER
+              value: saras
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                {{- include "saras.postgresql.passwordRef" . | nindent 16 }}
+            # A folder of the volume, not its root, which may hold lost+found.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          startupProbe:
+            exec:
+              command: [pg_isready, -U, saras, -d, saras]
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, saras, -d, saras]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: [pg_isready, -U, saras, -d, saras]
+            periodSeconds: 20
+            failureThreshold: 6
+          {{- with .Values.postgresql.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: run
+              mountPath: /var/run/postgresql
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+  # A claim of a StatefulSet outlives it: uninstalling the release leaves the
+  # database where it is.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- with .Values.postgresql.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgresql.size }}
+{{- end }}

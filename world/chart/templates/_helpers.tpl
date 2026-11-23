@@ -34,6 +34,23 @@ APP_SECRET DATABASE_URL OPENROUTER_API_KEY SMTP_URL GOOGLE_CLIENT_SECRET MICROSO
 PORT BASE_URL DATA_DIR BRAND_DIR
 {{- end }}
 
+{{/* The PostgreSQL server of the release, when it has one: its name, and what saras and it agree on. */}}
+{{- define "saras.postgresql.fullname" -}}
+{{- printf "%s-postgresql" (include "saras.fullname" . | trunc 52 | trimSuffix "-") }}
+{{- end }}
+
+{{- define "saras.postgresql.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "saras.name" . }}-postgresql
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/* Where its password is kept: a Secret of the operator's, else the one the chart creates. */}}
+{{- define "saras.postgresql.passwordRef" -}}
+secretKeyRef:
+  name: {{ .Values.postgresql.existingSecret | default (include "saras.postgresql.fullname" .) }}
+  key: {{ ternary .Values.postgresql.existingSecretKey "POSTGRES_PASSWORD" (ne .Values.postgresql.existingSecret "") }}
+{{- end }}
+
 {{/* The secrets given a value: what the chart's own Secret holds. */}}
 {{- define "saras.givenSecrets" -}}
 {{- $given := dict }}
@@ -72,12 +89,23 @@ PORT BASE_URL DATA_DIR BRAND_DIR
 {{- if and (not .Values.existingSecret) (lt (len (toString .Values.secrets.APP_SECRET)) 32) }}
 {{- fail "secrets.APP_SECRET is missing or too short (32 characters minimum). Generate one with: openssl rand -hex 32. Or name a Secret that holds it: existingSecret" }}
 {{- end }}
-{{- if .Values.embeddedDatabase.enabled }}
-{{- if .Values.secrets.DATABASE_URL }}
-{{- fail "embeddedDatabase.enabled and secrets.DATABASE_URL: one database or the other" }}
+{{- $chosen := list }}
+{{- if .Values.secrets.DATABASE_URL }}{{ $chosen = append $chosen "secrets.DATABASE_URL" }}{{ end }}
+{{- if .Values.postgresql.enabled }}{{ $chosen = append $chosen "postgresql.enabled" }}{{ end }}
+{{- if .Values.embeddedDatabase.enabled }}{{ $chosen = append $chosen "embeddedDatabase.enabled" }}{{ end }}
+{{- if gt (len $chosen) 1 }}
+{{- fail (printf "%s: one database, not %d" (join " and " $chosen) (len $chosen)) }}
 {{- end }}
-{{- else if not (or .Values.existingSecret .Values.secrets.DATABASE_URL) }}
-{{- fail "No database: name a PostgreSQL server with secrets.DATABASE_URL (or in existingSecret), or set embeddedDatabase.enabled=true to try saras on its embedded one" }}
+{{- if and (not $chosen) (not .Values.existingSecret) }}
+{{- fail "No database: name a PostgreSQL server of yours with secrets.DATABASE_URL (or in existingSecret), set postgresql.enabled=true for one in the release, or embeddedDatabase.enabled=true to try saras on its embedded one" }}
+{{- end }}
+{{- if .Values.postgresql.enabled }}
+{{- if and .Values.postgresql.password .Values.postgresql.existingSecret }}
+{{- fail "postgresql.password and postgresql.existingSecret: one password, not 2" }}
+{{- end }}
+{{- if not (or .Values.postgresql.password .Values.postgresql.existingSecret) }}
+{{- fail "postgresql.enabled: a password is required, as postgresql.password (openssl rand -hex 16) or in a Secret of yours, postgresql.existingSecret" }}
+{{- end }}
 {{- end }}
 {{- if and .Values.ingress.enabled (not .Values.ingress.host) }}
 {{- fail "ingress.enabled: ingress.host is required" }}

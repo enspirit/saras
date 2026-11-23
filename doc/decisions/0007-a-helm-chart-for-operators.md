@@ -16,6 +16,8 @@ saras ships as an image and the repository describes no deployment ([decision 00
 
 Decision 0004 stands: the compose files remain the stack saras is developed and tested in, and no deployment is described. What it no longer says is that an operator gets nothing but the image.
 
+The chart has since been given a PostgreSQL server it runs when asked: [decision 0008](0008-the-chart-can-run-a-postgresql-server.md). The rest stands.
+
 ## Alternatives
 
 - **No chart**, as before: the README's `docker run` is enough on one machine, and says nothing to an operator on a cluster.
