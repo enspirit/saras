@@ -59,3 +59,9 @@ export interface RuleTried {
   from: string;
   value: string | null;
 }
+
+/** What applying a rule again to the emails already kept did. */
+export interface SortedAgain {
+  examined: number;
+  changed: number;
+}

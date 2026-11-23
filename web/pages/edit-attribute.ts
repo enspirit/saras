@@ -3,7 +3,7 @@
 
 import { ATTRIBUTE_KINDS, DECIDERS } from '../../shared/attribute.ts';
 import type { Attribute, AttributeGiven, AttributeKind, Decider, RuleTried } from '../../shared/attribute.ts';
-import { createAttribute, deleteAttribute, editAttribute, readAttributes, tryRule } from '../api/attributes.ts';
+import { createAttribute, deleteAttribute, editAttribute, readAttributes, sortAgainByRule, tryRule } from '../api/attributes.ts';
 import { t, tRich } from '../i18n.ts';
 import { ActionButton, confirmAction, guard, SubmitForm, toast } from './actions.ts';
 import { attributeName, valueLabel } from './attribute-names.ts';
@@ -63,6 +63,14 @@ function ruleSection(attribute: Attribute | null, f: AttributeFields): HTMLDivEl
   return section;
 }
 
+/** EditAttribute then SortAgainByRule, once confirmed: the rule as written here is kept, then applied to the emails already kept. */
+const sortAgainButton = (attribute: Attribute, f: AttributeFields): HTMLButtonElement => ActionButton(t('attributes.sortAgain'), t('attributes.sortingAgain'), async () => {
+  if (!(await confirmAction(t('attributes.confirmSortAgain', { name: attributeName(attribute) }), t('attributes.sortAgain'), false))) return;
+  await editAttribute(attribute.key, written(f));
+  const { examined, changed } = await sortAgainByRule(attribute.key);
+  toast(t('attributes.sortedAgain', { examined, changed }));
+}, { icon: 'refresh-cw' });
+
 /** DeleteAttribute, once confirmed. */
 const deleteButton = (attribute: Attribute): HTMLButtonElement => ActionButton(t('attributes.delete'), '…', async () => {
   if (!(await confirmAction(t('attributes.confirmDelete', { name: attribute.name }), t('attributes.delete')))) return;
@@ -83,7 +91,8 @@ function attributeForm(attribute: Attribute | null, f: AttributeFields): HTMLFor
     Field(t('attributes.values'), f.values, { hint: t('attributes.valuesHint') }),
     Field(t('attributes.decidedBy'), f.decidedBy, { hint: t('attributes.decidedByHint') }),
     ruleSection(attribute, f),
-    Actions(save, ButtonLink(t('common.cancel'), { href: '#/attributes' }), attribute && !attribute.system && deleteButton(attribute)),
+    attribute && Block(Text({ muted: true, small: true }, t('attributes.sortAgainHint'))),
+    Actions(save, attribute && sortAgainButton(attribute, f), ButtonLink(t('common.cancel'), { href: '#/attributes' }), attribute && !attribute.system && deleteButton(attribute)),
   );
 }
 

@@ -521,7 +521,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 - The rule that sets automated mail aside is the rule of **Stands in**: it is there to read, and I can change it.
 - **Try it on recent emails** shows what a rule would say of my twenty most recent emails, without changing any.
 - A rule Elo cannot read is refused with Elo's own message. A rule that fails or runs too long on an email leaves the attribute undecided for that email.
-- Rules apply to the emails fetched from then on.
+- Rules apply to the emails fetched from then on. **Save and apply to the emails already kept** has a rule look again at those: it says how many it looked at and how many changed. Values set by hand stay; emails replied or placed by a member stay where they are; an email the rule of **Stands in** no longer places goes back to be sorted.
 
 ### US-95 — Set an attribute by hand
 **As** a member, **I want** to set or correct the value of an attribute on an email, **so that** it shows on the right boards whatever the rules said.

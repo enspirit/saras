@@ -30,7 +30,7 @@
   "triedValue": "Valeur",
   "triedNothing": "rien",
   "create": "Créer l’attribut",
-  "saved": "Attribut enregistré. Il s’applique aux emails relevés à partir de maintenant.",
+  "saved": "Attribut enregistré.",
   "delete": "Supprimer l’attribut",
   "confirmDelete": "Supprimer l’attribut « {name} » ? Les tableaux cessent de filtrer dessus.",
   "status": "Se trouve dans",
@@ -42,5 +42,10 @@
   "valueSet": "{name} : enregistré.",
   "sourceRule": "par sa règle",
   "sourceAi": "par l’IA",
-  "sourceUser": "à la main"
+  "sourceUser": "à la main",
+  "sortAgain": "Enregistrer et appliquer aux emails déjà conservés",
+  "sortingAgain": "Nouveau tri…",
+  "confirmSortAgain": "Enregistrer « {name} » et appliquer sa règle à tous les emails déjà conservés ? Les valeurs fixées à la main restent telles quelles.",
+  "sortedAgain": "{examined, plural, one {# email examiné} other {# emails examinés}}, {changed, plural, =0 {aucun modifié} one {# modifié} other {# modifiés}}.",
+  "sortAgainHint": "Une règle s’applique aux emails relevés à partir de maintenant. Pour qu’elle revoie ceux déjà conservés, appliquez-la : les valeurs fixées à la main restent, les emails répondus ou placés par un membre restent où ils sont."
 }

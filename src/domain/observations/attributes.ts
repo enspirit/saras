@@ -2,22 +2,18 @@
 import type { AttributeValue, RuleTried } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
 import { EloError, compileRule } from '../../tooling/elo.ts';
-import { decidedFrom, emailForRules } from '../computations/attributes.ts';
-import { rowToEmail } from '../computations/emails.ts';
+import { decidedFrom, keptEmailForRules } from '../computations/attributes.ts';
 import type { EmailRow } from '../model/email.ts';
 import { Refusal } from '../refusal.ts';
 import { attributesOf } from '../state/attributes.ts';
 import { mayUse } from '../state/mailboxes.ts';
 import type { Actor } from '../world.ts';
 
-type Recent = EmailRow & { mailbox: string; headers_json: string };
+type Recent = EmailRow & { mailbox: string };
 
 /** The member's twenty most recent emails, as rules see them. */
 const recentEmails = (db: Db, { member, organization }: Actor): Promise<Recent[]> =>
   db.query<Recent>(`SELECT e.*, a.email AS mailbox FROM emails e JOIN accounts a ON a.id = e.account_id WHERE ${mayUse('$1', '$2')} ORDER BY e.date DESC LIMIT 20`, [organization.id, member.id]);
-
-/** A kept email as a rule sees it when it is fetched: its headers were kept for that. */
-const forRules = (row: Recent) => emailForRules({ ...rowToEmail(row), headers: JSON.parse(row.headers_json), answered: false }, row.mailbox);
 
 /** The values a rule may give: those of the attribute named, or the labels being typed for a new one. */
 async function valuesFor(db: Db, actor: Actor, given: { key?: unknown; values?: unknown }): Promise<AttributeValue[]> {
@@ -32,7 +28,7 @@ export async function tryRule(db: Db, actor: Actor, given: { elo?: unknown; key?
   try {
     const rule = compileRule(String(given.elo ?? ''));
     return (await recentEmails(db, actor)).map((row) => {
-      const decided = decidedFrom(rule.run(forRules(row)), values);
+      const decided = decidedFrom(rule.run(keptEmailForRules(row, row.mailbox)), values);
       return { subject: row.subject, from: row.from_name || row.from_addr, value: decided ? (values.find((v) => v.key === decided.value)?.label ?? null) : null };
     });
   } catch (e) {

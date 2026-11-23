@@ -4,6 +4,7 @@ import { deleteAttribute } from '../../domain/attributes/delete-attribute.ts';
 import { editAttribute } from '../../domain/attributes/edit-attribute.ts';
 import { setEmailAttribute } from '../../domain/attributes/set-email-attribute.ts';
 import { tryRule } from '../../domain/observations/attributes.ts';
+import { sortAgainByRule } from '../../domain/sorting/sort-again-by-rule.ts';
 import { attributesOf } from '../../domain/state/attributes.ts';
 import { actorOf, done } from './route.ts';
 import type { Handle, Route } from './route.ts';
@@ -21,6 +22,8 @@ const remove: Handle = async ({ world }, req, res) => {
 
 const tryIt: Handle = async ({ world }, req, res) => void res.json(await tryRule(world.db, actorOf(req), req.body));
 
+const sortAgain: Handle = async ({ world }, req, res) => void res.json(await sortAgainByRule(world, actorOf(req), req.params.key));
+
 const setOnEmail: Handle = async ({ world }, req, res) => {
   await setEmailAttribute(world, actorOf(req), req.params.id, req.params.key, req.body.value);
   done(res);
@@ -32,5 +35,6 @@ export const ATTRIBUTES: Route[] = [
   { method: 'post', path: '/attributes/try', handle: tryIt, for: 'administrators' },
   { method: 'put', path: '/attributes/:key', handle: edit },
   { method: 'delete', path: '/attributes/:key', handle: remove },
+  { method: 'post', path: '/attributes/:key/sort-again', handle: sortAgain },
   { method: 'put', path: '/emails/:id/attributes/:key', handle: setOnEmail },
 ];

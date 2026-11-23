@@ -62,3 +62,7 @@ export const watchedMailboxes = (db: Db): Promise<AccountRow[]> => db.query<Acco
 /** When a mailbox was last fetched, and what went wrong if anything did. */
 export const recordFetch = async (db: Db, mailboxId: number, error: ServerProblem | null): Promise<void> =>
   void (await db.run(`UPDATE accounts SET last_sync_at = now(), last_error = $1 WHERE id = $2`, [encodeProblem(error), mailboxId]));
+
+/** The mailboxes of an organisation that watch a folder. */
+export const watchedMailboxesOf = (db: Db, organizationId: number): Promise<AccountRow[]> =>
+  db.query<AccountRow>('SELECT * FROM accounts WHERE org_id = $1 AND folder IS NOT NULL', [organizationId]);

@@ -2,6 +2,7 @@
 import type { Db } from '../../tooling/db.ts';
 import { textToKeep } from '../computations/emails.ts';
 import type { Standing } from '../computations/emails.ts';
+import type { StatusAgain, ValueAgain } from '../computations/sorting-again.ts';
 import type { EmailRow, IncomingEmail } from '../model/email.ts';
 import type { TriageDecision } from '../sorting/gate.ts';
 import { Refusal } from '../refusal.ts';
@@ -80,3 +81,18 @@ export const keepVerdict = async (db: Db, gate: string, decision: TriageDecision
     decision.replyNeeded ? decision.promptId : null,
     decision.mailId,
   ]));
+
+/** An email the organisation keeps, with the address of the mailbox it arrived in. */
+export type KeptEmail = EmailRow & { mailbox: string };
+
+/** Every email an organisation keeps, oldest first. */
+export const emailsKeptBy = (db: Db, organizationId: number): Promise<KeptEmail[]> =>
+  db.query<KeptEmail>('SELECT e.*, a.email AS mailbox FROM emails e JOIN accounts a ON a.id = e.account_id WHERE a.org_id = $1 ORDER BY e.id', [organizationId]);
+
+/** Where an email stands from now on, who decided it and why. One that goes back to waiting loses the prompt suggested for it. */
+export const keepStanding = async (db: Db, emailId: number, { status, source, reason }: StatusAgain): Promise<void> =>
+  void (await db.run('UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3 WHERE id = $4', [status, source, reason, emailId]));
+
+/** The values an email has from now on for the organisation's attributes; its priority too when that is one of them. */
+export const keepValues = async (db: Db, emailId: number, { attributes, priority }: ValueAgain): Promise<void> =>
+  void (await db.run('UPDATE emails SET attributes_json = $1, priority = COALESCE($2, priority) WHERE id = $3', [JSON.stringify(attributes), priority ?? null, emailId]));

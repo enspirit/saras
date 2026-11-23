@@ -30,7 +30,7 @@
   "triedValue": "Value",
   "triedNothing": "nothing",
   "create": "Create the attribute",
-  "saved": "Attribute saved. It applies to the emails fetched from now on.",
+  "saved": "Attribute saved.",
   "delete": "Delete the attribute",
   "confirmDelete": "Delete the attribute “{name}”? Boards stop filtering on it.",
   "status": "Stands in",
@@ -42,5 +42,10 @@
   "valueSet": "{name}: saved.",
   "sourceRule": "by its rule",
   "sourceAi": "by the AI",
-  "sourceUser": "by hand"
+  "sourceUser": "by hand",
+  "sortAgain": "Save and apply to the emails already kept",
+  "sortingAgain": "Sorting again…",
+  "confirmSortAgain": "Save “{name}” and apply its rule to every email already kept? Values set by hand are left as they are.",
+  "sortedAgain": "{examined, plural, one {# email} other {# emails}} looked at, {changed, plural, =0 {none changed} one {# changed} other {# changed}}.",
+  "sortAgainHint": "A rule applies to the emails fetched from now on. To have it look again at those already kept, apply it to them: values set by hand stay, emails replied or placed by a member stay where they are."
 }

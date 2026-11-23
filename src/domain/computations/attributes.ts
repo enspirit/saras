@@ -4,9 +4,10 @@ import { ATTRIBUTE_KINDS, DECIDERS, PRIORITY, STATUS } from '../../../shared/att
 import type { Attribute, AttributeGiven, AttributeKind, AttributeValue, Decider } from '../../../shared/attribute.ts';
 import { MESSAGES, reasonCode } from '../../tooling/messages.ts';
 import type { MessageCode } from '../../tooling/messages.ts';
-import type { IncomingEmail } from '../model/email.ts';
+import type { EmailRow, IncomingEmail } from '../model/email.ts';
 import { accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
+import { rowToEmail } from './emails.ts';
 import { clipped } from './given.ts';
 
 const oneOf = <T extends string>(known: readonly T[], value: unknown, otherwise: T): T => known.find((item) => item === value) ?? otherwise;
@@ -50,6 +51,10 @@ export const emailForRules = (email: IncomingEmail, mailboxAddress: string) => (
   headers: { listUnsubscribe: '', listId: '', autoSubmitted: '', precedence: '', ...email.headers },
 });
 export type EmailForRules = ReturnType<typeof emailForRules>;
+
+/** A kept email as a rule sees it: as when it was fetched, but for whether it was already answered, which is not kept. */
+export const keptEmailForRules = (row: EmailRow, mailboxAddress: string): EmailForRules =>
+  emailForRules({ ...rowToEmail(row), headers: JSON.parse(row.headers_json), answered: false }, mailboxAddress);
 
 /** What a rule decided: a value of the attribute, and why when it said. */
 export interface Decided {

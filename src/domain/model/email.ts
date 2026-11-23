@@ -74,5 +74,7 @@ export interface EmailRow {
   suggested_prompt_id: number | null;
   /** The values of the attributes the organisation made, and who decided each (and the priority). */
   attributes_json: string;
+  /** The few headers rules look at, as fetched; '{}' for an email fetched before they were kept. */
+  headers_json: string;
   created_at: Date;
 }
