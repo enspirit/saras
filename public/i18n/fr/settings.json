@@ -52,5 +52,6 @@
   "aiPrivacy": "IA et confidentialité",
   "factSorting": "Tri",
   "factWriting": "Rédaction",
-  "aiSetBy": "Choisi par les administrateurs de {organization}, pour tous les membres."
+  "aiSetBy": "Choisi par les administrateurs de {organization}, pour tous les membres.",
+  "aiDoes": "Ce que fait l’IA se choisit là où cela s’applique : <sorting>le tri</sorting> sur l’attribut Se trouve dans, <writing>quand elle rédige et avec quel prompt</writing> dans Prompts."
 }

@@ -21,5 +21,12 @@
   "templates": "Ready-made prompts",
   "templatesHint": "Other ways of replying, ready to add. Once added they are yours to edit.",
   "addTemplate": "Add",
-  "added": "Added"
+  "added": "Added",
+  "useTitle": "When the AI writes, and with which prompt",
+  "whichTitle": "Which prompt a proposal is written with",
+  "whichNowAi": "Now: the AI sorts your emails, and suggests a prompt for each one to handle.",
+  "whichNowNone": "Now: the AI does not sort your emails, so no prompt is suggested.",
+  "whichSuggested": "When the AI sorts (the <link>Stands in</link> attribute is decided by the AI), it also suggests, for each email to handle, the prompt that suits it best, from the “when to use it” of each prompt. A rule never suggests a prompt.",
+  "whichMember": "When a member asks for a proposal, the suggested prompt is preselected and marked; they can pick another. With no suggestion, the first prompt of the list is offered first.",
+  "whichAtFetch": "When proposals are written at fetch, each uses the suggested prompt; with no suggestion, the first prompt of the list above."
 }

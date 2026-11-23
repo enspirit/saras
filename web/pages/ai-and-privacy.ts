@@ -1,9 +1,9 @@
-// Settings → AI & privacy: which AI works for the organisation, when it writes, and what the
-// product guarantees about the emails it is sent. Administrators choose; members read.
+// Settings → AI & privacy: which AI works for the organisation, and what the product guarantees
+// about the emails it is sent. Administrators choose; members read. What the AI does is chosen
+// where it applies: sorting on an attribute, writing with the prompts.
 
 import type { Profile } from '../../shared/member.ts';
 import type { Organization } from '../../shared/organization.ts';
-import { WRITING } from '../../shared/organization.ts';
 import { changeOrganizationSettings, removeOrganizationKey } from '../api/settings.ts';
 import { t, tRich } from '../i18n.ts';
 import { showPage } from '../navigation.ts';
@@ -11,7 +11,7 @@ import { ActionButton, SubmitForm, toast } from './actions.ts';
 import { privacy } from './privacy.ts';
 import { isAdmin } from '../session.ts';
 import { Button } from '../ui/atoms/button.ts';
-import { Input, Select } from '../ui/atoms/input.ts';
+import { Input } from '../ui/atoms/input.ts';
 import { Link, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
 import { Callout } from '../ui/molecules/callout.ts';
@@ -24,8 +24,8 @@ import { Actions } from '../ui/molecules/form.ts';
 const SORTING_LABEL = { none: 'welcome.sortingNone', ai: 'welcome.sortingAi' };
 const WRITING_LABEL = { none: 'welcome.writingNone', draft: 'welcome.writingDraft', mailbox: 'welcome.writingMailbox' };
 
-/** Where sorting is decided: on the attribute that says where an email stands. */
-const sortingMoved = (): HTMLElement => Block(Text({ muted: true, small: true }, tRich('organization.sortingMoved', {}, { link: (label) => Link(label, '#/attributes/edit/status') })));
+/** Where what the AI does is decided: sorting on the attribute that says where an email stands, writing with the prompts. */
+const decidedElsewhere = (): HTMLElement => Block(Text({ muted: true, small: true }, tRich('settings.aiDoes', {}, { sorting: (label) => Link(label, '#/attributes/edit/status'), writing: (label) => Link(label, '#/prompts') })));
 
 const removeKeyButton = (): HTMLButtonElement => ActionButton(t('organization.deleteKey'), '…', async () => {
   await removeOrganizationKey();
@@ -33,21 +33,19 @@ const removeKeyButton = (): HTMLButtonElement => ActionButton(t('organization.de
   showPage();
 }, { variant: 'danger' });
 
-/** SetOrganizationModel, SetOrganizationKey and ChooseWriting, in one form; RemoveOrganizationKey beside it. */
+/** SetOrganizationModel and SetOrganizationKey, in one form; RemoveOrganizationKey beside it. */
 function aiForm(org: Organization, inForce: string): HTMLFormElement {
   const model = Input({ value: org.model ?? '', placeholder: inForce });
   const key = Input({ type: 'password', autocomplete: 'off', placeholder: org.hasKey ? t('settings.keySaved') : 'sk-or-…' });
-  const writing = Select(WRITING.map((value) => ({ value, label: t(WRITING_LABEL[value]), selected: org.writing === value })));
   const save = Button(t('common.save'), { variant: 'primary', type: 'submit' });
   return SubmitForm(save, '…', async () => {
-    await changeOrganizationSettings({ model: model.value, writing: writing.value, ...(key.value ? { openrouterKey: key.value } : {}) });
+    await changeOrganizationSettings({ model: model.value, ...(key.value ? { openrouterKey: key.value } : {}) });
     toast(t('settings.saved'));
     showPage();
   },
     Field(t('organization.model'), model, { hint: t('organization.modelHint') }),
     Field(t('organization.key'), key, { hint: org.hasKey ? t('settings.keyHintOwn') : t('organization.keyHint') }),
-    Field(t('organization.writing'), writing, { hint: t('organization.writingHint') }),
-    sortingMoved(),
+    decidedElsewhere(),
     Actions(save, org.hasKey && removeKeyButton()),
   );
 }

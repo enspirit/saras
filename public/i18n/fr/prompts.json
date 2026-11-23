@@ -21,5 +21,12 @@
   "templates": "Prompts prêts à l’emploi",
   "templatesHint": "D’autres façons de répondre, prêtes à ajouter. Une fois ajoutés, ils sont à vous de modifier.",
   "addTemplate": "Ajouter",
-  "added": "Ajouté"
+  "added": "Ajouté",
+  "useTitle": "Quand l’IA rédige, et avec quel prompt",
+  "whichTitle": "Avec quel prompt une proposition est rédigée",
+  "whichNowAi": "Actuellement : l’IA trie vos emails, et suggère un prompt pour chacun de ceux à traiter.",
+  "whichNowNone": "Actuellement : l’IA ne trie pas vos emails, aucun prompt n’est donc suggéré.",
+  "whichSuggested": "Quand l’IA trie (l’attribut <link>Se trouve dans</link> est décidé par l’IA), elle suggère aussi, pour chaque email à traiter, le prompt qui lui convient le mieux, d’après le « quand l’utiliser » de chaque prompt. Une règle ne suggère jamais de prompt.",
+  "whichMember": "Quand un membre demande une proposition, le prompt suggéré est présélectionné et signalé ; il peut en choisir un autre. Sans suggestion, le premier prompt de la liste est proposé d’abord.",
+  "whichAtFetch": "Quand les propositions sont rédigées au relevé, chacune utilise le prompt suggéré ; sans suggestion, le premier prompt de la liste ci-dessus."
 }

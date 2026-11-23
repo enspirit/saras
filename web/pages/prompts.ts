@@ -1,13 +1,15 @@
-// The prompts of the organisation (administrators): the list, how much each is used, and the
-// ready-made ones still to add.
+// The prompts of the organisation (administrators): the list, how much each is used, when the AI
+// writes and with which one, and the ready-made ones still to add.
 
 import type { Prompt } from '../../shared/prompt.ts';
 import { deletePrompt, readPrompts, readPromptTemplates } from '../api/prompts.ts';
 import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard } from './actions.ts';
 import { editPromptPage } from './edit-prompt.ts';
+import { promptUseCard } from './prompt-use.ts';
 import { ReadyMadePrompts } from './ready-made-prompts.ts';
 import { shell } from './shell.ts';
+import { refreshMe } from '../session.ts';
 import { ButtonLink } from '../ui/atoms/button.ts';
 import { Muted, Strong, Text } from '../ui/atoms/text.ts';
 import { Block } from '../ui/molecules/field.ts';
@@ -32,7 +34,7 @@ const promptsTable = (prompts: Prompt[]): HTMLDivElement =>
 
 /** The list of prompts, or with `open` one of them (or a new one) being edited. */
 export const promptsPage = guard(async (open: number | 'new' | null = null) => {
-  const [prompts, templates] = await Promise.all([readPrompts(), readPromptTemplates()]);
+  const [prompts, templates, who] = await Promise.all([readPrompts(), readPromptTemplates(), refreshMe()]);
   const prompt = typeof open === 'number' ? prompts.find((p) => p.id === open) ?? null : null;
   if (open !== null && (open === 'new' || prompt)) return editPromptPage(prompt);
 
@@ -40,6 +42,7 @@ export const promptsPage = guard(async (open: number | 'new' | null = null) => {
     Page(
       PageHeader({ title: t('prompts.title'), intro: t('prompts.intro') }, ButtonLink(t('prompts.new'), { href: '#/prompts/new', variant: 'primary' })),
       promptsTable(prompts),
+      promptUseCard(who.organization),
       templates.length > 0 && [Block(Text({ muted: true }, t('prompts.templatesHint'))), ReadyMadePrompts(templates, () => void promptsPage())],
     ),
   );

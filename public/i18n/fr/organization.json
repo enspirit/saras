@@ -15,6 +15,5 @@
   "confirmDelete": "Supprimer {organization} et tout ce que saras détient pour elle, pour tous ses membres ? Cette action est définitive.",
   "deleted": "L’organisation a été supprimée.",
   "writing": "Rédaction : quand l’IA rédige une proposition",
-  "writingHint": "La rédaction au relevé envoie à l’IA le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre.",
-  "sortingMoved": "Le tri — quels emails demandent une réponse — se décide sur l’attribut <link>Se trouve dans</link> : par sa règle, par l’IA, ou par les deux."
+  "writingHint": "La rédaction au relevé envoie à l’IA le contenu de chaque email à traiter, dix au plus par relevé et par boîte. Rien n’est jamais envoyé au correspondant sans la confirmation d’un membre."
 }

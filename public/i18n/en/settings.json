@@ -52,5 +52,6 @@
   "aiPrivacy": "AI & privacy",
   "factSorting": "Sorting",
   "factWriting": "Writing",
-  "aiSetBy": "Chosen by the administrators of {organization}, for every member."
+  "aiSetBy": "Chosen by the administrators of {organization}, for every member.",
+  "aiDoes": "What the AI does is chosen where it applies: <sorting>sorting</sorting> on the Stands in attribute, <writing>when it writes and with which prompt</writing> in Prompts."
 }

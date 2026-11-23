@@ -123,7 +123,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **SetSignature** | Member | → the member's signature | | | same |
 | **RenameOrganization** | Administrator | → the organisation's name | Administrator | An empty name changes nothing | Settings → Organisation · `PUT /organization` |
 | **ChooseSorting** | Administrator | → fetched emails are sorted by nobody, or by the AI, from the next fetch on | Administrator · `none` or `ai` | What was fetched before stays as it was sorted | Settings → Organisation; step 1 of "Sorting and writing" in the tour · `PUT /organization` |
-| **ChooseWriting** | Administrator | → proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts | Administrator · one of those three | Nothing sends by itself | same; step 2 of "Sorting and writing" |
+| **ChooseWriting** | Administrator | → proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts | Administrator · one of those three | Nothing sends by itself | Prompts, "When the AI writes"; step 2 of "Sorting and writing" · `PUT /organization` |
 | **SetAsideAutomatedFirst** | Administrator | → the rule of "Stands in" is applied, or not | Administrator | | Settings → Organisation · `PUT /organization`; the same as choosing who decides "Stands in" |
 | **SetOrganizationModel** | Administrator | → the model that writes and sorts for every member, or none (the server's applies) | Administrator · looks like `provider/model` | | Settings → AI & privacy · `PUT /organization` |
 | **SetOrganizationKey** / **RemoveOrganizationKey** | Administrator | → the organisation has a key / has none | Administrator | Stored sealed | same; the key step of the tour |
