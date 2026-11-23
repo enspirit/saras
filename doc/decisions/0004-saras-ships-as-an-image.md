@@ -17,6 +17,8 @@ The compose files of the root are the stack saras is developed and tested in, an
 - Starting saras *and* a PostgreSQL server with one command is no longer something the repository offers (US-84 says so).
 - An installation made with the former compose file keeps its data in the volume `saras_saras-postgres`, which nothing here touches.
 
+The image has since been given a registry: [decision 0006](0006-the-image-is-published-on-docker-hub.md). This one stands, as no deployment is described.
+
 ## What would reverse this
 
 A registry and somewhere we host saras ourselves: the deployment is then described once, in `world/` (a chart), names a published image, and is held to `.env.commons` by a test.

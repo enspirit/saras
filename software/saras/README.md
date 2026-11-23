@@ -11,7 +11,7 @@ Nothing else is public.
 - **The interface**: `/` and `/styleguide.html`, with the files they load. `/brand/*` is the brand folder when there is one, file by file, over the default brand.
 - **Its configuration**: the environment variables of [`env/base.env`](env/base.env), each described there with its default, and nothing else. `APP_SECRET` is the only one it refuses to start without.
 - **The brand folder** named by `BRAND_DIR`: `theme.css`, `brand.json`, a logo, a favicon. [`brands/example/`](brands/example/) is a complete one.
-- **The image** `saras/saras`, built from this directory: it listens on `PORT` (3000), keeps the embedded database under `/data`, and is healthy when `GET /api/public` answers.
+- **The image** `saras/saras`, built from this directory and published as [`enspirit/saras`](https://hub.docker.com/r/enspirit/saras): it listens on `PORT` (3000), keeps the embedded database under `/data`, and is healthy when `GET /api/public` answers.
 - **What it does on its own**: ExpireSessions and ErasePastRetention hourly and at start; FetchMailbox for every mailbox each `SYNC_INTERVAL_MINUTES`.
 
 **The state it controls** is every variable `doc/2-operations.md` gives to the Backend, kept in PostgreSQL. It creates the schema itself when it starts (`src/tooling/db/schema.ts`): see [the decision](../../doc/decisions/0001-the-server-creates-its-schema.md).
@@ -68,7 +68,7 @@ Green means: `lint` clean, and every test passing on both databases.
 
 - Every operation of the inventory exists. Where the code does not do what the documents say is listed there, under Deviations.
 - The black-box specification of the operations has begun in [`tests/webspicy`](../../tests/webspicy/), with what reads and what refuses. For everything else the tests of `test/integration/` still play that part, inside this component.
-- The image is not published to a registry: an operator builds it from a checkout, and the repository describes no deployment ([decision 0004](../../doc/decisions/0004-saras-ships-as-an-image.md)).
+- The image is published on Docker Hub by CI, from `main` and from version tags ([decision 0006](../../doc/decisions/0006-the-image-is-published-on-docker-hub.md)); the repository describes no deployment ([decision 0004](../../doc/decisions/0004-saras-ships-as-an-image.md)).
 - The pure functions live in `src/domain/computations/` and `shared/`, inside this component, not in a library of their own.
 
 ## Inside
