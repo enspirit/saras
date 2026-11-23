@@ -1,0 +1,21 @@
+# The stack under the suites. Layered on base, never on devel.
+#
+# **No published ports at all.** Every suite runs inside a container on the
+# compose network and reaches the product by service name — so two concurrent
+# runs on one agent have nothing to fight over, and a suite cannot pass on a
+# path production does not have. It is also what lets CI need nothing but
+# docker.
+#
+# Sources are baked into the images here, not mounted: a suite run against
+# mounted sources is run against something other than the artefact. And `.env`
+# is not read: no suite depends on a secret.
+
+services:
+  saras:
+    env_file:
+      - ./.env.commons
+      - ./software/saras/env/devel.env
+      - ./software/saras/env/test.env
+    environment:
+      # How the suites reach it: by service name, on the compose network.
+      BASE_URL: http://saras:3000

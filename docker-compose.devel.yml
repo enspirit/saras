@@ -1,0 +1,48 @@
+# The stack on a laptop. Ports to open in a browser, env files, and the bind
+# mounts that make a source change visible without a rebuild.
+#
+# Nothing here belongs in docker-compose.base.yml, and nothing in base belongs
+# here: base says what a component *is*, this says what a developer needs.
+
+services:
+  postgres:
+    ports:
+      # For a host-side psql, and for `emb run test` on this server:
+      #   TEST_DATABASE_URL=postgres://saras:saras@localhost:5432/saras emb run test
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+
+  saras:
+    ports:
+      # The front door, and the one address worth bookmarking.
+      - '127.0.0.1:${SARAS_PORT:-3000}:3000'
+    env_file:
+      # Later files win.
+      - ./.env.commons
+      - ./software/saras/env/devel.env
+      # A real key (OPENROUTER_API_KEY, the OAuth applications) reaches the
+      # container from here. `required: false` is load-bearing: the stack
+      # comes up without the file.
+      - path: ./.env
+        required: false
+    environment:
+      # Beats every env file: what is true of this stack, whatever .env says.
+      BASE_URL: http://localhost:${SARAS_PORT:-3000}
+      # The default brand, unless SARAS_BRAND names a folder of
+      # software/saras/brands (SARAS_BRAND=klaro in .env, or in the shell).
+      BRAND_DIR: ${SARAS_BRAND:+/app/brands/}${SARAS_BRAND:-}
+    # `npm run dev` runs two watchers under a shell: an init process hands
+    # them the signal that stops the container.
+    init: true
+    volumes:
+      # A watcher runs inside, so these are the whole dev loop: the server
+      # restarts and the bundles are rebuilt on change.
+      - ./software/saras/src:/app/src
+      - ./software/saras/shared:/app/shared
+      - ./software/saras/web:/app/web
+      - ./software/saras/scripts:/app/scripts
+      - ./software/saras/test:/app/test
+      - ./software/saras/brands:/app/brands
+      - ./software/saras/public:/app/public
+      # public/js is deliberately not the host's: the container bundles into
+      # its own, so two builds never fight over one directory.
+      - /app/public/js

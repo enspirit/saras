@@ -11,7 +11,9 @@ name: saras
 
 services:
   saras:
-    build: ../../software/saras
+    build:
+      context: ../../software/saras
+      target: saras-production
     restart: unless-stopped
     env_file: .env
     environment:

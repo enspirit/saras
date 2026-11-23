@@ -1,5 +1,8 @@
 name: Tests
 
+# Nothing here duplicates a command. Every step calls an `emb` task that lives
+# in .emb.yml or in a component's Embfile.yml, so CI runs what a developer runs.
+
 on:
   push:
   pull_request:
@@ -12,6 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # What needs a checkout and nothing else.
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -22,7 +26,6 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: software/saras/package-lock.json
-      # Every step below is an emb task (.emb.yml): CI runs what a developer runs.
       - run: npm install -g @enspirit/emb
       - run: emb run setup
       - run: emb run lint
@@ -31,33 +34,34 @@ jobs:
       # no secret and no outside service needed.
       - run: emb run test
 
-  # The same suite against a PostgreSQL server, as in production.
-  test-postgres:
+  # What needs the running stack. The runner needs docker and emb: each suite
+  # runs in a container of the stack.
+  stack:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: saras
-          POSTGRES_PASSWORD: saras
-          POSTGRES_DB: saras
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U saras -d saras"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 20
+    timeout-minutes: 15
+    env:
+      # base + test: no published port, every suite inside a container on the
+      # compose network. Beats the value in .env.commons.
+      COMPOSE_FILE: docker-compose.base.yml:docker-compose.test.yml
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: software/saras/package-lock.json
       - run: npm install -g @enspirit/emb
-      - run: emb run setup
-      - run: emb run test
-        env:
-          TEST_DATABASE_URL: postgres://saras:saras@localhost:5432/saras
+      - run: emb up
+      - run: emb ps
+      # The operations over HTTP once more, against a PostgreSQL server, as in production.
+      - run: emb run test:postgres
+      # The image an operator builds: nothing else in CI builds that target.
+      - run: emb resources build --flavor production --publishable
+      - if: always()
+        run: emb logs archive
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: .emb/*/logs/**/*.log
+          if-no-files-found: ignore
+      - if: always()
+        run: emb down
