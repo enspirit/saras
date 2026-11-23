@@ -29,3 +29,17 @@ test('each answer has a nonce of its own', async () => {
   assert.ok(first.length >= 20 && second.length >= 20);
   assert.notEqual(first, second);
 });
+
+test('every answer carries the headers that keep it to itself: a page, a file, an answer of the API', async () => {
+  for (const path of ['/', '/design/base.css', '/api/public', '/api/nowhere']) {
+    const { headers } = await fetch(stack.url + path);
+    assert.match(headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/, path);
+    assert.equal(headers.get('x-frame-options'), 'DENY', path);
+    assert.equal(headers.get('x-content-type-options'), 'nosniff', path);
+    assert.equal(headers.get('referrer-policy'), 'no-referrer', path);
+    assert.equal(headers.get('cross-origin-opener-policy'), 'same-origin', path);
+    assert.equal(headers.get('cross-origin-resource-policy'), 'same-origin', path);
+    assert.equal(headers.get('strict-transport-security'), 'max-age=31536000', `${path}: this host only, not the others of its domain`);
+    assert.equal(headers.get('x-powered-by'), null, path);
+  }
+});

@@ -28,6 +28,7 @@
     "@lezer/highlight": "1.2.5",
     "codemirror": "6.0.2",
     "express": "^5.1.0",
+    "helmet": "^8.3.0",
     "imapflow": "^1.0.0",
     "luxon": "3.7.2",
     "mailparser": "^3.7.0",
