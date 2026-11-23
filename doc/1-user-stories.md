@@ -195,7 +195,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member of an organisation that chose AI triage, **I want** the AI to tell which emails expect a reply, how urgent they are, and which prompt fits, **so that** I start with the right ones and the right tone.
 
 - The AI reads the sender, the recipients, the subject, the first 1,500 characters and the names of the attachments — never their content.
-- Per email it returns: reply needed or not, a one-sentence reason in my language, a suggested prompt, a priority.
+- Per email it returns: reply needed or not, a one-sentence reason in my language, a priority. It is not told the prompts, and suggests none.
 - High-priority emails carry a **Priority** badge; the reason is shown above the email with who decided (AI, a rule, me).
 - An email the AI did not decide about stays **Not triaged** in **To handle** and is presented again at the next fetch.
 
@@ -250,7 +250,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 ### US-33 — Apply a prompt
 **As** a member, **I want** the AI to write the reply the way one of my organisation's prompts describes, from the email received and from my notes — or from nothing, **so that** I get a reply in the house style in seconds.
 
-- I choose the prompt in a list; the one the AI suggested at triage is preselected and marked.
+- I choose the prompt in a list; the one that suits the email by its attributes is preselected and marked.
 - What I wrote is treated as what the reply must say: notes, instructions or a draft to rework.
 - The reply is written in the language of the email received, ends with my signature, and uses a placeholder in square brackets where information is missing rather than inventing it.
 - Without any prompt in the organisation, I am told to create one (administrator) or ask for one (member). Without an API key, I am pointed to **Settings**.
@@ -318,7 +318,8 @@ How the screens are designed and built is in [the design document](4-design.md).
 ### US-50 — Write the organisation's prompts
 **As** an administrator, **I want** to create, edit and delete prompts — a name, when to use it, and the instructions, **so that** replies follow our tone and our rules.
 
-- "When to use it" is what the AI reads to suggest a prompt at triage.
+- "When to use it" is what members read to choose a prompt.
+- **The emails it suits**: conditions on the attributes of an email, as a list I add to (Topic is Sales; Priority is High). An email suits a prompt when it has one of the values given for every attribute named. Among the prompts an email suits, the one that names the most attributes is the best; the first of the list when several do. A prompt with no condition suits every email alike, and is never preferred. The list of prompts shows what each suits.
 - The instructions cover tone, structure and business rules; the common rules (language of the email, invent nothing, signature, format) are added automatically.
 - Deleting asks for confirmation.
 
@@ -377,8 +378,8 @@ How the screens are designed and built is in [the design document](4-design.md).
 - Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
 - The two choices are independent. Afterwards, writing is changed in **Configuration → Writing** (the page of the prompts), under the list; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
 - At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
-- When the AI sorts, it suggests for each email to handle the prompt that suits it best, from the “when to use it” of each prompt; a rule never suggests one. A member asking for a proposal finds the suggested prompt preselected and marked, and can pick another; with no suggestion, the first prompt of the list is offered first. A proposal written at fetch uses the suggested prompt, else the first of the list, which **Prompts** marks as the one used when none is suggested.
-- A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt suggested at sorting or else the organisation's first; at most ten per fetch and mailbox.
+- Which prompt an email is offered follows from its attributes, not from the AI: sorting gives the email its attributes (by rules, by the AI, by hand), and each prompt says which values it suits. The prompt that suits best is preselected and marked for who writes; when none does, the first of the list is offered. Changing what a prompt suits, or an attribute of the email, changes it at once.
+- A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt that suits the email best or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
 
 ### US-67 — Change my password

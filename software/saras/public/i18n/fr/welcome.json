@@ -17,7 +17,7 @@
   "sortingNone": "Personne : je vois tout",
   "sortingNoneHint": "Chaque email du dossier surveillé est à traiter. Rien n’est envoyé à l’IA à cette étape.",
   "sortingAi": "L’IA trie",
-  "sortingAiHint": "Elle écarte ce qui n’appelle pas de réponse, signale ce qui est urgent et suggère un prompt. Elle lit l’expéditeur, l’objet, le début du texte et le nom des pièces jointes. Vous pouvez toujours remettre un email à traiter.",
+  "sortingAiHint": "Elle écarte ce qui n’appelle pas de réponse et signale ce qui est urgent. Elle lit l’expéditeur, l’objet, le début du texte et le nom des pièces jointes. Vous pouvez toujours remettre un email à traiter.",
   "writingTitle": "2. La rédaction",
   "writingIntro": "Pour un email à traiter, quand l’IA rédige-t-elle une proposition de réponse ?",
   "writingLegend": "Quand l’IA rédige",

@@ -6,7 +6,7 @@
 //   ReqPre   the organisation has proposals written at fetch
 //            a key is in force, as the mailbox's owner
 //            the organisation has a prompt
-//   ReqPost  written with the prompt suggested at triage, else the organisation's first
+//   ReqPost  written with the prompt that suits the email best by its attributes, else the organisation's first
 //            as the mailbox's owner: their model, signature and past corrections
 //            at most MAX_PREPARED per fetch, most recent first
 //            when the organisation has them filed in the mailbox, each is then filed: FileProposalAsDraft
@@ -23,7 +23,8 @@ import type { UserRow } from '../model/member.ts';
 import type { OrganizationRow } from '../model/organization.ts';
 import { promptToPrepareWith } from '../computations/replying.ts';
 import { emailsAwaitingProposal } from '../state/emails.ts';
-import { lessonsFor, promptsOf } from '../state/prompts.ts';
+import { valuesOf } from '../computations/prompt-affinity.ts';
+import { lessonsFor, promptsWithAffinity } from '../state/prompts.ts';
 import type { Reach } from '../world.ts';
 import { fileProposalAsDraft } from './file-proposal-as-draft.ts';
 import { writeProposal } from './proposal.ts';
@@ -36,12 +37,12 @@ export async function prepareProposals(world: Reach, mailbox: AccountRow, organi
   const { db } = world;
   if (organization.automation === 'none') return null;
   const settings = llmSettings(organization, world);
-  const prompts = await promptsOf(db, organization.id);
+  const prompts = await promptsWithAffinity(db, organization.id);
   if (!settings.apiKey || !prompts.length) return null;
   try {
     for (const row of await emailsAwaitingProposal(db, mailbox.id, MAX_PREPARED)) {
       const email = rowToEmail(row);
-      const prompt = promptToPrepareWith(row.suggested_prompt_id, prompts)!;
+      const prompt = promptToPrepareWith(prompts, valuesOf({ status: row.status, priority: row.priority, attributes: JSON.parse(row.attributes_json) }))!;
       const messages = buildPromptMessages({ email, prompt: { systemPrompt: prompt.system_prompt }, ownAddress: mailbox.email, signature: owner.signature, lessons: await lessonsFor(db, prompt.id, owner.id), html: '' });
       const proposal = await writeProposal(world, { emailId: row.id, action: 'prompt', promptId: prompt.id, messages, ...settings });
       if (organization.automation === 'mailbox') await fileProposalAsDraft(world, mailbox, owner, email, proposal);

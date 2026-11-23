@@ -1,13 +1,16 @@
-// Writing a prompt, new or existing: its name, when to use it, its instructions; and beside
-// the instructions, what members changed in the proposals it wrote.
+// Writing a prompt, new or existing: its name, when to use it, its instructions, the emails it
+// suits; and beside the instructions, what members changed in the proposals it wrote.
 
+import type { Attribute } from '../../shared/attribute.ts';
 import type { Correction, Prompt } from '../../shared/prompt.ts';
+import { readAttributes } from '../api/attributes.ts';
 import { createPrompt, editPrompt, readCorrections } from '../api/prompts.ts';
 import type { PromptContent } from '../api/prompts.ts';
 import { t } from '../i18n.ts';
 import { fmtWhen } from '../i18n/dates.ts';
 import { showPage } from '../navigation.ts';
 import { SubmitForm, toast } from './actions.ts';
+import { attributeConditions } from './attribute-conditions.ts';
 import { called } from './people.ts';
 import { shell } from './shell.ts';
 import { Badge } from '../ui/atoms/badge.ts';
@@ -15,7 +18,7 @@ import { Button } from '../ui/atoms/button.ts';
 import { Input, Textarea } from '../ui/atoms/input.ts';
 import { Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
-import { Card } from '../ui/molecules/card.ts';
+import { Card, CardSection } from '../ui/molecules/card.ts';
 import { Block, Field } from '../ui/molecules/field.ts';
 import { Actions } from '../ui/molecules/form.ts';
 import { PageHeader } from '../ui/molecules/page-header.ts';
@@ -30,8 +33,13 @@ export interface PromptFields {
   content(): PromptContent;
 }
 
-/** The fields of a prompt, filled with `prompt` when there is one. `rows` is the height of the instructions. */
-export function promptFields(prompt: Prompt | null | undefined, rows: number): PromptFields {
+/**
+ * The fields of a prompt, filled with `prompt` when there is one. `rows` is the height of the
+ * instructions. With the organisation's `attributes`, the emails the prompt suits can be said;
+ * without, what it had is kept.
+ */
+export function promptFields(prompt: Prompt | null | undefined, rows: number, attributes?: Attribute[]): PromptFields {
+  const suits = attributes && attributeConditions(prompt?.affinity ?? {}, attributes, t('prompts.suitsAny'));
   const name = Input({ required: true, value: prompt?.name || '' });
   const description = Input({ value: prompt?.description || '' });
   const system = Textarea({ required: true, rows, value: prompt?.systemPrompt || '' });
@@ -41,8 +49,9 @@ export function promptFields(prompt: Prompt | null | undefined, rows: number): P
       Field(t('prompts.name'), name),
       Field(t('prompts.when'), description, { hint: t('prompts.whenHint') }),
       Field(t('prompts.instructions'), system, { hint: t('prompts.instructionsHint') }),
+      suits && CardSection(t('prompts.suits'), Block(Text({ muted: true, small: true }, t('prompts.suitsHint'))), suits.element),
     ],
-    content: () => ({ name: name.value, description: description.value, systemPrompt: system.value }),
+    content: () => ({ name: name.value, description: description.value, systemPrompt: system.value, affinity: suits ? suits.values() : (prompt?.affinity ?? {}) }),
   };
 }
 
@@ -71,8 +80,8 @@ const correctionsCard = (items: Correction[]): HTMLDivElement =>
 
 /** The page of one prompt being written: `prompt` is the existing one, or null for a new one. */
 export async function editPromptPage(prompt: Prompt | null): Promise<void> {
-  const items = prompt ? await readCorrections(prompt.id).catch((): Correction[] => []) : [];
-  const written = promptFields(prompt, 9);
+  const [items, attributes] = await Promise.all([prompt ? readCorrections(prompt.id).catch((): Correction[] => []) : [], readAttributes()]);
+  const written = promptFields(prompt, 9, attributes);
   const form = promptForm(prompt, written);
   shell(Page(
     PageHeader({ title: prompt ? t('prompts.edit') : t('prompts.new'), crumbs: [{ label: t('prompts.title'), href: '#/prompts' }] }),

@@ -17,7 +17,7 @@
   "sortingNone": "Nobody: I see everything",
   "sortingNoneHint": "Every email of the watched folder is to handle. Nothing is sent to the AI at this step.",
   "sortingAi": "The AI sorts",
-  "sortingAiHint": "It sets aside what needs no reply, marks what is urgent and suggests a prompt. It reads the sender, the subject, the beginning of the text and attachment names. You can always put an email back.",
+  "sortingAiHint": "It sets aside what needs no reply and marks what is urgent. It reads the sender, the subject, the beginning of the text and attachment names. You can always put an email back.",
   "writingTitle": "2. Writing",
   "writingIntro": "For an email to handle, when does the AI write a proposal of reply?",
   "writingLegend": "When the AI writes",

@@ -10,7 +10,6 @@ const sortingOf = (row: EmailRow) => ({
   triageSource: row.triage_source,
   triageReason: row.triage_reason,
   priority: row.priority,
-  suggestedPromptId: row.suggested_prompt_id,
 });
 
 /** Who wrote, to whom, and whom to answer. */

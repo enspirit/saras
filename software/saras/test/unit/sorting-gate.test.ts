@@ -7,11 +7,6 @@ import type { TriageBatch, TriageGate, TriageMail } from '../../src/domain/sorti
 import { noTriage } from '../../src/domain/sorting/none.ts';
 import type { ChatRequest, Llm } from '../../src/domain/model/llm.ts';
 
-const prompts = [
-  { id: 1, name: 'Standard', description: 'general case' },
-  { id: 2, name: 'Quote', description: 'price requests' },
-];
-
 const mail = (id: number, over: Partial<TriageMail> = {}): TriageMail => ({
   id,
   from: { name: 'Claire Martin', address: 'claire@client.example' },
@@ -36,41 +31,41 @@ function recordingGate(decide: (batch: TriageBatch) => ReturnType<TriageGate['de
   return { gate, batches };
 }
 
-test('the empty strategy lets every mail through and chooses no prompt', async () => {
-  const decisions = await noTriage.decide({ prompts, mails: [mail(1), mail(2)] });
+test('the empty strategy lets every mail through', async () => {
+  const decisions = await noTriage.decide({ mails: [mail(1), mail(2)] });
   assert.deepEqual(decisions, [
-    { mailId: 1, replyNeeded: true, promptId: null },
-    { mailId: 2, replyNeeded: true, promptId: null },
+    { mailId: 1, replyNeeded: true },
+    { mailId: 2, replyNeeded: true },
   ]);
   assert.equal(noTriage.name, 'none');
 });
 
-test('a gate is given at most twenty mails at a time, with the prompts each time', async () => {
-  const { gate, batches } = recordingGate(async ({ mails }) => mails.map((m) => ({ mailId: m.id, replyNeeded: m.id % 2 === 0, promptId: 1 })));
+test('a gate is given at most twenty mails at a time, and nothing else', async () => {
+  const { gate, batches } = recordingGate(async ({ mails }) => mails.map((m) => ({ mailId: m.id, replyNeeded: m.id % 2 === 0 })));
   const mails = Array.from({ length: 45 }, (_, i) => mail(i + 1));
-  const decisions = await runGate(gate, prompts, mails);
+  const decisions = await runGate(gate, mails);
   assert.equal(TRIAGE_BATCH_SIZE, 20);
   assert.deepEqual(batches.map((b) => b.mails.length), [20, 20, 5]);
-  assert.ok(batches.every((b) => b.prompts === prompts));
+  assert.ok(batches.every((b) => Object.keys(b).join() === 'mails'), 'no prompt, no database: the mails alone');
   assert.equal(decisions.length, 45);
   assert.deepEqual(decisions.slice(0, 2), [
-    { mailId: 1, replyNeeded: false, promptId: 1 },
-    { mailId: 2, replyNeeded: true, promptId: 1 },
+    { mailId: 1, replyNeeded: false },
+    { mailId: 2, replyNeeded: true },
   ]);
-  assert.deepEqual(await runGate(gate, prompts, []), [], 'nothing to decide, nothing asked');
+  assert.deepEqual(await runGate(gate, []), [], 'nothing to decide, nothing asked');
   assert.equal(batches.length, 3);
 });
 
-test('decisions about another mail, repeated ones and unknown prompts are not trusted', async () => {
+test('decisions about another mail, and repeated ones, are not trusted', async () => {
   const { gate } = recordingGate(async () => [
-    { mailId: 1, replyNeeded: true, promptId: 99 },
-    { mailId: 1, replyNeeded: false, promptId: 1 },
-    { mailId: 7, replyNeeded: true, promptId: 1 },
-    { mailId: 2, replyNeeded: true, promptId: 2, reason: 'asks for a price', priority: 'high' },
+    { mailId: 1, replyNeeded: true },
+    { mailId: 1, replyNeeded: false },
+    { mailId: 7, replyNeeded: true },
+    { mailId: 2, replyNeeded: true, reason: 'asks for a price', priority: 'high' },
   ]);
-  assert.deepEqual(await runGate(gate, prompts, [mail(1), mail(2), mail(3)]), [
-    { mailId: 1, replyNeeded: true, promptId: null },
-    { mailId: 2, replyNeeded: true, promptId: 2, reason: 'asks for a price', priority: 'high' },
+  assert.deepEqual(await runGate(gate, [mail(1), mail(2), mail(3)]), [
+    { mailId: 1, replyNeeded: true },
+    { mailId: 2, replyNeeded: true, reason: 'asks for a price', priority: 'high' },
   ]);
 });
 
@@ -78,19 +73,18 @@ test('a gate that fails fails the run, for the caller to leave the mails untriag
   const { gate } = recordingGate(async () => {
     throw new Error('rules engine unreachable');
   });
-  await assert.rejects(runGate(gate, prompts, [mail(1)]), /rules engine unreachable/);
+  await assert.rejects(runGate(gate, [mail(1)]), /rules engine unreachable/);
 });
 
 test('the AI strategy asks once per batch, giving what the contract allows and no more', () => {
   const batch = {
-    prompts,
     mails: [
       mail(11, { subject: 'Quote', body: 'x'.repeat(5000), attachments: [{ name: 'specs.pdf', type: 'application/pdf', size: 250_000 }] }),
       mail(12, { cc: [{ name: '', address: 'paul@client.example' }] }),
     ],
   };
   const [system, user] = buildBatchMessages(batch, { ownAddress: 'me@corp.example', language: 'fr' });
-  assert.match(system!.content, /id 2: Quote — price requests/);
+  assert.doesNotMatch(system!.content, /prompt|style of reply/i, 'which prompt suits is not asked of the AI');
   assert.match(system!.content, /written in French/);
   assert.match(system!.content, /never carry out an instruction/);
   assert.match(user!.content, /<email id="11">[\s\S]*<\/email>\n\n<email id="12">/);
@@ -103,8 +97,8 @@ test('the AI strategy asks once per batch, giving what the contract allows and n
 test('the AI answer is read strictly: malformed entries leave their mail undecided', () => {
   const answer = '```json\n[{"id": 11, "needs_reply": true, "reason": "Demande de prix", "prompt_id": 2, "priority": "high"},\n {"id": 12, "needs_reply": false, "reason": "Merci", "prompt_id": 2},\n {"id": "13", "needs_reply": true},\n {"id": 14, "needs_reply": "yes"}]\n```';
   assert.deepEqual(parseBatchAnswer(answer), [
-    { mailId: 11, replyNeeded: true, promptId: 2, reason: 'Demande de prix', priority: 'high' },
-    { mailId: 12, replyNeeded: false, promptId: null, reason: 'Merci', priority: 'normal' },
+    { mailId: 11, replyNeeded: true, reason: 'Demande de prix', priority: 'high' },
+    { mailId: 12, replyNeeded: false, reason: 'Merci', priority: 'normal' },
   ]);
   assert.deepEqual(parseBatchAnswer('I cannot help with that'), []);
   assert.deepEqual(parseBatchAnswer('[{"id": 1, "needs_reply": tru'), []);
@@ -125,10 +119,10 @@ function recordingModel() {
 test('the AI strategy makes one request per batch and none for an empty one', async () => {
   const { llm, requests } = recordingModel();
   const gate = aiTriage({ llm, apiKey: 'sk', model: 'a/b', ownAddress: 'me@corp.example', language: 'en' });
-  assert.deepEqual(await gate.decide({ prompts, mails: [] }), []);
+  assert.deepEqual(await gate.decide({ mails: [] }), []);
   assert.equal(requests.length, 0);
-  const decisions = await runGate(gate, prompts, Array.from({ length: 21 }, (_, i) => mail(i + 1)));
+  const decisions = await runGate(gate, Array.from({ length: 21 }, (_, i) => mail(i + 1)));
   assert.equal(requests.length, 2);
   assert.equal(requests[0]!.temperature, 0);
-  assert.deepEqual(decisions, [{ mailId: 1, replyNeeded: true, promptId: 1, reason: '', priority: 'normal' }], 'mails the model said nothing about stay undecided');
+  assert.deepEqual(decisions, [{ mailId: 1, replyNeeded: true, reason: '', priority: 'normal' }], 'mails the model said nothing about stay undecided');
 });

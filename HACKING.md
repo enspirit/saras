@@ -97,7 +97,7 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               │
               ├─ rules ──► "no reply needed"               (automated mail, never shown to a gate)
               │
-              └─ triage gate, 20 at a time ──► "to handle" (+ suggested prompt, with the AI strategy)
+              └─ triage gate, 20 at a time ──► "to handle" (+ priority, with the AI strategy)
                                         │
                      you write in the reply area, as much as you like
                                         │
@@ -110,7 +110,7 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
 
 Every operation is one file under `software/saras/src/domain/<area>/`, named after it and headed by its clauses; [`doc/2-operations.md`](doc/2-operations.md) is the inventory. The paths below are in `software/saras/`.
 
-**The triage gate** (`src/domain/sorting/gate.ts`) answers two questions about each fetched email: is a reply needed, and with which prompt.
+**The triage gate** (`src/domain/sorting/gate.ts`) answers one question about each fetched email: is a reply needed. Which prompt suits an email is not its business: that follows from the email's attributes and from what each prompt says it suits (`src/domain/computations/prompt-affinity.ts`).
 
 ```ts
 interface TriageGate {
@@ -119,14 +119,14 @@ interface TriageGate {
 }
 ```
 
-- **In:** the prompts (id, name, description) and up to 20 mails, each with `from`, `to`, `cc`, `subject`, `body` and its attachments' names, types and sizes. Never the content of an attachment, and nothing else: no database, no mailbox.
-- **Out:** per mail, `replyNeeded` and `promptId` (or `null` to let the user choose), plus an optional `reason` and `priority`.
+- **In:** up to 20 mails, each with `from`, `to`, `cc`, `subject`, `body` and its attachments' names, types and sizes. Never the content of an attachment, and nothing else: no database, no mailbox.
+- **Out:** per mail, `replyNeeded`, plus an optional `reason` and `priority`.
 - A mail the gate says nothing about, or a gate that fails, leaves the mail untriaged; it is presented again at the next fetch.
 
 | Strategy | What it does | Cost |
 | --- | --- | --- |
 | `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a proposal is asked for. |
-| `ai` | An LLM decides and suggests a prompt. It reads the sender, the subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
+| `ai` | An LLM decides. It reads the sender, the subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
 
 The strategy is chosen per organisation; `TRIAGE_STRATEGY` only sets what a new one starts with. To add a strategy, implement `TriageGate` and return it from `src/domain/sorting/strategies.ts`.
 

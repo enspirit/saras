@@ -1,4 +1,7 @@
 // Observation: the emails a member may see, box by box, and one email with where its reply stands.
+import type { ValueOfEmail } from '../../../shared/attribute.ts';
+import { bestPrompt, valuesOf } from '../computations/prompt-affinity.ts';
+import { promptsWithAffinity } from '../state/prompts.ts';
 import type { Db } from '../../tooling/db.ts';
 import { readReason } from '../../tooling/messages.ts';
 import type { EmailStatus, EmailSummary, EmailWithItsReply, EmailsOfBox } from '../../../shared/email.ts';
@@ -67,11 +70,14 @@ export async function emailWithItsReply(db: Db, actor: Actor, id: unknown): Prom
   const row = await emailFor(db, actor, id);
   const email = rowToEmail(row);
   const reason = readReason(email.triageReason);
+  const attributes: Record<string, ValueOfEmail> = JSON.parse(row.attributes_json);
+  const suited = bestPrompt(await promptsWithAffinity(db, actor.organization.id), valuesOf({ status: row.status, priority: row.priority, attributes }));
   return {
     ...email,
+    suggestedPromptId: suited?.id ?? null,
     triageReason: reason.text,
     triageReasonCode: reason.code,
-    attributes: JSON.parse(row.attributes_json),
+    attributes,
     mailbox: row.account_email,
     shared: row.account_shared,
     recipients: replyRecipients(email, row.account_email, false),

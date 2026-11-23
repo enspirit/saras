@@ -2,17 +2,22 @@
 // writes, and the ready-made ones still to add.
 
 import type { Prompt } from '../../shared/prompt.ts';
+import type { Attribute } from '../../shared/attribute.ts';
+import { readAttributes } from '../api/attributes.ts';
 import { deletePrompt, readPrompts, readPromptTemplates } from '../api/prompts.ts';
 import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard } from './actions.ts';
 import { editPromptPage } from './edit-prompt.ts';
 import { promptUse } from './prompt-use.ts';
 import { ReadyMadePrompts } from './ready-made-prompts.ts';
+import { chipFor } from './attribute-values.ts';
 import { shell } from './shell.ts';
 import { refreshMe } from '../session.ts';
 import { Badge } from '../ui/atoms/badge.ts';
 import { ButtonLink } from '../ui/atoms/button.ts';
 import { Muted, Strong, Text } from '../ui/atoms/text.ts';
+import type { Child } from '../ui/dom.ts';
+import { ValueList } from '../ui/molecules/attribute-bar.ts';
 import { Block } from '../ui/molecules/field.ts';
 import { PageHeader } from '../ui/molecules/page-header.ts';
 import { Table } from '../ui/molecules/table.ts';
@@ -25,24 +30,31 @@ const deleteButton = (p: Prompt): HTMLButtonElement => ActionButton(t('common.de
   void promptsPage();
 }, { variant: 'danger', size: 'small', icon: 'trash', iconOnly: true });
 
-/** Each prompt, how often it was used and how often its proposals were changed. */
-const promptsTable = (prompts: Prompt[]): HTMLDivElement =>
-  Table({ columns: [t('prompts.column'), t('prompts.usageColumn')], actions: t('common.actions') }, prompts.map((p) => [
+/** The emails a prompt suits: the values it names, as chips; any email, when it names none. */
+const suits = (prompt: Prompt, attributes: Attribute[]): Child =>
+  Object.keys(prompt.affinity).length
+    ? ValueList(attributes.flatMap((attribute) => (prompt.affinity[attribute.key] ?? []).map((key) => chipFor(attribute, key, true))))
+    : Muted(t('prompts.suitsAnyShort'));
+
+/** Each prompt, the emails it suits, how often it was used and how often its proposals were changed. */
+const promptsTable = (prompts: Prompt[], attributes: Attribute[]): HTMLDivElement =>
+  Table({ columns: [t('prompts.column'), t('prompts.suitsColumn'), t('prompts.usageColumn')], actions: t('common.actions') }, prompts.map((p) => [
     [Strong(p.name), ' ', p === prompts[0] && prompts.length > 1 && Badge(t('prompts.usedByDefault'), 'neutral'), p.description && Text({ muted: true, small: true }, p.description)],
+    suits(p, attributes),
     (p.used ?? 0) > 0 ? t('prompts.usage', { used: p.used ?? 0, edited: p.edited ?? 0 }) : Muted(t('prompts.unused')),
     [ButtonLink(t('common.edit'), { href: `#/prompts/${p.id}` }), deleteButton(p)],
   ]));
 
 /** The list of prompts, or with `open` one of them (or a new one) being edited. */
 export const promptsPage = guard(async (open: number | 'new' | null = null) => {
-  const [prompts, templates, who] = await Promise.all([readPrompts(), readPromptTemplates(), refreshMe()]);
+  const [prompts, templates, who, attributes] = await Promise.all([readPrompts(), readPromptTemplates(), refreshMe(), readAttributes()]);
   const prompt = typeof open === 'number' ? prompts.find((p) => p.id === open) ?? null : null;
   if (open !== null && (open === 'new' || prompt)) return editPromptPage(prompt);
 
   shell(
     Page(
       PageHeader({ title: t('prompts.title'), intro: t('prompts.intro') }, ButtonLink(t('prompts.new'), { href: '#/prompts/new', variant: 'primary' })),
-      promptsTable(prompts),
+      promptsTable(prompts, attributes),
       promptUse(who.organization),
       templates.length > 0 && [Block(Text({ muted: true }, t('prompts.templatesHint'))), ReadyMadePrompts(templates, () => void promptsPage())],
     ),

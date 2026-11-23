@@ -47,7 +47,6 @@ export interface Email extends Omit<IncomingEmail, 'headers' | 'answered'> {
   triageSource: TriageSource | null;
   triageReason: string;
   priority: Priority;
-  suggestedPromptId: number | null;
 }
 
 export interface EmailRow {

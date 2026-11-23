@@ -7,7 +7,7 @@
   "intro": "Each prompt describes a way of replying. Members see its name and its description, not its instructions.",
   "name": "Name",
   "when": "When to use it",
-  "whenHint": "The AI reads this description to suggest the right prompt for each email.",
+  "whenHint": "What members read to choose a prompt.",
   "instructions": "Instructions",
   "instructionsHint": "Tone, structure, business rules. The common instructions (language of the email, plain text, invent nothing, signature) are added automatically.",
   "corrections": "Corrections by members",
@@ -22,9 +22,14 @@
   "templatesHint": "Other ways of replying, ready to add. Once added they are yours to edit.",
   "addTemplate": "Add",
   "added": "Added",
-  "usedByDefault": "Used when none is suggested",
+  "usedByDefault": "Used when none suits",
   "writingLegend": "When the AI writes a proposal",
   "writingNoneHint": "Nothing is sent to the AI before.",
   "writingDraftHint": "The content of each email to handle is sent to the AI, at most ten per fetch and mailbox.",
-  "writingMailboxHint": "The same, and the email then moves to Replied, as a draft."
+  "writingMailboxHint": "The same, and the email then moves to Replied, as a draft.",
+  "suits": "The emails it suits",
+  "suitsHint": "By their attributes. The prompt that suits an email best is offered first to who writes, and writes the proposals prepared at fetch. No AI is asked.",
+  "suitsAny": "No condition: it suits every email alike, and none in particular.",
+  "suitsAnyShort": "Any email",
+  "suitsColumn": "Suits"
 }

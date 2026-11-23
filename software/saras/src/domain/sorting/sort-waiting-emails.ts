@@ -3,7 +3,7 @@
 //
 //   DomPre   emails of the mailbox waiting to be sorted
 //   DomPost  each one the gate decided about is to handle or needs no reply, with the reason,
-//            the priority and, when to handle, the prompt that suits it
+//            and the priority
 //   ReqPost  an email the gate says nothing about stays waiting
 //            if the gate fails, so do all those it had not decided yet, and why is reported
 //            the AI is asked as the mailbox's owner: with the key and the model in force for them
@@ -18,7 +18,6 @@ import type { AccountRow } from '../model/mailbox.ts';
 import { rowToEmail, toTriageMail } from '../computations/emails.ts';
 import { emailsWaiting, keepVerdict } from '../state/emails.ts';
 import { memberById, organizationById } from '../state/members.ts';
-import { promptsToSuggest } from '../state/prompts.ts';
 import { runGate } from './gate.ts';
 import type { Triage } from './strategies.ts';
 
@@ -34,7 +33,7 @@ type Sorting = { db: Db; triage: Triage };
 async function decideAbout({ db, triage }: Sorting, account: AccountRow, waiting: EmailRow[]): Promise<number> {
   const organization = await organizationById(db, account.org_id);
   const gate = triage.gateFor(account, organization, await memberById(db, account.user_id));
-  const decisions = await runGate(gate, await promptsToSuggest(db, organization.id), waiting.map((row) => toTriageMail(rowToEmail(row))));
+  const decisions = await runGate(gate, waiting.map((row) => toTriageMail(rowToEmail(row))));
   await db.transaction(async (tx) => {
     for (const decision of decisions) await keepVerdict(tx, gate.name, decision);
   });

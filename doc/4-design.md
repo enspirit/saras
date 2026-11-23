@@ -143,7 +143,7 @@ The reading pane has three parts: a header, the email's text, and the reply area
 - **Proposal.** When the AI wrote the text, a note above it says what was done and with which model, and holds *Put my text back*. The text is tinted until the user edits it; the note then adds that it was edited.
 - **To complete.** Passages in square brackets, which prompts use where information is missing, are highlighted in the text and counted next to Send. The highlight goes through the browser's highlight registry: the text that is sent is untouched.
 - **Why.** After editing a proposal made with a prompt, one line under the text asks why, and says what the answer is for and who reads it.
-- **Help from the AI.** One row: *Check typos*, *Improve style*, and *Write with* joined to the list of prompts. The prompt suggested at triage carries a *Suggested* label. A line with the lock says that typos and style do not send the email received.
+- **Help from the AI.** One row: *Check typos*, *Improve style*, and *Write with* joined to the list of prompts. The prompt that suits the email by its attributes is the one selected, and carries a *Suits this email* label. A line with the lock says that typos and style do not send the email received.
 - **Actions.** *Send* and *Save as draft*. Sending opens a dialog that lists From, To and Cc.
 
 An email in **No reply needed** or **Ignored** shows one line in place of the reply area, with *Reply anyway*. An email in **Replied** shows the reply as a panel under the email: sent or filed as a draft, by whom and when, To, Cc, the reason given for an edit, and whether the proposal was edited.
