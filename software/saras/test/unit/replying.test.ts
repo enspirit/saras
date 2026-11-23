@@ -51,10 +51,12 @@ test('typos and style need something written; a prompt needs the content of the 
 
 test('a proposal nobody asked for is written with the suggested prompt, else the first', () => {
   const prompts = [{ id: 1 }, { id: 2 }, { id: 3 }] as PromptRow[];
-  assert.equal(promptToPrepareWith(2, prompts)?.id, 2);
-  assert.equal(promptToPrepareWith(null, prompts)?.id, 1);
-  assert.equal(promptToPrepareWith(99, prompts)?.id, 1, 'a suggestion that no longer exists falls back');
-  assert.equal(promptToPrepareWith(2, []), undefined);
+  assert.equal(promptToPrepareWith(null, 2, prompts)?.id, 2);
+  assert.equal(promptToPrepareWith(null, null, prompts)?.id, 1);
+  assert.equal(promptToPrepareWith(null, 99, prompts)?.id, 1, 'a suggestion that no longer exists falls back');
+  assert.equal(promptToPrepareWith(null, 2, []), undefined);
+  assert.equal(promptToPrepareWith(2, 1, prompts)?.id, 2, 'the prompt of a board that shows the email comes before the one the AI suggested');
+  assert.equal(promptToPrepareWith(99, 2, prompts)?.id, 2, 'a board whose prompt is gone says nothing');
 });
 
 test('a proposal made before proposals were rich text is shown as text', () => {

@@ -49,5 +49,6 @@
   "toComplete": "{count, plural, one {# passage in square brackets is still to complete.} other {# passages in square brackets are still to complete.}}",
   "closedNone": "No reply is expected: the reply area stays closed until you ask for it.",
   "closedIgnored": "This email is ignored: the reply area stays closed until you ask for it.",
-  "replyAnyway": "Reply anyway"
+  "replyAnyway": "Reply anyway",
+  "boardTag": "Of this board"
 }

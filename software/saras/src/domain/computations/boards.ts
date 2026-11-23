@@ -37,11 +37,11 @@ export function filterGiven(value: unknown): BoardFilter {
   return filter;
 }
 
-/** ReqPre of CreateBoard and EditBoard: a name. */
-export function boardGiven(given: { name?: unknown; shared?: unknown; filter?: unknown }): Verdict<BoardGiven> {
+/** ReqPre of CreateBoard and EditBoard: a name. The prompt, when one is given, is a number: whether it is one of the organisation's is for the operation to see. */
+export function boardGiven(given: { name?: unknown; shared?: unknown; filter?: unknown; promptId?: unknown }): Verdict<BoardGiven> {
   const name = clipped(given.name, 80);
   if (!name) return refuse('invalid', 'boards.nameRequired');
-  return accept({ name, shared: given.shared === true, filter: filterGiven(given.filter) });
+  return accept({ name, shared: given.shared === true, filter: filterGiven(given.filter), promptId: Number.isInteger(Number(given.promptId)) && Number(given.promptId) > 0 ? Number(given.promptId) : null });
 }
 
 type Owned = { shared: boolean; user_id: number };

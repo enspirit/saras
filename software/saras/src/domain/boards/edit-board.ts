@@ -5,18 +5,21 @@
 //   ReqPre   the member manages it: its owner; for a shared one, an administrator
 //            it has a name
 //            only an administrator makes it shared
+//            the prompt its emails are replied with, when it has one, is a prompt of the organisation
 //   ReqPost  a shared board made personal again stays with who made it
 import type { Board } from '../../../shared/board.ts';
 import { boardGiven, mayManageBoard, mayShare } from '../computations/boards.ts';
 import { boardSeenBy } from '../observations/boards.ts';
 import { accepted } from '../refusal.ts';
 import { boardFor, changeBoard } from '../state/boards.ts';
+import { promptOf } from '../state/prompts.ts';
 import type { Actor, World } from '../world.ts';
 
-export async function editBoard({ db }: World, actor: Actor, boardId: unknown, given: { name?: unknown; shared?: unknown; filter?: unknown }): Promise<Board> {
+export async function editBoard({ db }: World, actor: Actor, boardId: unknown, given: { name?: unknown; shared?: unknown; filter?: unknown; promptId?: unknown }): Promise<Board> {
   const kept = await boardFor(db, actor, boardId);
   accepted(mayManageBoard(actor, kept));
   const board = accepted(boardGiven(given));
   accepted(mayShare(actor, board.shared));
+  if (board.promptId) await promptOf(db, actor.organization.id, board.promptId);
   return boardSeenBy(db, actor, await changeBoard(db, kept.id, board));
 }

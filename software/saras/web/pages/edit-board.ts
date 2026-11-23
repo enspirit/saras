@@ -4,9 +4,11 @@
 import type { Attribute } from '../../shared/attribute.ts';
 import type { Board, BoardFilter, BoardGiven, FilterTried } from '../../shared/board.ts';
 import type { EmailSummary } from '../../shared/email.ts';
+import type { Prompt } from '../../shared/prompt.ts';
 import { readAttributes } from '../api/attributes.ts';
 import { createBoard, deleteBoard, editBoard, readBoards, tryFilter } from '../api/boards.ts';
 import { readMailboxes } from '../api/mailboxes.ts';
+import { readPrompts } from '../api/prompts.ts';
 import { t } from '../i18n.ts';
 import { fmtDate } from '../i18n/dates.ts';
 import { ActionButton, confirmAction, guard, SubmitForm, toast } from './actions.ts';
@@ -16,7 +18,7 @@ import { boardHref } from './board.ts';
 import { shell } from './shell.ts';
 import { isAdmin, refreshBoards } from '../session.ts';
 import { Button, ButtonLink } from '../ui/atoms/button.ts';
-import { Checkbox, Input } from '../ui/atoms/input.ts';
+import { Checkbox, Input, Select } from '../ui/atoms/input.ts';
 import { Muted, Small, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
 import { EmailListItem } from '../ui/molecules/email-list-item.ts';
@@ -64,8 +66,21 @@ const deleteButton = (board: Board): HTMLButtonElement => ActionButton(t('boards
   location.hash = '#/inbox';
 }, { variant: 'danger' });
 
+interface BoardFields {
+  name: HTMLInputElement;
+  shared: HTMLInputElement;
+  /** The prompt its emails are replied with: none, or one of the organisation's. */
+  prompt: HTMLSelectElement;
+}
+
+const boardFields = (board: Board | null, prompts: Prompt[]): BoardFields => ({
+  name: Input({ required: true, maxLength: 80, value: board?.name ?? '' }),
+  shared: Checkbox({ checked: board?.shared ?? false }),
+  prompt: Select([{ value: '', label: t('boards.promptNone'), selected: !board?.promptId }, ...prompts.map((p) => ({ value: p.id, label: p.name, selected: p.id === board?.promptId }))]),
+});
+
 /** CreateBoard or EditBoard, then on to the board. */
-function boardForm(board: Board | null, name: HTMLInputElement, conditions: HTMLElement, given: () => BoardGiven, shared: HTMLInputElement): HTMLFormElement {
+function boardForm(board: Board | null, { name, shared, prompt }: BoardFields, conditions: HTMLElement, given: () => BoardGiven): HTMLFormElement {
   const save = Button(board ? t('common.save') : t('boards.create'), { variant: 'primary', type: 'submit' });
   return SubmitForm(save, '…', async () => {
     const saved = await (board ? editBoard(board.id, given()) : createBoard(given()));
@@ -76,23 +91,23 @@ function boardForm(board: Board | null, name: HTMLInputElement, conditions: HTML
     isAdmin() && CheckField(t('boards.shared'), shared),
     PartTitle(t('boards.showsWhere')),
     conditions,
+    Field(t('boards.prompt'), prompt, { hint: t('boards.promptHint') }),
     Actions(save, ButtonLink(t('common.cancel'), { href: board ? boardHref(board.id) : '#/inbox' }), board && deleteButton(board), Muted(Small(t('boards.movesNothing')))),
   );
 }
 
 /** The form for a new board, or with `boardId` for one the member manages. */
 export const editBoardPage = guard(async (boardId: number | null) => {
-  const [boards, attributes, mailboxes] = await Promise.all([readBoards(), readAttributes(), readMailboxes()]);
+  const [boards, attributes, mailboxes, prompts] = await Promise.all([readBoards(), readAttributes(), readMailboxes(), readPrompts()]);
   const board = boards.find((b) => b.id === boardId && b.canManage) ?? null;
   const beside = preview(attributes);
-  const name = Input({ required: true, maxLength: 80, value: board?.name ?? '' });
-  const shared = Checkbox({ checked: board?.shared ?? false });
+  const fields = boardFields(board, prompts);
   const conditions = boardConditions(board?.filter ?? {}, attributes, mailboxes, () => beside.show(conditions.filter()));
-  const given = (): BoardGiven => ({ name: name.value, shared: shared.checked, filter: conditions.filter() });
+  const given = (): BoardGiven => ({ name: fields.name.value, shared: fields.shared.checked, filter: conditions.filter(), promptId: Number(fields.prompt.value) || null });
   shell(Page(
     PageHeader({ title: board ? t('boards.editTitle', { name: board.name }) : t('boards.newTitle'), intro: t('boards.intro') }),
-    SplitPanel(boardForm(board, name, conditions.element, given, shared), beside.element),
+    SplitPanel(boardForm(board, fields, conditions.element, given), beside.element),
   ));
   beside.show(conditions.filter());
-  name.focus();
+  fields.name.focus();
 });

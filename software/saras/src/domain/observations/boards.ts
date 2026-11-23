@@ -17,7 +17,7 @@ async function countOf(db: Db, { member, organization }: Actor, filter: BoardFil
 /** A board as this member sees it: whether they manage it, and how many emails it shows them now. */
 export async function boardSeenBy(db: Db, actor: Actor, row: BoardRow): Promise<Board> {
   const filter: BoardFilter = JSON.parse(row.filter_json);
-  return { id: row.id, name: row.name, shared: row.shared, canManage: managesBoard(actor, row), filter, count: await countOf(db, actor, filter) };
+  return { id: row.id, name: row.name, shared: row.shared, canManage: managesBoard(actor, row), filter, promptId: row.prompt_id, count: await countOf(db, actor, filter) };
 }
 
 /** The shared boards, then the member's own. */

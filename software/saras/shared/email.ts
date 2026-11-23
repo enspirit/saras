@@ -76,6 +76,8 @@ export interface EmailWithItsReply {
   triageReason: string;
   triageReasonCode: string | null;
   suggestedPromptId: number | null;
+  /** The prompt of the board it is read from, when it is read from one that has a prompt. */
+  boardPromptId: number | null;
   /** Its values for the attributes of the organisation, by the attribute's key, and who decided each. */
   attributes: Record<string, ValueOfEmail>;
   recipients: Recipients;

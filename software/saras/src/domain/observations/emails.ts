@@ -1,4 +1,5 @@
 // Observation: the emails a member may see, box by box, and one email with where its reply stands.
+import { boardFor } from '../state/boards.ts';
 import type { Db } from '../../tooling/db.ts';
 import { readReason } from '../../tooling/messages.ts';
 import type { EmailStatus, EmailSummary, EmailWithItsReply, EmailsOfBox } from '../../../shared/email.ts';
@@ -62,8 +63,8 @@ async function latestReply(db: Db, emailId: number): Promise<Reply | null> {
   return { ...rest, to: JSON.parse(toJson), cc: JSON.parse(ccJson), sentAt: sentAt.toISOString() };
 }
 
-/** One email as its reader sees it: its content, why it was sorted so, who a reply would go to, its proposal and its reply. */
-export async function emailWithItsReply(db: Db, actor: Actor, id: unknown): Promise<EmailWithItsReply> {
+/** One email as its reader sees it, from a board when one is named: its content, why it was sorted so, who a reply would go to, its proposal and its reply. */
+export async function emailWithItsReply(db: Db, actor: Actor, id: unknown, boardId?: unknown): Promise<EmailWithItsReply> {
   const row = await emailFor(db, actor, id);
   const email = rowToEmail(row);
   const reason = readReason(email.triageReason);
@@ -71,6 +72,7 @@ export async function emailWithItsReply(db: Db, actor: Actor, id: unknown): Prom
     ...email,
     triageReason: reason.text,
     triageReasonCode: reason.code,
+    boardPromptId: boardId ? (await boardFor(db, actor, boardId)).prompt_id : null,
     attributes: JSON.parse(row.attributes_json),
     mailbox: row.account_email,
     shared: row.account_shared,

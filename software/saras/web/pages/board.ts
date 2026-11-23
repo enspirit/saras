@@ -27,5 +27,6 @@ export const boardPage = guard(async (boardId: number, selectedId: number | null
     emptyText: t('boards.empty'),
     actions: board.canManage && editButton(board.id),
     selectedId,
+    boardId: board.id,
   }, prompts, mailboxes);
 });

@@ -35,5 +35,8 @@
   "matches": "{count, plural, =0 {Aucun email ne correspond} one {# email correspond} other {# emails correspondent}}",
   "matchesHint": "Suit les conditions à mesure que vous les changez. Rien n’est encore enregistré.",
   "moreMatches": "{count, plural, one {et # autre} other {et # autres}}",
-  "movesNothing": "Un tableau ne déplace rien."
+  "movesNothing": "Un tableau ne déplace rien.",
+  "prompt": "Ses emails reçoivent une réponse avec",
+  "promptNone": "Aucun prompt en particulier",
+  "promptHint": "Proposé d’abord à qui rédige une réponse depuis ce tableau. Pour un tableau partagé, il rédige aussi les propositions préparées au relevé pour les emails que le tableau montre. Aucune IA n’est consultée pour choisir le prompt."
 }

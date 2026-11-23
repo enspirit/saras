@@ -54,6 +54,10 @@ export function handOverRecord(html: string, proposal: Pick<DraftRow, 'action' |
   return { text, promptId: proposal?.prompt_id ?? null, proposedText, edited, reason: edited ? changeReason : '' };
 }
 
-/** The prompt that writes a proposal nobody asked for: the one suggested at triage, else the organisation's first. */
-export const promptToPrepareWith = (suggestedPromptId: number | null, prompts: PromptRow[]): PromptRow | undefined =>
-  prompts.find((p) => p.id === suggestedPromptId) ?? prompts[0];
+/**
+ * The prompt that writes a proposal nobody asked for: the one of a shared board that shows the
+ * email, else the one suggested at triage, else the organisation's first. How the organisation
+ * arranged its work comes before what the AI thought of one email.
+ */
+export const promptToPrepareWith = (boardPromptId: number | null, suggestedPromptId: number | null, prompts: PromptRow[]): PromptRow | undefined =>
+  prompts.find((p) => p.id === boardPromptId) ?? prompts.find((p) => p.id === suggestedPromptId) ?? prompts[0];
