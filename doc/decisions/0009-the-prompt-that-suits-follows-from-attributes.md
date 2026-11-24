@@ -1,4 +1,4 @@
-# 0007 — The prompt that suits an email follows from its attributes
+# 0009 — The prompt that suits an email follows from its attributes
 
 ## Context
 
