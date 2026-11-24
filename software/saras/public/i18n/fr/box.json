@@ -4,7 +4,7 @@
     "empty": "Rien à traiter. Relevez vos boîtes, ou connectez-en une dans Comptes mail."
   },
   "none": {
-    "label": "Sans réponse",
+    "label": "Réponse inutile",
     "empty": "Aucun email écarté par le tri."
   },
   "sent": {
