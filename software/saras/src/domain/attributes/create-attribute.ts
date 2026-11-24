@@ -5,6 +5,7 @@
 //   DomPost  the organisation has one more attribute, with this name, these values and this way of being decided
 //   ReqPre   the member is an administrator
 //            it has a name; a choice has at least two values
+//            it is decided in a way we know: by a rule, or by nobody
 //            decided by a rule, it has one, which Elo can read
 //   ReqPost  emails fetched from now on get its value from its rule; those already kept have none
 import type { Attribute } from '../../../shared/attribute.ts';

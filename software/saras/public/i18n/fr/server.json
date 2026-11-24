@@ -115,6 +115,7 @@
     "ruleRequired": "Un attribut décidé par une règle a besoin de sa règle.",
     "ruleInvalid": "La règle est illisible : {detail}",
     "systemFixed": "Le nom et les valeurs d’un attribut préconfiguré sont fixes.",
-    "valueUnknown": "Ce n’est pas une valeur de cet attribut."
+    "valueUnknown": "Ce n’est pas une valeur de cet attribut.",
+    "deciderUnknown": "Façon de décider un attribut inconnue."
   }
 }

@@ -2,10 +2,10 @@
   "to": "To {to}",
   "toCc": "To {to} · Cc {cc}",
   "triage": {
-    "ai": "AI triage",
+    "ai": "The AI",
     "rule": "Rule",
     "user": "You",
-    "unknown": "Triage"
+    "unknown": "Sorting"
   },
   "erased": "Content erased (retention period exceeded)."
 }

@@ -5,15 +5,15 @@
 //   DomPre   an attribute of the organisation
 //   DomPost  it is decided this way; one the organisation made also has this name and these values
 //   ReqPre   the member is an administrator
+//            it is decided in a way we know: by a rule, or by nobody
 //            decided by a rule, it has one, which Elo can read
 //            one the organisation made: a name, two values for a choice
 //   ReqPost  "Stands in": whether its rule decides it is the organisation's setting (automated mail set aside first)
 //            emails already kept stay as they were sorted
 import { STATUS } from '../../../shared/attribute.ts';
-import { DECIDERS } from '../../../shared/attribute.ts';
 import type { Attribute } from '../../../shared/attribute.ts';
 import { isAdministrator } from '../computations/access.ts';
-import { attributeGiven, decidedByRule } from '../computations/attributes.ts';
+import { attributeGiven, decidedByRule, deciderGiven } from '../computations/attributes.ts';
 import { clipped } from '../computations/given.ts';
 import { accepted } from '../refusal.ts';
 import { attributeOf, changeAttribute, keepSystemAttribute } from '../state/attributes.ts';
@@ -22,7 +22,7 @@ import { isDecidable } from './attribute-rules.ts';
 
 /** How a pre-configured attribute is decided, and nothing else of it. */
 async function editSystem({ db }: World, { organization }: Actor, key: string, given: Record<string, unknown>): Promise<void> {
-  const decidedBy = DECIDERS.find((d) => d === given.decidedBy) ?? 'nobody';
+  const decidedBy = accepted(deciderGiven(given.decidedBy));
   const elo = clipped(given.elo, 4000);
   isDecidable({ decidedBy, elo });
   await keepSystemAttribute(db, organization.id, key, decidedBy, elo);

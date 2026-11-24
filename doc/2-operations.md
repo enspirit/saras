@@ -42,7 +42,7 @@ Essential state only: what another agent can observe.
 | --- | --- | --- | --- | --- |
 | Organisation | A team's private space: its name. | Backend | Members | `organizations.name` |
 | Writing | When a proposal is written for an email to handle: on demand (`none`), at fetch (`draft`), at fetch and filed in the mailbox's drafts (`mailbox`). | Backend | Members | `organizations.automation`; `Organization.writing` in `shared/` |
-| Automated mail first | Whether plainly automated mail is set aside by rule before anything else. | Backend | Members | `organizations.skip_automated` (`.triage_strategy` remains from when the AI could sort, and is no longer read) |
+| Automated mail first | Whether plainly automated mail is set aside by rule before anything else. | Backend | Members | `organizations.skip_automated` |
 | Organisation's AI | Its model and its own key, the same for every member. | Backend | Administrators (key: presence only) | `organizations.model`, `.openrouter_key_enc` |
 | Member | A person's account in one organisation: address, name, role, password. | Backend | Administrators, the member | `users.*`; `session.me` in the frontend |
 | Member's settings | Language, signature. | Backend (language also Frontend) | The member | `users.language`, `.signature` (`.model` and `.openrouter_key_enc` remain from before and are no longer read); `localStorage` (language) |
@@ -56,7 +56,7 @@ Essential state only: what another agent can observe.
 | Watched folder | The one folder of a mailbox that is fetched. | Backend | Members who may use it | `accounts.folder`, `.folder_name` |
 | Fetch state | When a mailbox was last fetched and what went wrong. | Backend | Members who may use it | `accounts.last_sync_at`, `.last_error` |
 | Email | A received message as saras keeps it: who, what, when; erased past retention. | Backend | Members who may use its mailbox | `emails.*` |
-| Email status | Where the email stands: to handle, no reply needed, ignored, replied. | Backend | Members | `emails.status` (the value `pending`, waiting to be sorted, remains in the schema from when the AI could sort; no email has it) |
+| Email status | Where the email stands: to handle, no reply needed, ignored, replied. | Backend | Members | `emails.status` |
 | Triage verdict | Who sorted the email (a rule, a member, nobody; the AI, on emails it sorted when it did), why, its priority. | Backend | Members | `emails.triage_source`, `.triage_reason`, `.priority` (`.suggested_prompt_id` remains from before and is no longer read) |
 | Proposal | A text the AI wrote for an email: by which help, prompt and model. | Backend | Members | `drafts` |
 | Reply in progress | What a member has written or changed in the reply area, its recipients, the reason for an edit. | Frontend | The member | the editor and fields of the composer (lost on leaving the page) |
@@ -75,7 +75,7 @@ Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`),
 | --- | --- | --- |
 | May use a mailbox | It is in the member's organisation, and is theirs or shared. | `mayUse` (a SQL condition), `mailboxFor`, `emailFor` in `state/` |
 | Manages a mailbox | Shared: the member is an administrator. Personal: it is theirs. | `manages` in `computations/mailboxes.ts` |
-| Box | To handle = `needs_reply` or `pending`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `shared/email.ts`; `computations/boxes.ts` counts by it |
+| Box | To handle = `needs_reply`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `shared/email.ts`; `computations/boxes.ts` counts by it |
 | Sign-up is open | The operator allows it, or no account exists yet. | `signUpIsOpen` in `computations/access.ts` |
 | Key in force | The organisation's, else the server's. Same order for the model. | `computations/key-in-force.ts` |
 | Locked out | Ten wrong guesses from one origin within fifteen minutes. | `isLockedOut` in `computations/access.ts` |
@@ -176,7 +176,7 @@ An email is sorted when it is fetched, by the rules of the attributes (**SortByR
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **CreateAttribute** | Administrator | → the organisation has one more attribute | Administrator · a name · two values for a choice · decided by a rule: it has one, which Elo can read | Emails fetched from then on get its value from its rule | Configuration → Attributes → "New attribute" · `POST /attributes` |
+| **CreateAttribute** | Administrator | → the organisation has one more attribute | Administrator · a name · two values for a choice · decided in a way we know: by a rule, or by nobody · decided by a rule: it has one, which Elo can read | Emails fetched from then on get its value from its rule | Configuration → Attributes → "New attribute" · `POST /attributes` |
 | **EditAttribute** | Administrator | An attribute → decided this way; one the organisation made also has this name and these values | Administrator · the same as above | Of the two pre-configured ones only how they are decided changes · "Stands in": whether its rule decides it is the organisation's setting, automated mail first | pencil in Attributes · `PUT /attributes/:key` |
 | **DeleteAttribute** | Administrator | An attribute the organisation made → none | Administrator · not pre-configured | | "Delete the attribute" · `DELETE /attributes/:key` |
 | **SortByRules** | Backend | An email just fetched → it has, for each attribute whose rule speaks of it, that value, as the rule's | | A rule that says nothing, fails or runs too long leaves the attribute undecided · "Stands in" undecided, the email is to handle, as nobody's decision · a rule cannot mark an email as replied | part of FetchMailbox (`sorting/sort-by-rules.ts`) |
@@ -286,7 +286,7 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 ### Open questions
 
 - **DeleteOrganization tells nobody.** The other members find themselves signed out. saras sends no email of its own today; telling them would be its first.
-- **A shared mailbox that changes owner changes voice**: it is fetched with its owner's key, model, signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who writes for it.
+- **A shared mailbox that changes owner changes voice**: its proposals are prepared with its owner's signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who writes for it.
 - Deviations 1 to 14 (9 aside), each of which is a rule to confirm or a behaviour to change.
 - The frontend asks for each operation through a function named after it (`web/api/`), and its pages are named after what a person does (`web/pages/`). Its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) could still be brought out as pure functions with unit tests.
 - Black-box specifications of the operations have begun in [`tests/webspicy`](../tests/webspicy/), with what reads and what refuses; the HTTP tests in `test/integration/` play that part for everything else.

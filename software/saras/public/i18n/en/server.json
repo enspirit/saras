@@ -115,6 +115,7 @@
     "ruleRequired": "An attribute decided by a rule needs its rule.",
     "ruleInvalid": "The rule cannot be read: {detail}",
     "systemFixed": "The name and the values of a pre-configured attribute are fixed.",
-    "valueUnknown": "This is not a value of the attribute."
+    "valueUnknown": "This is not a value of the attribute.",
+    "deciderUnknown": "Unknown way of deciding an attribute."
   }
 }

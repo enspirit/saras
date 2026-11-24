@@ -9,6 +9,7 @@ import { migrate, standing } from '../../src/tooling/db/migrate.ts';
 import { MIGRATIONS } from '../../src/tooling/db/migrations.ts';
 import type { Migration } from '../../src/tooling/db/migrations.ts';
 import { noSortingByTheAi } from '../../src/tooling/db/migrations/0003-no-sorting-by-the-ai.ts';
+import { nothingKeptOfTheAiSorting } from '../../src/tooling/db/migrations/0004-nothing-kept-of-the-ai-sorting.ts';
 import { testDatabase } from '../support/database.ts';
 
 const ids = MIGRATIONS.map((migration) => migration.id);
@@ -94,6 +95,20 @@ test('what the AI left behind when it sorted is put right: nothing waits, and it
       'no_reply | rule | code:triage.newsletter | normal',
     ], 'what waited is to handle; what the AI had sorted stays where it put it, and says so');
     assert.deepEqual((await db.query<{ d: string }>('SELECT decided_by AS d FROM attributes ORDER BY id')).map((a) => a.d), ['elo', 'nobody', 'elo']);
+  }));
+
+test('nothing is kept of the AI\'s sorting: an organisation has no way of sorting, and no email may wait to be sorted', () =>
+  onANewDatabase(async (db) => {
+    const before = MIGRATIONS.slice(0, 3);
+    await migrate(db, before);
+    // As a server of the version before could still leave it, after the migration before this one.
+    await leftByTheAiSorting(db);
+    assert.deepEqual(await migrate(db, [...before, nothingKeptOfTheAiSorting]), [nothingKeptOfTheAiSorting.id]);
+    assert.ok(!(await columnsOf(db, 'organizations')).includes('triage_strategy'));
+    const emails = await db.query<{ status: string; triage_source: string }>('SELECT status, triage_source FROM emails ORDER BY id');
+    assert.deepEqual(emails.map((e) => `${e.status} | ${e.triage_source}`), ['needs_reply | none', 'no_reply | ai', 'needs_reply | ai', 'no_reply | rule'], 'what waited is to handle');
+    await assert.rejects(db.run(`INSERT INTO emails (account_id, provider_id, date, status) VALUES (1, 'late', now(), 'pending')`), /emails_status_check/);
+    assert.equal(await db.run(`INSERT INTO emails (account_id, provider_id, date, status) VALUES (1, 'late', now(), 'needs_reply')`), 1, 'every status the server knows is still one');
   }));
 
 test('a migration that fails leaves nothing of itself, and says where it failed', () =>

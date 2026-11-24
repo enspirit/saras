@@ -5,7 +5,7 @@
   },
   "none": {
     "label": "No reply needed",
-    "empty": "No email set aside by triage."
+    "empty": "No email set aside by sorting."
   },
   "sent": {
     "label": "Replied",

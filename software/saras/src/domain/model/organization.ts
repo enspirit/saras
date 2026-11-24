@@ -8,7 +8,7 @@ export const AUTOMATIONS: readonly Automation[] = ['none', 'draft', 'mailbox'];
 export interface OrganizationRow {
   id: number;
   name: string;
-  /** Set plainly automated mail aside, by the rule of "Stands in". (`triage_strategy` remains from when the AI could sort, and is no longer read.) */
+  /** Set plainly automated mail aside, by the rule of "Stands in". */
   skip_automated: boolean;
   /** What is prepared at fetch for an email that needs a reply: nothing, a proposal kept here, or one filed in the mailbox's drafts. */
   automation: Automation;

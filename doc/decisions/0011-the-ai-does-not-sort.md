@@ -28,11 +28,13 @@ There is no way of sorting to choose: not for an organisation, not for an instal
 ## Consequences
 
 - The LLM is sent a received email for one thing: writing a proposal, when a member asks or, where the organisation chose so, at fetch.
-- No email waits to be sorted. `pending` is no longer a status the code knows; a fetch fails at fetching or at preparing proposals, never at sorting.
+- No email waits to be sorted. `pending` is no longer a status an email may have; a fetch fails at fetching or at preparing proposals, never at sorting.
 - The priority of an email is set by hand, or by a rule the organisation gives "Priority".
 - An email the AI sorted stays where it put it and says so, with its reason.
 - Gone: ChooseSorting, SortWaitingEmails, SortAgainUnsorted and `POST /organization/sort-again`; `sorting` in the organisation's settings; `triaged` in the answer of a fetch; `TRIAGE_STRATEGY`, which is ignored where it is still set.
-- Migration `0003-no-sorting-by-the-ai` puts to handle what waited, has no organisation sort by the AI and no attribute decided by it. `organizations.triage_strategy` and the value `pending` of `emails.status` stay in the schema: the version before this one still reads them, and a migration removes them once no server of that version is left ([decision 0010](0010-the-server-migrates-its-database-and-several-may-share-it.md)).
+- Migration `0003-no-sorting-by-the-ai` puts to handle what waited, has no organisation sort by the AI and no attribute decided by it. It leaves `organizations.triage_strategy` and the value `pending` of `emails.status` in the schema, which the version before this one still reads.
+- Migration `0004-nothing-kept-of-the-ai-sorting` removes both, in the same release. [Decision 0010](0010-the-server-migrates-its-database-and-several-may-share-it.md) asks that what a version stops using be removed in a later one, so that servers of two versions may share a database during an upgrade: here no installation runs a server of the version before, and such a server does not work once 0004 is applied.
+- A way of deciding an attribute that the server does not know (`ai`, `eloAi`, as an interface loaded before this version may still send) is refused, not read as nobody: read so, it would switch the rule of "Stands in" off without saying.
 
 ## What would reverse it
 

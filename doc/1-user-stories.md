@@ -190,7 +190,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member, **I want** every remaining email of the folder I watch to be "to handle" unless a rule of ours or one of us says otherwise, **so that** no email is read by the AI to be sorted, and I can always tell why an email is where it is.
 
 - Everything that passed the rules is in **To handle**. No LLM decides whether an email needs a reply, nor how urgent it is: rules do (US-94), and members (US-24, US-95).
-- An email the AI sorted, when it could, stays where it put it, marked **AI triage** with its reason.
+- An email the AI sorted, when it could, stays where it put it, marked **The AI** with its reason.
 
 ### US-23 — Work through four boxes
 **As** a member, **I want** my emails in four lists — To handle, No reply needed, Replied, Ignored — each with its count, **so that** I always know what is left.

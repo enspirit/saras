@@ -32,8 +32,9 @@ test('an attribute needs a name, and a choice two values; a rule decides it, or 
   assert.equal(outcome(attributeGiven({ name: '', values: ['a', 'b'] })), 'invalid: attributes.nameRequired');
   assert.equal(outcome(attributeGiven({ name: 'Topic', values: ['a', 'a', ' '] })), 'invalid: attributes.valuesRequired');
   assert.equal(outcome(attributeGiven({ name: 'Assignee', kind: 'member' })), 'ok');
-  const decider = (decidedBy: string) => { const given = attributeGiven({ name: 'Topic', values: ['a', 'b'], decidedBy }); return given.ok && given.value.decidedBy; };
-  assert.deepEqual(['elo', 'nobody', 'ai', 'eloAi'].map(decider), ['elo', 'nobody', 'nobody', 'nobody'], 'a way of deciding that is not known leaves it to members');
+  const decider = (decidedBy: unknown) => { const given = attributeGiven({ name: 'Topic', values: ['a', 'b'], decidedBy }); return given.ok ? given.value.decidedBy : outcome(given); };
+  assert.deepEqual(['elo', 'nobody', undefined].map(decider), ['elo', 'nobody', 'nobody'], 'nobody, when no way of deciding is given');
+  assert.deepEqual(['ai', 'eloAi', 'magic', ''].map(decider), Array(4).fill('invalid: attributes.deciderUnknown'), 'a way of deciding that is not known is refused, not read as nobody');
 });
 
 let stack: Stack;
@@ -54,7 +55,8 @@ test('an organisation starts with two attributes, whose logic is there to read: 
   assert.deepEqual([priority.key, priority.system, priority.decidedBy], ['priority', true, 'nobody']);
 });
 
-test('an administrator makes an attribute with its rule; a rule Elo cannot read is refused', async () => {
+test('an administrator makes an attribute with its rule; a rule Elo cannot read is refused, and so is leaving it to the AI', async () => {
+  assert.equal((await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'ai' })).body.code, 'attributes.deciderUnknown');
   assert.equal((await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'elo', elo: 'if then' })).body.code, 'attributes.ruleInvalid');
   assert.equal((await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'elo' })).body.code, 'attributes.ruleRequired');
   const made = await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'elo', elo: topicRule });
@@ -101,6 +103,8 @@ test('whether its rule decides "Stands in" is the organisation\'s setting; its v
   const edited = await alice('PUT', '/attributes/status', { name: 'Renamed', values: ['x', 'y'], decidedBy: 'elo', elo: `if _.from.address == '' then 'none' else null` });
   assert.deepEqual([edited.body.name, edited.body.values.length, edited.body.decidedBy], ['Stands in', 4, 'elo']);
   assert.equal(await skipsAutomated(), true);
+  assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'eloAi', elo: 'null' })).body.code, 'attributes.deciderUnknown');
+  assert.equal(await skipsAutomated(), true, 'a way of deciding that is not known does not switch its rule off');
   assert.equal((await alice('DELETE', '/attributes/status')).body.code, 'attributes.systemFixed');
 });
 

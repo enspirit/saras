@@ -8,6 +8,7 @@
 import { baseline } from './migrations/0001-baseline.ts';
 import { scheduledTasks } from './migrations/0002-scheduled-tasks.ts';
 import { noSortingByTheAi } from './migrations/0003-no-sorting-by-the-ai.ts';
+import { nothingKeptOfTheAiSorting } from './migrations/0004-nothing-kept-of-the-ai-sorting.ts';
 
 export interface Migration {
   /** Its number and its name, as its file: 0002-what-it-does. */
@@ -16,4 +17,4 @@ export interface Migration {
   sql: string;
 }
 
-export const MIGRATIONS: Migration[] = [baseline, scheduledTasks, noSortingByTheAi];
+export const MIGRATIONS: Migration[] = [baseline, scheduledTasks, noSortingByTheAi, nothingKeptOfTheAiSorting];

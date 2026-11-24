@@ -60,6 +60,7 @@ export const MESSAGES = {
   'attributes.ruleInvalid': 'The rule cannot be read: {detail}',
   'attributes.systemFixed': 'The name and the values of a pre-configured attribute are fixed.',
   'attributes.valueUnknown': 'This is not a value of the attribute.',
+  'attributes.deciderUnknown': 'Unknown way of deciding an attribute.',
   'boards.notFound': 'Board not found.',
   'boards.nameRequired': 'A board needs a name.',
   'boards.sharedByAdministrators': 'Only administrators share a board with the organisation.',
