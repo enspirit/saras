@@ -96,7 +96,7 @@ Every variable is described in [`software/saras/env/base.env`](software/saras/en
 ## Known limitations
 
 - The Gmail and Microsoft Graph connectors are covered by message-conversion tests but have not been exercised against the real services: validate them with your own OAuth credentials.
-- Replies cannot carry attachments or images, and received emails are shown as plain text. Of received attachments only the name, type and size are kept; their content is neither stored nor sent to the LLM.
+- Replies cannot carry attachments or images. Of received attachments only the name, type and size are kept; their content is neither stored nor sent to the LLM.
 - One folder per mailbox is fetched, the `SYNC_MAX_EMAILS` most recent at a time. For Outlook, only top-level folders are offered.
 - "Already answered elsewhere" is only detected over IMAP (`\Answered` flag).
 - A Google mailbox connected before drafts were added must be reconnected (new scope).

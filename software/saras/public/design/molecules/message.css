@@ -1,30 +1,68 @@
 /* ---- Message: the body of an email, scrollable when long ---- */
 .message { max-height: 420px; overflow-y: auto; }
 
-/* ---- An email as it was written: a frame of its own, which scrolls by itself ---- */
-.message-frame {
-  display: block;
-  width: 100%; height: 100%; min-height: 320px;
+/* ---- An email as it was written: the email's own page, which scrolls by itself ---- */
+/* White whatever the scheme, as its sender wrote it to be read; it fills what holds it, from the top. */
+.message-frame { display: block; width: 100%; height: 100%; min-height: 240px; border: 0; background: var(--color-paper); }
+
+/* ---- An email's text: what is said, what is quoted, how it is signed ---- */
+.message-text { display: grid; gap: var(--space-3); line-height: 1.6; }
+.message-text__quote {
+  margin: 0;
+  padding: var(--space-1) 0 var(--space-1) var(--space-3);
+  border-left: var(--focus-width) solid var(--color-border);
+  color: var(--color-text-muted);
+}
+.message-text__earlier > summary {
+  display: inline-flex; align-items: center;
+  padding: 0 var(--space-3); min-height: 24px;
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  list-style: none;
+}
+.message-text__earlier > summary::-webkit-details-marker { display: none; }
+.message-text__earlier > summary:hover { color: var(--color-text); }
+.message-text__earlier[open] > summary { margin-bottom: var(--space-3); }
+.message-text__signature {
+  padding-top: var(--space-2);
+  border-top: var(--border-width) dashed var(--color-line);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---- One email on one sheet: the way it is seen, chosen in its bar, then the email ---- */
+.message-views {
+  display: flex; flex-direction: column;
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
 }
-
-/* ---- One email seen several ways: which, then the one chosen ---- */
-/* As tall as the place it is read in, so that the frame is the one thing that scrolls. */
-.message-views { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: var(--space-3); height: 100%; }
-.message-views__shown { min-height: 0; overflow-y: auto; }
-.message-views__bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-4); border-bottom: var(--border-width) solid var(--color-border); }
+.message-views__bar {
+  flex: none;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-line);
+}
+.message-views__choice { display: inline-flex; padding: 2px; border-radius: var(--radius-md); background: var(--color-surface-sunken); }
 .message-views__view {
-  margin-bottom: calc(var(--border-width) * -1);
-  padding: var(--space-1) 0;
+  min-height: 26px;
+  padding: 0 var(--space-3);
   border: 0;
-  border-bottom: var(--focus-width) solid transparent;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-muted);
   font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium);
   cursor: pointer;
 }
 .message-views__view:hover { color: var(--color-text); }
-.message-views__view[aria-pressed="true"] { border-bottom-color: var(--color-accent); color: var(--color-accent); font-weight: var(--weight-strong); }
-.message-views__note { margin: 0; font-size: var(--text-sm); color: var(--color-text-muted); }
+.message-views__view[aria-pressed="true"] { background: var(--color-surface); color: var(--color-text); font-weight: var(--weight-strong); box-shadow: var(--shadow-1); }
+.message-views__note { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); cursor: help; }
+.message-views__shown { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+/* A text reads on the sheet; a page as written brings its own margins. */
+.message-views__shown > .message-text { padding: var(--space-4) var(--space-5) var(--space-5); }

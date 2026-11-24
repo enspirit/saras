@@ -10,6 +10,8 @@
   "erased": "Contenu effacé (durée de conservation dépassée).",
   "asWritten": "Mise en forme",
   "asText": "Texte seul",
+  "earlier": "Messages précédents",
   "imagesHeld": "Les images hébergées ailleurs ne sont pas chargées : elles diraient à l’expéditeur que vous avez ouvert l’email.",
+  "imagesHeldShort": "Images retenues",
   "frameTitle": "L’email tel qu’il a été écrit"
 }

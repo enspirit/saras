@@ -20,6 +20,8 @@ import { Prose, RichText, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
 import { Block } from '../ui/molecules/field.ts';
 import { Message, MessageAsWritten, MessageViews } from '../ui/molecules/message.ts';
+import type { MessageView } from '../ui/molecules/message.ts';
+import { MessageText } from '../ui/molecules/message-text.ts';
 import { Panel } from '../ui/molecules/panel.ts';
 import { Reading, ReadingHeader } from '../ui/organisms/reading.ts';
 import { ClosedDock } from '../ui/organisms/reply-dock.ts';
@@ -108,14 +110,10 @@ function closedReplyArea(email: EmailWithItsReply, prompts: Prompt[], done: Done
 
 /** The email itself: as it was written when it can be shown so, with its text one click away; its text otherwise. */
 function originalOf(email: EmailWithItsReply): Child {
-  if (!email.hasHtml) return email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased'));
-  return MessageViews(
-    [
-      { label: t('reading.asWritten'), show: () => MessageAsWritten(`/api/emails/${email.id}/html`, t('reading.frameTitle')) },
-      { label: t('reading.asText'), show: () => Message(Prose(email.bodyText)) },
-    ],
-    email.hostedImagesHeld && t('reading.imagesHeld'),
-  );
+  const asText: MessageView = { label: t('reading.asText'), show: () => MessageText(email.bodyText, t('reading.earlier')) };
+  if (!email.hasHtml) return email.bodyText ? MessageViews([asText]) : Text({ muted: true }, t('reading.erased'));
+  const asWritten: MessageView = { label: t('reading.asWritten'), show: () => MessageAsWritten(`/api/emails/${email.id}/html`, t('reading.frameTitle')) };
+  return MessageViews([asWritten, asText], email.hostedImagesHeld ? { label: t('reading.imagesHeldShort'), explanation: t('reading.imagesHeld') } : undefined);
 }
 
 /** `backHref` is the list the email was opened from: where one returns once it is dealt with. */

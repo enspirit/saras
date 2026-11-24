@@ -50,6 +50,8 @@
   --color-bg: light-dark(var(--brand-canvas), var(--brand-canvas-dark));
   --color-text: light-dark(var(--brand-ink), var(--brand-ink-dark));
   --color-surface: light-dark(#ffffff, color-mix(in srgb, var(--brand-canvas-dark) 93%, #ffffff));
+  /* The page of an email as it was written: white in every scheme, as its sender meant it. */
+  --color-paper: #ffffff;
   --color-text-muted: color-mix(in srgb, var(--color-text) 64%, var(--color-bg));
   --color-border: color-mix(in srgb, var(--color-text) 13%, var(--color-bg));
   --color-border-strong: color-mix(in srgb, var(--color-text) 45%, var(--color-bg));

@@ -10,6 +10,8 @@
   "erased": "Content erased (retention period exceeded).",
   "asWritten": "As written",
   "asText": "Text only",
+  "earlier": "Earlier messages",
   "imagesHeld": "Images hosted elsewhere are not loaded: they would tell the sender that you opened the email.",
+  "imagesHeldShort": "Images held back",
   "frameTitle": "The email as it was written"
 }

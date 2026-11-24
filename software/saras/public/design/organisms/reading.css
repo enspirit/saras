@@ -3,15 +3,19 @@
 .reading__body { flex: 1 0 96px; min-height: 0; overflow-y: auto; padding: var(--space-5) var(--space-6); }
 .reading__body > * { max-width: 76ch; }
 .reading__body > * + * { margin-top: var(--space-6); }
-/* The email itself is a sheet of paper, as text and as it was written alike; written, it may be wider than a line reads well. */
+/* A reply sent is a sheet of paper. */
 .reading .message { max-height: none; overflow: visible; }
-.reading__body > .message, .reading__body > .message-views .message {
+.reading__body > .message {
   padding: var(--space-4) var(--space-5);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
+/* So is the email: written, it may be wider than a line reads well, and its page fills the place it is read in;
+   with a reply under it, a good part of it. As text, the sheet is as long as the text. */
 .reading__body > .message-views { max-width: 104ch; }
+.reading__body > .message-views:has(.message-frame) { height: 100%; }
+.reading__body > .message-views:not(:only-child):has(.message-frame) { height: 60vh; }
 
 /* ---- Reading header: subject and decisions, who and when, triage verdict ---- */
 .reading-head {

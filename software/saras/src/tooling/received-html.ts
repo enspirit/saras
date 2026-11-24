@@ -81,6 +81,7 @@ const styleSheets = (html: string): string => [...html.matchAll(STYLE)].map(([, 
  */
 const OURS = `<style>
 html{color-scheme:light;background:#fff}
+html,body{height:auto!important;min-height:0!important}
 body{margin:0;padding:16px 20px;color:#1f2328;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 img,table{max-width:100%}img{height:auto}
 a{color:#1a56db}

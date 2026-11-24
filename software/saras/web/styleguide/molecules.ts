@@ -18,6 +18,7 @@ import { Features } from '../ui/molecules/features.ts';
 import { Block, CheckField, Field } from '../ui/molecules/field.ts';
 import { Actions, Form, FormRow } from '../ui/molecules/form.ts';
 import { Message, MessageViews } from '../ui/molecules/message.ts';
+import { MessageText } from '../ui/molecules/message-text.ts';
 import { NavItem } from '../ui/molecules/nav-item.ts';
 import { Person } from '../ui/molecules/person.ts';
 import { RecipientField } from '../ui/molecules/recipient-field.ts';
@@ -97,7 +98,7 @@ const emailsCard = (): HTMLDivElement =>
     sampleEmail({ tags: [Badge(t('mailbox.priority'), 'warn')], shared: { label: 'contact', title: 'contact@client.example' } }),
     sampleEmail({ current: true, from: 'Sophie Leroy', subject: t('styleguide.sample.subject2'), tags: [Badge(t('mailbox.draft'), 'neutral')] }),
     Message(Prose(t('styleguide.sample.body'))),
-    MessageViews([{ label: t('reading.asWritten'), show: () => Message(RichText(t('styleguide.sample.rich'))) }, { label: t('reading.asText'), show: () => Message(Prose(t('styleguide.sample.body'))) }], t('reading.imagesHeld')),
+    MessageViews([{ label: t('reading.asWritten'), show: () => Message(RichText(t('styleguide.sample.rich'))) }, { label: t('reading.asText'), show: () => MessageText(t('styleguide.sample.body'), t('reading.earlier')) }], { label: t('reading.imagesHeldShort'), explanation: t('reading.imagesHeld') }),
     EmptyState(t('styleguide.empty')),
     EmptyState(t('styleguide.empty'), { icon: 'mail', title: t('styleguide.emptyTitle'), action: Button(t('styleguide.emptyAction'), { icon: 'refresh-cw' }) }),
   );
