@@ -15,8 +15,8 @@ export interface ReadingHeaderOptions {
   sender: { name: string; address?: string };
   /** 'To you · Cc Paul Novak'. */
   to?: string;
-  /** Names of the attached files. */
-  attachments?: string[];
+  /** The attached files, by name; each opens where its `href` leads, when it has one. */
+  attachments?: { name: string; href?: string }[];
   date: string;
   /** The complete date, as a tooltip. */
   dateTitle?: string;
@@ -34,7 +34,7 @@ export function ReadingHeader({ subject, actions, sender, to, attachments = [], 
         h('span', {}, h('span', { class: 'reading-head__name' }, sender.name), sender.address && [' ', h('span', { class: 'reading-head__address' }, sender.address)]),
         to && h('span', { class: 'reading-head__to' }, to),
       ),
-      attachments.length > 0 && h('div', { class: 'reading-head__files' }, attachments.map((name) => Chip(name, { icon: 'paperclip' }))),
+      attachments.length > 0 && h('div', { class: 'reading-head__files' }, attachments.map(({ name, href }) => Chip(name, { icon: 'paperclip', href }))),
       h('span', { class: 'reading-head__date', title: dateTitle }, date),
     ),
     triage && h('div', { class: 'reading-head__triage' }, triage),

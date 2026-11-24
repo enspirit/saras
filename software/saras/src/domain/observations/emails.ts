@@ -2,17 +2,22 @@
 import type { ValueOfEmail } from '../../../shared/attribute.ts';
 import { bestPrompt, valuesOf } from '../computations/prompt-affinity.ts';
 import { promptsWithAffinity } from '../state/prompts.ts';
+import type { Config } from '../../tooling/config.ts';
 import type { Db } from '../../tooling/db.ts';
+import { holdsHostedImages, receivedDocument } from '../../tooling/received-html.ts';
 import { readReason } from '../../tooling/messages.ts';
 import type { EmailStatus, EmailSummary, EmailWithItsReply, EmailsOfBox } from '../../../shared/email.ts';
 import type { Proposal, Reply } from '../../../shared/reply.ts';
 import type { DraftRow } from '../model/reply.ts';
 import type { Conditions } from '../computations/boards.ts';
 import { countsPerBox, statusesOf } from '../computations/boxes.ts';
-import { rowToEmail } from '../computations/emails.ts';
+import { isPastRetention, rowToEmail } from '../computations/emails.ts';
+import { handsFilesOver } from '../computations/mailboxes.ts';
 import { replyRecipients } from '../computations/reply.ts';
 import { proposalHtml } from '../computations/replying.ts';
+import { Refusal } from '../refusal.ts';
 import { emailFor } from '../state/emails.ts';
+import type { OwnedEmailRow } from '../state/emails.ts';
 import { mayUse } from '../state/mailboxes.ts';
 import type { Actor } from '../world.ts';
 
@@ -65,21 +70,37 @@ async function latestReply(db: Db, emailId: number): Promise<Reply | null> {
   return { ...rest, to: JSON.parse(toJson), cc: JSON.parse(ccJson), sentAt: sentAt.toISOString() };
 }
 
-/** One email as its reader sees it: its content, why it was sorted so, who a reply would go to, its proposal and its reply. */
-export async function emailWithItsReply(db: Db, actor: Actor, id: unknown): Promise<EmailWithItsReply> {
+/** Where an email arrived, and how it can be looked at beyond its text: as it was written, and with its files. */
+const shownAs = (row: OwnedEmailRow, { retentionDays }: Pick<Config, 'retentionDays'>) => ({
+  mailbox: row.account_email,
+  shared: row.account_shared,
+  hasHtml: row.body_html !== '',
+  hostedImagesHeld: holdsHostedImages(row.body_html),
+  attachmentsOpen: handsFilesOver(row.account_kind) && !isPastRetention(row.date, retentionDays),
+});
+
+/** The HTML of an email, rebuilt as a document to show in a frame. Not found for an email that has none. */
+export async function emailAsDocument(db: Db, actor: Actor, id: unknown): Promise<string> {
   const row = await emailFor(db, actor, id);
-  const email = rowToEmail(row);
+  if (!row.body_html) throw new Refusal('notFound', 'emails.notFound');
+  return receivedDocument(row.body_html);
+}
+
+/** One email as its reader sees it: its content, why it was sorted so, who a reply would go to, its proposal and its reply. */
+export async function emailWithItsReply(db: Db, actor: Actor, id: unknown, config: Pick<Config, 'retentionDays'>): Promise<EmailWithItsReply> {
+  const row = await emailFor(db, actor, id);
+  // The HTML is not part of the answer: it is a document of its own.
+  const { bodyHtml: _html, ...email } = rowToEmail(row);
   const reason = readReason(email.triageReason);
   const attributes: Record<string, ValueOfEmail> = JSON.parse(row.attributes_json);
   const suited = bestPrompt(await promptsWithAffinity(db, actor.organization.id), valuesOf({ status: row.status, priority: row.priority, attributes }));
   return {
     ...email,
+    ...shownAs(row, config),
     suggestedPromptId: suited?.id ?? null,
     triageReason: reason.text,
     triageReasonCode: reason.code,
     attributes,
-    mailbox: row.account_email,
-    shared: row.account_shared,
     recipients: replyRecipients(email, row.account_email, false),
     recipientsAll: replyRecipients(email, row.account_email, true),
     proposal: await latestProposal(db, row.id),

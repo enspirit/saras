@@ -39,6 +39,7 @@ export const parsedToEmail = (parsed: ParsedMail, { providerId, answered }: { pr
   subject: parsed.subject || '',
   date: (parsed.date || new Date()).toISOString(),
   bodyText: (parsed.text || htmlToText(parsed.html)).trim(),
+  bodyHtml: parsed.html || '',
   attachments: attachmentsOf(parsed),
   headers: automationHeaders(parsed),
   answered,

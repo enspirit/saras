@@ -28,6 +28,8 @@ export interface IncomingEmail {
   /** ISO 8601. */
   date: string;
   bodyText: string;
+  /** Its HTML as it was written, when it has one: shown rebuilt (tooling/received-html.ts), never sent to the LLM. */
+  bodyHtml: string;
   attachments: Attachment[];
   headers: MailHeaders;
   /** Already answered from the user's own mail client, when the provider can tell. */
@@ -65,6 +67,7 @@ export interface EmailRow {
   subject: string;
   date: Date;
   body_text: string;
+  body_html: string;
   attachments_json: string;
   status: EmailStatus;
   triage_source: TriageSource | null;

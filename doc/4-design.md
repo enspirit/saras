@@ -111,7 +111,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `RichEditor` | Squire with an icon toolbar. It can show an `AiNote` and tint its text as a proposal, and highlight passages matching a pattern without changing the text. |
 | `RecipientField` | Addresses as removable chips, with a place to type one more. |
 | `AiNote`, `AiHelp`, `PromptPick`, `ReasonField`, `Caution` | The parts of the reply area that concern the AI (see 6.2). |
-| `Panel`, `Message` | A record with its facts; a mail body. |
+| `Panel`, `Message`, `MessageAsWritten`, `MessageViews` | A record with its facts; a mail body as text; the same as it was written, in a frame; and the two, one at a time. |
 | Toast (`createToast`), `Swatch` | One message at a time, at the top, clear of the reply area; a colour token in the style guide. |
 
 ### Organisms (`organisms/*.ts`, `organisms/*.css`)
@@ -135,7 +135,7 @@ Below 860 px the boxes are a bar at the bottom of the screen, with a fifth entry
 
 ### 6.2 Reading and replying (US-25, US-30 to US-40)
 
-The reading pane has three parts: a header, the email's text, and the reply area docked at the bottom. The text scrolls on its own; when room is short the reply area gives way first and its writing area scrolls, so Send stays in view.
+The reading pane has three parts: a header, the email itself, and the reply area docked at the bottom. The email is a sheet of paper, with a margin, as text and as it was written alike. One written in HTML is shown as written, in a frame as tall as the room it has, on white whatever the theme and in the system's own font where it names none (a frame loads no font of a brand), with "Text only" beside it; the names of its files, in the header, open them. The email scrolls on its own; when room is short the reply area gives way first and its writing area scrolls, so Send stays in view.
 
 - **Header.** Subject, then the decisions about the email: *No reply needed* and *Ignore* while it waits, *Move back to "To handle"* once set aside. Under it the sender (avatar, name, address), "To … · Cc …", attachments as chips, and a short date with the full date as a tooltip. Last, the triage verdict: who sorted it, and why.
 - **Recipients.** To and Cc as removable chips on one line, with *Reply to all* when the email had other recipients.

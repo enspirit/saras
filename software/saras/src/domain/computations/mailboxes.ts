@@ -127,3 +127,6 @@ const ANSWERED_IN_CLEAR = /wrong version number/i;
 /** The refusal of servers that did not let us in: what they answered; or, where one does not start in TLS, what to change, which its answer does not say. */
 export const notLetIn = (detail: string): Refusal =>
   ANSWERED_IN_CLEAR.test(detail) ? new Refusal('invalid', 'mailboxes.notDirectTls') : new Refusal('invalid', 'mailboxes.connectionFailed', { detail });
+
+/** The kinds of mailboxes that hand over a file attached to an email. Those reached by their servers, so far. */
+export const handsFilesOver = (kind: string): boolean => kind === 'imap';

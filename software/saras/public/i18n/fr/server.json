@@ -67,6 +67,9 @@
     "invalidStatus": "Statut invalide.",
     "alreadySent": "Réponse déjà envoyée.",
     "alreadyHandled": "Une réponse a déjà été traitée pour cet email.",
+    "attachmentNotFound": "Ce fichier n’est plus dans la boîte.",
+    "attachmentsNotRead": "Les fichiers de ce type de boîte ne s’ouvrent pas encore d’ici.",
+    "attachmentFailed": "Impossible de lire le fichier dans la boîte : {detail}",
     "contentErased": "Le contenu de cet email a été effacé (durée de conservation dépassée)."
   },
   "reply": {

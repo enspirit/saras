@@ -24,7 +24,7 @@ test('a rule is checked against the type of the email it is given: what an email
 });
 
 test('the type the checker reads is the shape rules are really given, and the rule "Stands in" starts with fits it', () => {
-  const given = emailForRules({ providerId: '1', threadId: null, attachments: [], ...email, headers: {}, answered: false }, 'me@corp.example');
+  const given = emailForRules({ providerId: '1', threadId: null, attachments: [], bodyHtml: '', ...email, headers: {}, answered: false }, 'me@corp.example');
   const declared = [...EMAIL_FOR_RULES.matchAll(/^  (\w+):/gm)].map((m) => m[1]);
   assert.deepEqual(declared.sort(), Object.keys(given).sort());
   assert.deepEqual(problemsOf(DEFAULT_STATUS_RULE, EMAIL_FOR_RULES), []);

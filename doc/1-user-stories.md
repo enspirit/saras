@@ -211,8 +211,10 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member, **I want** to read the email with who sent it, to whom, when, and what came attached, **so that** I can answer without opening my mail client.
 
 - Subject, sender (name and address), date (complete on hover), To and Cc, and the names of the attachments.
-- The body is shown as plain text and scrolls on its own when long.
-- Attachments cannot be opened: only their name, type and size are kept.
+- An email that was written in HTML is shown as it was written: its layout, fonts, colours and links, in a frame that scrolls on its own. "Text only" shows its plain text instead, which is what an email without HTML shows.
+- Shown as written, an email runs nothing and loads nothing from anywhere: an image hosted elsewhere is not loaded, since it would tell the sender that I opened the email, and I am told when one was held back. Images the email carries in its own HTML are shown. A link opens in a tab of its own.
+- An attachment opens from its name: it is read from the mailbox at that moment, in a tab of its own when it is an image, a PDF or plain text, and saved otherwise. Only its name, type and size are kept.
+- Known limitations: no HTML is kept of a mailbox connected by Microsoft sign-in, and attachments open only for a mailbox connected by its servers (see the deviations).
 - Past the retention period the content is erased and the email says so.
 
 ---
@@ -424,7 +426,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** a member, **I want** the AI to receive only what the action needs, **so that** exposure is minimal.
 
 - Checking typos and improving style send only my text. Applying a prompt sends the email, the prompt and my text.
-- The content of attachments is never stored nor sent. Automated mail never reaches the AI.
+- The content of attachments is never stored nor sent to the AI: opening one reads it from my mailbox, for me. Automated mail never reaches the AI.
 - No email is sent to the AI to be sorted. Unless my organisation has proposals written at fetch (US-66), no email content leaves the server until I ask for a proposal.
 
 ### US-72 — Forget old email

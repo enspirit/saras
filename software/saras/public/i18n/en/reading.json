@@ -7,5 +7,9 @@
     "user": "You",
     "unknown": "Sorting"
   },
-  "erased": "Content erased (retention period exceeded)."
+  "erased": "Content erased (retention period exceeded).",
+  "asWritten": "As written",
+  "asText": "Text only",
+  "imagesHeld": "Images hosted elsewhere are not loaded: they would tell the sender that you opened the email.",
+  "frameTitle": "The email as it was written"
 }

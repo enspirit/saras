@@ -1,6 +1,6 @@
 // State: the emails saras keeps, and where each stands.
 import type { Db } from '../../tooling/db.ts';
-import { textToKeep } from '../computations/emails.ts';
+import { htmlToKeep, textToKeep } from '../computations/emails.ts';
 import type { Standing } from '../computations/emails.ts';
 import type { StatusAgain, ValueAgain } from '../computations/sorting-again.ts';
 import type { EmailRow, IncomingEmail } from '../model/email.ts';
@@ -9,12 +9,12 @@ import type { Actor } from '../world.ts';
 import { mayUse } from './mailboxes.ts';
 
 /** An email row joined with the address of the mailbox it belongs to. */
-export type OwnedEmailRow = EmailRow & { account_email: string; account_shared: boolean };
+export type OwnedEmailRow = EmailRow & { account_email: string; account_shared: boolean; account_kind: string };
 
 /** The email with this number, if the member may use its mailbox. Refused as not found otherwise: what one may not see does not exist. */
 export async function emailFor(db: Db, { member, organization }: Actor, id: unknown): Promise<OwnedEmailRow> {
   const row = await db.one<OwnedEmailRow>(
-    `SELECT e.*, a.email AS account_email, a.shared AS account_shared FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = $1 AND ${mayUse('$2', '$3')}`,
+    `SELECT e.*, a.email AS account_email, a.shared AS account_shared, a.kind AS account_kind FROM emails e JOIN accounts a ON a.id = e.account_id WHERE e.id = $1 AND ${mayUse('$2', '$3')}`,
     [Number(id) || 0, organization.id, member.id],
   );
   if (!row) throw new Refusal('notFound', 'emails.notFound');
@@ -51,6 +51,7 @@ const whoAndWhat = (email: IncomingEmail): unknown[] => [
   email.date,
   textToKeep(email.bodyText),
   JSON.stringify(email.attachments),
+  htmlToKeep(email.bodyHtml ?? ''),
 ];
 
 /** Keeps a fetched email where it first stands. One already kept (same mailbox, folder and identifier) is left as it is. */
@@ -58,8 +59,8 @@ export const keepFetched = async (db: Db, mailboxId: number, folder: string, ema
   void (await db.run(
     `INSERT INTO emails
        (account_id, folder, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
-        subject, date, body_text, attachments_json, status, triage_source, triage_reason, priority, attributes_json, headers_json)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        subject, date, body_text, attachments_json, body_html, status, triage_source, triage_reason, priority, attributes_json, headers_json)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
      ON CONFLICT (account_id, folder, provider_id) DO NOTHING`,
     [mailboxId, folder, ...whoAndWhat(email), standing.status, standing.source, standing.reason, standing.priority, JSON.stringify(standing.attributes), JSON.stringify(email.headers ?? {})],
   ));

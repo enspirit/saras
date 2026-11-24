@@ -13,7 +13,7 @@ import { email } from '../support/email-from-claire.ts';
 const standsIn: Attribute = { key: STATUS, name: 'Stands in', kind: 'choice', values: STATUS_VALUES, decidedBy: 'elo', elo: DEFAULT_STATUS_RULE, system: true };
 const rules = ruled([standsIn]);
 const own = 'me@corp.example';
-const incoming = (over: Partial<IncomingEmail>): IncomingEmail => ({ providerId: '1', threadId: null, attachments: [], ...email, headers: {}, answered: false, ...over });
+const incoming = (over: Partial<IncomingEmail>): IncomingEmail => ({ providerId: '1', threadId: null, attachments: [], bodyHtml: '', ...email, headers: {}, answered: false, ...over });
 const standing = (over: Partial<IncomingEmail> = {}) => sortByRules(rules, incoming(over), own);
 
 test('the rule "Stands in" starts with sets automated mail aside; the rest is to handle', () => {

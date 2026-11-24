@@ -67,6 +67,9 @@
     "invalidStatus": "Invalid status.",
     "alreadySent": "A reply has already been sent.",
     "alreadyHandled": "A reply has already been handled for this email.",
+    "attachmentNotFound": "This file is no longer in the mailbox.",
+    "attachmentsNotRead": "The files of this kind of mailbox cannot be opened from here yet.",
+    "attachmentFailed": "Could not read the file from the mailbox: {detail}",
     "contentErased": "The content of this email has been erased (retention period exceeded)."
   },
   "reply": {

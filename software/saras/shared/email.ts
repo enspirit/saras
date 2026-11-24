@@ -15,7 +15,7 @@ export interface Address {
   address: string;
 }
 
-/** A file attached to an email. Only its description is kept, never its content. */
+/** A file attached to an email. Only its description is kept, never its content: it is read again from the mailbox when asked for. */
 export interface Attachment {
   name: string;
   type: string;
@@ -68,7 +68,13 @@ export interface EmailWithItsReply {
   subject: string;
   date: string;
   bodyText: string;
+  /** Whether it can be shown as it was written: `GET /emails/:id/html` is then a document for a frame. */
+  hasHtml: boolean;
+  /** Whether it shows images hosted elsewhere, which are not loaded. */
+  hostedImagesHeld: boolean;
   attachments: Attachment[];
+  /** Whether its files can be opened: `GET /emails/:id/attachments/:n`, the nth of the list above, from 0. */
+  attachmentsOpen: boolean;
   status: EmailStatus;
   priority: Priority;
   triageSource: string | null;

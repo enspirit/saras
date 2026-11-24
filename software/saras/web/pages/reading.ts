@@ -19,7 +19,7 @@ import { Notice } from '../ui/atoms/notice.ts';
 import { Prose, RichText, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
 import { Block } from '../ui/molecules/field.ts';
-import { Message } from '../ui/molecules/message.ts';
+import { Message, MessageAsWritten, MessageViews } from '../ui/molecules/message.ts';
 import { Panel } from '../ui/molecules/panel.ts';
 import { Reading, ReadingHeader } from '../ui/organisms/reading.ts';
 import { ClosedDock } from '../ui/organisms/reply-dock.ts';
@@ -70,7 +70,7 @@ function emailHeader(email: EmailWithItsReply, done: Done): HTMLElement {
     actions: decisions(email, done),
     sender: { name: email.fromName || email.fromAddr, address: email.fromName ? email.fromAddr : undefined },
     to: email.cc.length ? t('reading.toCc', { to: names(email.to) || email.mailbox, cc: names(email.cc) }) : t('reading.to', { to: names(email.to) || email.mailbox }),
-    attachments: email.attachments.map((a) => a.name || a.type),
+    attachments: email.attachments.map((a, place) => ({ name: a.name || a.type, href: email.attachmentsOpen ? `/api/emails/${email.id}/attachments/${place}` : undefined })),
     date: fmtWhen(email.date),
     dateTitle: fmtFull(email.date),
     triage: verdict(email),
@@ -106,6 +106,18 @@ function closedReplyArea(email: EmailWithItsReply, prompts: Prompt[], done: Done
   return closed;
 }
 
+/** The email itself: as it was written when it can be shown so, with its text one click away; its text otherwise. */
+function originalOf(email: EmailWithItsReply): Child {
+  if (!email.hasHtml) return email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased'));
+  return MessageViews(
+    [
+      { label: t('reading.asWritten'), show: () => MessageAsWritten(`/api/emails/${email.id}/html`, t('reading.frameTitle')) },
+      { label: t('reading.asText'), show: () => Message(Prose(email.bodyText)) },
+    ],
+    email.hostedImagesHeld && t('reading.imagesHeld'),
+  );
+}
+
 /** `backHref` is the list the email was opened from: where one returns once it is dealt with. */
 export function emailDetail(email: EmailWithItsReply, prompts: Prompt[], backHref: string): Child {
   const done: Done = (message) => {
@@ -113,7 +125,7 @@ export function emailDetail(email: EmailWithItsReply, prompts: Prompt[], backHre
     location.hash = backHref;
   };
   const header = emailHeader(email, done);
-  const original = email.bodyText ? Message(Prose(email.bodyText)) : Text({ muted: true }, t('reading.erased'));
+  const original = originalOf(email);
   const sent = replyOf(email);
   const attributes = attributesOfEmail(email, session.attributes);
   if (sent) return Reading({ header, toolbar: attributes }, original, sentReply(sent));

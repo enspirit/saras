@@ -1,6 +1,6 @@
 // A mailbox: how it is kept, the credentials that reach it, and what every kind of mailbox knows how to do.
 import type { MailFolder, MailboxKind as AccountKind } from '../../../shared/mailbox.ts';
-import type { IncomingEmail } from './email.ts';
+import type { Email, IncomingEmail } from './email.ts';
 import type { OutgoingReply } from './reply.ts';
 
 /** How a mailbox is reached; a folder of one that can be watched, identified as the provider does (IMAP path, Gmail label id, Graph folder id). */
@@ -66,6 +66,13 @@ export interface ListQuery {
   known: Set<string>;
 }
 
+/** A file attached to an email, as the mailbox hands it over when asked: read, sent to who asked, and not kept. */
+export interface AttachedFile {
+  name: string;
+  type: string;
+  content: Buffer;
+}
+
 /** What every kind of mailbox knows how to do. */
 export interface MailProvider {
   /** Throws when the credentials do not work. */
@@ -75,6 +82,12 @@ export interface MailProvider {
   /** Emails of a folder that are not in `known` yet. */
   listNew(query: ListQuery): Promise<IncomingEmail[]>;
   send(reply: OutgoingReply): Promise<void>;
+  /**
+   * The nth file attached to an email, read again from the mailbox; null when the mailbox no
+   * longer has the message, or the message no such file. Absent for a kind of mailbox that
+   * does not hand files over yet.
+   */
+  attachment?(email: Pick<Email, 'providerId' | 'folder'>, index: number): Promise<AttachedFile | null>;
   /** Files the reply in the mailbox's drafts instead of sending it. */
   saveDraft(reply: OutgoingReply): Promise<unknown>;
 }

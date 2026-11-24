@@ -39,7 +39,7 @@ Each is held by the test named, or by a scanner of [`tests/harness`](../../tests
 2. **Send the LLM a received email when only the member's text is asked about**, or an email the rules set aside as automated (`test/unit/privacy.test.ts`, `test/integration/proposals-at-fetch.test.ts`).
 3. **Let anything of an organisation be reached from another** (`test/integration/separate-organisations.test.ts`).
 4. **Keep a credential unsealed, or a password other than as a hash** (`test/unit/sealing-secrets.test.ts`).
-5. **Trust incoming content**: what a reply may contain is rebuilt from a list, and a page loads only its own files (`test/unit/rich-text-replies.test.ts`, `test/integration/page-security.test.ts`).
+5. **Trust incoming content**: what a reply may contain is rebuilt from a list, and so is a received email shown as it was written, in a document that may run nothing, reach no host and be framed by our pages only; a file attached is shown only when a browser runs nothing of it; a page loads only its own files (`test/unit/received-html.test.ts`, `test/integration/an-email-as-it-was-written.test.ts`, `test/unit/rich-text-replies.test.ts`, `test/integration/page-security.test.ts`).
 6. **Declare a domain object twice**: `shared/` declares them once for the server and the browser, and imports nothing (`test/unit/shared-types.test.ts`).
 7. **Know HTTP in the domain, or the server in the browser**: an operation refuses with a kind, and `src/tooling/http/refusals.ts` alone turns it into a status; `web/` reaches the server through `/api` and shares only `shared/` with it (`tests/harness`, the boundaries).
 8. **Grow a file past 200 lines or a function past 20** (`test/unit/size.test.ts`).

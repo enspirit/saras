@@ -55,7 +55,7 @@ Essential state only: what another agent can observe.
 | Mailbox | A connected address: kind, personal or shared, who manages it, its credentials. | Backend | Members who may use it | `accounts.*` (credentials sealed) |
 | Watched folder | The one folder of a mailbox that is fetched. | Backend | Members who may use it | `accounts.folder`, `.folder_name` |
 | Fetch state | When a mailbox was last fetched and what went wrong. | Backend | Members who may use it | `accounts.last_sync_at`, `.last_error` |
-| Email | A received message as saras keeps it: who, what, when; erased past retention. | Backend | Members who may use its mailbox | `emails.*` |
+| Email | A received message as saras keeps it: who, what, when, its text and its HTML when it has one; the text and the HTML erased past retention. Of a file attached, its name, type and size. | Backend | Members who may use its mailbox | `emails.*` |
 | Email status | Where the email stands: to handle, no reply needed, ignored, replied. | Backend | Members | `emails.status` |
 | Triage verdict | Who sorted the email (a rule, a member, nobody; the AI, on emails it sorted when it did), why, its priority. | Backend | Members | `emails.triage_source`, `.triage_reason`, `.priority` (`.suggested_prompt_id` remains from before and is no longer read) |
 | Proposal | A text the AI wrote for an email: by which help, prompt and model. | Backend | Members | `drafts` |
@@ -203,11 +203,11 @@ Observations: `GET /boards` (the boards a member sees, each with how many emails
 
 | Operation | Agent | DomPre → DomPost | ReqTrig | Entry |
 | --- | --- | --- | --- | --- |
-| **ErasePastRetention** | Backend | Emails older than the retention period, with content → their content, proposals and reply texts are erased; the triage row and the reasons for corrections are kept | Hourly, by one server whatever their number, when a retention period is set | `retention/erase-past-retention.ts`, from `main.ts` |
+| **ErasePastRetention** | Backend | Emails older than the retention period, with content → their content (text and HTML), proposals and reply texts are erased; the triage row and the reasons for corrections are kept | Hourly, by one server whatever their number, when a retention period is set | `retention/erase-past-retention.ts`, from `main.ts` |
 
 ### Observations
 
-Routes that only read state: `GET /public`, `/me`, `/mailboxes`, `/mailboxes/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/ready-made`, `/prompts/:id/corrections`, `/members`, `/invitations`, `/emails`, `/emails/:id`. None changes state. Their queries are in `src/domain/observations/`.
+Routes that only read state: `GET /public`, `/me`, `/mailboxes`, `/mailboxes/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/ready-made`, `/prompts/:id/corrections`, `/members`, `/invitations`, `/emails`, `/emails/:id`, `/emails/:id/html` (the email as a document for a frame, rebuilt, under a policy of its own: [decision 0013](decisions/0013-an-email-is-shown-as-written-in-a-document-that-does-nothing.md)), `/emails/:id/attachments/:n` (asks the mailbox for the file, and keeps nothing of it). None changes state. Their queries are in `src/domain/observations/`.
 
 ### Chains
 
@@ -268,6 +268,7 @@ Recorded, not fixed. Each is a decision for the product's owner.
 12. **Proposals are prepared as the mailbox's owner**, including for a shared mailbox: their signature and corrections write them, whoever reads them.
 13. **A settings request is applied field by field.** `PUT /settings` and `PUT /organization` run one operation per field, in order; a field that is refused stops there, and those before it stay applied, although the request as a whole is answered as refused.
 14. **Renewing by password keeps the servers.** A mailbox whose servers changed is disconnected and connected again, which forgets what was kept from it.
+15. **An email is shown as written, and its files open, for some kinds of mailbox only.** No HTML is kept of a mailbox connected by Microsoft sign-in: Graph is asked for the text of a message and gives one body. Attachments open for a mailbox connected by its servers; for Gmail and Microsoft the names are shown and lead nowhere (`emails.attachmentsNotRead`). An email fetched before its HTML was kept shows as text.
 
 ## Decisions
 
@@ -287,6 +288,6 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 
 - **DeleteOrganization tells nobody.** The other members find themselves signed out. saras sends no email of its own today; telling them would be its first.
 - **A shared mailbox that changes owner changes voice**: its proposals are prepared with its owner's signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who writes for it.
-- Deviations 1 to 14 (9 aside), each of which is a rule to confirm or a behaviour to change.
+- Deviations 1 to 15 (9 aside), each of which is a rule to confirm or a behaviour to change.
 - The frontend asks for each operation through a function named after it (`web/api/`), and its pages are named after what a person does (`web/pages/`). Its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) could still be brought out as pure functions with unit tests.
 - Black-box specifications of the operations have begun in [`tests/webspicy`](../tests/webspicy/), with what reads and what refuses; the HTTP tests in `test/integration/` play that part for everything else.

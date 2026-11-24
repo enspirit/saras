@@ -32,6 +32,7 @@ test('Gmail message mapping', () => {
   assert.equal(mapped.fromAddr, 'claire@client.example');
   assert.deepEqual(mapped.to.map((a) => a.address), ['me@corp.example', 'paul@client.example']);
   assert.equal(mapped.bodyText, 'Texte brut é');
+  assert.equal(mapped.bodyHtml, '<p>HTML</p>');
   assert.equal(mapped.threadId, 't1');
   assert.ok(mapped.headers.listUnsubscribe);
 });

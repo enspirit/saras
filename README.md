@@ -31,6 +31,7 @@ This is the main design constraint.
 | Minimisation | Only the folder you chose is fetched. Checking typos and improving style send only your own text, never the email received. No email is sent to the LLM to be sorted. By default content leaves the server only when you ask for a proposal; an organisation's administrators may have proposals prepared at fetch instead. Mail set aside as automated never reaches it. |
 | Encrypted secrets | Mailbox passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
 | Transport | A mail server is given a password over TLS only, unless it is one of the server's own machine. |
+| Reading | An email shown as it was written runs nothing and loads nothing from anywhere: an image hosted elsewhere is never loaded, so no sender learns that an email was opened. An attachment is read from the mailbox when you open it, and never stored. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |
 | Logs | The server never logs the content of emails or requests, a password, a key, an address or who signs in at a mail server: whatever `LOG_LEVEL` says ([decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)). |
 
