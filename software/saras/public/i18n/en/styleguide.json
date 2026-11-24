@@ -63,7 +63,7 @@
   "cardText": "A card groups one subject: a title, optional badges, a content.",
   "cardSection": "Card section",
   "cardSectionText": "A titled sub-part.",
-  "navigation": "Navigation and assurance",
+  "navigation": "Navigation",
   "navCurrent": "Current entry",
   "navEntry": "Entry",
   "navNoCount": "Entry without a count",

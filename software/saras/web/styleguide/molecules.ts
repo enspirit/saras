@@ -8,7 +8,6 @@ import { Checkbox, Input } from '../ui/atoms/input.ts';
 import { Spacer } from '../ui/atoms/spacer.ts';
 import { Heading, Prose, RichText, Strong, Text } from '../ui/atoms/text.ts';
 import type { Child } from '../ui/dom.ts';
-import { Assurance } from '../ui/molecules/assurance.ts';
 import { Callout } from '../ui/molecules/callout.ts';
 import { Card, CardSection } from '../ui/molecules/card.ts';
 import { Choices } from '../ui/molecules/choices.ts';
@@ -90,7 +89,6 @@ const navigationCard = (): HTMLDivElement =>
     NavItem({ href: '#', label: t('styleguide.navCurrent'), icon: 'mail', count: 4, current: true }),
     NavItem({ href: '#', label: t('styleguide.navEntry'), icon: 'archive', count: 12 }),
     Block(NavItem({ href: '#', label: t('styleguide.navNoCount') })),
-    Assurance(t('nav.assurance.text')),
   );
 
 const emailsCard = (): HTMLDivElement =>

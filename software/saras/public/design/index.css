@@ -58,7 +58,6 @@
 @import url("molecules/empty-state.css") layer(molecules);
 @import url("molecules/loading.css") layer(molecules);
 @import url("molecules/nav-item.css") layer(molecules);
-@import url("molecules/assurance.css") layer(molecules);
 @import url("molecules/email-list-item.css") layer(molecules);
 @import url("molecules/message.css") layer(molecules);
 @import url("molecules/toast.css") layer(molecules);

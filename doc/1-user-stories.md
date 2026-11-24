@@ -402,7 +402,6 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member, **I want** to read, in the application, what happens to my emails, **so that** I can trust it — and explain it to a client who asks.
 
 - **Settings → AI & privacy** states, with the AI in force: when it writes and what it is sent then, that every AI request demands zero retention, the local retention period, the encryption of secrets, that nothing is sent without validation, and who sees my correction reasons.
-- A standing line in the navigation reminds that zero data retention is enforced on every AI request.
 
 ### US-65 — Be told when the AI cannot help
 **As** a member, **I want** to be told plainly when no API key is configured or the AI refuses, **so that** I know what to fix or whom to ask.

@@ -106,7 +106,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `Choices` | One among a few, each explained, as cards or as rows. |
 | `Callout`, `Features`, `EmptyState`, `Loading` | Something to know, with room for a control; points of equal weight with their sign; what an empty region says; a screen on its way. |
 | `confirmDialog`, `promptDialog` | A question before something happens, in a native dialog. Destructive ones focus Cancel. |
-| `NavItem`, `Assurance` | A navigation entry with icon and count; the standing privacy statement. |
+| `NavItem` | A navigation entry with icon and count. |
 | `EmailListItem` | Sender, tags and time; subject and shared mailbox; first words. |
 | `RichEditor` | Squire with an icon toolbar. It can show an `AiNote` and tint its text as a proposal, and highlight passages matching a pattern without changing the text. |
 | `RecipientField` | Addresses as removable chips, with a place to type one more. |
@@ -129,7 +129,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 
 ### 6.1 Shell (US-23, US-41)
 
-The four boxes come first, each with an icon and its count. Configuration (Mailboxes, Prompts, Users, Settings) is a quieter group under its title. At the bottom: the privacy statement with its lock, then who is signed in (name, organisation) and an icon button to sign out.
+The four boxes come first, each with an icon and its count. Configuration (Mailboxes, Prompts, Users, Settings) is a quieter group under its title. At the bottom: who is signed in (name, organisation) and an icon button to sign out.
 
 Below 860 px the boxes are a bar at the bottom of the screen, with a fifth entry, **More**, that leads to a page listing the configuration pages, who is signed in and Sign out.
 
