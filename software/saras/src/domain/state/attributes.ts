@@ -2,7 +2,7 @@
 import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
 import type { Attribute, AttributeGiven, AttributeValue, Decider, ValueGiven } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
-import { PRIORITY_VALUES, STATUS_VALUES, attributeTold, deciderOfStatus } from '../computations/attributes.ts';
+import { PRIORITY_VALUES, STATUS_VALUES, attributeTold } from '../computations/attributes.ts';
 import { DEFAULT_STATUS_RULE } from '../computations/default-rules.ts';
 import type { OrganizationRow } from '../model/organization.ts';
 import { Refusal } from '../refusal.ts';
@@ -25,26 +25,26 @@ const membersAsValues = (db: Db, organizationId: number): Promise<AttributeValue
   db.query<AttributeValue>(`SELECT id::text AS key, email AS label FROM users WHERE org_id = $1 ORDER BY id`, [organizationId]);
 
 /**
- * "Stands in": its values are fixed. Whether a rule and the AI decide it are the organisation's
- * two sorting settings; its rule is the one kept for it, the automated-mail rule by default.
+ * "Stands in": its values are fixed. Whether its rule decides it is the organisation's setting
+ * (automated mail set aside first); its rule is the one kept for it, the automated-mail rule by default.
  */
 const status = (organization: OrganizationRow, kept: AttributeRow | undefined): Attribute => ({
   key: STATUS,
   name: 'Stands in',
   kind: 'choice',
   values: STATUS_VALUES,
-  decidedBy: deciderOfStatus(organization.skip_automated, organization.triage_strategy === 'ai'),
+  decidedBy: organization.skip_automated ? 'elo' : 'nobody',
   elo: kept?.elo || DEFAULT_STATUS_RULE,
   system: true,
 });
 
-/** "Priority": fixed values too. The AI decides it when it sorts, unless the organisation says otherwise. */
+/** "Priority": fixed values too. Members set it by hand, unless the organisation gives it a rule. */
 const priority = (kept: AttributeRow | undefined): Attribute => ({
   key: PRIORITY,
   name: 'Priority',
   kind: 'choice',
   values: PRIORITY_VALUES,
-  decidedBy: kept?.decided_by ?? 'ai',
+  decidedBy: kept?.decided_by ?? 'nobody',
   elo: kept?.elo ?? '',
   system: true,
 });

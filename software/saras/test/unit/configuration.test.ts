@@ -30,6 +30,20 @@ test('.env.example names only variables that env/base.env describes', () => {
   assert.deepEqual(named.filter((name) => !(name in described)), []);
 });
 
+// The roles: what one process takes on, when several run on one database.
+const ON_A_SERVER = { ...SECRET, DATABASE_URL: 'postgres://saras@postgres:5432/saras' };
+
+test('a server takes every role unless ROLES says less', () => {
+  assert.deepEqual(loadConfig(SECRET).roles, { migrate: true, web: true, clock: true });
+  assert.deepEqual(loadConfig({ ...ON_A_SERVER, ROLES: 'web' }).roles, { migrate: false, web: true, clock: false });
+  assert.deepEqual(loadConfig({ ...ON_A_SERVER, ROLES: 'migrate, clock' }).roles, { migrate: true, web: false, clock: true });
+});
+
+test('ROLES is refused when it names a role that does not exist, or leaves one out on the embedded database', () => {
+  assert.throws(() => loadConfig({ ...ON_A_SERVER, ROLES: 'web,cron' }), /ROLES names cron/);
+  assert.throws(() => loadConfig({ ...SECRET, ROLES: 'web' }), /embedded database/);
+});
+
 // What each stack changes of it: env/devel.env, then env/test.env under the suites.
 const namesOf = (path: string): string[] => Object.keys(parseEnv(read(path)));
 /** What env/devel.env takes from the environment (a laptop's .env), each with the value it has otherwise. */

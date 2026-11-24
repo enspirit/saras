@@ -4,6 +4,7 @@ import { Resolver } from 'node:dns/promises';
 import { connect as connectPlain } from 'node:net';
 import type { Socket } from 'node:net';
 import { connect as connectTls } from 'node:tls';
+import { log } from '../log.ts';
 
 export interface Endpoint {
   host: string;
@@ -22,13 +23,19 @@ export interface Network {
 const TIMEOUT_MS = 2500;
 const resolver = (): Resolver => new Resolver({ timeout: TIMEOUT_MS, tries: 1 });
 
+/** No answer is no record; why there was none is for whoever asks the log for everything. */
+const none = (record: string, name: string) => (e: unknown): never[] => {
+  log.debug('dns: no record', { record, name, code: (e as { code?: unknown } | null)?.code });
+  return [];
+};
+
 async function mx(domain: string): Promise<string[]> {
-  const records = await resolver().resolveMx(domain).catch(() => []);
+  const records = await resolver().resolveMx(domain).catch(none('MX', domain));
   return records.sort((a, b) => a.priority - b.priority).map((record) => record.exchange);
 }
 
 async function srv(name: string): Promise<Endpoint[]> {
-  const records = await resolver().resolveSrv(name).catch(() => []);
+  const records = await resolver().resolveSrv(name).catch(none('SRV', name));
   return records.filter((record) => record.name && record.name !== '.').sort((a, b) => a.priority - b.priority).map((record) => ({ host: record.name, port: record.port }));
 }
 
@@ -42,13 +49,14 @@ const opened = ({ host, port }: Endpoint): Socket => (PLAIN_PORTS.has(port) ? co
 const answers = (kind: 'imap' | 'smtp', endpoint: Endpoint): Promise<boolean> =>
   new Promise((resolve) => {
     const socket = opened(endpoint);
-    const done = (answer: boolean): void => {
+    const done = (answer: boolean, how: unknown): void => {
       socket.destroy();
+      log.debug('mail host lookup: a usual server was asked', { kind, ...endpoint, answer, how });
       resolve(answer);
     };
-    socket.setTimeout(TIMEOUT_MS, () => done(false));
-    socket.once('error', () => done(false));
-    socket.once('data', (data) => done(GREETING[kind].test(String(data))));
+    socket.setTimeout(TIMEOUT_MS, () => done(false, 'no answer in time'));
+    socket.once('error', (e: NodeJS.ErrnoException) => done(false, e.code ?? e.message));
+    socket.once('data', (data) => done(GREETING[kind].test(String(data)), 'spoke first'));
   });
 
 export const realNetwork: Network = { mx, srv, answers };

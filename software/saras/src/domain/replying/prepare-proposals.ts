@@ -4,10 +4,10 @@
 //   DomPre   emails to handle, with content and no proposal
 //   DomPost  each has a proposal
 //   ReqPre   the organisation has proposals written at fetch
-//            a key is in force, as the mailbox's owner
+//            a key is in force for the organisation
 //            the organisation has a prompt
 //   ReqPost  written with the prompt that suits the email best by its attributes, else the organisation's first
-//            as the mailbox's owner: their model, signature and past corrections
+//            with the organisation's key and model; as the mailbox's owner: their signature and past corrections
 //            at most MAX_PREPARED per fetch, most recent first
 //            when the organisation has them filed in the mailbox, each is then filed: FileProposalAsDraft
 //   ReqTrig  part of every fetch, after sorting

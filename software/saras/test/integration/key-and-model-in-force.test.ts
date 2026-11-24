@@ -13,7 +13,7 @@ const me = createClient(() => stack.url);
 let promptId: number;
 
 before(async () => {
-  stack = await startStack({ env: { TRIAGE_STRATEGY: 'ai' } });
+  stack = await startStack();
   assert.equal((await signUp(me, 'bob@corp.example')).status, 201);
   await connectInbox(me, stack.imapAccount);
   promptId = (await me('GET', '/prompts')).body[0].id;

@@ -13,8 +13,8 @@
 // others: that one starts and ends in connect-mailbox-by-host-sign-in.ts, which the member
 // goes through the same way, and comes back here.
 import { errorMessage } from '../../tooling/errors.ts';
-import { isRenewedByPassword, mayManage, withNewPassword } from '../computations/mailboxes.ts';
-import { Refusal, accepted } from '../refusal.ts';
+import { isRenewedByPassword, mayManage, notLetIn, withNewPassword } from '../computations/mailboxes.ts';
+import { accepted } from '../refusal.ts';
 import { mailboxFor, renewCredentials } from '../state/mailboxes.ts';
 import type { AccountRow, ImapCredentials, OAuthTokens } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
@@ -40,7 +40,7 @@ export async function renewMailboxPassword(world: World, actor: Actor, mailboxId
   try {
     await world.mail.imapProvider(mailbox, credentials).verify();
   } catch (e) {
-    throw new Refusal('invalid', 'mailboxes.connectionFailed', { detail: errorMessage(e) });
+    throw notLetIn(errorMessage(e));
   }
   return renewWith(world, mailbox, credentials);
 }

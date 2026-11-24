@@ -26,14 +26,14 @@ async function valuesFor(db: Db, actor: Actor, given: { key?: unknown; values?: 
 }
 
 /** Where an email stands, as a value of "Stands in". */
-const STANDS: Record<string, string> = { pending: 'todo', needs_reply: 'todo', no_reply: 'none', sent: 'sent', ignored: 'ignored' };
-const sorter = (source: string | null): ValueOfEmail['source'] => (source === 'rule' ? 'rule' : source === 'user' ? 'user' : 'ai');
+const STANDS: Record<string, string> = { needs_reply: 'todo', no_reply: 'none', sent: 'sent', ignored: 'ignored' };
+const sorter = (source: string | null): ValueOfEmail['source'] => (source === 'rule' || source === 'user' ? source : 'nobody');
 
 /** The value an email has now for an attribute, and who decided it. */
 function valueNow(row: Recent, key: string): ValueOfEmail | null {
   if (key === STATUS) return { value: STANDS[row.status] ?? 'todo', source: sorter(row.triage_source) };
   const kept = (JSON.parse(row.attributes_json) as Record<string, ValueOfEmail>)[key];
-  return kept ?? (key === PRIORITY ? { value: row.priority, source: 'ai' } : null);
+  return kept ?? (key === PRIORITY ? { value: row.priority, source: 'nobody' } : null);
 }
 
 /** What a rule would say of the member's recent emails, without changing any: so that a rule is seen at work before it is kept. */

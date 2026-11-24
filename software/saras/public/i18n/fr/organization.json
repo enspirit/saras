@@ -2,7 +2,7 @@
   "title": "Organisation",
   "name": "Nom",
   "model": "Modèle",
-  "modelHint": "Un identifiant OpenRouter, « fournisseur/modèle » : il rédige et trie pour tous les membres. Laisser vide pour celui du serveur. Il doit avoir un fournisseur qui ne conserve aucune donnée, sinon les requêtes sont refusées.",
+  "modelHint": "Un identifiant OpenRouter, « fournisseur/modèle » : il rédige pour tous les membres. Laisser vide pour celui du serveur. Il doit avoir un fournisseur qui ne conserve aucune donnée, sinon les requêtes sont refusées.",
   "key": "Clé API OpenRouter de l’organisation",
   "keyHint": "Chiffrée en base. Utilisée pour tous les membres de l’organisation.",
   "deleteKey": "Supprimer la clé de l’organisation",

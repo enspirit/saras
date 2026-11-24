@@ -12,7 +12,7 @@ const me = createClient(() => stack.url);
 const eve = createClient(() => stack.url); // a colleague, in the same organisation
 
 before(async () => {
-  stack = await startStack({ env: { TRIAGE_STRATEGY: 'ai' } });
+  stack = await startStack();
   assert.equal((await signUp(me, 'bob@corp.example')).status, 201);
 });
 after(() => stack.stop());
@@ -31,6 +31,8 @@ test('a wrong IMAP password is refused, a right one connects', async () => {
   assert.equal(bad.body.code, 'mailboxes.connectionFailed');
   assert.match(bad.body.error, /^Could not connect: /);
   assert.ok(bad.body.params.detail);
+  // Direct TLS asked of a port that starts in clear, as 587 does: told as what to untick, not in the words of the TLS library.
+  assert.equal((await me('POST', '/mailboxes/imap', { ...stack.imapAccount, smtpSecure: true })).body.code, 'mailboxes.notDirectTls');
   assert.equal((await me('POST', '/mailboxes/imap', stack.imapAccount)).status, 201);
   const stored = (await stack.db.one<{ config_enc: string }>('SELECT config_enc FROM accounts'))?.config_enc ?? '';
   assert.ok(stored.length > 20);
@@ -43,7 +45,7 @@ test('its owner chooses the folder to watch and finds its emails to handle', asy
   [account] = (await me('GET', '/mailboxes')).body;
   assert.equal(account.folder, 'INBOX');
   todo = (await me('GET', '/emails?box=todo')).body.emails;
-  assert.equal(todo.length, 2);
+  assert.equal(todo.length, 3);
 });
 
 test('a colleague does not reach a personal mailbox', async () => {

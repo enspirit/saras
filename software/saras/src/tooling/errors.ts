@@ -10,3 +10,11 @@ export function errorMessage(e: unknown): string {
   }
   return String(e);
 }
+
+const KIND = ['code', 'command', 'responseCode', 'responseStatus', 'serverResponseCode', 'authenticationFailed', 'status'];
+
+/** What kind of failure it is, in the codes of Node, of the mail libraries and of HTTP: none is a sentence, so that a log may hold them all. */
+export function errorKind(e: unknown): Record<string, unknown> {
+  const thrown = (e && typeof e === 'object' ? e : {}) as Record<string, unknown>;
+  return Object.fromEntries(KIND.filter((name) => ['string', 'number', 'boolean'].includes(typeof thrown[name])).map((name) => [name, thrown[name]]));
+}

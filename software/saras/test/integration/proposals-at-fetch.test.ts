@@ -22,7 +22,8 @@ interface Listed {
   replyMode: string | null;
 }
 const box = async (as: ApiClient, name: string): Promise<Listed[]> => (await as('GET', `/emails?box=${name}`)).body.emails;
-const proposals = () => stack.llmRequests.filter((r) => !r.body.messages[0]?.content.includes('You triage the inbox'));
+/** Every request the language model got: it is asked to write, and nothing else. */
+const proposals = () => stack.llmRequests;
 
 /** Signs up, connects the test mailbox and watches its inbox; returns the mailbox's id. */
 async function start(as: ApiClient, email: string, organization: unknown = {}): Promise<number> {
@@ -53,13 +54,12 @@ test('an unknown way of preparing replies is refused: nothing sends by itself', 
 });
 
 test('"draft" prepares a proposal for each email to handle, to review in the application', async () => {
-  // Chosen after the first fetch, with AI sorting: what was let through unsorted is sorted again.
-  assert.equal((await alice('PUT', '/organization', { sorting: 'ai', writing: 'draft' })).status, 200);
-  assert.equal((await alice('POST', '/organization/sort-again')).status, 200);
+  // Chosen after the first fetch: what that one brought in is prepared at the next.
+  assert.equal((await alice('PUT', '/organization', { writing: 'draft' })).status, 200);
   await alice('POST', `/mailboxes/${mailbox}/fetch`);
   const todo = await box(alice, 'todo');
-  assert.deepEqual(todo.map((e) => e.subject).sort(), ['Demande de devis pour 20 licences', 'Report de notre rendez-vous'], 'the thank-you note was set aside by the AI');
-  assert.equal(proposals().length, 2);
+  assert.deepEqual(todo.map((e) => e.subject).sort(), ['Demande de devis pour 20 licences', 'Merci pour hier', 'Report de notre rendez-vous'], 'the newsletter, set aside by rule, gets none');
+  assert.equal(proposals().length, 3);
   for (const email of todo) {
     const { proposal: draft, status } = (await alice('GET', `/emails/${email.id}`)).body;
     assert.equal(draft.action, 'prompt');
@@ -68,16 +68,24 @@ test('"draft" prepares a proposal for each email to handle, to review in the app
   }
   // A later fetch does not write them again.
   await alice('POST', `/mailboxes/${mailbox}/fetch`);
-  assert.equal(proposals().length, 2);
+  assert.equal(proposals().length, 3);
   assert.equal(stack.draftsFolder().length, 0);
   assert.equal(stack.outbox.length, 0);
+});
+
+test('what a rule set aside never reaches the LLM, and what does is sent under the zero-retention clause', () => {
+  assert.equal(proposals().length, 3);
+  for (const request of proposals()) {
+    assert.deepEqual(request.body.provider, { zdr: true, data_collection: 'deny' });
+    assert.ok(!JSON.stringify(request.body).includes('CONTENU-NEWSLETTER'));
+  }
 });
 
 test('"mailbox" also files each proposal in the drafts of the mailbox; nothing is sent', async () => {
   await start(zoe, 'zoe@other.example', { writing: 'mailbox' });
   assert.deepEqual(await box(zoe, 'todo'), []);
   const replied = await box(zoe, 'sent');
-  assert.equal(replied.length, 3, 'nobody sorts in this organisation: every email is to handle, and gets its proposal');
+  assert.equal(replied.length, 3, 'every email the rules leave to handle gets its proposal');
   assert.ok(replied.every((e) => e.replyMode === 'draft'));
   assert.equal(stack.draftsFolder().length, 3);
   assert.equal(stack.outbox.length, 0);

@@ -38,6 +38,7 @@
     "serversRequired": "IMAP and SMTP servers and ports are required.",
     "passwordRequired": "Password required.",
     "connectionFailed": "Could not connect: {detail}",
+    "notDirectTls": "Could not connect: a server does not start in TLS on that port. Untick \"Direct TLS\" for it: the connection is then upgraded with STARTTLS, as on ports 587 and 143.",
     "folderRequired": "Choose the folder to watch.",
     "unknownFolder": "This folder does not exist in the mailbox.",
     "foldersFailed": "Could not list the folders: {detail}",
@@ -55,7 +56,6 @@
   },
   "sync": {
     "fetchFailed": "Could not read the mailbox: {detail}",
-    "triageFailed": "Triage failed: {detail}",
     "prepareFailed": "Could not prepare a proposal: {detail}"
   },
   "prompts": {
@@ -67,6 +67,9 @@
     "invalidStatus": "Invalid status.",
     "alreadySent": "A reply has already been sent.",
     "alreadyHandled": "A reply has already been handled for this email.",
+    "attachmentNotFound": "This file is no longer in the mailbox.",
+    "attachmentsNotRead": "The files of this kind of mailbox cannot be opened from here yet.",
+    "attachmentFailed": "Could not read the file from the mailbox: {detail}",
     "contentErased": "The content of this email has been erased (retention period exceeded)."
   },
   "reply": {
@@ -97,7 +100,6 @@
   },
   "organization": {
     "nameMismatch": "This is not the name of the organisation.",
-    "invalidSorting": "Unknown way of sorting.",
     "invalidWriting": "Unknown way of preparing replies."
   },
   "assist": {
@@ -118,6 +120,6 @@
     "ruleInvalid": "The rule cannot be read: {detail}",
     "systemFixed": "The name and the values of a pre-configured attribute are fixed.",
     "valueUnknown": "This is not a value of the attribute.",
-    "aiNotYet": "The AI does not decide the attributes an organisation makes yet: choose a rule, or nobody."
+    "deciderUnknown": "Unknown way of deciding an attribute."
   }
 }

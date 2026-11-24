@@ -5,7 +5,7 @@
 A self-hosted web tool to answer email with the help of AI, without handing it the keys:
 
 1. **Connect** one or more mailboxes: IMAP/SMTP, Gmail / Google Workspace (OAuth), Outlook / Microsoft 365 (OAuth), and choose the one folder of each to watch (the inbox by default).
-2. **Identify** the emails that are waiting for a reply. By default every email of that folder is to be handled; rules you write, or an LLM, can sort them instead.
+2. **Identify** the emails that are waiting for a reply. Every email of that folder is to be handled, unless a rule you can read and change sets it aside. No LLM sorts your mail.
 3. **Write** the reply in a rich-text editor — in full, or as a few notes — and, if you wish, let the AI check the typos, improve the style, or write it with a *prompt* prepared by an administrator.
 4. **Send** in your name after review, or **save as a draft** in your mailbox to finish there.
 
@@ -15,7 +15,7 @@ Nothing is sent without explicit validation. The interface is in English and in 
 
 - **Organisations.** Everything lives inside an organisation, and nothing crosses from one to another. Signing up creates one; its other members join by invitation. A second factor (TOTP) can be required of everyone.
 - **Mailboxes, personal or shared.** A member connects their own address, which only they see. An administrator may connect a shared one (contact@, info@…), which every member reads and replies from.
-- **Sorting.** Plainly automated mail (newsletters, no-reply senders, automatic replies) is set aside before anything else. What an organisation wants to know of each email is an *attribute*, decided by nobody, by a rule written in [Elo](https://elo-lang.org) (which costs no tokens), or by the AI. *Boards* are saved views filtered on them.
+- **Sorting.** Plainly automated mail (newsletters, no-reply senders, automatic replies) is set aside before anything else. What an organisation wants to know of each email is an *attribute*, decided by hand or by a rule written in [Elo](https://elo-lang.org), which costs no tokens and says what it does: the AI decides none. *Boards* are saved views filtered on them.
 - **Writing.** One reply area. Send what you wrote as it is, or ask the AI to check typos, to improve the style, or to apply one of the organisation's prompts. When you change a proposal you can say why: the reason steers your next ones.
 - **Your brand.** A folder with a `theme.css`, a `brand.json` and a logo changes the look without touching the code (`BRAND_DIR`, see [the design](doc/4-design.md#7-brands)); `/styleguide.html` shows it in place.
 
@@ -28,11 +28,12 @@ This is the main design constraint.
 | Guarantee | How |
 | --- | --- |
 | No retention and no training on the LLM side | Every OpenRouter request carries `provider: { "zdr": true, "data_collection": "deny" }` ([docs](https://openrouter.ai/docs/guides/routing/provider-selection)). It is hardcoded, and cannot be disabled by configuration. If no provider of the chosen model satisfies both, the request is refused and the error shown: there is no silent fallback. |
-| Minimisation | Only the folder you chose is fetched. Checking typos and improving style send only your own text, never the email received. By default no email is analysed by the LLM: content leaves the server only when you ask for a proposal. An organisation's administrators may choose otherwise (sorting by the AI, proposals prepared at fetch). Mail set aside as automated never reaches it. |
+| Minimisation | Only the folder you chose is fetched. Checking typos and improving style send only your own text, never the email received. No email is sent to the LLM to be sorted. By default content leaves the server only when you ask for a proposal; an organisation's administrators may have proposals prepared at fetch instead. Mail set aside as automated never reaches it. |
 | Encrypted secrets | Mailbox passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
 | Transport | A mail server is given a password over TLS only, unless it is one of the server's own machine. |
+| Reading | An email shown as it was written runs nothing and loads nothing from anywhere: an image hosted elsewhere is never loaded, so no sender learns that an email was opened. An attachment is read from the mailbox when you open it, and never stored. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |
-| Logs | The server never logs the content of emails or requests. |
+| Logs | The server never logs the content of emails or requests, a password, a key, an address or who signs in at a mail server: whatever `LOG_LEVEL` says ([decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)). |
 
 **What remains your responsibility:**
 

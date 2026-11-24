@@ -8,8 +8,7 @@
 //   ReqPost  a value a member set by hand is left as it is
 //            a value the rule had given goes where the rule no longer speaks
 //            "Stands in": emails replied, placed by a member, or fetched before their headers
-//            were kept are left where they stand; one the rule no longer places waits to be sorted
-//   ReqTrig  for "Stands in": the mailboxes are fetched at once, so that what waits is sorted
+//            were kept are left where they stand; one the rule no longer places is to handle
 import { EMAIL_FOR_RULES } from '../../../shared/attribute.ts';
 import { STATUS } from '../../../shared/attribute.ts';
 import type { Attribute, SortedAgain } from '../../../shared/attribute.ts';
@@ -24,7 +23,6 @@ import { Refusal, accepted } from '../refusal.ts';
 import { attributeOf } from '../state/attributes.ts';
 import { emailsKeptBy, keepStanding, keepValues } from '../state/emails.ts';
 import type { KeptEmail } from '../state/emails.ts';
-import { watchedMailboxesOf } from '../state/mailboxes.ts';
 import type { Actor, World } from '../world.ts';
 
 /** What the rule says of a kept email; nothing when it fails on it. */
@@ -61,6 +59,5 @@ export async function sortAgainByRule(world: World, actor: Actor, key: unknown):
   const emails = await emailsKeptBy(world.db, actor.organization.id);
   let changed = 0;
   for (const email of emails) if (await sortAgain(world, attribute, rule, email)) changed += 1;
-  if (attribute.key === STATUS && changed) for (const mailbox of await watchedMailboxesOf(world.db, actor.organization.id)) world.fetching.inBackground(mailbox);
   return { examined: emails.length, changed };
 }

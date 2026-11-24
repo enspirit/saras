@@ -7,13 +7,19 @@ metadata:
   labels:
     {{- include "saras.labels" . | nindent 4 }}
 spec:
-  # One, and not a value: the server fetches the mailboxes on a timer of its
-  # own, which a second replica would run again; and the embedded database
-  # takes a single connection. For the same reasons the old pod is gone before
-  # the new one starts.
-  replicas: 1
+  # Several pods share one PostgreSQL server: a migration is applied by the
+  # first to start, and what the server does on its own by one at a time.
+  replicas: {{ .Values.replicas }}
   strategy:
+    {{- if gt (int .Values.replicas) 1 }}
+    # One after the other, the others answering meanwhile: a migration leaves
+    # the version before it working.
+    type: RollingUpdate
+    {{- else }}
+    # The old pod is gone before the new one starts: the embedded database
+    # takes a single process, and one pod was asked for.
     type: Recreate
+    {{- end }}
   selector:
     matchLabels:
       {{- include "saras.selectorLabels" . | nindent 6 }}
@@ -99,6 +105,10 @@ spec:
           env:
             - name: PORT
               value: "3000"
+            # Every pod takes every role, whatever a Secret says: none is left
+            # to a pod that may not be there.
+            - name: ROLES
+              value: migrate,web,clock
             {{- with include "saras.baseUrl" . }}
             - name: BASE_URL
               value: {{ . | quote }}

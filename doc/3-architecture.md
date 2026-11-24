@@ -78,7 +78,7 @@ No suite talks to a real one. Why the tests keep stand-ins of their own for the 
 
 ## State
 
-The state is kept in PostgreSQL and controlled by `software/saras` alone, which creates its schema when it starts: [decision 0001](decisions/0001-the-server-creates-its-schema.md).
+The state is kept in PostgreSQL and controlled by `software/saras` alone, which brings its schema to what it expects when it starts, one migration after the other: [decision 0010](decisions/0010-the-server-migrates-its-database-and-several-may-share-it.md). Several servers may share one database, which is then where they agree on who does what.
 
 A named state is a seed of `software/storage`, loaded by `dbagent`: `emb run demo` adds the demo organisation to whatever the database holds, then connects its mailbox, which is not saras's to keep but the mail provider's. A seed is made by arriving at the state through the API and flushing it, never by hand.
 

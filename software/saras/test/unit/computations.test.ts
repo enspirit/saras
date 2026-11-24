@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, mayDeleteMember, mayLeave, mayOpenAccount, namesTheOrganization, mayRemoveAdministratorRole, maySignUp, opensNewWindow, organizationNameFor, roleInvitedAs, signUpIsOpen } from '../../src/domain/computations/access.ts';
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../../src/domain/computations/given.ts';
-import { addressIsNotConnected, answersSignIn, connectsAsShared, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../../src/domain/computations/mailboxes.ts';
+import { addressIsNotConnected, answersSignIn, connectsAsShared, notLetIn, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../../src/domain/computations/mailboxes.ts';
 import { promptContent } from '../../src/domain/computations/prompts.ts';
-import { modelGiven, sortingGiven, writingGiven } from '../../src/domain/computations/settings.ts';
+import { modelGiven, writingGiven } from '../../src/domain/computations/settings.ts';
 import { mayBeSortedAgain } from '../../src/domain/computations/sorting.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import type { Actor } from '../../src/domain/world.ts';
@@ -21,7 +21,6 @@ test('maintaining the organisation is for its administrators', () => {
 
 test('an email can be sorted again by a member until it is replied', () => {
   const cases: [EmailStatus, string][] = [
-    ['pending', 'ok'],
     ['needs_reply', 'ok'],
     ['no_reply', 'ok'],
     ['ignored', 'ok'],
@@ -111,9 +110,7 @@ test('a model is named "provider/model", or not at all', () => {
   assert.equal(outcome(modelGiven('open ai/gpt')), 'invalid: settings.invalidModel');
 });
 
-test('an organisation chooses who sorts and when proposals are written, each for itself', () => {
-  assert.deepEqual(['none', 'ai'].map((s) => outcome(sortingGiven(s))), ['ok', 'ok']);
-  assert.deepEqual(['magic', '', undefined].map((s) => outcome(sortingGiven(s))), Array(3).fill('invalid: organization.invalidSorting'));
+test('an organisation chooses when proposals are written', () => {
   assert.deepEqual(['none', 'draft', 'mailbox'].map((w) => outcome(writingGiven(w))), ['ok', 'ok', 'ok']);
   assert.deepEqual(['send', '', undefined].map((w) => outcome(writingGiven(w))), Array(3).fill('invalid: organization.invalidWriting'), 'nothing sends by itself');
 });
@@ -189,4 +186,13 @@ test('the last administrator does not leave; an organisation is deleted by its n
   assert.equal(outcome(mayLeave('admin', 1)), 'conflict: members.lastAdmin');
   assert.equal(outcome(namesTheOrganization(' acme sa ', 'Acme SA')), 'ok');
   assert.deepEqual(['Acme', '', undefined].map((n) => outcome(namesTheOrganization(n, 'Acme SA'))), Array(3).fill('invalid: organization.nameMismatch'));
+});
+
+test('servers that did not let us in: their answer is told; a port that does not start in TLS is told as what to change', () => {
+  const answered = notLetIn('Login failed: authentication failure').problem;
+  assert.deepEqual([answered.code, answered.params], ['mailboxes.connectionFailed', { detail: 'Login failed: authentication failure' }]);
+  // What OpenSSL says of a server that answers in clear, as Node 22 and 24 word it.
+  for (const detail of ['C00C8E7219740000:error:0A00010B:SSL routines:tls_validate_record_header:wrong version number:../deps/openssl/openssl/ssl/record/methods/tlsany_meth.c:77:\n', 'write EPROTO 40CF0C07:error:0A00010B:SSL routines:ssl3_get_record:wrong version number']) {
+    assert.deepEqual([notLetIn(detail).kind, notLetIn(detail).problem.code, notLetIn(detail).problem.params], ['invalid', 'mailboxes.notDirectTls', {}]);
+  }
 });

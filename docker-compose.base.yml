@@ -31,7 +31,7 @@ services:
 
   # -------------------------------------------------------------------------
   # saras — the server and the interface it serves: the front door, and the
-  # only way in. It creates its schema when it starts, so there is no
+  # only way in. It migrates its database when it starts, so there is no
   # migration to wait for.
   # -------------------------------------------------------------------------
   saras:
@@ -100,8 +100,8 @@ services:
   # Named `storage` rather than `dbagent` because emb picks a task's container
   # by matching the service name to the component name.
   #
-  # It waits for saras, not the reverse: the schema is the server's, created
-  # when it starts (doc/decisions/0001), and a seed needs its tables.
+  # It waits for saras, not the reverse: the schema is the server's, migrated
+  # when it starts (doc/decisions/0010), and a seed needs its tables.
   #
   # Never deployed, never routed, no published port: its seed endpoint empties
   # tables.

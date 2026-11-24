@@ -13,7 +13,6 @@ const reply = { status: 'needs_reply' as EmailStatus, inFlight: false, html: '<p
 test('a reply may be handed over when it has a text, a recipient, valid addresses, and the email is not replied', () => {
   const cases: [string, Partial<typeof reply>, string][] = [
     ['all clauses hold', {}, 'ok'],
-    ['to handle, waiting to be sorted, set aside or ignored: all can be replied', { status: 'pending' }, 'ok'],
     ['set aside', { status: 'no_reply' }, 'ok'],
     ['ignored', { status: 'ignored' }, 'ok'],
     ['ReqPre: not empty', { html: '<p> </p>' }, 'invalid: reply.empty'],

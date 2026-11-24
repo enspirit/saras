@@ -56,6 +56,8 @@ export function graphToEmail(msg: GraphMessage): IncomingEmail {
     subject: msg.subject || '',
     date: new Date(msg.receivedDateTime).toISOString(),
     bodyText: String(msg.body?.content || '').trim(),
+    // Graph is asked for the text of a message, and gives one body: no HTML is kept of these mailboxes yet.
+    bodyHtml: '',
     attachments: (msg.attachments || []).map((a) => ({ name: a.name || '', type: a.contentType || 'application/octet-stream', size: a.size || 0 })),
     headers: automationHeaders(header),
     answered: false,

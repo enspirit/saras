@@ -7,6 +7,9 @@
     "user": "Vous",
     "unknown": "Tri"
   },
-  "pendingTriage": "Pas encore trié : il le sera à la prochaine relève.",
-  "erased": "Contenu effacé (durée de conservation dépassée)."
+  "erased": "Contenu effacé (durée de conservation dépassée).",
+  "asWritten": "Mise en forme",
+  "asText": "Texte seul",
+  "imagesHeld": "Les images hébergées ailleurs ne sont pas chargées : elles diraient à l’expéditeur que vous avez ouvert l’email.",
+  "frameTitle": "L’email tel qu’il a été écrit"
 }

@@ -3,7 +3,7 @@ import { FETCH_DAYS } from '../../../shared/mailbox.ts';
 import type { MailboxServers } from '../../../shared/mailbox.ts';
 import { isEmailAddress } from '../../tooling/text.ts';
 import type { AccountRow, ImapCredentials, MailFolder, ServerCredentials } from '../model/mailbox.ts';
-import { accept, refuse } from '../refusal.ts';
+import { Refusal, accept, refuse } from '../refusal.ts';
 import type { Verdict } from '../refusal.ts';
 import type { Actor } from '../world.ts';
 import { clipped } from './given.ts';
@@ -120,3 +120,13 @@ export function signInRemembered(remembered: string | null | undefined): HostSig
 /** ReqPre of completing a host sign-in: it answers the one we started, for the same host. */
 export const answersSignIn = (remembered: HostSignIn, kind: string, state: unknown): Verdict<true> =>
   remembered.state && remembered.kind === kind && remembered.state === state ? accept(true) : refuse('gone', 'oauth.expired');
+
+/** How the TLS library says that a server answered in clear where TLS was to start at once: a port that upgrades with STARTTLS, asked for direct TLS. */
+const ANSWERED_IN_CLEAR = /wrong version number/i;
+
+/** The refusal of servers that did not let us in: what they answered; or, where one does not start in TLS, what to change, which its answer does not say. */
+export const notLetIn = (detail: string): Refusal =>
+  ANSWERED_IN_CLEAR.test(detail) ? new Refusal('invalid', 'mailboxes.notDirectTls') : new Refusal('invalid', 'mailboxes.connectionFailed', { detail });
+
+/** The kinds of mailboxes that hand over a file attached to an email. Those reached by their servers, so far. */
+export const handsFilesOver = (kind: string): boolean => kind === 'imap';

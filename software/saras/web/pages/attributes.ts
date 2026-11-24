@@ -18,7 +18,7 @@ import { Table } from '../ui/molecules/table.ts';
 import { Page } from '../ui/organisms/page.ts';
 
 /** Who decides an attribute, as a translation key. */
-export const DECIDER_LABEL = { nobody: 'attributes.deciderNobody', elo: 'attributes.deciderElo', ai: 'attributes.deciderAi', eloAi: 'attributes.deciderEloAi' };
+export const DECIDER_LABEL = { nobody: 'attributes.deciderNobody', elo: 'attributes.deciderElo' };
 
 const valuesOf = (attribute: Attribute): Child => (attribute.kind === 'member' ? Muted(t('attributes.kindMember')) : ValueList(attribute.values.map((value) => chipOf(attribute, value))));
 

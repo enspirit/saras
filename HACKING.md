@@ -45,14 +45,14 @@ In `software/saras`, each task is the npm script of the same name (`npm test`, `
 
 | Service | Is | On a laptop |
 | --- | --- | --- |
-| `saras` | The server, restarted and rebundled on change | http://localhost:3000 |
+| `saras` | The server, restarted and rebundled on change | http://localhost:3000 (`emb logs saras` shows its log, one JSON object per line: [decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)) |
 | `postgres` | The database | `localhost:5432`, user and database `saras` |
 | `storage` | `dbagent`, for the seeds | — |
 | `mailbox` | The mailbox of sample emails, in the network of `saras` | — (`emb logs mailbox` shows what it was given to send) |
 | `fakesmtp` | Where saras's own mail goes (the link of a lost password) | http://localhost:1080 |
 | `webspicy` | The black-box suite; it sleeps until run | — |
 
-It needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail. `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
+It needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, `LOG_LEVEL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail. `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
 
 Three compose files, two stacks: `docker-compose.base.yml` says what each service is; `devel` adds ports and mounts; `test` is what CI runs, with no published port and no secret. To try something without touching the development database, run a second stack beside the first:
 
@@ -65,6 +65,18 @@ COMPOSE_PROJECT_NAME=saras-try COMPOSE_FILE=docker-compose.base.yml:docker-compo
 `emb run demo` applies the `demo` seed (one organisation, added to whatever the database holds), makes the mailbox of the stack anew, and connects it through the API. It is safe on a database you care about; **installing** a seed is not: `emb run storage:db.seed` empties every table, and asks for a word to be typed.
 
 A seed is not written by hand: `emb run storage:demo.rebuild` sets the organisation up through the API in a stack of its own and flushes it. See [`software/storage`](software/storage/README.md).
+
+## Changing the schema
+
+The schema is the migrations of `software/saras/src/tooling/db/migrations/`, applied in order by the server when it starts, each once ([decision 0010](doc/decisions/0010-the-server-migrates-its-database-and-several-may-share-it.md)). To change it:
+
+1. Add `NNNN-what-it-does.ts`, with the next number, and list it last in `src/tooling/db/migrations.ts`. It is SQL, run in one transaction: it need not be safe to run twice.
+2. Write it so that **the version before still works on the result**: during an upgrade, servers of both versions share the database. Add now; remove what is no longer used in a later release.
+3. Leave the ones before it alone. A migration that was applied is not applied again.
+
+The development stack watches the sources: **the migration is applied to your development database the moment the file is saved and listed**. Get it right in a stack of its own first (below, `saras-try`), or with `npm test`, which starts from nothing each time. A table that is the server's own and belongs in no seed (the ledger, `scheduled_tasks`) is left out of `software/storage/data/empty`; any other is added there, by `emb run storage:demo.rebuild`.
+
+Several servers on one database: `ROLES` says what a process takes on (`migrate`, `web`, `clock`; all three by default), and `test/integration/several-servers.test.ts` starts two on one database.
 
 ## Tests
 
@@ -95,9 +107,9 @@ A new variable is read in `software/saras/src/tooling/config.ts` and described i
 ```
 mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               │
-              ├─ rules ──► "no reply needed"               (automated mail, never shown to a gate)
+              ├─ a rule sets it aside ──► "no reply needed"   (automated mail, at first; never sent to the LLM)
               │
-              └─ triage gate, 20 at a time ──► "to handle" (+ priority, with the AI strategy)
+              └─ no rule does ──► "to handle"                  (with the attributes the other rules gave it)
                                         │
                      you write in the reply area, as much as you like
                                         │
@@ -110,25 +122,7 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
 
 Every operation is one file under `software/saras/src/domain/<area>/`, named after it and headed by its clauses; [`doc/2-operations.md`](doc/2-operations.md) is the inventory. The paths below are in `software/saras/`.
 
-**The triage gate** (`src/domain/sorting/gate.ts`) answers one question about each fetched email: is a reply needed. Which prompt suits an email is not its business: that follows from the email's attributes and from what each prompt says it suits (`src/domain/computations/prompt-affinity.ts`).
-
-```ts
-interface TriageGate {
-  readonly name: string;
-  decide(batch: { prompts: TriagePrompt[]; mails: TriageMail[] }): Promise<TriageDecision[]>;
-}
-```
-
-- **In:** up to 20 mails, each with `from`, `to`, `cc`, `subject`, `body` and its attachments' names, types and sizes. Never the content of an attachment, and nothing else: no database, no mailbox.
-- **Out:** per mail, `replyNeeded`, plus an optional `reason` and `priority`.
-- A mail the gate says nothing about, or a gate that fails, leaves the mail untriaged; it is presented again at the next fetch.
-
-| Strategy | What it does | Cost |
-| --- | --- | --- |
-| `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a proposal is asked for. |
-| `ai` | An LLM decides. It reads the sender, the subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
-
-The strategy is chosen per organisation; `TRIAGE_STRATEGY` only sets what a new one starts with. To add a strategy, implement `TriageGate` and return it from `src/domain/sorting/strategies.ts`.
+**Sorting** is done when an email is fetched, by the rules of the organisation's attributes (`src/domain/sorting/sort-by-rules.ts`): each rule is an Elo expression given the email, which answers a value of its attribute or nothing. The rule of "Stands in" says where the email stands; when it says nothing the email is to handle. No LLM sorts ([decision 0011](doc/decisions/0011-the-ai-does-not-sort.md)), so nothing waits to be sorted and sorting cannot fail a fetch. Which prompt suits an email follows from its attributes and from what each prompt says it suits (`src/domain/computations/prompt-affinity.ts`).
 
 **A reply** is sent as HTML with a plain-text alternative, both quoting the original. Only the elements an email needs are allowed (`src/tooling/html.ts`): whatever the LLM returns, and whatever is stored or sent, is rebuilt from that list on the server, and the interface sanitises again before displaying anything. A draft is filed in the mailbox's Drafts folder: over IMAP the folder flagged `\Drafts`, or named Drafts or Brouillons.
 

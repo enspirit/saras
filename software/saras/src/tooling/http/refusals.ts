@@ -3,6 +3,7 @@ import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { Refusal } from '../../domain/refusal.ts';
 import type { RefusalKind } from '../../domain/refusal.ts';
 import { LlmError } from '../llm/openrouter.ts';
+import { log } from '../log.ts';
 import { problem } from '../messages.ts';
 import type { MessageCode, ServerProblem } from '../messages.ts';
 
@@ -42,7 +43,7 @@ export const unknownRoute: RequestHandler = (_req, _res, next) => next(new Refus
 export const tellRefusal: ErrorRequestHandler = (err: Thrown, req, res, next) => {
   if (res.headersSent) return next(err);
   const status = statusOf(err);
-  // Only the message is logged, never request bodies: they contain mail content.
-  if (!isKnown(err) && status >= 500) console.error(`${req.method} ${req.path}: ${err.message}`);
+  // Only the error is logged, never request bodies: they contain mail content. The line carries the request's id.
+  if (!isKnown(err) && status >= 500) log.error('request failed', { method: req.method, error: err.message, stack: err.stack });
   res.status(status).json(bodyOf(err, status));
 };

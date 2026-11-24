@@ -1,4 +1,4 @@
-# 0007 — The prompt that suits an email follows from its attributes
+# 0009 — The prompt that suits an email follows from its attributes
 
 ## Context
 
@@ -28,7 +28,7 @@ Nothing is kept of the choice: it is computed from the email's attributes and th
 
 - An organisation with no attribute but the two it starts with can still say "high priority suits this prompt"; to go further it makes an attribute and a rule.
 - Changing what a prompt suits, or an attribute of an email, changes which prompt is offered at once, including for emails already kept. A proposal already written keeps the prompt it was written with.
-- `emails.suggested_prompt_id` is no longer written nor read. It stays in the schema, which the server only ever adds to ([decision 0001](0001-the-server-creates-its-schema.md)).
+- `emails.suggested_prompt_id` is no longer written nor read. It stays in the schema for now: the version before this one still writes it, and a migration removes it once no server of that version is left ([decision 0010](0010-the-server-migrates-its-database-and-several-may-share-it.md)).
 - The sorting request is shorter: it no longer carries the names and descriptions of the prompts.
 
 ## What would reverse it

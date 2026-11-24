@@ -38,6 +38,7 @@
     "serversRequired": "Serveurs et ports IMAP et SMTP requis.",
     "passwordRequired": "Mot de passe requis.",
     "connectionFailed": "Connexion impossible : {detail}",
+    "notDirectTls": "Connexion impossible : un serveur ne démarre pas en TLS sur ce port. Décochez « TLS direct » pour lui : la connexion passe alors en TLS par STARTTLS, comme sur les ports 587 et 143.",
     "folderRequired": "Choisissez le dossier à surveiller.",
     "unknownFolder": "Ce dossier n’existe pas dans la boîte.",
     "foldersFailed": "Impossible de lister les dossiers : {detail}",
@@ -55,7 +56,6 @@
   },
   "sync": {
     "fetchFailed": "Lecture de la boîte impossible : {detail}",
-    "triageFailed": "Échec du tri : {detail}",
     "prepareFailed": "Impossible de préparer une proposition : {detail}"
   },
   "prompts": {
@@ -67,6 +67,9 @@
     "invalidStatus": "Statut invalide.",
     "alreadySent": "Réponse déjà envoyée.",
     "alreadyHandled": "Une réponse a déjà été traitée pour cet email.",
+    "attachmentNotFound": "Ce fichier n’est plus dans la boîte.",
+    "attachmentsNotRead": "Les fichiers de ce type de boîte ne s’ouvrent pas encore d’ici.",
+    "attachmentFailed": "Impossible de lire le fichier dans la boîte : {detail}",
     "contentErased": "Le contenu de cet email a été effacé (durée de conservation dépassée)."
   },
   "reply": {
@@ -97,7 +100,6 @@
   },
   "organization": {
     "nameMismatch": "Ce n’est pas le nom de l’organisation.",
-    "invalidSorting": "Façon de trier inconnue.",
     "invalidWriting": "Façon de préparer les réponses inconnue."
   },
   "assist": {
@@ -118,6 +120,6 @@
     "ruleInvalid": "La règle est illisible : {detail}",
     "systemFixed": "Le nom et les valeurs d’un attribut préconfiguré sont fixes.",
     "valueUnknown": "Ce n’est pas une valeur de cet attribut.",
-    "aiNotYet": "L’IA ne décide pas encore des attributs créés par une organisation : choisissez une règle, ou personne."
+    "deciderUnknown": "Façon de décider un attribut inconnue."
   }
 }

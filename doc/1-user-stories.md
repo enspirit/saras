@@ -20,7 +20,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
 | [J. Boards and attributes](#j-boards) | US-90 – US-96 |
 | [B. Mailboxes](#b-mailboxes) | US-10 – US-17 |
-| [C. Triage and the four boxes](#c-triage-and-the-four-boxes) | US-20 – US-25 |
+| [C. Sorting and the four boxes](#c-sorting-and-the-four-boxes) | US-20 – US-25 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
 | [E. Prompts](#e-prompts) | US-50 – US-53 |
 | [F. Settings](#f-settings) | US-60 – US-69 |
@@ -118,7 +118,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 - For my first mailbox the address and the name are those I signed up with, and the servers are proposed from the address; I can change all of them.
 - saras looks up who hosts my address's domain. When it is Google or Microsoft, I am pointed to signing in there (US-11, US-12), or told that my usual password will probably be refused when that is not set up.
 - Changing a port sets "Direct TLS" accordingly (993 / 465 direct; otherwise STARTTLS, which is then required).
-- The connection is tested before anything is saved; a failure shows the server's own message.
+- The connection is tested before anything is saved; a failure shows the server's own message. When direct TLS was asked of a port that starts in clear (587, 143), it says so instead, and what to untick.
 - The password is stored encrypted. An address is connected once per organisation: connecting it again is refused (see US-17 to renew its access).
 
 ### US-11 — Connect Gmail / Google Workspace
@@ -177,7 +177,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 
 ---
 
-## C. Triage and the four boxes
+## C. Sorting and the four boxes
 
 ### US-20 — Set plainly automated mail aside
 **As** a member, **I want** newsletters, notifications and no-reply senders set aside without any AI, **so that** they neither clutter my list nor cost anything.
@@ -186,28 +186,21 @@ How the screens are designed and built is in [the design document](4-design.md).
 - These emails go to **No reply needed** with the rule's reason, and never reach an LLM.
 - An organisation can turn the rule off, or change it: it is the rule of the attribute **Stands in** (US-94).
 
-### US-21 — No triage by default
-**As** a member, **I want** every remaining email of the folder I watch to be "to handle" unless I say otherwise, **so that** no content leaves the server until I ask for a draft.
+### US-21 — The AI does not sort
+**As** a member, **I want** every remaining email of the folder I watch to be "to handle" unless a rule of ours or one of us says otherwise, **so that** no email is read by the AI to be sorted, and I can always tell why an email is where it is.
 
-- With the default strategy (`none`), the gate decides nothing: everything that passed the rules is in **To handle**, and I pick the prompt myself.
-
-### US-22 — Let the AI triage
-**As** a member of an organisation that chose AI triage, **I want** the AI to tell which emails expect a reply, how urgent they are, and which prompt fits, **so that** I start with the right ones and the right tone.
-
-- The AI reads the sender, the recipients, the subject, the first 1,500 characters and the names of the attachments — never their content.
-- Per email it returns: reply needed or not, a one-sentence reason in my language, a priority. It is not told the prompts, and suggests none.
-- High-priority emails carry a **Priority** badge; the reason is shown above the email with who decided (AI, a rule, me).
-- An email the AI did not decide about stays **Not triaged** in **To handle** and is presented again at the next fetch.
+- Everything that passed the rules is in **To handle**. No LLM decides whether an email needs a reply, nor how urgent it is: rules do (US-94), and members (US-24, US-95).
+- An email the AI sorted, when it could, stays where it put it, marked **The AI** with its reason.
 
 ### US-23 — Work through four boxes
 **As** a member, **I want** my emails in four lists — To handle, No reply needed, Replied, Ignored — each with its count, **so that** I always know what is left.
 
 - The navigation shows the four boxes and how many emails each holds.
-- A list row shows the sender, the date (time today, date otherwise), the subject, the first line, the marks Priority, Not triaged and Draft, and the shared mailbox it came from.
+- A list row shows the sender, the date (time today, date otherwise), the subject, the first line, the marks Priority and Draft, and the shared mailbox it came from.
 - On a large screen the list and the open email sit side by side; on a small one they alternate, with a Back link.
 - An empty box says so and, for **To handle**, how to get emails.
 
-### US-24 — Correct the triage
+### US-24 — Correct the sorting
 **As** a member, **I want** to mark an email as needing no reply, ignore it, or move it back to "To handle", **so that** the final say is mine.
 
 - From **To handle**: *No reply needed* and *Ignore*.
@@ -218,8 +211,10 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member, **I want** to read the email with who sent it, to whom, when, and what came attached, **so that** I can answer without opening my mail client.
 
 - Subject, sender (name and address), date (complete on hover), To and Cc, and the names of the attachments.
-- The body is shown as plain text and scrolls on its own when long.
-- Attachments cannot be opened: only their name, type and size are kept.
+- An email that was written in HTML is shown as it was written: its layout, fonts, colours and links, in a frame that scrolls on its own. "Text only" shows its plain text instead, which is what an email without HTML shows.
+- Shown as written, an email runs nothing and loads nothing from anywhere: an image hosted elsewhere is not loaded, since it would tell the sender that I opened the email, and I am told when one was held back. Images the email carries in its own HTML are shown. A link opens in a tab of its own.
+- An attachment opens from its name: it is read from the mailbox at that moment, in a tab of its own when it is an image, a PDF or plain text, and saved otherwise. Only its name, type and size are kept.
+- Known limitations: no HTML is kept of a mailbox connected by Microsoft sign-in, and attachments open only for a mailbox connected by its servers (see the deviations).
 - Past the retention period the content is erased and the email says so.
 
 ---
@@ -355,30 +350,30 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member, **I want** to see which AI works for my organisation, **so that** I know what my email is sent to without having anything to set up.
 
 - The model and the key are the organisation's, chosen by its administrators (US-63): the same for every member. A member has no model or key of their own.
-- **Settings → AI & privacy** shows me the model in force, who sorts and when the AI writes, above what the product guarantees (US-70).
+- **Settings → AI & privacy** shows me the model in force and when the AI writes, above what the product guarantees (US-70).
 - A model without a zero-data-retention provider is refused at the first request, with an explanation.
 
 ### US-62 — Choose my language
 **As** a member, **I want** the interface in my language, **so that** I work comfortably.
 
 - English by default, French provided; chosen in **Settings** and on the sign-in page, else taken from the browser.
-- Dates follow my regional format. What the server writes for me (triage reasons, the "On …, … wrote:" line) follows my language.
+- Dates follow my regional format. What the server writes for me (the "On …, … wrote:" line) follows my language.
 - The reply itself is always in the language of the email received.
 
 ### US-63 — Configure the organisation
-**As** an administrator, **I want** to set my organisation's name, what the AI does at sorting and at writing, and its own model and key, **so that** every member works the same way at the organisation's expense.
+**As** an administrator, **I want** to set my organisation's name, when the AI writes, and its own model and key, **so that** every member works the same way at the organisation's expense.
 
 - Settings has three tabs. **You**: my name and signature, my password, the language, deleting my account. **Organisation** (administrators): its name, deleting it. **AI & privacy**: the AI and what is guaranteed about it, together.
-- In **AI & privacy**, an administrator sets the model (empty: the server's) and the organisation's OpenRouter key (encrypted, never shown again, removable). What the AI does is chosen where it applies, and the tab leads there: sorting on the attribute **Stands in** (US-93), when it writes in **Writing** (US-66). The tab shows both as they stand now, with what the AI is sent at each, beside the model and the key. A request uses the organisation's key, else the server's.
+- In **AI & privacy**, an administrator sets the model (empty: the server's) and the organisation's OpenRouter key (encrypted, never shown again, removable). When the AI writes is chosen where it applies, and the tab leads there: in **Writing** (US-66). The tab shows it as it stands now, with what the AI is sent then, beside the model and the key. A request uses the organisation's key, else the server's.
 
-### US-66 — Choose what the AI does at sorting and at writing
-**As** an administrator, **I want** to choose what the AI does at each of the two steps an email goes through, **so that** it does as much, or as little, before a member opens an email as suits us.
+### US-66 — Choose when the AI writes
+**As** an administrator, **I want** to choose when the AI writes a proposal of reply, **so that** it does as much, or as little, before a member opens an email as suits us.
 
-- The page explains the two steps and asks one choice for each. **1. Sorting** — when emails are fetched, which need a reply: nobody sorts (every email of the watched folder is to handle), or the AI sorts. **2. Writing** — when the AI writes a proposal for an email to handle: when a member asks; at fetch, to review in saras; at fetch, also filed in the mailbox's Drafts folder (the email then moves to **Replied** as a draft).
-- Each choice says what the AI is sent. The choices that need the AI cannot be made without a key.
-- The two choices are independent. Afterwards, writing is changed in **Configuration → Writing** (the page of the prompts), under the list; sorting is changed where it is decided, on the attribute **Stands in** (US-93): by its rule, by the AI, or by both. Settings says so and leads there.
-- At the end of getting started, what the first fetch let through unsorted is sorted again as chosen.
-- Which prompt an email is offered follows from its attributes, not from the AI: sorting gives the email its attributes (by rules, by the AI, by hand), and each prompt says which values it suits. The prompt that suits best is preselected and marked for who writes; when none does, the first of the list is offered. Changing what a prompt suits, or an attribute of the email, changes it at once.
+- The last step of getting started asks one choice: when the AI writes a proposal for an email to handle. When a member asks; at fetch, to review in saras; at fetch, also filed in the mailbox's Drafts folder (the email then moves to **Replied** as a draft).
+- Each choice says what the AI is sent. Those that write at fetch cannot be made without a key.
+- Afterwards, it is changed in **Configuration → Writing** (the page of the prompts), under the list. Settings says so and leads there.
+- At the end of getting started, what the first fetch brought in is prepared as chosen.
+- Which prompt an email is offered follows from its attributes, not from the AI: sorting gives the email its attributes (by rules, by hand), and each prompt says which values it suits. The prompt that suits best is preselected and marked for who writes; when none does, the first of the list is offered. Changing what a prompt suits, or an attribute of the email, changes it at once.
 - A proposal written at fetch is written as the mailbox's owner (their signature and corrections), with the prompt that suits the email best or else the organisation's first; at most ten per fetch and mailbox.
 - Nothing is ever sent automatically: sending is always a member's confirmed action.
 
@@ -406,7 +401,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 ### US-64 — See the privacy guarantees in force
 **As** a member, **I want** to read, in the application, what happens to my emails, **so that** I can trust it — and explain it to a client who asks.
 
-- **Settings → AI & privacy** states, with the AI in force: what it does at sorting and at writing and what it is sent at each, that every AI request demands zero retention, the local retention period, the encryption of secrets, that nothing is sent without validation, and who sees my correction reasons.
+- **Settings → AI & privacy** states, with the AI in force: when it writes and what it is sent then, that every AI request demands zero retention, the local retention period, the encryption of secrets, that nothing is sent without validation, and who sees my correction reasons.
 - A standing line in the navigation reminds that zero data retention is enforced on every AI request.
 
 ### US-65 — Be told when the AI cannot help
@@ -431,8 +426,8 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** a member, **I want** the AI to receive only what the action needs, **so that** exposure is minimal.
 
 - Checking typos and improving style send only my text. Applying a prompt sends the email, the prompt and my text.
-- The content of attachments is never stored nor sent. Automated mail never reaches the AI.
-- With the default triage, no email content leaves the server until I ask for a proposal.
+- The content of attachments is never stored nor sent to the AI: opening one reads it from my mailbox, for me. Automated mail never reaches the AI.
+- No email is sent to the AI to be sorted. Unless my organisation has proposals written at fetch (US-66), no email content leaves the server until I ask for a proposal.
 
 ### US-72 — Forget old email
 **As** a member, **I want** the content of emails erased from saras after a set period, **so that** it does not become a second archive of my mailbox.
@@ -484,7 +479,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 ### US-85 — Set the installation's policies
 **As** an operator, **I want** to decide who may sign up, how often mail is fetched, how long content is kept, and which OAuth applications are available, **so that** the installation fits my context.
 
-- Environment variables: sign-up policy, invitation validity, fetch interval and depth, retention, default triage strategy for new organisations, default model, server API key, Google and Microsoft OAuth applications.
+- Environment variables: sign-up policy, invitation validity, fetch interval and depth, retention, whether new organisations set automated mail aside, default model, server API key, Google and Microsoft OAuth applications.
 
 ### US-86 — Host several organisations
 **As** an operator hosting organisations that are not mine, **I want** each one isolated and paying for its own AI usage, **so that** I can offer the tool as a service.
@@ -523,8 +518,8 @@ These are behaviours of the system rather than screens, but they are what the pr
 
 - **Configuration → Sorting** lists the organisation's attributes (the page was first called Attributes; its things are still attributes). Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
 - A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot; the values of the pre-configured attributes have theirs. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
-- Each attribute says who decides it when an email is sorted: nobody (set by hand), a rule, the AI, or the rule then the AI where the rule says nothing. The AI decides only the two pre-configured attributes for now.
-- On the form of an attribute, a tick box asks for a rule; the two pre-configured ones have a second, which asks the AI where no rule has decided. With neither ticked, members set it by hand. A “member” attribute has no values to type.
+- Each attribute says who decides it when an email is sorted: nobody (set by hand), or a rule. The AI decides none.
+- On the form of an attribute, a tick box asks for a rule. Without it, members set it by hand. A “member” attribute has no values to type.
 
 ### US-94 — Sort with rules that cost nothing and say what they do
 **As** an administrator, **I want** to write the rule that decides an attribute, **so that** sorting is transparent and uses no AI tokens.
@@ -540,13 +535,13 @@ These are behaviours of the system rather than screens, but they are what the pr
 - **Writing a rule** (from the list of attributes, or beside the editor) is a guide: the shape of a rule, what it can read, rules to start from that can be copied, Elo in brief, what is checked, and the skill for an AI assistant.
 - **Download the skill for an AI agent**, beside the trial of a rule, gives a small archive (a folder with one `SKILL.md`) to hand to an AI assistant: it names the attribute and its values, says what a rule is given and must answer, and teaches enough Elo to write one. What the assistant writes is pasted in the editor and tried like any rule.
 - A rule Elo cannot read is refused with Elo's own message. A rule that fails or runs too long on an email leaves the attribute undecided for that email.
-- Rules apply to the emails fetched from then on. **Save and apply to the emails already kept** has a rule look again at those: it says how many it looked at and how many changed. Values set by hand stay; emails replied or placed by a member stay where they are; an email the rule of **Stands in** no longer places goes back to be sorted.
+- Rules apply to the emails fetched from then on. **Save and apply to the emails already kept** has a rule look again at those: it says how many it looked at and how many changed. Values set by hand stay; emails replied or placed by a member stay where they are; an email the rule of **Stands in** no longer places is to handle again.
 
 ### US-95 — Set an attribute by hand
 **As** a member, **I want** to set or correct the value of an attribute on an email, **so that** it shows on the right boards whatever the rules said.
 
-- Under the header of an email, a tool bar as wide as the email holds each attribute but **Stands in**: its name, its value as a chip, and the sign of who decided it (a rule, the AI, by hand), which its tooltip says in words; an attribute without a value is offered with a “+”.
-- A click on an attribute opens its values to choose from, “no value” included, and says who decided the current one and why when that is known: the reason its rule gave, or what the AI said when it sorted, for the priority.
+- Under the header of an email, a tool bar as wide as the email holds each attribute but **Stands in**: its name, its value as a chip, and the sign of who decided it (a rule, by hand), which its tooltip says in words; an attribute without a value is offered with a “+”.
+- A click on an attribute opens its values to choose from, “no value” included, and says who decided the current one and why when that is known: the reason its rule gave.
 - In a list of emails, each email shows its values for the attributes the organisation made.
 - A value I set is recorded as set by hand and is not overwritten by later sorting.
 - Where an email stands is changed by acting on it: the sorting corrections, a reply.

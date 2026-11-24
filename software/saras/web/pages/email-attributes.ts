@@ -12,25 +12,19 @@ import type { Child } from '../ui/dom.ts';
 import { AttributeBar } from '../ui/molecules/attribute-bar.ts';
 import type { AttributeEntry } from '../ui/molecules/attribute-bar.ts';
 
-/** The value an email has for an attribute. Its priority is kept apart: the AI or nobody may have set it. */
+/** The value an email has for an attribute. Its priority always has one: what an email starts with, until a rule or a member decides it. */
 const valueOf = (email: EmailWithItsReply, attribute: Attribute): ValueOfEmail | undefined =>
-  email.attributes[attribute.key] ?? (attribute.key === PRIORITY ? { value: email.priority, source: 'ai' } : undefined);
+  email.attributes[attribute.key] ?? (attribute.key === PRIORITY ? { value: email.priority, source: 'nobody' } : undefined);
 
-/** Who sorted an email, when it was the AI: then what it said of it also explains its priority. */
-const sortedByAi = ({ triageSource, triageReasonCode }: EmailWithItsReply): boolean => Boolean(triageSource) && !['rule', 'user', 'none'].includes(triageSource ?? '') && !triageReasonCode;
+/** Why a value is what it is, in the words of the rule that decided it, when it said. */
+const reasonOf = (has: ValueOfEmail): string => (has.source === 'rule' && has.reason && !has.reason.startsWith('code:') ? has.reason : '');
 
-/** Why a value is what it is, in the words of who decided: a rule that said, or the AI when it sorted. Nothing when it is not known. */
-function reasonOf(email: EmailWithItsReply, attribute: Attribute, has: ValueOfEmail): string {
-  if (has.source === 'rule') return has.reason && !has.reason.startsWith('code:') ? has.reason : '';
-  return has.source === 'ai' && attribute.key === PRIORITY && sortedByAi(email) ? email.triageReason : '';
-}
-
-const NOTES = { rule: 'attributes.noteRule', ai: 'attributes.noteAi', user: 'attributes.noteUser' };
+const NOTES = { rule: 'attributes.noteRule', user: 'attributes.noteUser', nobody: 'attributes.noteNobody' };
 
 /** Under the values: who decided the one it has, why when that is known, and what setting it by hand does. */
-function noteOf(email: EmailWithItsReply, attribute: Attribute, has: ValueOfEmail | undefined): Child[] {
+function noteOf(has: ValueOfEmail | undefined): Child[] {
   if (!has) return [t('attributes.noteNone'), t('attributes.noteByHand')];
-  const reason = reasonOf(email, attribute, has);
+  const reason = reasonOf(has);
   return [t(NOTES[has.source]), reason && t('attributes.noteReason', { reason }), has.source !== 'user' && t('attributes.noteByHand')].filter(Boolean);
 }
 
@@ -57,7 +51,7 @@ function entryOf(email: EmailWithItsReply, attribute: Attribute, shown: () => vo
     value: has ? chipFor(attribute, has.value) : null,
     decider: has && signOf(has.source),
     choices: [...choices, { key: '', label: noValueChip(), chosen: !has }],
-    note: noteOf(email, attribute, has),
+    note: noteOf(has),
     onPick: (key) => void setByHand(email, attribute, key, shown),
   };
 }

@@ -2,11 +2,14 @@
   "to": "To {to}",
   "toCc": "To {to} · Cc {cc}",
   "triage": {
-    "ai": "AI triage",
+    "ai": "The AI",
     "rule": "Rule",
     "user": "You",
-    "unknown": "Triage"
+    "unknown": "Sorting"
   },
-  "pendingTriage": "Not sorted yet: it will be at the next fetch.",
-  "erased": "Content erased (retention period exceeded)."
+  "erased": "Content erased (retention period exceeded).",
+  "asWritten": "As written",
+  "asText": "Text only",
+  "imagesHeld": "Images hosted elsewhere are not loaded: they would tell the sender that you opened the email.",
+  "frameTitle": "The email as it was written"
 }

@@ -56,6 +56,9 @@ function textOf(msg: GmailMessage): string {
   return (plain ? decode(plain.body?.data) : htmlToText(html ? decode(html.body?.data) : '')).trim();
 }
 
+/** The HTML as it was written, when the message has some. */
+const htmlOf = (msg: GmailMessage): string => decode(findPart(msg.payload, 'text/html')?.body?.data);
+
 /** Who wrote, to whom, and whom to answer. */
 function correspondents(header: Header) {
   const from = parseAddress(header('from'));
@@ -82,6 +85,7 @@ export function gmailToEmail(msg: GmailMessage): IncomingEmail {
     subject: header('subject'),
     date: new Date(Number(msg.internalDate) || Date.now()).toISOString(),
     bodyText: textOf(msg),
+    bodyHtml: htmlOf(msg),
     attachments: attachmentsOf(msg.payload),
     headers: automationHeaders(header),
     answered: false,

@@ -45,9 +45,9 @@ export const sampleHeader = (): HTMLElement => ReadingHeader({
   actions: [Button(t('composer.noReplyNeeded'), { variant: 'ghost', size: 'small', icon: 'mail-check' }), Button(t('composer.ignore'), { variant: 'ghost', size: 'small', icon: 'archive' })],
   sender: { name: 'Claire Martin', address: 'claire@client.example' },
   to: t('reading.to', { to: 'alex@brightwater.example' }),
-  attachments: ['requirements.pdf'],
+  attachments: [{ name: 'requirements.pdf', href: '#' }, { name: 'logo.png' }],
   date: new Date(2026, 10, 19, 9, 30).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }),
-  triage: [Badge(t('reading.triage.ai'), 'neutral'), t('styleguide.sample.triage')],
+  triage: [Badge(t('reading.triage.rule'), 'neutral'), t('styleguide.sample.triage')],
 });
 
 /** The reply area with every part showing: recipients, a proposal, the reason, the help, the actions. */

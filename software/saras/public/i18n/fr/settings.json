@@ -1,6 +1,6 @@
 {
   "title": "Réglages",
-  "noKey": "Aucune clé OpenRouter : le tri automatique et les propositions sont désactivés.",
+  "noKey": "Aucune clé OpenRouter : l’IA ne rédige aucune proposition.",
   "signature": "Signature",
   "signaturePlaceholder": "Cordialement,\nPrénom Nom",
   "signatureHint": "Ajoutée telle quelle à la fin de chaque proposition.",
@@ -40,14 +40,11 @@
   "confirmDeleteAccount": "Supprimer votre compte {email} ? Cette action est définitive.",
   "accountDeleted": "Votre compte a été supprimé.",
   "aiPrivacy": "IA et confidentialité",
-  "factSorting": "Tri",
   "factWriting": "Rédaction",
   "aiSetBy": "Choisi par les administrateurs de {organization}, pour tous les membres.",
   "aiOf": "L’IA de {organization}",
   "aiDoesTitle": "Ce qu’elle fait pour vous",
   "chosenIn": "{page} →",
-  "sentSortingNone": "Rien n’est envoyé à l’IA au tri.",
-  "sentSortingAi": "Elle reçoit l’expéditeur, l’objet, le début du texte et le nom des pièces jointes.",
   "sentWritingAsked": "Un email n’est envoyé à l’IA qu’à ce moment-là.",
   "sentWritingFetch": "Le contenu de chaque email à traiter est envoyé à l’IA au relevé."
 }

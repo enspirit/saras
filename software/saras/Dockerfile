@@ -66,8 +66,9 @@ EXPOSE 3000
 USER node
 
 # What visitors are told is read from the database: an answer means the server
-# is up and reaches it.
+# is up and reaches it. A process whose ROLES leave `web` out answers nothing:
+# it is healthy for as long as it runs.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s \
-  CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/public').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+  CMD ["node", "-e", "const r=process.env.ROLES;if(r&&!r.split(',').map(s=>s.trim()).includes('web'))process.exit(0);fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/public').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 
 CMD ["node", "src/main.ts"]

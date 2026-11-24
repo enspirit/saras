@@ -27,12 +27,8 @@ export async function administratorsOf(db: Db, organizationId: number): Promise<
   return counted!.n;
 }
 
-export async function addOrganization(db: Db, organization: { name: string; triage: string; skipAutomated: boolean }): Promise<number> {
-  const created = await db.one<{ id: number }>('INSERT INTO organizations (name, triage_strategy, skip_automated) VALUES ($1, $2, $3) RETURNING id', [
-    organization.name,
-    organization.triage,
-    organization.skipAutomated,
-  ]);
+export async function addOrganization(db: Db, organization: { name: string; skipAutomated: boolean }): Promise<number> {
+  const created = await db.one<{ id: number }>('INSERT INTO organizations (name, skip_automated) VALUES ($1, $2) RETURNING id', [organization.name, organization.skipAutomated]);
   return created!.id;
 }
 

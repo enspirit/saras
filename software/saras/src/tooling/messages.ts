@@ -35,19 +35,18 @@ export const MESSAGES = {
   'mailboxes.serversRequired': 'IMAP and SMTP servers and ports are required.',
   'mailboxes.passwordRequired': 'Password required.',
   'mailboxes.connectionFailed': 'Could not connect: {detail}',
+  'mailboxes.notDirectTls': 'Could not connect: a server does not start in TLS on that port. Untick "Direct TLS" for it: the connection is then upgraded with STARTTLS, as on ports 587 and 143.',
   'oauth.notConfigured': 'This OAuth provider is not configured on this server.',
   'oauth.denied': 'Authorisation refused ({detail}).',
   'oauth.expired': 'The OAuth session expired, start again.',
   'oauth.failed': 'Connection failed: {detail}',
   'oauth.partialGrant': 'Access was granted only in part. Start again and tick every permission asked: reading the mailbox, and creating and sending replies.',
   'sync.fetchFailed': 'Could not read the mailbox: {detail}',
-  'sync.triageFailed': 'Triage failed: {detail}',
   'sync.prepareFailed': 'Could not prepare a proposal: {detail}',
   'mailboxes.adminOnly': 'A shared mailbox is managed by administrators.',
   'mailboxes.alreadyConnected': 'This mailbox is already connected in your organisation.',
   'mailboxes.otherMailbox': 'You signed in to another mailbox than the one to renew.',
   'mailboxes.renewAtHost': 'Access to this mailbox is renewed by signing in at its host.',
-  'organization.invalidSorting': 'Unknown way of sorting.',
   'organization.invalidWriting': 'Unknown way of preparing replies.',
   'organization.nameMismatch': 'This is not the name of the organisation.',
   'mailboxes.folderRequired': 'Choose the folder to watch.',
@@ -62,7 +61,7 @@ export const MESSAGES = {
   'attributes.ruleInvalid': 'The rule cannot be read: {detail}',
   'attributes.systemFixed': 'The name and the values of a pre-configured attribute are fixed.',
   'attributes.valueUnknown': 'This is not a value of the attribute.',
-  'attributes.aiNotYet': 'The AI does not decide the attributes an organisation makes yet: choose a rule, or nobody.',
+  'attributes.deciderUnknown': 'Unknown way of deciding an attribute.',
   'boards.notFound': 'Board not found.',
   'boards.nameRequired': 'A board needs a name.',
   'boards.sharedByAdministrators': 'Only administrators share a board with the organisation.',
@@ -73,6 +72,9 @@ export const MESSAGES = {
   'emails.invalidStatus': 'Invalid status.',
   'emails.alreadySent': 'A reply has already been sent.',
   'emails.alreadyHandled': 'A reply has already been handled for this email.',
+  'emails.attachmentNotFound': 'This file is no longer in the mailbox.',
+  'emails.attachmentsNotRead': 'The files of this kind of mailbox cannot be opened from here yet.',
+  'emails.attachmentFailed': 'Could not read the file from the mailbox: {detail}',
   'emails.contentErased': 'The content of this email has been erased (retention period exceeded).',
   'reply.empty': 'The reply is empty.',
   'assist.nothingWritten': 'Write something first: there is nothing to check or improve.',
@@ -92,7 +94,7 @@ export const MESSAGES = {
   'llm.failed': 'OpenRouter error ({status}). {detail}',
   'llm.emptyAnswer': 'The model returned an empty answer.',
 
-  // Verdicts of the header rules applied before the triage gate
+  // Verdicts of the rule "Stands in" starts with, which sets automated mail aside
   'triage.unknownSender': 'Unknown sender.',
   'triage.ownMessage': 'Message sent by yourself.',
   'triage.alreadyAnswered': 'Already answered from your mail client.',
@@ -131,7 +133,7 @@ export function decodeProblem(stored: string | null): ServerProblem | null {
   }
 }
 
-/** A triage reason is either free text written by the LLM, or a code, stored with this prefix. */
+/** The reason an email was sorted so is either free text (a rule's own words; the AI's, on emails it sorted when it did), or a code, stored with this prefix. */
 const CODE_PREFIX = 'code:';
 export const reasonCode = (code: MessageCode): string => `${CODE_PREFIX}${code}`;
 

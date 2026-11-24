@@ -29,7 +29,7 @@ const resource = (out: string, kind: string): string => out.split(/^---$/m).find
 
 // The lists of templates/_helpers.tpl, as this test expects them.
 const SECRETS = ['APP_SECRET', 'DATABASE_URL', 'OPENROUTER_API_KEY', 'SMTP_URL', 'GOOGLE_CLIENT_SECRET', 'MICROSOFT_CLIENT_SECRET'];
-const SET_BY_THE_CHART = ['PORT', 'BASE_URL', 'DATA_DIR', 'BRAND_DIR'];
+const SET_BY_THE_CHART = ['PORT', 'BASE_URL', 'DATA_DIR', 'BRAND_DIR', 'ROLES'];
 
 test('every variable of env/base.env has one way in: secrets, a value of the chart, or config', () => {
   assert.deepEqual([...SECRETS, ...SET_BY_THE_CHART].filter((name) => !described.includes(name)), []);
@@ -49,6 +49,9 @@ test('secrets takes every secret, keeps them in a Secret, and takes nothing else
   assert.match(render({ ...LEAST, 'secrets.ALLOW_SIGNUP': 'yes' }).out, /secrets.ALLOW_SIGNUP: not a secret saras reads/);
 });
 
+/** How helm says a value is not one of the schema's: its wording changed between versions. */
+const notAllowed = (name: string): RegExp => new RegExp(`'${name}' not allowed|Additional property ${name} is not allowed`);
+
 const REFUSED: [string, Record<string, string>, RegExp][] = [
   ['no master key', { 'secrets.DATABASE_URL': SERVER }, /APP_SECRET is missing or too short/],
   ['a master key too short for the server', { ...LEAST, 'secrets.APP_SECRET': 'short' }, /APP_SECRET is missing or too short/],
@@ -58,10 +61,11 @@ const REFUSED: [string, Record<string, string>, RegExp][] = [
   ['a server of the release and the embedded database', { ...INCLUDED, 'embeddedDatabase.enabled': 'true' }, /postgresql.enabled and embeddedDatabase.enabled: one database, not 2/],
   ['a server of the release without a password', { 'secrets.APP_SECRET': KEY, 'postgresql.enabled': 'true' }, /a password is required, as postgresql.password .* or in a Secret of yours/],
   ['a server of the release with two passwords', { ...INCLUDED, 'postgresql.existingSecret': 'mine' }, /postgresql.password and postgresql.existingSecret: one password, not 2/],
-  ['a second replica of the database', { ...INCLUDED, 'postgresql.replicas': '2' }, /'replicas' not allowed/],
+  ['a second replica of the database', { ...INCLUDED, 'postgresql.replicas': '2' }, notAllowed('replicas')],
   ['an ingress without a host', { ...LEAST, 'ingress.enabled': 'true' }, /ingress.host is required/],
-  ['a second replica', { ...LEAST, replicas: '2' }, /'replicas' not allowed/],
-  ['a value it does not know', { ...LEAST, 'secret.APP_SECRET': KEY }, /'secret' not allowed/],
+  ['a second replica on the embedded database', { ...EMBEDDED, replicas: '2' }, /replicas=2 and embeddedDatabase.enabled: the embedded database is opened by one process/],
+  ['no replica at all', { ...LEAST, replicas: '0' }, /replicas/],
+  ['a value it does not know', { ...LEAST, 'secret.APP_SECRET': KEY }, notAllowed('secret')],
 ];
 
 for (const [what, values, why] of REFUSED) {
@@ -82,6 +86,17 @@ test('on a PostgreSQL server it keeps no state: no volume, one replica, replaced
   assert.doesNotMatch(deployment, /persistentVolumeClaim:|name: (DATABASE_URL|BASE_URL|BRAND_DIR)$/m);
   assert.match(deployment, /readOnlyRootFilesystem: true/);
   assert.match(deployment, /image: "enspirit\/saras:latest"/);
+});
+
+test('several replicas on a PostgreSQL server are replaced one after the other, and each takes every role', () => {
+  const { ok, out } = render({ ...LEAST, replicas: '3' });
+  assert.equal(ok, true, out);
+  const deployment = resource(out, 'Deployment');
+  assert.match(deployment, /^  replicas: 3$/m);
+  assert.match(deployment, /type: RollingUpdate/);
+  assert.doesNotMatch(deployment, /type: Recreate/);
+  assert.match(deployment, /- name: ROLES\n\s+value: migrate,web,clock/);
+  assert.equal(render({ ...INCLUDED, replicas: '2' }).ok, true, 'and on the server of the release');
 });
 
 test('on the embedded database it claims a volume that outlives the release, and no Secret names a server', () => {

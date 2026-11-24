@@ -3,6 +3,9 @@ export interface ApiResponse {
   status: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: any;
+  /** The answer as it came, for those that are not JSON: a document, a file. */
+  raw: Buffer;
+  headers: Headers;
 }
 
 export type ApiClient = (method: string, path: string, body?: unknown, headers?: Record<string, string>) => Promise<ApiResponse>;
@@ -36,6 +39,15 @@ function remember(jar: Map<string, string>, setCookies: string[]): void {
   }
 }
 
+/** The answer as JSON, when it is some. */
+function jsonOf(raw: Buffer): unknown {
+  try {
+    return JSON.parse(raw.toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
 /** A browser-like API client: it keeps its cookies between calls. */
 export function createClient(baseUrl: () => string): ApiClient {
   const jar = new Map<string, string>();
@@ -46,6 +58,7 @@ export function createClient(baseUrl: () => string): ApiClient {
       body: method === 'GET' ? undefined : typeof body === 'string' ? body : JSON.stringify(body || {}),
     });
     remember(jar, res.headers.getSetCookie());
-    return { status: res.status, body: await res.json().catch(() => null) };
+    const raw = Buffer.from(await res.arrayBuffer());
+    return { status: res.status, body: jsonOf(raw), raw, headers: res.headers };
   };
 }

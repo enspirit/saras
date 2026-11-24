@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { LEVELS, isLevel } from './log.ts';
 
 const int = (v: string | undefined, d: number): number => (v === undefined || v === '' || Number.isNaN(Number(v)) ? d : Number(v));
 
@@ -29,9 +30,7 @@ const joining = (env: Env) => ({
   invitationDays: int(env.INVITATION_DAYS, 7),
   // A second factor (a code from an authenticator app) is asked of every member at sign-in.
   secondFactor: env.MFA_ENABLED === 'true',
-  // How fetched emails are sorted: 'none' (the watched folder is the filter) or 'ai'.
-  triageStrategy: env.TRIAGE_STRATEGY === 'ai' ? ('ai' as const) : ('none' as const),
-  // Set plainly automated mail aside (newsletters, no-reply…) before any triage.
+  // Set plainly automated mail aside (newsletters, no-reply…), by rule.
   skipAutomated: env.TRIAGE_SKIP_AUTOMATED !== 'false',
 });
 
@@ -57,12 +56,35 @@ const otherHosts = (env: Env) => ({
   microsoft: { clientId: env.MICROSOFT_CLIENT_ID || '', clientSecret: env.MICROSOFT_CLIENT_SECRET || '', tenant: env.MICROSOFT_TENANT || 'common' },
 });
 
+/** How much the server says of what it does, on its standard output: from this level up (tooling/log.ts). */
+function logging(env: Env) {
+  const logLevel = env.LOG_LEVEL || 'info';
+  if (!isLevel(logLevel)) throw new Error(`LOG_LEVEL is ${logLevel}: a level is one of ${LEVELS.join(', ')}`);
+  return { logLevel };
+}
+
+const ROLES = ['migrate', 'web', 'clock'];
+
+/**
+ * What this process takes on, of what a server does: migrating the database, answering over
+ * HTTP, and what the backend does on its own clock. All three unless ROLES says less, for
+ * several processes on one database. The embedded database is opened by a single process,
+ * which therefore takes them all.
+ */
+function roles(env: Env) {
+  const named = (env.ROLES || ROLES.join(',')).split(',').map((role) => role.trim()).filter(Boolean);
+  const unknown = named.filter((role) => !ROLES.includes(role));
+  if (unknown.length) throw new Error(`ROLES names ${unknown.join(', ')}: a role is one of ${ROLES.join(', ')}`);
+  if (!env.DATABASE_URL && named.length < ROLES.length) throw new Error('ROLES leaves a role out, which needs a PostgreSQL server (DATABASE_URL): the embedded database is opened by one process only');
+  return { roles: { migrate: named.includes('migrate'), web: named.includes('web'), clock: named.includes('clock') } };
+}
+
 export function loadConfig(env: Env = process.env) {
   const appSecret = env.APP_SECRET || '';
   if (appSecret.length < 32) {
     throw new Error('APP_SECRET is missing or too short (32 characters minimum). Generate one with: openssl rand -hex 32');
   }
-  return { appSecret, ...hosting(env), ...joining(env), ...fetching(env), ...otherHosts(env) };
+  return { appSecret, ...hosting(env), ...logging(env), ...joining(env), ...fetching(env), ...otherHosts(env), ...roles(env) };
 }
 
 export function loadDotEnv(path = '.env') {

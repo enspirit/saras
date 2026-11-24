@@ -11,10 +11,10 @@
 //   ReqTrig  a mailbox that watches a folder is fetched at once
 import type { MailboxServers } from '../../../shared/mailbox.ts';
 import { errorMessage } from '../../tooling/errors.ts';
-import { isRenewedByPassword, serversTold, withServers } from '../computations/mailboxes.ts';
+import { isRenewedByPassword, notLetIn, serversTold, withServers } from '../computations/mailboxes.ts';
 import type { ServersGiven } from '../computations/mailboxes.ts';
 import type { ImapCredentials } from '../model/mailbox.ts';
-import { Refusal, accepted } from '../refusal.ts';
+import { accepted } from '../refusal.ts';
 import type { Actor, World } from '../world.ts';
 import { mailboxToRenew, renewWith } from './renew-mailbox-credentials.ts';
 
@@ -32,7 +32,7 @@ export async function changeMailboxServers(world: World, actor: Actor, mailboxId
   try {
     await world.mail.imapProvider(mailbox, credentials).verify();
   } catch (e) {
-    throw new Refusal('invalid', 'mailboxes.connectionFailed', { detail: errorMessage(e) });
+    throw notLetIn(errorMessage(e));
   }
   await renewWith(world, mailbox, credentials);
 }

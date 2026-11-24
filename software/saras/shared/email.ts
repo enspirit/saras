@@ -2,12 +2,12 @@
 import type { ValueOfEmail } from './attribute.ts';
 import type { Proposal, Reply, ReplyMode } from './reply.ts';
 
-/** Where an email stands: waiting to be sorted, to handle, needing no reply, ignored, replied. */
-export type EmailStatus = 'pending' | 'needs_reply' | 'no_reply' | 'ignored' | 'sent';
+/** Where an email stands: to handle, needing no reply, ignored, replied. */
+export type EmailStatus = 'needs_reply' | 'no_reply' | 'ignored' | 'sent';
 export type Priority = 'high' | 'normal' | 'low';
 
-/** The boxes, and the statuses each one shows. An email waiting to be sorted is to handle. */
-export const BOXES = { todo: ['needs_reply', 'pending'], none: ['no_reply'], sent: ['sent'], ignored: ['ignored'] } as const satisfies Record<string, readonly EmailStatus[]>;
+/** The boxes, and the statuses each one shows. */
+export const BOXES = { todo: ['needs_reply'], none: ['no_reply'], sent: ['sent'], ignored: ['ignored'] } as const satisfies Record<string, readonly EmailStatus[]>;
 export type Box = keyof typeof BOXES;
 
 export interface Address {
@@ -15,7 +15,7 @@ export interface Address {
   address: string;
 }
 
-/** A file attached to an email. Only its description is kept, never its content. */
+/** A file attached to an email. Only its description is kept, never its content: it is read again from the mailbox when asked for. */
 export interface Attachment {
   name: string;
   type: string;
@@ -31,7 +31,7 @@ export interface EmailSummary {
   date: string;
   status: EmailStatus;
   priority: Priority;
-  /** 'rule', 'user', 'none', or the name of the strategy that sorted it. */
+  /** Who decided where it stands: 'rule', 'user', or 'none' when nobody did ('ai' on an email the AI sorted, when it did). */
   triageSource: string | null;
   snippet: string;
   /** Address of the mailbox it arrived in, and whether that mailbox is shared. */
@@ -68,7 +68,13 @@ export interface EmailWithItsReply {
   subject: string;
   date: string;
   bodyText: string;
+  /** Whether it can be shown as it was written: `GET /emails/:id/html` is then a document for a frame. */
+  hasHtml: boolean;
+  /** Whether it shows images hosted elsewhere, which are not loaded. */
+  hostedImagesHeld: boolean;
   attachments: Attachment[];
+  /** Whether its files can be opened: `GET /emails/:id/attachments/:n`, the nth of the list above, from 0. */
+  attachmentsOpen: boolean;
   status: EmailStatus;
   priority: Priority;
   triageSource: string | null;

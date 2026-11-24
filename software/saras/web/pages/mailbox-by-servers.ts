@@ -111,7 +111,7 @@ function serversForm(f: ServerFields, status: HTMLElement, shared: () => boolean
     toast(t('mailboxes.connected'));
     goTo('#/mailboxes');
   },
-    FormRow(Field(t('mailboxes.email'), f.email), Field(t('mailboxes.password'), f.password, { hint: t('mailboxes.passwordHint') })),
+    FormRow(Field(t('mailboxes.email'), f.email), Field(t('mailboxes.password'), f.password)),
     Field(t('mailboxes.name'), f.displayName),
     serverSettings(f, status),
     Actions(connect, Muted(Small(t('mailboxes.connectHint')))),

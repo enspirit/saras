@@ -6,9 +6,9 @@
 //            the incoming server lets us in with them
 //   ReqPost  nothing is fetched yet: the member first chooses the folder to watch
 import { errorMessage } from '../../tooling/errors.ts';
-import { connectsAsShared, serversGiven } from '../computations/mailboxes.ts';
+import { connectsAsShared, notLetIn, serversGiven } from '../computations/mailboxes.ts';
 import type { ServersGiven } from '../computations/mailboxes.ts';
-import { Refusal, accepted } from '../refusal.ts';
+import { accepted } from '../refusal.ts';
 import type { AccountRow } from '../model/mailbox.ts';
 import type { Actor, World } from '../world.ts';
 import { connectMailbox } from './connect-mailbox.ts';
@@ -19,7 +19,7 @@ export async function connectMailboxByServers(world: World, actor: Actor, given:
   try {
     await world.mail.imapProvider({ email, display_name: displayName }, credentials).verify();
   } catch (e) {
-    throw new Refusal('invalid', 'mailboxes.connectionFailed', { detail: errorMessage(e) });
+    throw notLetIn(errorMessage(e));
   }
   return connectMailbox(world, actor, { kind: 'imap', address: email, displayName, shared }, credentials);
 }

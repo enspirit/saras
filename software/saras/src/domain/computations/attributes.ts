@@ -28,26 +28,31 @@ export function valuesGiven(value: unknown): ValueGiven[] {
 /** A value a rule decided, as it is kept on the email: with why, when the rule said. */
 export const ruleValue = ({ value, reason }: { value: string; reason: string }): ValueOfEmail => ({ value, source: 'rule', ...(reason ? { reason } : {}) });
 
-/** ReqPre of CreateAttribute and EditAttribute: a name; for a choice, at least two values. */
+/** ReqPre of CreateAttribute and EditAttribute: a way of deciding we know. Nobody, when none is given. */
+export function deciderGiven(value: unknown): Verdict<Decider> {
+  if (value === undefined || value === null) return accept('nobody');
+  const decider = DECIDERS.find((known) => known === value);
+  return decider ? accept(decider) : refuse('invalid', 'attributes.deciderUnknown');
+}
+
+/** ReqPre of CreateAttribute and EditAttribute: a name; for a choice, at least two values; a way of deciding we know. */
 export function attributeGiven(given: Record<string, unknown>): Verdict<AttributeGiven> {
   const name = clipped(given.name, 60);
   const kind: AttributeKind = oneOf(ATTRIBUTE_KINDS, given.kind, 'choice');
   const values = kind === 'choice' ? valuesGiven(given.values) : [];
+  const decidedBy = deciderGiven(given.decidedBy);
   if (!name) return refuse('invalid', 'attributes.nameRequired');
   if (kind === 'choice' && values.length < 2) return refuse('invalid', 'attributes.valuesRequired');
-  return accept({ name, kind, values, decidedBy: oneOf(DECIDERS, given.decidedBy, 'nobody'), elo: clipped(given.elo, 4000) });
+  if (!decidedBy.ok) return decidedBy;
+  return accept({ name, kind, values, decidedBy: decidedBy.value, elo: clipped(given.elo, 4000) });
 }
 
 /** ReqPre of an attribute decided by a rule: there is one. */
 export const hasItsRule = ({ decidedBy, elo }: Pick<AttributeGiven, 'decidedBy' | 'elo'>): Verdict<true> =>
-  (decidedBy === 'elo' || decidedBy === 'eloAi') && !elo ? refuse('invalid', 'attributes.ruleRequired') : accept(true);
+  decidedByRule(decidedBy) && !elo ? refuse('invalid', 'attributes.ruleRequired') : accept(true);
 
-/** Whether a rule, the AI, has a say in an attribute. */
-export const decidedByRule = (decidedBy: Decider): boolean => decidedBy === 'elo' || decidedBy === 'eloAi';
-export const decidedByAi = (decidedBy: Decider): boolean => decidedBy === 'ai' || decidedBy === 'eloAi';
-
-/** How the first of the two pre-configured attributes is decided, from the two settings that keep it. */
-export const deciderOfStatus = (byRule: boolean, byAi: boolean): Decider => (byRule ? (byAi ? 'eloAi' : 'elo') : byAi ? 'ai' : 'nobody');
+/** Whether a rule has a say in an attribute. */
+export const decidedByRule = (decidedBy: Decider): boolean => decidedBy === 'elo';
 
 /** The email as a rule sees it: `_` in Elo. */
 export const emailForRules = (email: IncomingEmail, mailboxAddress: string) => ({

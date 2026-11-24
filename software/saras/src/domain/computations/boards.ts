@@ -68,7 +68,7 @@ export interface Conditions {
 /** A text to find anywhere in a column: `%`, `_` and the escape character itself are taken literally. */
 const containing = (text: string): string => '%' + text.replace(/[\\%_]/g, (special) => '\\' + special) + '%';
 
-/** The statuses the values of "Stands in" stand for: an email waiting to be sorted is to handle. */
+/** The statuses the values of "Stands in" stand for. */
 const statusesOf = (values: string[]): EmailStatus[] => values.flatMap((value) => [...(BOXES[value as Box] ?? [])]);
 
 /** One condition: its SQL, given the number of its parameter, and that parameter. */

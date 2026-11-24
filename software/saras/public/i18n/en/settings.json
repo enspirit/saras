@@ -1,6 +1,6 @@
 {
   "title": "Settings",
-  "noKey": "No OpenRouter key: automatic triage and proposals are disabled.",
+  "noKey": "No OpenRouter key: the AI writes no proposal.",
   "signature": "Signature",
   "signaturePlaceholder": "Kind regards,\nFirst Last",
   "signatureHint": "Added as is at the end of each proposal.",
@@ -40,14 +40,11 @@
   "confirmDeleteAccount": "Delete your account {email}? This cannot be undone.",
   "accountDeleted": "Your account was deleted.",
   "aiPrivacy": "AI & privacy",
-  "factSorting": "Sorting",
   "factWriting": "Writing",
   "aiSetBy": "Chosen by the administrators of {organization}, for every member.",
   "aiOf": "The AI of {organization}",
   "aiDoesTitle": "What it does for you",
   "chosenIn": "{page} →",
-  "sentSortingNone": "Nothing is sent to the AI at sorting.",
-  "sentSortingAi": "It is sent the sender, the subject, the beginning of the text and the attachment names.",
   "sentWritingAsked": "An email is sent to the AI only then.",
   "sentWritingFetch": "The content of each email to handle is sent to the AI at fetch."
 }

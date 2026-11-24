@@ -111,7 +111,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `RichEditor` | Squire with an icon toolbar. It can show an `AiNote` and tint its text as a proposal, and highlight passages matching a pattern without changing the text. |
 | `RecipientField` | Addresses as removable chips, with a place to type one more. |
 | `AiNote`, `AiHelp`, `PromptPick`, `ReasonField`, `Caution` | The parts of the reply area that concern the AI (see 6.2). |
-| `Panel`, `Message` | A record with its facts; a mail body. |
+| `Panel`, `Message`, `MessageAsWritten`, `MessageViews` | A record with its facts; a mail body as text; the same as it was written, in a frame; and the two, one at a time. |
 | Toast (`createToast`), `Swatch` | One message at a time, at the top, clear of the reply area; a colour token in the style guide. |
 
 ### Organisms (`organisms/*.ts`, `organisms/*.css`)
@@ -135,7 +135,7 @@ Below 860 px the boxes are a bar at the bottom of the screen, with a fifth entry
 
 ### 6.2 Reading and replying (US-25, US-30 to US-40)
 
-The reading pane has three parts: a header, the email's text, and the reply area docked at the bottom. The text scrolls on its own; when room is short the reply area gives way first and its writing area scrolls, so Send stays in view.
+The reading pane has three parts: a header, the email itself, and the reply area docked at the bottom. The email is a sheet of paper, with a margin, as text and as it was written alike. One written in HTML is shown as written, in a frame as tall as the room it has, on white whatever the theme and in the system's own font where it names none (a frame loads no font of a brand), with "Text only" beside it; the names of its files, in the header, open them. The email scrolls on its own; when room is short the reply area gives way first and its writing area scrolls, so Send stays in view.
 
 - **Header.** Subject, then the decisions about the email: *No reply needed* and *Ignore* while it waits, *Move back to "To handle"* once set aside. Under it the sender (avatar, name, address), "To … · Cc …", attachments as chips, and a short date with the full date as a tooltip. Last, the triage verdict: who sorted it, and why.
 - **Recipients.** To and Cc as removable chips on one line, with *Reply to all* when the email had other recipients.
@@ -150,7 +150,7 @@ An email in **No reply needed** or **Ignored** shows one line in place of the re
 
 ### 6.3 Boxes (US-20 to US-24)
 
-The list header gives the box's name, how many emails it holds, when mail was last fetched, and a fetch button. A row has three lines: sender with its tags (*Priority*, *Not triaged*, *Draft*) and the time; the subject, with the short name of the shared mailbox when there is one; the first words.
+The list header gives the box's name, how many emails it holds, when mail was last fetched, and a fetch button. A row has three lines: sender with its tags (*Priority*, *Draft*) and the time; the subject, with the short name of the shared mailbox when there is one; the first words.
 
 An empty box says so with an icon and a sentence, and links to Mailboxes when none is connected. With no email open, the reading pane names how many are in the box and what to do.
 
@@ -168,7 +168,7 @@ Getting started is a path, shown at the top of each of its screens (US-08). It i
 2. **Folder.** The mailbox's own folders as a list, the inbox first and preselected. The button waits for the first fetch, so that the next screen has emails in it.
 3. **AI key**, only when no key is available and the person is an administrator: the organisation's OpenRouter key, with a link to where one is created, or *Later*.
 4. **Prompt** (administrators): the organisation's one default prompt, to read and adjust, with the other ready-made prompts beside it to add in one click.
-5. **How it works** (administrators): four ready-made ways, each a card saying what the AI does and what it is sent. *I decide everything*; *The AI sorts, I write*; *Proposals waiting for me*; *Drafts in my mailbox*. None sends anything. Applying one sorts again what the first fetch let through, and prepares proposals if asked.
+5. **Writing** (administrators): when the AI writes a proposal of reply, as one choice among three, each saying what the AI is sent. *When I ask*; *At fetch, to review here*; *At fetch, as drafts in the mailbox*. None sends anything. Applying one prepares proposals for what the first fetch brought in, if asked.
 6. **A first email.** The first email to handle, open, with a line in the reply area saying what to try.
 
 Once connected, **Mailboxes** is a table: mailbox, folder watched, last fetched, to handle. *Fetch now* is labelled; changing the folder and disconnecting are icon buttons. A connection error shows as a callout above the table.
@@ -186,7 +186,7 @@ One tab per audience, each with its own address.
 
 - **You:** name and signature, with one Save; password, language and deleting one's account, each in a card of its own.
 - **Organisation** (administrators): its name, and deleting it.
-- **AI & privacy:** the model and the key, beside what the AI does at sorting and at writing with what it is sent at each; then the guarantees as five titled points with their signs, and the one setting that is the user's part.
+- **AI & privacy:** the model and the key, beside when the AI writes with what it is sent then; then the guarantees as five titled points with their signs, and the one setting that is the user's part.
 
 ## 7. Brands
 

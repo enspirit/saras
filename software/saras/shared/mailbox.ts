@@ -52,10 +52,9 @@ export interface MailHost {
   servers: MailServers | null;
 }
 
-/** What a fetch brought in and had sorted, and what went wrong if anything did. */
+/** What a fetch brought in, and what went wrong if anything did. */
 export interface FetchResult {
   fetched: number;
-  triaged: number;
   error: Problem | null;
 }
 
