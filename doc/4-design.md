@@ -122,7 +122,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | --- | --- |
 | `AuthPanel` | The brand's ground with what it guarantees, and a form beside it. |
 | `AppShell` | Navigation and main area. Below 860 px the boxes become a bar at the bottom. |
-| `Page`, `Columns` | A scrolling column from the left edge every page starts at, up to `--page-width`; main content with a narrow aside (260 to 340px). |
+| `Page`, `Columns` | A scrolling column from the left edge every page starts at, up to `--page-width`; main content with a narrow aside (260 to 340px), which stays in view as the page scrolls and scrolls on its own when taller than the window; with nothing shown in it, the main content has the row. |
 | `Mailbox` | List on one side, reading pane on the other; they alternate on a small screen. |
 | `Reading`, `ReadingHeader` | An open email: header, scrolling content, and what is docked under it. |
 | `ReplyDock`, `ClosedDock` | The reply area; the line that stands for it when no reply is expected. |

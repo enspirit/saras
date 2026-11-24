@@ -93,6 +93,7 @@ function askedOf(attribute: Attribute | null, f: AttributeFields): Child[] {
 
 interface AttributeForm {
   form: HTMLFormElement;
+  aside: HTMLElement[];
   byRule: HTMLInputElement;
   /** What is only about the rule, in the form. */
   ruleParts: HTMLElement[];
@@ -102,8 +103,7 @@ interface AttributeForm {
 function attributeForm(attribute: Attribute | null, EloEditor: EloEditorMaker): AttributeForm {
   const f = attributeFields(attribute);
   const { section, editor } = ruleSection(attribute, EloEditor, () => f.values.values());
-  // What the attribute is keeps to a form's width; its rule takes the page, what it can read beside it.
-  const rule = Columns(Card({}, section), [fieldsCard((path) => editor.insert(path)), briefCard({ label: t('rules.guideMore'), href: '#/attributes/guide' })]);
+  const rule = Card({}, section);
   const given = (): AttributeGiven => written(f, editor);
   const save = Button(attribute ? t('common.save') : t('attributes.create'), { variant: 'primary', type: 'submit' });
   const sortAgain = attribute && sortAgainButton(attribute, given);
@@ -116,7 +116,9 @@ function attributeForm(attribute: Attribute | null, EloEditor: EloEditorMaker): 
     rule,
     Actions(save, sortAgain, ButtonLink(t('common.cancel'), { href: '#/attributes' }), attribute && !attribute.system && deleteButton(attribute)),
   );
-  return { form, byRule: f.byRule, ruleParts: sortAgain ? [rule, sortAgain] : [rule] };
+  // Beside the form, while a rule is asked for: what a rule can read, and Elo in brief.
+  const aside = [fieldsCard((path) => editor.insert(path)), briefCard({ label: t('rules.guideMore'), href: '#/attributes/guide' })];
+  return { form, aside, byRule: f.byRule, ruleParts: [rule, ...aside, ...(sortAgain ? [sortAgain] : [])] };
 }
 
 /** The form for a new attribute, or with `key` for one of the organisation's; while a rule is asked for, its rule and what helps write it. */
@@ -124,10 +126,11 @@ export const editAttributePage = guard(async (key: string | null) => {
   const attribute = (await readAttributes()).find((a) => a.key === key) ?? null;
   // The editor is loaded with this page only: it is by far the heaviest thing the interface has.
   const { EloEditor } = await import('../ui/molecules/elo-editor.ts');
-  const { form, byRule, ruleParts } = attributeForm(attribute, EloEditor);
+  const { form, aside, byRule, ruleParts } = attributeForm(attribute, EloEditor);
   shownWhile(byRule, () => byRule.checked, ruleParts);
   shell(Page(
     PageHeader({ title: attribute ? t('attributes.editTitle', { name: attributeName(attribute) }) : t('attributes.newTitle'), crumbs: [{ label: t('attributes.title'), href: '#/attributes' }] }),
-    form,
+    // The form, its buttons under the rule; what helps write the rule beside it, staying in view as the page scrolls.
+    Columns(form, aside),
   ));
 });
