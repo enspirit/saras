@@ -3,6 +3,7 @@
   "refreshing": "Relève…",
   "refreshTitle": "Relever toutes les boîtes",
   "fetched": "{count, plural, =0 {Aucun nouvel email.} one {# email relevé.} other {# emails relevés.}}",
+  "fetchedSome": "{count, plural, one {# email relevé} other {# emails relevés}}, {toCome, plural, one {# plus ancien reste} other {# plus anciens restent}} à venir.",
   "accountError": "{account} : {error}",
   "back": "Retour à la liste",
   "select": "Sélectionnez un email.",

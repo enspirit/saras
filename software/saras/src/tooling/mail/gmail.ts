@@ -1,6 +1,6 @@
 // Gmail through its REST API (scopes gmail.readonly + gmail.compose).
 import type { IncomingEmail } from '../../domain/model/email.ts';
-import type { MailFolder, MailProvider, ListQuery, Sender } from '../../domain/model/mailbox.ts';
+import type { MailFolder, MailProvider, ListQuery, NewEmails, Sender } from '../../domain/model/mailbox.ts';
 import type { OutgoingReply } from '../../domain/model/reply.ts';
 import type { Fetch } from '../fetch.ts';
 import { gmailToEmail } from './gmail/message.ts';
@@ -35,14 +35,15 @@ async function listFolders(api: Api): Promise<MailFolder[]> {
     .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
 }
 
-async function listNew(api: Api, { folder, since, unreadOnly, limit, known }: ListQuery): Promise<IncomingEmail[]> {
+/** Only the most recent messages are looked at, as many as the limit: older ones are not counted, and no later reading brings them. */
+async function listNew(api: Api, { folder, since, unreadOnly, limit, known }: ListQuery): Promise<NewEmails> {
   const after = Math.floor(since.getTime() / 1000);
   const q = encodeURIComponent(`after:${after} -from:me${unreadOnly ? ' is:unread' : ''}`);
   const list = await api<{ messages?: { id: string }[] }>(`/messages?labelIds=${encodeURIComponent(folder)}&q=${q}&maxResults=${limit}`);
   const fresh = (list.messages || []).filter((m) => !known.has(m.id));
   const out: IncomingEmail[] = [];
   for (const { id } of fresh) out.push(gmailToEmail(await api<GmailMessage>(`/messages/${id}?format=full`)));
-  return out;
+  return { emails: out, toCome: 0 };
 }
 
 /** The reply as Gmail takes it: the raw message, in the thread of the original. */

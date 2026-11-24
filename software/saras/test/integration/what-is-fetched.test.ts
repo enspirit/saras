@@ -56,6 +56,38 @@ test('further back, read or not: the rest comes in, and what was already here st
   assert.deepEqual(await subjects(), ['Ten days ago', 'Today read', 'Today unread', 'Twenty days ago read']);
 });
 
+type Told = { fetched: number; toCome: number; kept: string[] };
+
+/** Fetches a mailbox until nothing is left to come: what each fetch said, with the emails kept once it ended, most recent first. */
+async function fetchedToTheEnd(as: typeof me, mailbox: number): Promise<Told[]> {
+  const told: Told[] = [];
+  do {
+    const { fetched, toCome } = (await as('POST', `/mailboxes/${mailbox}/fetch`)).body;
+    told.push({ fetched, toCome, kept: (await as('GET', '/emails?box=todo')).body.emails.map((e: { subject: string }) => e.subject) });
+  } while (told.at(-1)!.toCome > 0);
+  return told;
+}
+
+test('a fetch takes a limited number, the most recent first, and says how many older ones are still to come', async () => {
+  const byAge = ['Yesterday', 'Two days ago', 'Three days ago', 'Four days ago', 'Five days ago'];
+  const few = await startStack({ env: { SYNC_MAX_EMAILS: '2' }, folders: { Clients: [held('Ten days ago', 10), ...byAge.map((subject, i) => held(subject, i + 1)).reverse()] } });
+  after(() => few.stop());
+  const bob = createClient(() => few.url);
+  await signUp(bob, 'bob@corp.example');
+  const mailbox = await connectMailbox(bob, few.imapAccount);
+  // Choosing the folder starts a fetch of its own: whichever fetch answers first, each says what is left once it ended.
+  assert.equal((await bob('PUT', `/mailboxes/${mailbox}/folder`, { folder: 'Clients', days: 7 })).status, 200);
+  const told = await fetchedToTheEnd(bob, mailbox);
+  for (const { fetched, toCome, kept } of told) {
+    assert.ok(fetched <= 2, 'no more at a time than the server is set up for');
+    assert.deepEqual(kept, byAge.slice(0, kept.length), 'the most recent first');
+    assert.equal(toCome, byAge.length - kept.length, 'what is left of the days chosen, and nothing older');
+  }
+  assert.ok(told.length > 1 && told[0]!.toCome > 0, 'the first fetch did not bring everything, and said so');
+  assert.deepEqual(told.at(-1)!.kept, byAge);
+  assert.deepEqual((await bob('POST', `/mailboxes/${mailbox}/fetch`)).body, { fetched: 0, toCome: 0, error: null });
+});
+
 test('who manages a mailbox reads its servers, never its password, and changes the name its replies show', async () => {
   const servers = (await me('GET', `/mailboxes/${id}/servers`)).body;
   assert.deepEqual(servers, { imapHost: '127.0.0.1', imapPort: stack.imapAccount.imapPort, imapSecure: false, smtpHost: '127.0.0.1', smtpPort: stack.imapAccount.smtpPort, smtpSecure: false, username: 'testuser' });

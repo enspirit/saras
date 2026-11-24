@@ -55,6 +55,8 @@ export interface MailHost {
 /** What a fetch brought in, and what went wrong if anything did. */
 export interface FetchResult {
   fetched: number;
+  /** How many more emails the folder holds that later fetches will bring: a fetch takes a limited number, the most recent first. */
+  toCome: number;
   error: Problem | null;
 }
 

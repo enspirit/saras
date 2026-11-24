@@ -8,6 +8,7 @@ import { disconnectMailbox, fetchMailbox, readMailboxes } from '../api/mailboxes
 import { t } from '../i18n.ts';
 import { fmtWhen } from '../i18n/dates.ts';
 import { ActionButton, confirmAction, guard, toast } from './actions.ts';
+import { sayFetched } from './what-was-fetched.ts';
 import { connectMailboxPage } from './connect-mailbox.ts';
 import { editMailboxPage } from './edit-mailbox.ts';
 import { shell } from './shell.ts';
@@ -29,7 +30,7 @@ const KIND: Record<Mailbox['kind'], string> = { imap: 'IMAP / SMTP', google: 'Go
 const fetchButton = (a: Mailbox): HTMLButtonElement => ActionButton(t('mailboxes.syncNow'), t('mailbox.refreshing'), async () => {
   const r = await fetchMailbox(a.id);
   if (r.error) toast(problemText(r.error), true);
-  else toast(t('mailbox.fetched', { count: r.fetched }));
+  else sayFetched(r);
   void mailboxesPage();
 }, { size: 'small', icon: 'refresh-cw' });
 

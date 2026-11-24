@@ -155,7 +155,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 - The server fetches every `SYNC_INTERVAL_MINUTES` minutes (10 by default).
 - **Fetch** at the top of a box fetches all my mailboxes and says how many emails arrived; **Fetch now** does it for one mailbox.
 - With the folder, I choose what is fetched from it: the emails received in the last day, 7, 14 or 30 days (never further back than the server keeps emails), and whether only those I have not read yet in my mailbox. Until I choose, it is the last `SYNC_DAYS` days, read or not. I can change it later from **Mailboxes**, with the folder.
-- A fetch takes the most recent of those emails first, at most `SYNC_MAX_EMAILS` at a time; what was fetched before stays.
+- A fetch takes the most recent of those emails first, at most `SYNC_MAX_EMAILS` at a time; what was fetched before stays. When it leaves older ones for the next fetches, it says how many are still to come.
 - Each mailbox shows its watched folder, when it was last fetched, how many emails are to handle, and its last error if any.
 
 ### US-16 — Disconnect a mailbox

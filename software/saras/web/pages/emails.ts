@@ -11,6 +11,7 @@ import { t } from '../i18n.ts';
 import { fmtDate, fmtWhen } from '../i18n/dates.ts';
 import { showPage } from '../navigation.ts';
 import { ActionButton, guard, toast } from './actions.ts';
+import { sayFetched } from './what-was-fetched.ts';
 import type { BoxOnScreen } from './boxes.ts';
 import { chipFor } from './attribute-values.ts';
 import { emailDetail } from './reading.ts';
@@ -27,15 +28,16 @@ import { MailboxView } from '../ui/organisms/mailbox.ts';
 /** FetchMailbox, for every mailbox in turn: says what came in, or what went wrong where. */
 async function fetchMailboxes(mailboxes: Mailbox[]): Promise<void> {
   if (!mailboxes.length) return void (location.hash = '#/mailboxes');
-  let fetched = 0;
+  const all = { fetched: 0, toCome: 0 };
   const errors: string[] = [];
   for (const a of mailboxes) {
     const r = await fetchMailbox(a.id);
-    fetched += r.fetched;
+    all.fetched += r.fetched;
+    all.toCome += r.toCome;
     if (r.error) errors.push(t('mailbox.accountError', { account: a.email, error: problemText(r.error) }));
   }
   if (errors.length) toast(errors.join(' — '), true);
-  else toast(t('mailbox.fetched', { count: fetched }));
+  else sayFetched(all);
   showPage();
 }
 

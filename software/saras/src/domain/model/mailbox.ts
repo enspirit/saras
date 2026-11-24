@@ -66,6 +66,12 @@ export interface ListQuery {
   known: Set<string>;
 }
 
+/** What a mailbox hands over when its folder is read: the emails brought in, and how many more it has that a later reading will bring. */
+export interface NewEmails {
+  emails: IncomingEmail[];
+  toCome: number;
+}
+
 /** A file attached to an email, as the mailbox hands it over when asked: read, sent to who asked, and not kept. */
 export interface AttachedFile {
   name: string;
@@ -79,8 +85,8 @@ export interface MailProvider {
   verify(): Promise<void>;
   /** The folders that can be watched, the inbox first. */
   listFolders(): Promise<MailFolder[]>;
-  /** Emails of a folder that are not in `known` yet. */
-  listNew(query: ListQuery): Promise<IncomingEmail[]>;
+  /** Emails of a folder that are not in `known` yet: no more than the limit, and how many it left for later. */
+  listNew(query: ListQuery): Promise<NewEmails>;
   send(reply: OutgoingReply): Promise<void>;
   /**
    * The nth file attached to an email, read again from the mailbox; null when the mailbox no

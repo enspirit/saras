@@ -1,6 +1,6 @@
 // Outlook / Microsoft 365 through Microsoft Graph (scopes Mail.ReadWrite + Mail.Send).
 import type { IncomingEmail } from '../../domain/model/email.ts';
-import type { MailFolder, MailProvider, ListQuery, Sender } from '../../domain/model/mailbox.ts';
+import type { MailFolder, MailProvider, ListQuery, NewEmails, Sender } from '../../domain/model/mailbox.ts';
 import type { OutgoingReply } from '../../domain/model/reply.ts';
 import type { HostAccess } from './gmail.ts';
 import { graphToEmail, injectReplyHtml, toRecipients } from './graph/message.ts';
@@ -33,7 +33,8 @@ async function listFolders(api: Api): Promise<MailFolder[]> {
 
 const SELECTED = 'id,internetMessageId,conversationId,subject,from,replyTo,toRecipients,ccRecipients,receivedDateTime,body,internetMessageHeaders';
 
-async function listNew(api: Api, { folder, since, unreadOnly, limit, known }: ListQuery): Promise<IncomingEmail[]> {
+/** Only the most recent messages are looked at, as many as the limit: older ones are not counted, and no later reading brings them. */
+async function listNew(api: Api, { folder, since, unreadOnly, limit, known }: ListQuery): Promise<NewEmails> {
   const params = new URLSearchParams({
     $filter: `receivedDateTime ge ${since.toISOString()}${unreadOnly ? ' and isRead eq false' : ''}`,
     $orderby: 'receivedDateTime desc',
@@ -42,7 +43,7 @@ async function listNew(api: Api, { folder, since, unreadOnly, limit, known }: Li
     $expand: 'attachments($select=name,contentType,size)',
   });
   const page = await api<{ value?: GraphMessage[] }>(`/me/mailFolders/${encodeURIComponent(folder)}/messages?${params}`, {}, { prefer: 'outlook.body-content-type="text"' });
-  return (page.value || []).filter((m) => !known.has(m.id)).map(graphToEmail);
+  return { emails: (page.value || []).filter((m) => !known.has(m.id)).map(graphToEmail), toCome: 0 };
 }
 
 /** createReply gives a draft already threaded and quoting the original; we only add our text. */

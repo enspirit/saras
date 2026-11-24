@@ -8,6 +8,7 @@ import { chooseWatchedFolder, fetchMailbox, readFolders } from '../api/mailboxes
 import { t } from '../i18n.ts';
 import { goTo } from '../navigation.ts';
 import { ActionButton, messageOf, toast } from './actions.ts';
+import { sayFetched } from './what-was-fetched.ts';
 import { leaveStep, PathSteps } from './getting-started/path.ts';
 import { shell } from './shell.ts';
 import { ButtonLink } from '../ui/atoms/button.ts';
@@ -32,7 +33,7 @@ async function watchFolder(account: Mailbox, folder: string, what: WhatIsFetched
   // the newcomer arrives on their emails and not on an empty box.
   const fetched = await fetchMailbox(account.id);
   if (fetched.error) toast(problemText(fetched.error), true);
-  else toast(t('mailbox.fetched', { count: fetched.fetched }));
+  else sayFetched(fetched);
   leaveStep('folder');
 }
 

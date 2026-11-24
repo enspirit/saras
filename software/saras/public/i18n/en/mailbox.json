@@ -3,6 +3,7 @@
   "refreshing": "Fetching…",
   "refreshTitle": "Fetch all mailboxes",
   "fetched": "{count, plural, =0 {No new email.} one {# email fetched.} other {# emails fetched.}}",
+  "fetchedSome": "{count, plural, one {# email fetched} other {# emails fetched}}, {toCome, plural, one {# older one} other {# older ones}} still to come.",
   "accountError": "{account}: {error}",
   "back": "Back to the list",
   "select": "Select an email.",

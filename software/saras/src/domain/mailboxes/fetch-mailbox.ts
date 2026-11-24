@@ -7,7 +7,8 @@
 //   ReqPre   (none: a mailbox that watches no folder is not fetched, and says so as its last error)
 //   ReqPost  an email already kept is left as it is
 //            no further back than the days chosen for the mailbox (those the server is set up for, when none were),
-//            only what is unread when the mailbox says so, and no more at a time than the number the server is set up for
+//            only what is unread when the mailbox says so, and no more at a time than the number the server is set up for,
+//            the most recent first: how many that leaves for later fetches is told
 //            what went wrong, fetching or preparing, is kept as the mailbox's last error
 //            one fetch at a time per mailbox: whoever asks meanwhile shares the one under way,
 //            or waits for its turn when it is under way on another server
@@ -51,26 +52,29 @@ interface Dependencies {
   vault: Vault;
 }
 
+/** What a fetch brought in, and how many more emails it left in the folder for later ones. */
+type Brought = Pick<FetchResult, 'fetched' | 'toCome'>;
+
 /** Brings in what arrived in the folder and keeps it, sorted at once by the rules of the organisation's attributes (SortByRules). */
-async function bringIn({ db, mail, config }: Dependencies, account: AccountRow, folder: string): Promise<number> {
+async function bringIn({ db, mail, config }: Dependencies, account: AccountRow, folder: string): Promise<Brought> {
   const known = await knownIn(db, account.id, folder);
   const since = new Date(Date.now() - daysFetched(account.fetch_days, config) * 86_400_000);
-  const emails = await mail.providerFor(account).listNew({ folder, since, unreadOnly: account.unread_only, limit: config.syncMaxEmails, known });
+  const { emails, toCome } = await mail.providerFor(account).listNew({ folder, since, unreadOnly: account.unread_only, limit: config.syncMaxEmails, known });
   const rules = ruled(await attributesOf(db, await organizationById(db, account.org_id)));
   await db.transaction(async (tx) => {
     for (const email of emails) await keepFetched(tx, account.id, folder, email, sortByRules(rules, email, account.email));
   });
-  return emails.length;
+  return { fetched: emails.length, toCome };
 }
 
 /** The same, a failure being told and not thrown. */
-async function broughtIn(deps: Dependencies, account: AccountRow, folder: string): Promise<{ fetched: number; error: ServerProblem | null }> {
+async function broughtIn(deps: Dependencies, account: AccountRow, folder: string): Promise<Brought & { error: ServerProblem | null }> {
   try {
-    return { fetched: await bringIn(deps, account, folder), error: null };
+    return { ...(await bringIn(deps, account, folder)), error: null };
   } catch (e) {
     // By its kind only: the words of a mail host may name a folder. They are kept with the mailbox, for its members.
     log.warn('mailbox not fetched', { kind: account.kind, ...errorKind(e) });
-    return { fetched: 0, error: problem('sync.fetchFailed', { detail: errorMessage(e) }) };
+    return { fetched: 0, toCome: 0, error: problem('sync.fetchFailed', { detail: errorMessage(e) }) };
   }
 }
 
@@ -81,13 +85,13 @@ const prepared = async (deps: Dependencies, account: AccountRow): Promise<Server
 async function fetchMailbox(deps: Dependencies, account: AccountRow): Promise<SyncResult> {
   const { folder } = account;
   // Nothing is fetched until the user has said which folder to watch.
-  if (!folder) return { fetched: 0, error: problem('mailboxes.folderRequired') };
+  if (!folder) return { fetched: 0, toCome: 0, error: problem('mailboxes.folderRequired') };
   const started = Date.now();
   const brought = await broughtIn(deps, account, folder);
   const error = brought.error ?? (await prepared(deps, account));
   await recordFetch(deps.db, account.id, error);
-  log.info('mailbox fetched', { kind: account.kind, fetched: brought.fetched, problem: error?.code, ms: Date.now() - started });
-  return { fetched: brought.fetched, error };
+  log.info('mailbox fetched', { kind: account.kind, fetched: brought.fetched, toCome: brought.toCome, problem: error?.code, ms: Date.now() - started });
+  return { fetched: brought.fetched, toCome: brought.toCome, error };
 }
 
 /** The same, once no other server is fetching this mailbox: what that one brought in is then known, sorted and prepared, and is not again. */
