@@ -11,5 +11,24 @@
   "priority": "Priority",
   "draft": "Draft",
   "fetchedAt": "Fetched {time}",
-  "count": "{count, plural, one {# email} other {# emails}}"
+  "count": "{count, plural, one {# email} other {# emails}}",
+  "searchLabel": "Search this list",
+  "searchClear": "Clear the search",
+  "found": "{count} of {total}",
+  "noneFound": "No email matches “{search}”.",
+  "searchEverywhere": "Search every box",
+  "selection": {
+    "tick": "Tick this email",
+    "tickAll": "Tick every email shown",
+    "count": "{count, plural, one {# selected} other {# selected}}",
+    "all": "All {count} selected",
+    "allMatching": "Every email that matches is selected",
+    "selectAll": "Select all {count}",
+    "selectAllMatching": "Select every email that matches",
+    "clear": "Clear the selection",
+    "set": "Set",
+    "pane": "Choose what to do with them, or open one to read it.",
+    "done": "{count, plural, =0 {Nothing changed: a replied email stays as it is.} one {# email changed.} other {# emails changed.}}"
+  },
+  "searchedIn": "Sender, subject and text, in {list}."
 }

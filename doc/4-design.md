@@ -93,7 +93,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `Chip` | One value among several, removable; optional icon. |
 | `TodoMark` | A passage left to complete. |
 | `Text`, `Muted`, `Small`, `Strong`, `Code`, `Link`, `Heading`, `List`, `Prose`, `RichText`, `SrOnly` | Text. `Prose` is a plain-text mail body; `RichText` is sanitised HTML. |
-| `BrandMark`, `Spacer` | The brand's name or logo; a push to the end of a row. |
+| `BrandMark`, `Spacer`, `Slot` | The brand's name or logo; a push to the end of a row; a place whose content is replaced without remaking what surrounds it (searching and ticking change the list, never the email open). |
 
 ### Molecules (`molecules/*.ts`, `molecules/*.css`)
 
@@ -107,7 +107,9 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | `Callout`, `Features`, `EmptyState`, `Loading` | Something to know, with room for a control; points of equal weight with their sign; what an empty region says; a screen on its way. |
 | `confirmDialog`, `promptDialog` | A question before something happens, in a native dialog. Destructive ones focus Cancel. |
 | `NavItem` | A navigation entry with icon and count. |
-| `EmailListItem` | Sender, tags and time; subject and shared mailbox; first words. |
+| `EmailListItem`, `TickableEmailListItem` | Sender, tags and time; subject and shared mailbox; first words; the words searched marked. Tickable: a box before it, on hover and once any is ticked. |
+| `SearchField`, `SearchScope` | A list searched as one types, its cross and Escape clearing it; under it, where it searched. |
+| `SelectionBar`, `GroupedMenu` | Above a list some of whose emails are ticked: how many, a box for all or none, the actions, the way out; a menu of choices under their group. |
 | `RichEditor` | Squire with an icon toolbar. It can show an `AiNote` and tint its text as a proposal, and highlight passages matching a pattern without changing the text. |
 | `RecipientField` | Addresses as removable chips, with a place to type one more. |
 | `AiNote`, `AiHelp`, `PromptPick`, `ReasonField`, `Caution` | The parts of the reply area that concern the AI (see 6.2). |

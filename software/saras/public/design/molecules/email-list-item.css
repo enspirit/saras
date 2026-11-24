@@ -20,3 +20,13 @@
 .email-item__subject { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: var(--weight-medium); }
 .email-item__shared { flex: none; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); }
 .email-item__snippet { font-size: var(--text-sm); color: var(--color-text-muted); }
+.email-item__mark { padding: 0 1px; border-radius: 2px; background: var(--color-warn-soft); color: inherit; }
+
+/* ---- An email that can be ticked: its box, shown on hover and once any is ticked ---- */
+.email-item-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; border-bottom: var(--border-width) solid var(--color-line); }
+.email-item-row > .email-item { border-bottom: 0; padding-left: var(--space-2); }
+.email-item-row > .email-item__tick { margin: calc(var(--space-3) + 2px) 0 0 var(--space-4); opacity: 0; }
+.email-item-row:hover > .email-item__tick, .email-item-row > .email-item__tick:focus-visible,
+.email-item-row--ticking > .email-item__tick, .email-item-row--ticked > .email-item__tick { opacity: 1; }
+.email-item-row--ticked { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
+.email-item-row:has(> .email-item[aria-current="true"]) { background: var(--color-accent-soft); }

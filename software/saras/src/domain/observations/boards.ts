@@ -5,7 +5,8 @@ import { conditionsOf, filterGiven, managesBoard } from '../computations/boards.
 import { boardFor, boardsSeenBy } from '../state/boards.ts';
 import type { BoardRow } from '../state/boards.ts';
 import type { Actor } from '../world.ts';
-import { SEEN_BY_MEMBER, emailSummaries } from './emails.ts';
+import { searchGiven } from '../computations/search.ts';
+import { SEEN_BY_MEMBER, emailSummaries, emailsOfView } from './emails.ts';
 
 /** How many of the emails a member may see a filter keeps. */
 async function countOf(db: Db, { member, organization }: Actor, filter: BoardFilter): Promise<number> {
@@ -27,10 +28,10 @@ export async function boardsFor(db: Db, actor: Actor): Promise<Board[]> {
   return boards;
 }
 
-/** A board, with the 200 most recent emails it shows this member: only those of mailboxes they may use. */
-export async function emailsOfBoard(db: Db, actor: Actor, boardId: unknown): Promise<EmailsOfBoard> {
+/** A board, with the 200 most recent emails it shows this member, as searched: only those of mailboxes they may use. */
+export async function emailsOfBoard(db: Db, actor: Actor, boardId: unknown, search: unknown): Promise<EmailsOfBoard> {
   const board = await boardSeenBy(db, actor, await boardFor(db, actor, boardId));
-  return { board, emails: await emailSummaries(db, actor, conditionsOf(board.filter, 3)) };
+  return { board, emails: await emailsOfView(db, actor, { board: board.id, search: searchGiven(search) }) };
 }
 
 /** How many of the most recent matches are told when a filter is tried. */

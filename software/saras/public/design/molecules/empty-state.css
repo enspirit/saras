@@ -16,3 +16,4 @@
 .empty__title { font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-heading); line-height: var(--leading-tight); color: var(--color-text); }
 .empty__text { max-width: 44ch; }
 .empty__action { margin-top: var(--space-3); }
+.empty__action > .actions { justify-content: center; }

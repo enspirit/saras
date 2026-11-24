@@ -11,5 +11,24 @@
   "priority": "Prioritaire",
   "draft": "Brouillon",
   "fetchedAt": "Relevé {time}",
-  "count": "{count, plural, one {# email} other {# emails}}"
+  "count": "{count, plural, one {# email} other {# emails}}",
+  "searchLabel": "Rechercher dans cette liste",
+  "searchClear": "Effacer la recherche",
+  "found": "{count} sur {total}",
+  "noneFound": "Aucun email ne correspond à « {search} ».",
+  "searchEverywhere": "Chercher dans toutes les boîtes",
+  "selection": {
+    "tick": "Cocher cet email",
+    "tickAll": "Cocher tous les emails affichés",
+    "count": "{count, plural, one {# sélectionné} other {# sélectionnés}}",
+    "all": "Les {count} sont sélectionnés",
+    "allMatching": "Tous les emails qui correspondent sont sélectionnés",
+    "selectAll": "Sélectionner les {count}",
+    "selectAllMatching": "Sélectionner tous ceux qui correspondent",
+    "clear": "Désélectionner",
+    "set": "Définir",
+    "pane": "Choisissez quoi en faire, ou ouvrez-en un pour le lire.",
+    "done": "{count, plural, =0 {Rien n’a changé : un email répondu reste tel quel.} one {# email modifié.} other {# emails modifiés.}}"
+  },
+  "searchedIn": "Expéditeur, objet et texte, dans {list}."
 }

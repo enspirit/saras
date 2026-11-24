@@ -13,9 +13,15 @@ export interface BoxOnScreen {
   icon: IconName;
 }
 
+/** A box, or every box at once. */
+export type ListOnScreen = Omit<BoxOnScreen, 'id'> & { id: Box | 'all' };
+
 export const BOXES_ON_SCREEN: BoxOnScreen[] = [
   { id: 'todo', path: 'inbox', label: 'box.todo.label', empty: 'box.todo.empty', icon: 'mail' },
   { id: 'none', path: 'no-reply', label: 'box.none.label', empty: 'box.none.empty', icon: 'mail-check' },
   { id: 'sent', path: 'replied', label: 'box.sent.label', empty: 'box.sent.empty', icon: 'reply' },
   { id: 'ignored', path: 'ignored', label: 'box.ignored.label', empty: 'box.ignored.empty', icon: 'archive' },
 ];
+
+/** Every box at once: where a search goes beyond the box it was made in. In no menu. */
+export const EVERY_BOX: ListOnScreen = { id: 'all', path: 'search', label: 'box.all.label', empty: 'box.all.empty', icon: 'search' };

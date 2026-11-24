@@ -1,16 +1,15 @@
 /* ---- Mailbox: list and reading pane ---- */
 .mailbox { display: grid; grid-template-columns: minmax(280px, var(--list-width)) 1fr; flex: 1; min-height: 0; }
 .mailbox__list { overflow-y: auto; background: var(--color-surface); border-right: var(--border-width) solid var(--color-line); }
+.mailbox__list-top { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--color-surface); border-bottom: var(--border-width) solid var(--color-line); }
+.mailbox__list-top > .search-field { margin: 0 var(--space-3) var(--space-3) var(--space-4); }
 .mailbox__list-head {
-  position: sticky; top: 0; z-index: var(--z-sticky);
   display: flex; align-items: center; gap: var(--space-2);
   min-height: calc(var(--control-lg) + var(--space-4));
   padding: 0 var(--space-3) 0 var(--space-4);
-  background: var(--color-surface);
-  border-bottom: var(--border-width) solid var(--color-line);
 }
 .mailbox__count { font-size: var(--text-sm); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .mailbox__meta { margin-left: auto; font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
 .mailbox__detail { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
-.mailbox__detail > .empty { flex: 1; }
+.mailbox__detail > .empty, .mailbox__detail > .slot > .empty { flex: 1; }
 .mailbox__back { display: none; padding: var(--space-2) var(--space-3) 0; background: var(--color-surface); }

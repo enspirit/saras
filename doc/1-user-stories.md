@@ -20,7 +20,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
 | [J. Boards and attributes](#j-boards) | US-90 – US-96 |
 | [B. Mailboxes](#b-mailboxes) | US-10 – US-17 |
-| [C. Sorting and the four boxes](#c-sorting-and-the-four-boxes) | US-20 – US-25 |
+| [C. Sorting and the four boxes](#c-sorting-and-the-four-boxes) | US-20 – US-27 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
 | [E. Prompts](#e-prompts) | US-50 – US-53 |
 | [F. Settings](#f-settings) | US-60 – US-69 |
@@ -218,6 +218,22 @@ How the screens are designed and built is in [the design document](4-design.md).
 - Past the retention period the content is erased and the email says so.
 
 ---
+
+### US-26 — Search a list
+**As** a member, **I want** to find an email in a box or a board by a few words, **so that** I need not scroll for it.
+
+- A field above the list searches it as I type; `/` reaches it from anywhere but a field, Escape clears it.
+- Every word must be found in who sent the email (name or address), its subject or its text, whatever the case. The words found are marked, and the first lines shown are taken around the first word.
+- The count says how many of the list match. The search is kept in the address, so a list searched can be shared or come back to; opening an email keeps it.
+- From a box, one click searches every box. A board is searched among what it shows. An email whose text was erased past retention is still found by its sender and subject. Nothing is sent to an AI.
+
+### US-27 — Act on several emails at once
+**As** a member, **I want** to tick several emails and say at once that they need no reply, or give them a value, **so that** a morning's newsletters or a client's thread take one gesture.
+
+- A box before each email, shown on hover and on every email once one is ticked; Shift ticks every email from the last one ticked.
+- Above the list, while any is ticked: how many, a box that ticks every email shown or none, the moves the box allows (No reply needed, Ignore, Move back to "To handle"), and **Set**, which gives every attribute's values, or none, to all of them. The reading pane says the same while no email is open.
+- When every email shown is ticked and the list holds more, I can select all of them: the server is then told the list (its box or board, and what is searched), never each email.
+- A replied email stays where it is. A value set so is mine, as when set on one email. Only emails I may see are touched.
 
 ## D. Writing and sending a reply
 

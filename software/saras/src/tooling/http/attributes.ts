@@ -3,6 +3,7 @@ import { createAttribute } from '../../domain/attributes/create-attribute.ts';
 import { deleteAttribute } from '../../domain/attributes/delete-attribute.ts';
 import { editAttribute } from '../../domain/attributes/edit-attribute.ts';
 import { setEmailAttribute } from '../../domain/attributes/set-email-attribute.ts';
+import { setAttributeOfSelection } from '../../domain/attributes/set-attribute-of-selection.ts';
 import { SKILL_NAME, ruleWritingSkill } from '../../domain/computations/rule-writing-skill.ts';
 import { checkRule, tryRule } from '../../domain/observations/attributes.ts';
 import { sortAgainByRule } from '../../domain/sorting/sort-again-by-rule.ts';
@@ -35,6 +36,9 @@ const skill: Handle = async ({ world }, req, res) => {
   res.set({ 'content-type': 'application/zip', 'content-disposition': `attachment; filename="${SKILL_NAME}.zip"` }).send(archive);
 };
 
+const setOnSelection: Handle = async ({ world }, req, res) =>
+  void res.json(await setAttributeOfSelection(world, actorOf(req), req.body.selection, req.params.key, req.body.value));
+
 const setOnEmail: Handle = async ({ world }, req, res) => {
   await setEmailAttribute(world, actorOf(req), req.params.id, req.params.key, req.body.value);
   done(res);
@@ -50,5 +54,6 @@ export const ATTRIBUTES: Route[] = [
   { method: 'put', path: '/attributes/:key', handle: edit },
   { method: 'delete', path: '/attributes/:key', handle: remove },
   { method: 'post', path: '/attributes/:key/sort-again', handle: sortAgain },
+  { method: 'post', path: '/emails/selection/attributes/:key', handle: setOnSelection },
   { method: 'put', path: '/emails/:id/attributes/:key', handle: setOnEmail },
 ];

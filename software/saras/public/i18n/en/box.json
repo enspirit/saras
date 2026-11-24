@@ -14,5 +14,9 @@
   "ignored": {
     "label": "Ignored",
     "empty": "No ignored email."
+  },
+  "all": {
+    "label": "Every box",
+    "empty": "No email."
   }
 }

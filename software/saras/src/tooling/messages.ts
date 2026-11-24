@@ -70,6 +70,7 @@ export const MESSAGES = {
   'prompts.incomplete': 'Name and instructions are required.',
   'emails.notFound': 'Email not found.',
   'emails.invalidStatus': 'Invalid status.',
+  'emails.selectionInvalid': 'Choose the emails to act on: those ticked (at most {max}), or all of a box or a board.',
   'emails.alreadySent': 'A reply has already been sent.',
   'emails.alreadyHandled': 'A reply has already been handled for this email.',
   'emails.attachmentNotFound': 'This file is no longer in the mailbox.',

@@ -65,6 +65,7 @@
   "emails": {
     "notFound": "Email not found.",
     "invalidStatus": "Invalid status.",
+    "selectionInvalid": "Choose the emails to act on: those ticked (at most {max}), or all of a box or a board.",
     "alreadySent": "A reply has already been sent.",
     "alreadyHandled": "A reply has already been handled for this email.",
     "attachmentNotFound": "This file is no longer in the mailbox.",

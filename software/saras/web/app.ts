@@ -15,7 +15,7 @@ import { editBoardPage } from './pages/edit-board.ts';
 import { newPasswordPage } from './pages/lost-password.ts';
 import { invitationPage } from './pages/accepting-invitation.ts';
 import { messageOf, toast } from './pages/actions.ts';
-import { BOXES_ON_SCREEN } from './pages/boxes.ts';
+import { BOXES_ON_SCREEN, EVERY_BOX } from './pages/boxes.ts';
 import { emailsPage } from './pages/emails.ts';
 import { firstPromptPage } from './pages/getting-started/first-prompt.ts';
 import { organisationKeyPage } from './pages/getting-started/organisation-key.ts';
@@ -62,10 +62,10 @@ function showGettingStarted(part: string): void {
 }
 
 /** A board, the form that changes it, or the form for a new one. */
-function showBoards(part: string, id: number | null, email: string | null): void {
+function showBoards(part: string, id: number | null, email: string | null, search: string): void {
   if (part === 'new' || !id) void editBoardPage(null);
   else if (part === 'edit') void editBoardPage(id);
-  else void boardPage(id, Number(email) || null);
+  else void boardPage(id, Number(email) || null, search);
 }
 
 /** The attributes, the form that changes one (named by the last part of the address), the form for a new one, or the guide to writing a rule. */
@@ -79,13 +79,13 @@ function showAttributes(part: string): void {
 /** Shows the page of the current URL. Pages report their own failures, so nothing is awaited. */
 function showPageOfAddress(): void {
   const r = route();
-  const box = BOXES_ON_SCREEN.find((b) => b.path === r.page);
-  if (box) void emailsPage(box, r.id);
+  const box = [...BOXES_ON_SCREEN, EVERY_BOX].find((b) => b.path === r.page);
+  if (box) void emailsPage(box, r.id, r.query.get('search') ?? '');
   else if (r.page === 'prompts' && isAdmin()) void promptsPage(r.part === 'new' ? 'new' : r.id);
   else if (r.page === 'members' && isAdmin()) void membersPage();
   else if (r.page === 'mailboxes') void mailboxesPage(r.part, r.id, r.query.get('error'), r.query.get('detail') ?? '');
   else if (r.page === 'settings') void settingsPage(r.part);
-  else if (r.page === 'boards') showBoards(r.part, r.id, r.query.get('email'));
+  else if (r.page === 'boards') showBoards(r.part, r.id, r.query.get('email'), r.query.get('search') ?? '');
   else if (r.page === 'attributes' && isAdmin()) showAttributes(r.part);
   else if (r.page === 'more') morePage();
   else if (r.page === 'welcome') showGettingStarted(r.part);

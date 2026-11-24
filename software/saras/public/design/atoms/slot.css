@@ -1,0 +1,2 @@
+/* ---- Slot: a place whose content is replaced; no box of its own ---- */
+.slot { display: contents; }

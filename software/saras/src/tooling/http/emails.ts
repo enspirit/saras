@@ -6,11 +6,12 @@ import { Refusal } from '../../domain/refusal.ts';
 import { ignoreEmail } from '../../domain/sorting/ignore-email.ts';
 import { markNoReplyNeeded } from '../../domain/sorting/mark-no-reply-needed.ts';
 import { moveBackToHandle } from '../../domain/sorting/move-back-to-handle.ts';
+import { correctSortingOfSelection } from '../../domain/sorting/correct-sorting-of-selection.ts';
 import { emailFor } from '../../domain/state/emails.ts';
 import { actorOf, done } from './route.ts';
 import type { Handle, Route } from './route.ts';
 
-const box: Handle = async ({ world }, req, res) => void res.json(await emailsOfBox(world.db, actorOf(req), req.query.box));
+const box: Handle = async ({ world }, req, res) => void res.json(await emailsOfBox(world.db, actorOf(req), req.query.box, req.query.search));
 
 const read: Handle = async ({ world }, req, res) => void res.json(await emailWithItsReply(world.db, actorOf(req), req.params.id, world.config));
 
@@ -54,8 +55,13 @@ const correctSorting: Handle = async ({ world }, req, res) => {
   done(res);
 };
 
+/** Several emails at once: which, in the body (ticked, or all of a view), never in the address. */
+const correctSelection: Handle = async ({ world }, req, res) => void res.json(await correctSortingOfSelection(world, actorOf(req), req.body.selection, req.body.status));
+
 export const EMAILS: Route[] = [
   { method: 'get', path: '/emails', handle: box },
+  // Before the routes of one email, whose number would otherwise be read as "selection".
+  { method: 'post', path: '/emails/selection/status', handle: correctSelection },
   { method: 'get', path: '/emails/:id', handle: read },
   { method: 'get', path: '/emails/:id/html', handle: asWritten },
   { method: 'get', path: '/emails/:id/attachments/:index', handle: file },

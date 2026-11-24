@@ -65,6 +65,7 @@
   "emails": {
     "notFound": "Email introuvable.",
     "invalidStatus": "Statut invalide.",
+    "selectionInvalid": "Choisissez les emails concernés : ceux cochés ({max} au plus), ou tous ceux d’une boîte ou d’un tableau.",
     "alreadySent": "Réponse déjà envoyée.",
     "alreadyHandled": "Une réponse a déjà été traitée pour cet email.",
     "attachmentNotFound": "Ce fichier n’est plus dans la boîte.",

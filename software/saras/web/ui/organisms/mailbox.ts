@@ -5,13 +5,15 @@ import type { Child } from '../dom.ts';
 
 export interface MailboxOptions {
   title: string;
-  /** How many emails the box holds. */
-  count?: number;
+  /** How many emails the box holds: a number, or what says it (a Slot, when it changes). */
+  count?: Child;
   /** A short fact about the list, e.g. when mail was last fetched. */
   meta?: string;
   /** A control at the end of the head, e.g. a refresh button. */
   action?: Child;
-  /** EmailListItem nodes. */
+  /** Under the head, and staying with it as the list scrolls: a search field, what is ticked. */
+  tools?: Child;
+  /** EmailListItem nodes, or a Slot of them. */
   items: Node[];
   /** Shown in the list when it has no item (an EmptyState). */
   empty: Child;
@@ -25,10 +27,12 @@ export interface MailboxOptions {
 }
 
 /** List of emails on one side, reading pane on the other. */
-export function MailboxView({ title, count, meta, action, items, empty, backHref, backLabel, idle, detail }: MailboxOptions): HTMLDivElement {
+export function MailboxView({ title, count, meta, action, tools, items, empty, backHref, backLabel, idle, detail }: MailboxOptions): HTMLDivElement {
   return h('div', { class: cx('mailbox', Boolean(detail) && 'mailbox--reading') },
     h('section', { class: 'mailbox__list' },
-      h('div', { class: 'mailbox__list-head' }, Heading(2, title), count ? h('span', { class: 'mailbox__count' }, count) : null, meta && h('span', { class: 'mailbox__meta' }, meta), action),
+      h('div', { class: 'mailbox__list-top' },
+        h('div', { class: 'mailbox__list-head' }, Heading(2, title), count ? h('span', { class: 'mailbox__count' }, count) : null, meta && h('span', { class: 'mailbox__meta' }, meta), action),
+        tools),
       items.length ? items : empty,
     ),
     h('section', { class: 'mailbox__detail' },

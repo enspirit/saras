@@ -15,7 +15,7 @@ import { emailFor } from '../state/emails.ts';
 import type { Actor, World } from '../world.ts';
 
 /** ReqPre: null to take the value away, or one of the attribute's values, by its key. */
-function valueOf(attribute: Attribute, given: unknown): string | null {
+export function valueOf(attribute: Attribute, given: unknown): string | null {
   if (given === null || given === '') return null;
   const value = attribute.values.find((v) => v.key === String(given));
   if (!value || attribute.key === STATUS) throw new Refusal('invalid', 'attributes.valueUnknown');

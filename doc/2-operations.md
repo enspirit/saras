@@ -147,6 +147,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **MarkNoReplyNeeded** | Member | An email not replied → no reply needed | May use its mailbox | The verdict becomes the member's | "No reply needed" · `POST /emails/:id/status` |
 | **IgnoreEmail** | Member | An email not replied → ignored | same | same | "Ignore" · same route |
 | **MoveBackToHandle** | Member | An email not replied → to handle | same | same | "Move back to 'To handle'" · same route |
+| **CorrectSortingOfSelection** | Member | Emails ticked, or all of a box or a board as searched → each not replied stands where the member says | One of the three statuses above · at most 500 ticked · only what the member may see is touched; a board must be one they see | One statement whatever their number; "all" is named by its view, never email by email · a replied email is left as it is | the bar above a list once an email is ticked · `POST /emails/selection/status` (the selection in the body) |
 
 An email is sorted when it is fetched, by the rules of the attributes (**SortByRules**, under Attributes), and afterwards by members. The AI sorts nothing ([decision 0011](decisions/0011-the-ai-does-not-sort.md)).
 
@@ -182,6 +183,7 @@ An email is sorted when it is fetched, by the rules of the attributes (**SortByR
 | **SortByRules** | Backend | An email just fetched → it has, for each attribute whose rule speaks of it, that value, as the rule's | | A rule that says nothing, fails or runs too long leaves the attribute undecided · "Stands in" undecided, the email is to handle, as nobody's decision · a rule cannot mark an email as replied | part of FetchMailbox (`sorting/sort-by-rules.ts`) |
 | **SortAgainByRule** | Administrator | An attribute decided by a rule, the emails kept → each has for it what the rule says now | Administrator · decided by a rule Elo can read | A value set by hand stays · a value the rule had given goes where it no longer speaks · "Stands in": emails replied, placed by a member, or fetched before their headers were kept stay; one the rule no longer places is to handle | "Save and apply to the emails already kept" on the attribute · `POST /attributes/:key/sort-again` |
 | **SetEmailAttribute** | Member | An email → it has this value for the attribute, as the member's, or none | May use the email's mailbox · a value of the attribute · not "Stands in" | Not overwritten by later sorting | the selects above an email · `PUT /emails/:id/attributes/:key` |
+| **SetAttributeOfSelection** | Member | Emails ticked, or all of a box or a board as searched → each has this value for the attribute, as the member's, or none | As SetEmailAttribute · at most 500 ticked | As SetEmailAttribute · one statement whatever their number; their other values are kept | "Set" in the bar above a list · `POST /emails/selection/attributes/:key` |
 
 Observations: `GET /attributes`; `POST /attributes/try` (what a rule would say of the member's twenty most recent emails, changing none). `POST /attributes/check` (what is wrong in a rule being written, each problem with its line, its column and the field probably meant: `computations/rule-problems.ts`). `GET /attributes/:key/skill` hands an AI agent what it needs to write the rule of that attribute (`computations/rule-writing-skill.ts`).
 
@@ -197,7 +199,7 @@ The rule "Stands in" starts with is in `computations/default-rules.ts`: what use
 | **EditBoard** | Member | A board → with this name, this filter, shared or not | Manages it (its owner; a shared one, an administrator) · a name · only an administrator shares | | pencil on the board · `PUT /boards/:id` |
 | **DeleteBoard** | Member | A board → none | Manages it | The emails it showed are untouched | "Delete the board" in its form · `DELETE /boards/:id` |
 
-Observations: `GET /boards` (the boards a member sees, each with how many emails it shows them), `GET /boards/:id/emails`, `POST /boards/try` (what a filter being written would show: how many emails, and the five most recent; nothing is kept).
+Observations: `GET /boards` (the boards a member sees, each with how many emails it shows them), `GET /boards/:id/emails` (searched as `/emails` is), `POST /boards/try` (what a filter being written would show: how many emails, and the five most recent; nothing is kept).
 
 ### Retention
 
@@ -207,7 +209,7 @@ Observations: `GET /boards` (the boards a member sees, each with how many emails
 
 ### Observations
 
-Routes that only read state: `GET /public`, `/me`, `/mailboxes`, `/mailboxes/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/ready-made`, `/prompts/:id/corrections`, `/members`, `/invitations`, `/emails`, `/emails/:id`, `/emails/:id/html` (the email as a document for a frame, rebuilt, under a policy of its own: [decision 0013](decisions/0013-an-email-is-shown-as-written-in-a-document-that-does-nothing.md)), `/emails/:id/attachments/:n` (asks the mailbox for the file, and keeps nothing of it). None changes state. Their queries are in `src/domain/observations/`.
+Routes that only read state: `GET /public`, `/me`, `/mailboxes`, `/mailboxes/:id/folders` (asks the provider), `/mail/host` (asks the DNS), `/prompts`, `/prompts/ready-made`, `/prompts/:id/corrections`, `/members`, `/invitations`, `/emails` (a box, or every box with `box=all`; `search`: every word in the sender, the subject or the text, the snippet taken around the first), `/emails/:id`, `/emails/:id/html` (the email as a document for a frame, rebuilt, under a policy of its own: [decision 0013](decisions/0013-an-email-is-shown-as-written-in-a-document-that-does-nothing.md)), `/emails/:id/attachments/:n` (asks the mailbox for the file, and keeps nothing of it). None changes state. Their queries are in `src/domain/observations/`.
 
 ### Chains
 

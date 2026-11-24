@@ -43,6 +43,21 @@ export interface EmailSummary {
   attributes: Record<string, ValueOfEmail>;
 }
 
+/** Where a list of emails is looked at: a box (or every box), or a board; and what is searched in it. */
+export interface View {
+  box?: Box | 'all';
+  board?: number;
+  search?: string;
+}
+
+/** The emails an action on several is for: those ticked in the list, or every email of a view, however many, named by the view rather than one by one. */
+export type Selection = { ids: number[] } | { all: View };
+
+/** What an action on several emails did: how many changed. A replied email is left as it is. */
+export interface SelectionDone {
+  changed: number;
+}
+
 /** The most recent emails of a box, with how many each box holds. */
 export interface EmailsOfBox {
   emails: EmailSummary[];

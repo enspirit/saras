@@ -8,7 +8,7 @@ import type { Handle, Route } from './route.ts';
 
 const list: Handle = async ({ world }, req, res) => void res.json(await boardsFor(world.db, actorOf(req)));
 
-const emails: Handle = async ({ world }, req, res) => void res.json(await emailsOfBoard(world.db, actorOf(req), req.params.id));
+const emails: Handle = async ({ world }, req, res) => void res.json(await emailsOfBoard(world.db, actorOf(req), req.params.id, req.query.search));
 
 const tryIt: Handle = async ({ world }, req, res) => void res.json(await tryFilter(world.db, actorOf(req), req.body.filter));
 
