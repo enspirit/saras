@@ -93,7 +93,7 @@ export function decidedFrom(answer: unknown, values: AttributeValue[]): Decided 
   return value ? { value: value.key, reason: reasonKept(given.reason) } : null;
 }
 
-/** The values of the two pre-configured attributes: fixed, because the application relies on them. */
+/** The values of the two pre-configured attributes: fixed, because the application relies on them. Their colours are what they start with. */
 export const STATUS_VALUES: AttributeValue[] = [
   { key: 'todo', label: 'To handle', color: 'purple' },
   { key: 'none', label: 'No reply needed', color: 'grey' },
@@ -107,6 +107,19 @@ export const PRIORITY_VALUES: AttributeValue[] = [
 ];
 
 export const isSystem = (key: string): boolean => key === STATUS || key === PRIORITY;
+
+/**
+ * The values of a pre-configured attribute in the colours given for them. Each value keeps its
+ * place, so the colour given at its place is its own; where none we know is given, it keeps the one it has.
+ */
+export const recolored = (values: AttributeValue[], given: unknown): AttributeValue[] =>
+  values.map((value, place) => ({ ...value, color: oneOf(VALUE_COLORS, (Array.isArray(given) ? given[place] : undefined)?.color, value.color ?? 'grey') }));
+
+/** The same from how the colours are kept: by the key of each value. */
+export function inColorsKept(values: AttributeValue[], valuesJson: string | undefined): AttributeValue[] {
+  const kept = JSON.parse(valuesJson || '[]') as { key?: string; color?: string }[];
+  return recolored(values, values.map(({ key }) => kept.find((one) => one.key === key)));
+}
 
 /** An attribute as it is told, from how it is kept. */
 export interface AttributeKept {

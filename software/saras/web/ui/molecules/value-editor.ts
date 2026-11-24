@@ -21,7 +21,7 @@ export interface ValueEditorOptions {
   values: EditedValue[];
   /** The colours a value can take, in the order they are offered. */
   colors: readonly Tone[];
-  /** Shown as they are, with nothing to change. */
+  /** None is added, removed or renamed: only the colour of each can be changed. */
   fixed?: boolean;
   placeholder: string;
   /** The accessible names: of the button that opens the colours of a value, of each colour, of the button that removes a value. */
@@ -38,12 +38,13 @@ const Palette = (value: EditedValue, { colors, colorLabel, colorName }: ValueEdi
     h('button', { class: cx('value-editor__swatch', toneClass(color)), type: 'button', 'aria-label': colorName(color), title: colorName(color), 'aria-pressed': String(color === value.color), onclick: () => pick(color) },
       color === value.color && Icon('check', { size: 'small' }))));
 
-/** One value: its dot, which opens its colours, its label, and the way to remove it. */
+/** One value: its dot, which opens its colours, its label, and the way to remove it unless the values are fixed. */
 function EditedChip(value: EditedValue, options: ValueEditorOptions, values: EditedValue[], changed: Change): HTMLSpanElement {
-  const { colorLabel, removeLabel } = options;
+  const { colorLabel, removeLabel, fixed } = options;
   const dot = h('button', { class: 'value-editor__dot', type: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-label': colorLabel(value.label), title: colorLabel(value.label) });
   const remove = (): void => void (values.splice(values.indexOf(value), 1), changed());
-  const chip = ValueChip([dot, value.label, h('button', { class: 'value-editor__remove', type: 'button', 'aria-label': removeLabel(value.label), title: removeLabel(value.label), onclick: remove }, Icon('x', { size: 'small' }))], { color: value.color, plain: true });
+  const removal = !fixed && h('button', { class: 'value-editor__remove', type: 'button', 'aria-label': removeLabel(value.label), title: removeLabel(value.label), onclick: remove }, Icon('x', { size: 'small' }));
+  const chip = ValueChip([dot, value.label, removal], { color: value.color, plain: true });
   const item = h('span', { class: 'value-editor__item' }, chip);
   dot.addEventListener('click', popover(item, dot, (close) => Palette(value, options, (color) => (close(), (value.color = color), changed()))));
   return item;
@@ -69,17 +70,17 @@ function AddInput(placeholder: string, values: EditedValue[], changed: Change): 
   return input;
 }
 
-/** The values of a choice: typed one by one, each with a colour chosen among a few, in the order they are given. */
+/** The values of a choice: typed one by one, each with a colour chosen among a few, in the order they are given. Fixed, they only change colour. */
 export function ValueEditor(options: ValueEditorOptions): ValueEditorHandle {
   const values = options.values.map((value) => ({ ...value }));
   const element = h('div', { class: 'value-editor' });
   const changed = (refocus = false): void => (render(refocus), void element.dispatchEvent(new Event('change')));
   const input = AddInput(options.placeholder, values, () => changed(true));
   function render(refocus = false): void {
-    const chips = options.fixed ? values.map((value) => ValueChip(value.label, { color: value.color })) : values.map((value) => EditedChip(value, options, values, () => changed()));
+    const chips = values.map((value) => EditedChip(value, options, values, () => changed()));
     element.replaceChildren(...chips, ...(options.fixed ? [] : [input]));
     if (refocus) input.focus();
   }
   render();
-  return { element, values: () => [...values, ...(input.value.trim() ? [{ label: input.value.trim(), color: 'grey' as Tone }] : [])] };
+  return { element, values: () => [...values, ...(!options.fixed && input.value.trim() ? [{ label: input.value.trim(), color: 'grey' as Tone }] : [])] };
 }

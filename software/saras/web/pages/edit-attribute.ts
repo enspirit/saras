@@ -36,7 +36,7 @@ interface AttributeFields {
   byRule: HTMLInputElement;
 }
 
-/** The values of a choice, to type and colour; those of a pre-configured attribute are shown as they are. */
+/** The values of a choice, to type and colour; those of a pre-configured attribute only change colour. */
 const valuesField = (attribute: Attribute | null): ValueEditorHandle => ValueEditor({
   values: attribute?.kind === 'choice' ? attribute.values.map((value) => ({ label: valueLabel(attribute, value), color: value.color ?? 'grey' })) : [],
   colors: VALUE_COLORS,
@@ -54,7 +54,7 @@ function shownWhile(control: HTMLElement, when: () => boolean, parts: HTMLElemen
   show();
 }
 
-/** The fields. Of a pre-configured attribute only how it is decided can be changed. */
+/** The fields. Of a pre-configured attribute only how it is decided and the colours of its values can be changed. */
 const attributeFields = (attribute: Attribute | null): AttributeFields => ({
   name: Input({ required: true, maxLength: 60, value: attribute ? attributeName(attribute) : '', disabled: attribute?.system }),
   kind: Select(ATTRIBUTE_KINDS.map((kind) => ({ value: kind, label: t(KIND_LABEL[kind]), selected: attribute?.kind === kind })), { disabled: attribute?.system }),
@@ -82,7 +82,7 @@ const deleteButton = (attribute: Attribute): HTMLButtonElement => ActionButton(t
 
 /** What is asked of an attribute, in the order of the form. The values of a "member" attribute are the members: nothing to type. */
 function askedOf(attribute: Attribute | null, f: AttributeFields): Child[] {
-  const values = Field(t('attributes.values'), f.values.element, { hint: !attribute?.system && t('attributes.valuesHint') });
+  const values = Field(t('attributes.values'), f.values.element, { hint: t(attribute?.system ? 'attributes.colorsHint' : 'attributes.valuesHint') });
   shownWhile(f.kind, () => f.kind.value !== 'member', [values]);
   return [
     Field(t('attributes.name'), f.name, { hint: attribute?.system && t('attributes.fixed') }),

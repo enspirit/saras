@@ -532,8 +532,8 @@ These are behaviours of the system rather than screens, but they are what the pr
 ### US-93 — Give emails our own attributes
 **As** an administrator, **I want** to define the attributes we organise ourselves by (a topic, an assignee, urgent or not), **so that** boards can show our mail the way we work.
 
-- **Configuration → Sorting** lists the organisation's attributes (the page was first called Attributes; its things are still attributes). Two are pre-configured, with fixed values the application relies on: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
-- A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot; the values of the pre-configured attributes have theirs. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
+- **Configuration → Sorting** lists the organisation's attributes (the page was first called Attributes; its things are still attributes). Two are pre-configured, with a name and values that are fixed, because the application relies on them: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
+- A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot. The values of the pre-configured attributes start with theirs, and I change them the same way: it is all I change of them. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
 - Each attribute says who decides it when an email is sorted: nobody (set by hand), or a rule. The AI decides none.
 - On the form of an attribute, a tick box asks for a rule. Without it, members set it by hand. A “member” attribute has no values to type.
 

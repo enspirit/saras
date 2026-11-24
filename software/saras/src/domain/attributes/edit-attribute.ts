@@ -1,31 +1,33 @@
 // EditAttribute — an administrator changes an attribute. Of the two pre-configured ones
-// ("Stands in", "Priority") only how they are decided changes: their values are fixed,
-// because the application relies on them.
+// ("Stands in", "Priority") only how they are decided and the colours of their values change:
+// their name and their values are fixed, because the application relies on them.
 //
 //   DomPre   an attribute of the organisation
-//   DomPost  it is decided this way; one the organisation made also has this name and these values
+//   DomPost  it is decided this way; one the organisation made also has this name and these values;
+//            a pre-configured one has its values in the colours given, each at its place
 //   ReqPre   the member is an administrator
 //            it is decided in a way we know: by a rule, or by nobody
 //            decided by a rule, it has one, which Elo can read
 //            one the organisation made: a name, two values for a choice
 //   ReqPost  "Stands in": whether its rule decides it is the organisation's setting (automated mail set aside first)
+//            a pre-configured one given no colour for a value, or none we know, keeps the one it has
 //            emails already kept stay as they were sorted
 import { STATUS } from '../../../shared/attribute.ts';
 import type { Attribute } from '../../../shared/attribute.ts';
 import { isAdministrator } from '../computations/access.ts';
-import { attributeGiven, decidedByRule, deciderGiven } from '../computations/attributes.ts';
+import { attributeGiven, decidedByRule, deciderGiven, recolored } from '../computations/attributes.ts';
 import { clipped } from '../computations/given.ts';
 import { accepted } from '../refusal.ts';
 import { attributeOf, changeAttribute, keepSystemAttribute } from '../state/attributes.ts';
 import type { Actor, World } from '../world.ts';
 import { isDecidable } from './attribute-rules.ts';
 
-/** How a pre-configured attribute is decided, and nothing else of it. */
-async function editSystem({ db }: World, { organization }: Actor, key: string, given: Record<string, unknown>): Promise<void> {
+/** How a pre-configured attribute is decided and the colours of its values: nothing else of it. */
+async function editSystem({ db }: World, { organization }: Actor, { key, values }: Attribute, given: Record<string, unknown>): Promise<void> {
   const decidedBy = accepted(deciderGiven(given.decidedBy));
   const elo = clipped(given.elo, 4000);
   isDecidable({ decidedBy, elo });
-  await keepSystemAttribute(db, organization.id, key, decidedBy, elo);
+  await keepSystemAttribute(db, organization.id, { key, decidedBy, elo, values: recolored(values, given.values) });
   if (key !== STATUS) return;
   await db.run('UPDATE organizations SET skip_automated = $1 WHERE id = $2', [decidedByRule(decidedBy), organization.id]);
   Object.assign(organization, { skip_automated: decidedByRule(decidedBy) });
@@ -40,6 +42,6 @@ async function editMade({ db }: World, { organization }: Actor, key: string, giv
 export async function editAttribute(world: World, actor: Actor, key: unknown, given: Record<string, unknown>): Promise<Attribute> {
   accepted(isAdministrator(actor));
   const kept = await attributeOf(world.db, actor.organization, key);
-  await (kept.system ? editSystem(world, actor, kept.key, given) : editMade(world, actor, kept.key, given));
+  await (kept.system ? editSystem(world, actor, kept, given) : editMade(world, actor, kept.key, given));
   return attributeOf(world.db, actor.organization, kept.key);
 }

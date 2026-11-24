@@ -2,7 +2,7 @@
 // Elo, or by hand.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { attributeGiven, decidedFrom } from '../../src/domain/computations/attributes.ts';
+import { STATUS_VALUES, attributeGiven, decidedFrom, inColorsKept, recolored } from '../../src/domain/computations/attributes.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import { EloError, compileRule } from '../../src/tooling/elo.ts';
 import { createClient, join } from '../support/client.ts';
@@ -35,6 +35,23 @@ test('an attribute needs a name, and a choice two values; a rule decides it, or 
   const decider = (decidedBy: unknown) => { const given = attributeGiven({ name: 'Topic', values: ['a', 'b'], decidedBy }); return given.ok ? given.value.decidedBy : outcome(given); };
   assert.deepEqual(['elo', 'nobody', undefined].map(decider), ['elo', 'nobody', 'nobody'], 'nobody, when no way of deciding is given');
   assert.deepEqual(['ai', 'eloAi', 'magic', ''].map(decider), Array(4).fill('invalid: attributes.deciderUnknown'), 'a way of deciding that is not known is refused, not read as nobody');
+});
+
+test('the values of a pre-configured attribute take the colours given at their places, and keep theirs where none we know is given', () => {
+  const colors = (given: unknown): (string | undefined)[] => recolored(STATUS_VALUES, given).map((value) => value.color);
+  const cases: [string, unknown, string[]][] = [
+    ['a colour for each', [{ color: 'red' }, { color: 'blue' }, { color: 'yellow' }, { color: 'orange' }], ['red', 'blue', 'yellow', 'orange']],
+    ['for the first ones only', [{ label: 'x', color: 'red' }], ['red', 'grey', 'green', 'grey']],
+    ['a colour we do not know', [{ color: 'pink' }, { color: 'blue' }], ['purple', 'blue', 'green', 'grey']],
+    ['values as their labels alone', ['x', 'y'], ['purple', 'grey', 'green', 'grey']],
+    ['nothing', undefined, ['purple', 'grey', 'green', 'grey']],
+    ['not a list', { color: 'red' }, ['purple', 'grey', 'green', 'grey']],
+  ];
+  for (const [what, given, expected] of cases) assert.deepEqual(colors(given), expected, what);
+  assert.deepEqual(recolored(STATUS_VALUES, [{ label: 'Renamed', key: 'x', color: 'red' }])[0], { key: 'todo', label: 'To handle', color: 'red' }, 'a value keeps its key and its label');
+  const kept = (json: string | undefined): (string | undefined)[] => inColorsKept(STATUS_VALUES, json).map((value) => value.color);
+  assert.deepEqual([kept(undefined), kept('[]')], [['purple', 'grey', 'green', 'grey'], ['purple', 'grey', 'green', 'grey']], 'kept with no colour, as before colours were kept');
+  assert.deepEqual(kept('[{"key":"sent","color":"blue"},{"key":"gone","color":"red"}]'), ['purple', 'grey', 'blue', 'grey'], 'kept by the key of each value');
 });
 
 let stack: Stack;
@@ -106,6 +123,17 @@ test('whether its rule decides "Stands in" is the organisation\'s setting; its v
   assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'eloAi', elo: 'null' })).body.code, 'attributes.deciderUnknown');
   assert.equal(await skipsAutomated(), true, 'a way of deciding that is not known does not switch its rule off');
   assert.equal((await alice('DELETE', '/attributes/status')).body.code, 'attributes.systemFixed');
+});
+
+test('the colours of a pre-configured attribute are the organisation\'s: given with its values, kept until others are given', async () => {
+  const colors = async (key: string) => (await alice('GET', '/attributes')).body.find((a: { key: string }) => a.key === key).values.map((v: { color: string }) => v.color);
+  assert.deepEqual([await colors('status'), await colors('priority')], [['purple', 'grey', 'green', 'grey'], ['red', 'grey', 'blue']], 'what they start with');
+  const edited = await alice('PUT', '/attributes/priority', { decidedBy: 'nobody', values: [{ label: 'High', color: 'orange' }, { label: 'Normal', color: 'pink' }, { label: 'Low', color: 'green' }] });
+  assert.deepEqual(edited.body.values, [{ key: 'high', label: 'High', color: 'orange' }, { key: 'normal', label: 'Normal', color: 'grey' }, { key: 'low', label: 'Low', color: 'green' }]);
+  const { elo } = (await alice('GET', '/attributes')).body[0];
+  assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'elo', elo, values: [{ color: 'blue' }, { color: 'yellow' }] })).status, 200);
+  assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'elo', elo })).status, 200, 'changing how it is decided, with no value given');
+  assert.deepEqual([await colors('status'), await colors('priority')], [['blue', 'yellow', 'green', 'grey'], ['orange', 'grey', 'green']]);
 });
 
 test('members read the attributes; only administrators change them', async () => {

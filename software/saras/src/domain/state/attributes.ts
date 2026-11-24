@@ -2,7 +2,7 @@
 import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
 import type { Attribute, AttributeGiven, AttributeValue, Decider, ValueGiven } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
-import { PRIORITY_VALUES, STATUS_VALUES, attributeTold } from '../computations/attributes.ts';
+import { PRIORITY_VALUES, STATUS_VALUES, attributeTold, inColorsKept } from '../computations/attributes.ts';
 import { DEFAULT_STATUS_RULE } from '../computations/default-rules.ts';
 import type { OrganizationRow } from '../model/organization.ts';
 import { Refusal } from '../refusal.ts';
@@ -25,14 +25,14 @@ const membersAsValues = (db: Db, organizationId: number): Promise<AttributeValue
   db.query<AttributeValue>(`SELECT id::text AS key, email AS label FROM users WHERE org_id = $1 ORDER BY id`, [organizationId]);
 
 /**
- * "Stands in": its values are fixed. Whether its rule decides it is the organisation's setting
- * (automated mail set aside first); its rule is the one kept for it, the automated-mail rule by default.
+ * "Stands in": its values are fixed, in the colours the organisation gave them. Whether its rule decides it is the organisation's
+ * setting (automated mail set aside first); its rule is the one kept for it, the automated-mail rule by default.
  */
 const status = (organization: OrganizationRow, kept: AttributeRow | undefined): Attribute => ({
   key: STATUS,
   name: 'Stands in',
   kind: 'choice',
-  values: STATUS_VALUES,
+  values: inColorsKept(STATUS_VALUES, kept?.values_json),
   decidedBy: organization.skip_automated ? 'elo' : 'nobody',
   elo: kept?.elo || DEFAULT_STATUS_RULE,
   system: true,
@@ -43,7 +43,7 @@ const priority = (kept: AttributeRow | undefined): Attribute => ({
   key: PRIORITY,
   name: 'Priority',
   kind: 'choice',
-  values: PRIORITY_VALUES,
+  values: inColorsKept(PRIORITY_VALUES, kept?.values_json),
   decidedBy: kept?.decided_by ?? 'nobody',
   elo: kept?.elo ?? '',
   system: true,
@@ -74,10 +74,11 @@ export async function addAttribute(db: Db, organizationId: number, { name, kind,
 export const changeAttribute = async (db: Db, organizationId: number, key: string, { name, kind, values, decidedBy, elo }: AttributeGiven): Promise<void> =>
   void (await db.run('UPDATE attributes SET name = $1, kind = $2, values_json = $3, decided_by = $4, elo = $5 WHERE org_id = $6 AND id = $7 AND key IS NULL', [name, kind, valuesKept(values), decidedBy, elo, organizationId, Number(key) || 0]));
 
-/** How one of the two pre-configured attributes is decided: the only thing kept of it. */
-export async function keepSystemAttribute(db: Db, organizationId: number, key: string, decidedBy: Decider, elo: string): Promise<void> {
+/** What is kept of one of the two pre-configured attributes: how it is decided, and the colour of each of its values. */
+export async function keepSystemAttribute(db: Db, organizationId: number, { key, decidedBy, elo, values }: Pick<Attribute, 'key' | 'decidedBy' | 'elo' | 'values'>): Promise<void> {
+  const colors = JSON.stringify(values.map(({ key, color }) => ({ key, color })));
   await db.run('DELETE FROM attributes WHERE org_id = $1 AND key = $2', [organizationId, key]);
-  await db.run(`INSERT INTO attributes (org_id, key, name, kind, values_json, decided_by, elo) VALUES ($1, $2, $2, 'choice', '[]', $3, $4)`, [organizationId, key, decidedBy, elo]);
+  await db.run(`INSERT INTO attributes (org_id, key, name, kind, values_json, decided_by, elo) VALUES ($1, $2, $2, 'choice', $3, $4, $5)`, [organizationId, key, colors, decidedBy, elo]);
 }
 
 /** Forgets an attribute the organisation made. The values emails had for it are left behind, unseen. */
