@@ -1,5 +1,5 @@
 // CreateBoard — a member makes a board: a named view of emails, defined by a filter on their
-// attributes (mailbox, box, priority, how recent, sender, keywords, attachments).
+// attributes and on the facts of an email (mailbox, how recent, sender, keywords, attachments).
 //
 //   DomPre   (none)
 //   DomPost  the member has one more board, with this name and this filter

@@ -32,7 +32,7 @@ const match = (email: EmailSummary, attributes: Attribute[]): HTMLElement => Ema
   date: fmtDate(email.date),
   subject: email.subject || t('mailbox.noSubject'),
   snippet: '',
-  tags: attributes.filter((a) => a.key !== 'status').map((a) => chipFor(a, a.key === 'priority' ? email.priority : email.attributes[a.key]?.value, true)),
+  tags: attributes.filter((a) => !a.system).map((a) => chipFor(a, email.attributes[a.key]?.value, true)),
 });
 
 /** What the conditions show now: how many emails, and the most recent of them. */

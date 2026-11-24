@@ -1,16 +1,16 @@
-// EditAttribute — an administrator changes an attribute. Of the two pre-configured ones
-// ("Stands in", "Priority") only how they are decided and the colours of their values change:
-// their name and their values are fixed, because the application relies on them.
+// EditAttribute — an administrator changes an attribute. Of the pre-configured one ("Stands in")
+// only how it is decided and the colours of its values change: its name and its values are
+// fixed, because the application relies on them.
 //
 //   DomPre   an attribute of the organisation
-//   DomPost  it is decided this way; one the organisation made also has this name and these values;
-//            a pre-configured one has its values in the colours given, each at its place
+//   DomPost  it is decided this way; one of the organisation's own also has this name and these values;
+//            the pre-configured one has its values in the colours given, each at its place
 //   ReqPre   the member is an administrator
 //            it is decided in a way we know: by a rule, or by nobody
 //            decided by a rule, it has one, which Elo can read
-//            one the organisation made: a name, two values for a choice
+//            one of the organisation's own: a name, two values for a choice
 //   ReqPost  "Stands in": whether its rule decides it is the organisation's setting (automated mail set aside first)
-//            a pre-configured one given no colour for a value, or none we know, keeps the one it has
+//            the pre-configured one, given no colour for a value or none we know, keeps the one it has
 //            emails already kept stay as they were sorted
 import { STATUS } from '../../../shared/attribute.ts';
 import type { Attribute } from '../../../shared/attribute.ts';
@@ -22,7 +22,7 @@ import { attributeOf, changeAttribute, keepSystemAttribute } from '../state/attr
 import type { Actor, World } from '../world.ts';
 import { isDecidable } from './attribute-rules.ts';
 
-/** How a pre-configured attribute is decided and the colours of its values: nothing else of it. */
+/** How the pre-configured attribute is decided and the colours of its values: nothing else of it. */
 async function editSystem({ db }: World, { organization }: Actor, { key, values }: Attribute, given: Record<string, unknown>): Promise<void> {
   const decidedBy = accepted(deciderGiven(given.decidedBy));
   const elo = clipped(given.elo, 4000);

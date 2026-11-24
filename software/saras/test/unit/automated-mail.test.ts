@@ -32,5 +32,5 @@ test('the rule "Stands in" starts with sets automated mail aside; the rest is to
 test('what the rule decides is recorded as the rule\'s, with its reason as a code the interface translates', () => {
   const newsletter = standing({ headers: { listId: 'news.example' } });
   assert.deepEqual([newsletter.status, newsletter.source, newsletter.reason], ['no_reply', 'rule', 'code:triage.newsletter']);
-  assert.deepEqual([standing().source, standing().reason, standing().priority], ['none', '', 'normal'], 'to handle, and nobody decided so');
+  assert.deepEqual([standing().source, standing().reason, standing().attributes], ['none', '', {}], 'to handle, and nobody decided so; no rule spoke of any attribute');
 });

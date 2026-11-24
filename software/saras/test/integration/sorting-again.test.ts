@@ -28,8 +28,8 @@ test('a value follows its rule again; one set by hand stays, one the rule had gi
   assert.equal(valueAgain('7', kept({ attributes: { 7: { value: '2', source: 'rule' } } }), two), null);
   assert.equal(valueAgain('7', kept({ attributes: { 7: { value: '1', source: 'user' } } }), two), null);
   assert.deepEqual(valueAgain('7', kept({ attributes: { 7: { value: '1', source: 'rule' }, 8: { value: 'x', source: 'user' } } }), null), { attributes: { 8: { value: 'x', source: 'user' } } });
-  assert.deepEqual(valueAgain('priority', kept(), { value: 'high', reason: '' }), { attributes: { priority: { value: 'high', source: 'rule' } }, priority: 'high' });
-  assert.deepEqual(valueAgain('priority', kept({ attributes: { priority: { value: 'high', source: 'rule' } } }), null), { attributes: {}, priority: 'normal' });
+  assert.deepEqual(valueAgain('7', kept({ attributes: { 7: { value: '1', source: 'nobody' } } }), two), { attributes: { 7: { value: '2', source: 'rule' } } }, 'a value nobody decided follows the rule');
+  assert.equal(valueAgain('7', kept({ attributes: { 7: { value: '1', source: 'nobody' } } }), null), null, 'and stays when the rule is silent');
 });
 
 let stack: Stack;
@@ -82,7 +82,8 @@ test('an email a member placed stays where they put it; only administrators sort
   assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'elo', elo: `'none'` })).status, 200);
   await alice('POST', '/attributes/status/sort-again');
   assert.deepEqual(await subjects('ignored'), ['Demande de devis pour 20 licences']);
-  assert.equal((await alice('POST', '/attributes/priority/sort-again')).body.code, 'attributes.ruleRequired');
+  const priority = (await alice('GET', '/attributes')).body.find((a: { name: string }) => a.name === 'Priority').key;
+  assert.equal((await alice('POST', `/attributes/${priority}/sort-again`)).body.code, 'attributes.ruleRequired');
   const bruno = client();
   await join(alice, bruno, 'bruno@acme.example');
   assert.equal((await bruno('POST', `/attributes/${topic}/sort-again`)).status, 403);

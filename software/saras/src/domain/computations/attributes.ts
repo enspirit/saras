@@ -1,6 +1,6 @@
 // Pure: attributes of emails — what an attribute given is reduced to, what a rule sees of an
 // email, and what its answer is taken as.
-import { ATTRIBUTE_KINDS, DECIDERS, PRIORITY, STATUS, VALUE_COLORS } from '../../../shared/attribute.ts';
+import { ATTRIBUTE_KINDS, DECIDERS, STATUS, VALUE_COLORS } from '../../../shared/attribute.ts';
 import type { Attribute, AttributeGiven, AttributeKind, AttributeValue, Decider, ValueGiven, ValueOfEmail } from '../../../shared/attribute.ts';
 import { MESSAGES, reasonCode } from '../../tooling/messages.ts';
 import type { MessageCode } from '../../tooling/messages.ts';
@@ -93,23 +93,18 @@ export function decidedFrom(answer: unknown, values: AttributeValue[]): Decided 
   return value ? { value: value.key, reason: reasonKept(given.reason) } : null;
 }
 
-/** The values of the two pre-configured attributes: fixed, because the application relies on them. Their colours are what they start with. */
+/** The values of the pre-configured attribute: fixed, because the application relies on them. Their colours are what they start with. */
 export const STATUS_VALUES: AttributeValue[] = [
   { key: 'todo', label: 'To handle', color: 'purple' },
   { key: 'none', label: 'No reply needed', color: 'grey' },
   { key: 'sent', label: 'Replied', color: 'green' },
   { key: 'ignored', label: 'Ignored', color: 'grey' },
 ];
-export const PRIORITY_VALUES: AttributeValue[] = [
-  { key: 'high', label: 'High', color: 'red' },
-  { key: 'normal', label: 'Normal', color: 'grey' },
-  { key: 'low', label: 'Low', color: 'blue' },
-];
 
-export const isSystem = (key: string): boolean => key === STATUS || key === PRIORITY;
+export const isSystem = (key: string): boolean => key === STATUS;
 
 /**
- * The values of a pre-configured attribute in the colours given for them. Each value keeps its
+ * The values of the pre-configured attribute in the colours given for them. Each value keeps its
  * place, so the colour given at its place is its own; where none we know is given, it keeps the one it has.
  */
 export const recolored = (values: AttributeValue[], given: unknown): AttributeValue[] =>

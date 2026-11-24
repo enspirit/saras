@@ -4,7 +4,6 @@ import type { Proposal, Reply, ReplyMode } from './reply.ts';
 
 /** Where an email stands: to handle, needing no reply, ignored, replied. */
 export type EmailStatus = 'needs_reply' | 'no_reply' | 'ignored' | 'sent';
-export type Priority = 'high' | 'normal' | 'low';
 
 /** The boxes, and the statuses each one shows. */
 export const BOXES = { todo: ['needs_reply'], none: ['no_reply'], sent: ['sent'], ignored: ['ignored'] } as const satisfies Record<string, readonly EmailStatus[]>;
@@ -30,7 +29,6 @@ export interface EmailSummary {
   subject: string;
   date: string;
   status: EmailStatus;
-  priority: Priority;
   /** Who decided where it stands: 'rule', 'user', or 'none' when nobody did ('ai' on an email the AI sorted, when it did). */
   triageSource: string | null;
   snippet: string;
@@ -91,7 +89,6 @@ export interface EmailWithItsReply {
   /** Whether its files can be opened: `GET /emails/:id/attachments/:n`, the nth of the list above, from 0. */
   attachmentsOpen: boolean;
   status: EmailStatus;
-  priority: Priority;
   triageSource: string | null;
   /** Why it was sorted so, and the code of that reason when it is one of the server's own. */
   triageReason: string;

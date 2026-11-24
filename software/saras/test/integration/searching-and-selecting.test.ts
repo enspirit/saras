@@ -41,7 +41,7 @@ after(() => stack.stop());
 const alice = createClient(() => stack.url);
 const bruno = createClient(() => stack.url);
 const subjects = async (path: string): Promise<string[]> => (await alice('GET', path)).body.emails.map((e: { subject: string }) => e.subject).sort();
-const box = async (name: string): Promise<{ subject: string; id: number; status: string; priority: string; attributes: Record<string, { value: string; source: string }> }[]> =>
+const box = async (name: string): Promise<{ subject: string; id: number; status: string; attributes: Record<string, { value: string; source: string }> }[]> =>
   (await alice('GET', `/emails?box=${name}`)).body.emails;
 
 test('a box is searched in who sent each email, its subject and its text; every word must be found', async () => {
@@ -84,9 +84,10 @@ test('a value is given to all the emails of a box at once, by hand, and taken aw
   assert.deepEqual((await alice('POST', `/emails/selection/attributes/${topic}`, { selection: { all: { box: 'todo' } }, value: '1' })).body, { changed: 3 });
   assert.ok((await box('todo')).every((e) => e.attributes[topic]?.value === '1' && e.attributes[topic]?.source === 'user'));
   const [first] = await box('todo');
-  assert.deepEqual((await alice('POST', '/emails/selection/attributes/priority', { selection: { ids: [first!.id] }, value: 'high' })).body, { changed: 1 });
+  const priority = (await alice('GET', '/attributes')).body.find((a: { name: string }) => a.name === 'Priority').key;
+  assert.deepEqual((await alice('POST', `/emails/selection/attributes/${priority}`, { selection: { ids: [first!.id] }, value: '1' })).body, { changed: 1 });
   const high = (await box('todo')).find((e) => e.id === first!.id)!;
-  assert.deepEqual([high.priority, high.attributes[topic]?.value], ['high', '1'], 'the priority has its own column; the topic stays');
+  assert.deepEqual([high.attributes[priority], high.attributes[topic]?.value], [{ value: '1', source: 'user' }, '1'], 'the priority is given like any attribute; the topic stays');
   assert.deepEqual((await alice('POST', `/emails/selection/attributes/${topic}`, { selection: { all: { box: 'todo', search: 'devis' } }, value: null })).body, { changed: 1 });
   assert.equal((await box('todo')).filter((e) => e.attributes[topic]).length, 2);
   assert.equal((await alice('POST', '/emails/selection/attributes/status', { selection: { all: { box: 'todo' } }, value: 'none' })).body.code, 'attributes.valueUnknown', 'where an email stands is changed by acting on it');

@@ -42,7 +42,7 @@ export async function prepareProposals(world: Reach, mailbox: AccountRow, organi
   try {
     for (const row of await emailsAwaitingProposal(db, mailbox.id, MAX_PREPARED)) {
       const email = rowToEmail(row);
-      const prompt = promptToPrepareWith(prompts, valuesOf({ status: row.status, priority: row.priority, attributes: JSON.parse(row.attributes_json) }))!;
+      const prompt = promptToPrepareWith(prompts, valuesOf({ status: row.status, attributes: JSON.parse(row.attributes_json) }))!;
       const messages = buildPromptMessages({ email, prompt: { systemPrompt: prompt.system_prompt }, ownAddress: mailbox.email, signature: owner.signature, lessons: await lessonsFor(db, prompt.id, owner.id), html: '' });
       const proposal = await writeProposal(world, { emailId: row.id, action: 'prompt', promptId: prompt.id, messages, ...settings });
       if (organization.automation === 'mailbox') await fileProposalAsDraft(world, mailbox, owner, email, proposal);

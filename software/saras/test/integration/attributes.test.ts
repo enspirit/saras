@@ -2,6 +2,7 @@
 // Elo, or by hand.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
+import { firstAttributes } from '../../src/domain/attributes/first-attributes.ts';
 import { STATUS_VALUES, attributeGiven, decidedFrom, inColorsKept, recolored } from '../../src/domain/computations/attributes.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import { EloError, compileRule } from '../../src/tooling/elo.ts';
@@ -37,7 +38,7 @@ test('an attribute needs a name, and a choice two values; a rule decides it, or 
   assert.deepEqual(['ai', 'eloAi', 'magic', ''].map(decider), Array(4).fill('invalid: attributes.deciderUnknown'), 'a way of deciding that is not known is refused, not read as nobody');
 });
 
-test('the values of a pre-configured attribute take the colours given at their places, and keep theirs where none we know is given', () => {
+test('the values of the pre-configured attribute take the colours given at their places, and keep theirs where none we know is given', () => {
   const colors = (given: unknown): (string | undefined)[] => recolored(STATUS_VALUES, given).map((value) => value.color);
   const cases: [string, unknown, string[]][] = [
     ['a colour for each', [{ color: 'red' }, { color: 'blue' }, { color: 'yellow' }, { color: 'orange' }], ['red', 'blue', 'yellow', 'orange']],
@@ -63,13 +64,18 @@ const alice = client(); // administrator
 const bruno = client(); // member
 const topicRule = `if contains(lower(_.subject), 'devis') then 'Sales' else if contains(lower(_.subject), 'rendez-vous') then 'Planning' else null`;
 let topic: string;
+let priority: string;
 
-test('an organisation starts with two attributes, whose logic is there to read: "Stands in" and "Priority"', async () => {
-  assert.equal((await alice('POST', '/auth/signup', { email: 'alice@acme.example', password: 'un-bon-mot-de-passe', organization: 'Acme' })).status, 201);
-  const [stands, priority] = (await alice('GET', '/attributes')).body;
+test('an organisation starts with "Stands in", whose logic is there to read, and with a priority of its own, in its creator\'s language', async () => {
+  assert.equal((await alice('POST', '/auth/signup', { email: 'alice@acme.example', password: 'un-bon-mot-de-passe', organization: 'Acme', language: 'fr-BE' })).status, 201);
+  const [stands, own, ...others] = (await alice('GET', '/attributes')).body;
   assert.deepEqual([stands.key, stands.system, stands.decidedBy, stands.values.map((v: { key: string }) => v.key)], ['status', true, 'elo', ['todo', 'none', 'sent', 'ignored']]);
   assert.match(stands.elo, /triage\.newsletter/, 'the automated-mail rule, written in Elo');
-  assert.deepEqual([priority.key, priority.system, priority.decidedBy], ['priority', true, 'nobody']);
+  assert.deepEqual([own.name, own.system, own.kind, own.decidedBy, own.elo, others.length], ['Priorité', false, 'choice', 'nobody', '', 0]);
+  assert.deepEqual(own.values, [{ key: '1', label: 'Haute', color: 'red' }, { key: '2', label: 'Normale', color: 'grey' }, { key: '3', label: 'Basse', color: 'blue' }]);
+  assert.match(own.key, /^[0-9]+$/, 'named by its number, like any attribute the organisation makes');
+  assert.deepEqual(['en', 'en-GB', 'de', 'fr'].map((language) => firstAttributes(language)[0]!.name), ['Priority', 'Priority', 'Priority', 'Priorité'], 'in English where we do not have the language');
+  priority = own.key;
 });
 
 test('an administrator makes an attribute with its rule; a rule Elo cannot read is refused, and so is leaving it to the AI', async () => {
@@ -106,8 +112,10 @@ test('a member sets a value by hand, or takes it away; "Stands in" is not set th
   assert.equal((await alice('PUT', `/emails/${email.id}/attributes/${topic}`, { value: '9' })).body.code, 'attributes.valueUnknown');
   assert.equal((await alice('PUT', `/emails/${email.id}/attributes/${topic}`, { value: '2' })).status, 200);
   assert.deepEqual((await alice('GET', `/emails/${email.id}`)).body.attributes[topic], { value: '2', source: 'user' });
-  assert.equal((await alice('PUT', `/emails/${email.id}/attributes/priority`, { value: 'high' })).status, 200);
-  assert.equal((await alice('GET', `/emails/${email.id}`)).body.priority, 'high');
+  assert.equal((await alice('GET', `/emails/${email.id}`)).body.attributes[priority], undefined, 'an email starts with no priority: nobody decided one');
+  assert.equal((await alice('PUT', `/emails/${email.id}/attributes/${priority}`, { value: 'high' })).body.code, 'attributes.valueUnknown', 'a value is given by its key');
+  assert.equal((await alice('PUT', `/emails/${email.id}/attributes/${priority}`, { value: '1' })).status, 200);
+  assert.deepEqual((await alice('GET', `/emails/${email.id}`)).body.attributes[priority], { value: '1', source: 'user' });
   assert.equal((await alice('PUT', `/emails/${email.id}/attributes/${topic}`, { value: null })).status, 200);
   assert.equal((await alice('GET', `/emails/${email.id}`)).body.attributes[topic], undefined);
   assert.equal((await alice('PUT', `/emails/${email.id}/attributes/status`, { value: 'none' })).body.code, 'attributes.valueUnknown');
@@ -125,15 +133,14 @@ test('whether its rule decides "Stands in" is the organisation\'s setting; its v
   assert.equal((await alice('DELETE', '/attributes/status')).body.code, 'attributes.systemFixed');
 });
 
-test('the colours of a pre-configured attribute are the organisation\'s: given with its values, kept until others are given', async () => {
-  const colors = async (key: string) => (await alice('GET', '/attributes')).body.find((a: { key: string }) => a.key === key).values.map((v: { color: string }) => v.color);
-  assert.deepEqual([await colors('status'), await colors('priority')], [['purple', 'grey', 'green', 'grey'], ['red', 'grey', 'blue']], 'what they start with');
-  const edited = await alice('PUT', '/attributes/priority', { decidedBy: 'nobody', values: [{ label: 'High', color: 'orange' }, { label: 'Normal', color: 'pink' }, { label: 'Low', color: 'green' }] });
-  assert.deepEqual(edited.body.values, [{ key: 'high', label: 'High', color: 'orange' }, { key: 'normal', label: 'Normal', color: 'grey' }, { key: 'low', label: 'Low', color: 'green' }]);
+test('the colours of "Stands in" are the organisation\'s: given with its values, kept until others are given', async () => {
+  const colors = async () => (await alice('GET', '/attributes')).body[0].values.map((v: { color: string }) => v.color);
+  assert.deepEqual(await colors(), ['purple', 'grey', 'green', 'grey'], 'what they start with');
   const { elo } = (await alice('GET', '/attributes')).body[0];
-  assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'elo', elo, values: [{ color: 'blue' }, { color: 'yellow' }] })).status, 200);
+  const edited = await alice('PUT', '/attributes/status', { decidedBy: 'elo', elo, values: [{ label: 'Renamed', color: 'blue' }, { color: 'pink' }, { color: 'yellow' }] });
+  assert.deepEqual(edited.body.values.slice(0, 3), [{ key: 'todo', label: 'To handle', color: 'blue' }, { key: 'none', label: 'No reply needed', color: 'grey' }, { key: 'sent', label: 'Replied', color: 'yellow' }]);
   assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'elo', elo })).status, 200, 'changing how it is decided, with no value given');
-  assert.deepEqual([await colors('status'), await colors('priority')], [['blue', 'yellow', 'green', 'grey'], ['orange', 'grey', 'green']]);
+  assert.deepEqual(await colors(), ['blue', 'grey', 'yellow', 'grey']);
 });
 
 test('members read the attributes; only administrators change them', async () => {
@@ -143,4 +150,14 @@ test('members read the attributes; only administrators change them', async () =>
   assert.equal((await bruno('DELETE', `/attributes/${topic}`)).status, 403);
   assert.equal((await alice('DELETE', `/attributes/${topic}`)).status, 200);
   assert.equal((await alice('GET', '/attributes')).body.length, 2);
+});
+
+test('the priority an organisation starts with is its own: it is renamed, given other values and a rule, and deleted', async () => {
+  const edited = await alice('PUT', `/attributes/${priority}`, { name: 'Urgence', values: [{ label: 'Aujourd’hui', color: 'red' }, 'Plus tard'], decidedBy: 'elo', elo: `if contains(lower(_.subject), 'devis') then 'aujourd’hui' else null` });
+  assert.deepEqual([edited.status, edited.body.name, edited.body.system, edited.body.values], [200, 'Urgence', false, [{ key: '1', label: 'Aujourd’hui', color: 'red' }, { key: '2', label: 'Plus tard', color: 'grey' }]]);
+  assert.equal((await alice('POST', `/attributes/${priority}/sort-again`)).body.changed, 1);
+  const [quote] = (await alice('GET', '/emails?box=todo&search=devis')).body.emails;
+  assert.deepEqual(quote.attributes[priority], { value: '1', source: 'rule' });
+  assert.equal((await alice('DELETE', `/attributes/${priority}`)).status, 200);
+  assert.deepEqual((await alice('GET', '/attributes')).body.map((a: { key: string }) => a.key), ['status'], 'what is left is where an email stands');
 });

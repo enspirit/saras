@@ -1,7 +1,7 @@
 // An email, as it arrives from a mailbox and as saras keeps it.
-import type { Address, Attachment, EmailStatus, Priority } from '../../../shared/email.ts';
+import type { Address, Attachment, EmailStatus } from '../../../shared/email.ts';
 
-export type { Address, Attachment, EmailStatus, Priority } from '../../../shared/email.ts';
+export type { Address, Attachment, EmailStatus } from '../../../shared/email.ts';
 
 /** The few headers sorting rules look at. */
 export interface MailHeaders {
@@ -48,7 +48,6 @@ export interface Email extends Omit<IncomingEmail, 'headers' | 'answered'> {
   status: EmailStatus;
   triageSource: TriageSource | null;
   triageReason: string;
-  priority: Priority;
 }
 
 export interface EmailRow {
@@ -72,9 +71,8 @@ export interface EmailRow {
   status: EmailStatus;
   triage_source: TriageSource | null;
   triage_reason: string;
-  priority: Priority;
   suggested_prompt_id: number | null;
-  /** The values of the attributes the organisation made, and who decided each (and the priority). */
+  /** The values it has for the organisation's own attributes, by the key of each, and who decided each. */
   attributes_json: string;
   /** The few headers rules look at, as fetched; '{}' for an email fetched before they were kept. */
   headers_json: string;

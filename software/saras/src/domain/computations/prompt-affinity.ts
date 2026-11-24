@@ -1,10 +1,10 @@
 // Pure: which prompt suits an email, from the email's attributes. Sorting gives an email its
 // attributes; each prompt says which values it has an affinity with; the prompt that suits
 // best is the one offered first to who writes, and the one that writes when nobody chooses.
-import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
+import { STATUS } from '../../../shared/attribute.ts';
 import type { ValueOfEmail } from '../../../shared/attribute.ts';
 import { BOXES } from '../../../shared/email.ts';
-import type { Box, EmailStatus, Priority } from '../../../shared/email.ts';
+import type { Box, EmailStatus } from '../../../shared/email.ts';
 import type { PromptAffinity } from '../../../shared/prompt.ts';
 import { attributeValuesGiven } from './boards.ts';
 
@@ -14,18 +14,16 @@ export const affinityGiven = (value: unknown): PromptAffinity => attributeValues
 /** What is kept of an email that says which values it has. */
 export interface Sorted {
   status: EmailStatus;
-  priority: Priority;
   attributes: Record<string, ValueOfEmail>;
 }
 
 /** The box an email stands in, as a value of "Stands in". */
 const boxOf = (status: EmailStatus): string => (Object.keys(BOXES) as Box[]).find((box) => (BOXES[box] as readonly EmailStatus[]).includes(status)) ?? '';
 
-/** The value an email has for each attribute, by the attribute's key: where it stands, its priority, and those the organisation made. */
-export const valuesOf = ({ status, priority, attributes }: Sorted): Record<string, string> => ({
+/** The value an email has for each attribute, by the attribute's key: where it stands, and the organisation's own. */
+export const valuesOf = ({ status, attributes }: Sorted): Record<string, string> => ({
   ...Object.fromEntries(Object.entries(attributes).map(([key, { value }]) => [key, value])),
   [STATUS]: boxOf(status),
-  [PRIORITY]: priority,
 });
 
 /** How well a prompt suits: how many attributes it names, when the email has a suitable value for each; nothing when it has not. */

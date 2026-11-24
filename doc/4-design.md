@@ -154,7 +154,7 @@ An email in **No reply needed** or **Ignored** shows one line in place of the re
 
 ### 6.3 Boxes (US-20 to US-24)
 
-The list header gives the box's name, how many emails it holds, when mail was last fetched, and a fetch button. A row has three lines: sender with its tags (*Priority*, *Draft*) and the time; the subject, with the short name of the shared mailbox when there is one; the first words.
+The list header gives the box's name, how many emails it holds, when mail was last fetched, and a fetch button. A row has three lines: sender with its tags (*Draft*, and a chip for each value it has for the organisation's own attributes) and the time; the subject, with the short name of the shared mailbox when there is one; the first words.
 
 An empty box says so with an icon and a sentence, and links to Mailboxes when none is connected. With no email open, the reading pane names how many are in the box and what to do.
 

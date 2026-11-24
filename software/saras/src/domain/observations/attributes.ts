@@ -1,6 +1,6 @@
 // Observation: the attributes of an organisation, and what a rule would say of recent emails.
 import { EMAIL_FOR_RULES } from '../../../shared/attribute.ts';
-import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
+import { STATUS } from '../../../shared/attribute.ts';
 import type { AttributeValue, RuleProblem, RuleTried, ValueOfEmail } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
 import { EloError, compileRule, foundIn } from '../../tooling/elo.ts';
@@ -32,8 +32,7 @@ const sorter = (source: string | null): ValueOfEmail['source'] => (source === 'r
 /** The value an email has now for an attribute, and who decided it. */
 function valueNow(row: Recent, key: string): ValueOfEmail | null {
   if (key === STATUS) return { value: STANDS[row.status] ?? 'todo', source: sorter(row.triage_source) };
-  const kept = (JSON.parse(row.attributes_json) as Record<string, ValueOfEmail>)[key];
-  return kept ?? (key === PRIORITY ? { value: row.priority, source: 'nobody' } : null);
+  return (JSON.parse(row.attributes_json) as Record<string, ValueOfEmail>)[key] ?? null;
 }
 
 /** What a rule would say of the member's recent emails, without changing any: so that a rule is seen at work before it is kept. */

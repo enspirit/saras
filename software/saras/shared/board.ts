@@ -4,7 +4,7 @@ import type { EmailSummary } from './email.ts';
 /**
  * The conditions that can be said both ways: an email is this, or is not.
  *   attributes  its values for the attributes of the organisation, by their key: where it
- *               stands, its priority, and those the organisation made
+ *               stands, and the organisation's own
  *   mailbox     the mailboxes it arrived in
  *   from        part of the sender's name or address
  *   keywords    words of its subject or text

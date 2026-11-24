@@ -79,7 +79,7 @@ test('an administrator has a rule checked while writing it; nothing is kept', as
   assert.equal((await alice('GET', '/attributes')).body.length, 2);
 });
 
-test('the values of an attribute keep their colours; the pre-configured ones have theirs', async () => {
+test('the values of an attribute keep their colours; the attributes an organisation starts with have theirs', async () => {
   const made = await alice('POST', '/attributes', { name: 'Topic', values: [{ label: 'Billing', color: 'orange' }, 'Support'] });
   assert.deepEqual(made.body.values, [{ key: '1', label: 'Billing', color: 'orange' }, { key: '2', label: 'Support', color: 'grey' }]);
   const [status, priority] = (await alice('GET', '/attributes')).body;

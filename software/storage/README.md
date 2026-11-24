@@ -10,7 +10,7 @@ Its seeds, by id, and its tasks. Nothing else.
 
 | Seed | Is | Load it with |
 | --- | --- | --- |
-| `demo` | One organisation, **Brightwater Consulting**: its administrator, a **Topic** attribute decided by a rule, a **Who** attribute set by hand, a rule for the priority, two boards, a prompt. Not its mailbox, whose access a seed cannot carry (see Status). A slice: everything in it has an id from 900001 on. | `emb run demo`: added to whatever the database holds, or put back as it was, then its mailbox connected |
+| `demo` | One organisation, **Brightwater Consulting**: its administrator, a **Topic** attribute decided by a rule, a **Who** attribute set by hand, a rule for the **Priority** it started with, two boards, a prompt. Not its mailbox, whose access a seed cannot carry (see Status). A slice: everything in it has an id from 900001 on. | `emb run demo`: added to whatever the database holds, or put back as it was, then its mailbox connected |
 | `empty` | Every table, with no row. The root every other seed inherits. | `emb run storage:db.seed`: **empties the database** |
 
 Sign in to the demo with `demo@saras.example` and `saras-demo-password`.

@@ -3,6 +3,16 @@
     "id": 900001,
     "org_id": 900001,
     "key": null,
+    "name": "Priority",
+    "kind": "choice",
+    "values_json": "[{\"key\":\"1\",\"label\":\"High\",\"color\":\"red\"},{\"key\":\"2\",\"label\":\"Normal\",\"color\":\"grey\"},{\"key\":\"3\",\"label\":\"Low\",\"color\":\"blue\"}]",
+    "decided_by": "elo",
+    "elo": "let\n  words = lower(_.subject + ' ' + _.text)\nin\n  if contains(words, 'today') || contains(words, 'priorité') || contains(words, 'before friday') then {value: 'High', reason: 'it gives a deadline'}\n  else null"
+  },
+  {
+    "id": 900002,
+    "org_id": 900001,
+    "key": null,
     "name": "Topic",
     "kind": "choice",
     "values_json": "[{\"key\":\"1\",\"label\":\"Billing\",\"color\":\"orange\"},{\"key\":\"2\",\"label\":\"Sales\",\"color\":\"blue\"},{\"key\":\"3\",\"label\":\"Support\",\"color\":\"green\"},{\"key\":\"4\",\"label\":\"Planning\",\"color\":\"purple\"}]",
@@ -10,7 +20,7 @@
     "elo": "let\n  words = lower(_.subject + ' ' + _.text)\nin\n  if contains(words, 'invoice') || contains(words, 'facture') then {value: 'Billing', reason: 'it speaks of an invoice'}\n  else if contains(words, 'quote') || contains(words, 'devis') || contains(words, 'pricing') then {value: 'Sales', reason: 'it asks for a quote or a price'}\n  else if contains(words, 'error') || contains(words, 'panne') then {value: 'Support', reason: 'it reports a problem'}\n  else if contains(words, 'rendez-vous') || contains(words, 'call') || contains(words, 'dates') then 'Planning'\n  else null"
   },
   {
-    "id": 900002,
+    "id": 900003,
     "org_id": 900001,
     "key": null,
     "name": "Who",
@@ -18,15 +28,5 @@
     "values_json": "[]",
     "decided_by": "nobody",
     "elo": ""
-  },
-  {
-    "id": 900003,
-    "org_id": 900001,
-    "key": "priority",
-    "name": "priority",
-    "kind": "choice",
-    "values_json": "[]",
-    "decided_by": "elo",
-    "elo": "let\n  words = lower(_.subject + ' ' + _.text)\nin\n  if contains(words, 'today') || contains(words, 'priorité') || contains(words, 'before friday') then {value: 'high', reason: 'it gives a deadline'}\n  else null"
   }
 ]

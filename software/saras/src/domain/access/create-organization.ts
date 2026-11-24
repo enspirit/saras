@@ -7,11 +7,14 @@
 //            the address is one
 //            the password has ten characters or more
 //   ReqPost  named after the domain of the address when no name is given
-//            it starts with one prompt, in the person's language, and sets automated mail aside or not as the installation says
+//            it starts with one prompt and one attribute of its own, a priority, in the person's language,
+//            and sets automated mail aside or not as the installation says
 //            a refused sign-up leaves no organisation behind
 import { addressGiven, clipped, languageGiven } from '../computations/given.ts';
 import { isAnAddress, maySignUp, organizationNameFor, signUpIsOpen } from '../computations/access.ts';
+import { firstAttributes } from '../attributes/first-attributes.ts';
 import { accepted } from '../refusal.ts';
+import { addAttribute } from '../state/attributes.ts';
 import { addFirstPrompt, addOrganization, installationIsEmpty } from '../state/members.ts';
 import type { World } from '../world.ts';
 import { admit } from './admit.ts';
@@ -39,6 +42,7 @@ export function createOrganization(world: World, origin: string, given: SignUp):
       const organizationId = await addOrganization(tx, { name: organizationNameFor(clipped(given.organization, 120), address), skipAutomated: config.skipAutomated });
       const id = await openAccount(tx, { organizationId, address, password: given.password, role: 'admin', language, name: clipped(given.name, 120) });
       await addFirstPrompt(tx, organizationId, id, language);
+      for (const attribute of firstAttributes(language)) await addAttribute(tx, organizationId, attribute);
       return id;
     });
     return admit(world, memberId);

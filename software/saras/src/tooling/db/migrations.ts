@@ -10,6 +10,7 @@ import { scheduledTasks } from './migrations/0002-scheduled-tasks.ts';
 import { noSortingByTheAi } from './migrations/0003-no-sorting-by-the-ai.ts';
 import { nothingKeptOfTheAiSorting } from './migrations/0004-nothing-kept-of-the-ai-sorting.ts';
 import { theHtmlOfAnEmail } from './migrations/0005-the-html-of-an-email.ts';
+import { priorityIsAnAttributeLikeAnyOther } from './migrations/0006-priority-is-an-attribute-like-any-other.ts';
 
 export interface Migration {
   /** Its number and its name, as its file: 0002-what-it-does. */
@@ -18,4 +19,4 @@ export interface Migration {
   sql: string;
 }
 
-export const MIGRATIONS: Migration[] = [baseline, scheduledTasks, noSortingByTheAi, nothingKeptOfTheAiSorting, theHtmlOfAnEmail];
+export const MIGRATIONS: Migration[] = [baseline, scheduledTasks, noSortingByTheAi, nothingKeptOfTheAiSorting, theHtmlOfAnEmail, priorityIsAnAttributeLikeAnyOther];

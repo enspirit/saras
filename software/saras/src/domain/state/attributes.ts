@@ -1,13 +1,13 @@
 // State: the attributes an organisation gives its emails, and how each is decided.
-import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
+import { STATUS } from '../../../shared/attribute.ts';
 import type { Attribute, AttributeGiven, AttributeValue, Decider, ValueGiven } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
-import { PRIORITY_VALUES, STATUS_VALUES, attributeTold, inColorsKept } from '../computations/attributes.ts';
+import { STATUS_VALUES, attributeTold, inColorsKept } from '../computations/attributes.ts';
 import { DEFAULT_STATUS_RULE } from '../computations/default-rules.ts';
 import type { OrganizationRow } from '../model/organization.ts';
 import { Refusal } from '../refusal.ts';
 
-/** An attribute as it is kept. `key` is null for one the organisation made: its number names it. */
+/** An attribute as it is kept. `key` is null for one of the organisation's own: its number names it. */
 interface AttributeRow {
   id: number;
   key: string | null;
@@ -38,23 +38,12 @@ const status = (organization: OrganizationRow, kept: AttributeRow | undefined): 
   system: true,
 });
 
-/** "Priority": fixed values too. Members set it by hand, unless the organisation gives it a rule. */
-const priority = (kept: AttributeRow | undefined): Attribute => ({
-  key: PRIORITY,
-  name: 'Priority',
-  kind: 'choice',
-  values: inColorsKept(PRIORITY_VALUES, kept?.values_json),
-  decidedBy: kept?.decided_by ?? 'nobody',
-  elo: kept?.elo ?? '',
-  system: true,
-});
-
-/** Every attribute of an organisation: the two it starts with, then those it made. */
+/** Every attribute of an organisation: where an email stands, then its own, in the order they were made. */
 export async function attributesOf(db: Db, organization: OrganizationRow): Promise<Attribute[]> {
   const rows = await rowsOf(db, organization.id);
   const members = rows.some((row) => row.kind === 'member') ? await membersAsValues(db, organization.id) : [];
   const made = rows.filter((row) => !row.key).map((row) => attributeTold({ ...row, key: String(row.id), values_json: row.kind === 'member' ? JSON.stringify(members) : row.values_json }));
-  return [status(organization, rows.find((row) => row.key === STATUS)), priority(rows.find((row) => row.key === PRIORITY)), ...made];
+  return [status(organization, rows.find((row) => row.key === STATUS)), ...made];
 }
 
 /** The attribute with this key; refused as not found otherwise. */
@@ -74,13 +63,13 @@ export async function addAttribute(db: Db, organizationId: number, { name, kind,
 export const changeAttribute = async (db: Db, organizationId: number, key: string, { name, kind, values, decidedBy, elo }: AttributeGiven): Promise<void> =>
   void (await db.run('UPDATE attributes SET name = $1, kind = $2, values_json = $3, decided_by = $4, elo = $5 WHERE org_id = $6 AND id = $7 AND key IS NULL', [name, kind, valuesKept(values), decidedBy, elo, organizationId, Number(key) || 0]));
 
-/** What is kept of one of the two pre-configured attributes: how it is decided, and the colour of each of its values. */
+/** What is kept of the pre-configured attribute: how it is decided, and the colour of each of its values. */
 export async function keepSystemAttribute(db: Db, organizationId: number, { key, decidedBy, elo, values }: Pick<Attribute, 'key' | 'decidedBy' | 'elo' | 'values'>): Promise<void> {
   const colors = JSON.stringify(values.map(({ key, color }) => ({ key, color })));
   await db.run('DELETE FROM attributes WHERE org_id = $1 AND key = $2', [organizationId, key]);
   await db.run(`INSERT INTO attributes (org_id, key, name, kind, values_json, decided_by, elo) VALUES ($1, $2, $2, 'choice', $3, $4, $5)`, [organizationId, key, colors, decidedBy, elo]);
 }
 
-/** Forgets an attribute the organisation made. The values emails had for it are left behind, unseen. */
+/** Forgets one of the organisation's own attributes. The values emails had for it are left behind, unseen. */
 export const forgetAttribute = async (db: Db, organizationId: number, key: string): Promise<void> =>
   void (await db.run('DELETE FROM attributes WHERE org_id = $1 AND id = $2 AND key IS NULL', [organizationId, Number(key) || 0]));

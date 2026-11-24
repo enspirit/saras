@@ -1,6 +1,5 @@
 // Pure: an email, from how it is kept to how operations see it.
 import type { ValueOfEmail } from '../../../shared/attribute.ts';
-import type { Priority } from '../../../shared/email.ts';
 import type { Email, EmailRow, EmailStatus } from '../model/email.ts';
 
 /** What saras keeps of a message, and how it is sorted, from its row. */
@@ -8,7 +7,6 @@ const sortingOf = (row: EmailRow) => ({
   status: row.status,
   triageSource: row.triage_source,
   triageReason: row.triage_reason,
-  priority: row.priority,
 });
 
 /** Who wrote, to whom, and whom to answer. */
@@ -50,12 +48,11 @@ export function htmlToKeep(html: string): string {
   return clean.length > MAX_STORED_HTML ? '' : clean;
 }
 
-/** Where a fetched email first stands, who decided so ('rule', or 'none' for nobody) and why, its priority, and the other attributes the rules gave it. */
+/** Where a fetched email first stands, who decided so ('rule', or 'none' for nobody) and why, and the other attributes the rules gave it. */
 export interface Standing {
   status: EmailStatus;
   source: string;
   reason: string;
-  priority: Priority;
   attributes: Record<string, ValueOfEmail>;
 }
 

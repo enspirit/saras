@@ -43,7 +43,7 @@ test('once sorted by its rule, an email is offered the prompt that suits its att
 });
 
 test('changing what a prompt suits changes what is offered, at once', async () => {
-  assert.equal((await alice('PUT', `/prompts/${quotes}`, { name: 'Quotes', systemPrompt: 'You answer requests for quotes.', affinity: { [topic]: ['2'], priority: ['normal'] } })).status, 200);
+  assert.equal((await alice('PUT', `/prompts/${quotes}`, { name: 'Quotes', systemPrompt: 'You answer requests for quotes.', affinity: { [topic]: ['2'], status: ['todo'] } })).status, 200);
   assert.deepEqual(await suggestedFor(), { 'Demande de devis pour 20 licences': null, 'Merci pour hier': null, 'Report de notre rendez-vous': quotes });
 });
 

@@ -37,7 +37,7 @@ const problemsOf = (problems: RuleProblem[], editor: () => EloEditorHandle): HTM
     fix: problem.suggestion ? { before: t('rules.didYouMean'), label: problem.suggestion, apply: () => editor().fix(problem) } : undefined,
   })));
 
-/** The attribute as the values being typed make it: so that what a rule answers is shown as it will be. A pre-configured one keeps its values, in the colours being chosen. */
+/** The attribute as the values being typed make it: so that what a rule answers is shown as it will be. The pre-configured one keeps its values, in the colours being chosen. */
 export const typed = (attribute: Attribute | null, values: ValueGiven[]): Attribute => {
   if (attribute?.kind === 'member') return attribute;
   if (attribute?.system) return { ...attribute, values: attribute.values.map((value, place) => ({ ...value, color: values[place]?.color ?? value.color })) };

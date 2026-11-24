@@ -196,7 +196,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member, **I want** my emails in four lists — To handle, No reply needed, Replied, Ignored — each with its count, **so that** I always know what is left.
 
 - The navigation shows the four boxes and how many emails each holds.
-- A list row shows the sender, the date (time today, date otherwise), the subject, the first line, the marks Priority and Draft, and the shared mailbox it came from.
+- A list row shows the sender, the date (time today, date otherwise), the subject, the first line, the mark Draft, its values for the organisation's own attributes (US-95), and the shared mailbox it came from.
 - On a large screen the list and the open email sit side by side; on a small one they alternate, with a Back link.
 - An empty box says so and, for **To handle**, how to get emails.
 
@@ -509,7 +509,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** a member, **I want** to make a board that shows the emails meeting conditions I choose, **so that** I look at my mail the way my work is organised (a client, a subject, what is urgent).
 
 - **New board** in the menu, under **Boards**, above Configuration. A board has a name and a filter.
-- The filter is made of the organisation's attributes (US-93: where the email stands, its priority, and those the organisation made) and of the facts of an email: the mailboxes it arrived in, how recently it was received, its sender (part of a name, an address or a domain), keywords (every word must appear in the subject or the text), and whether it has attachments.
+- The filter is made of the organisation's attributes (US-93: where the email stands, and the organisation's own) and of the facts of an email: the mailboxes it arrived in, how recently it was received, its sender (part of a name, an address or a domain), keywords (every word must appear in the subject or the text), and whether it has attachments.
 - The conditions are a list I add to: a board starts with none, and **Add a condition** offers what it has no condition on yet, my attributes first, then the facts of the email. A condition on an attribute or on the mailboxes holds values I pick one by one, each a chip I can take away; a bin removes the whole condition.
 - An email is shown when it meets every condition there; within a condition made of several values, any of them. A condition with no value keeps every email, as does a board with no condition.
 - A condition on an attribute, on the mailboxes, on the sender or on keywords can be said the other way round, by choosing its linking word: **is not**, **does not contain**. The board then leaves out the emails that have one of the values picked, that arrived in one of the mailboxes, whose sender's name or address holds the text, or that hold any of the words. An email with no value for an attribute is not left out.
@@ -532,8 +532,8 @@ These are behaviours of the system rather than screens, but they are what the pr
 ### US-93 — Give emails our own attributes
 **As** an administrator, **I want** to define the attributes we organise ourselves by (a topic, an assignee, urgent or not), **so that** boards can show our mail the way we work.
 
-- **Configuration → Sorting** lists the organisation's attributes (the page was first called Attributes; its things are still attributes). Two are pre-configured, with a name and values that are fixed, because the application relies on them: **Stands in** (to handle, no reply needed, replied, ignored) and **Priority** (high, normal, low).
-- A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot. The values of the pre-configured attributes start with theirs, and I change them the same way: it is all I change of them. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
+- **Configuration → Sorting** lists the organisation's attributes (the page was first called Attributes; its things are still attributes). One is pre-configured, with a name and values that are fixed, because the application relies on them: **Stands in** (to handle, no reply needed, replied, ignored). The others are the organisation's own. It starts with one, **Priority** (high, normal, low), named in the language of who created the organisation and set by hand: like any attribute I make, I rename it, change its values, give it a rule, or delete it.
+- A new attribute is a choice among values I type, or a member of the organisation. Each value of a choice has a colour, chosen among seven from its dot. The values of **Stands in** start with theirs, and I change them the same way: with how it is decided, it is all I change of it. Where a value is shown (the list of attributes, an email, the lists of emails, a rule being tried) it is a chip in its colour.
 - Each attribute says who decides it when an email is sorted: nobody (set by hand), or a rule. The AI decides none.
 - On the form of an attribute, a tick box asks for a rule. Without it, members set it by hand. A “member” attribute has no values to type.
 
@@ -545,7 +545,7 @@ These are behaviours of the system rather than screens, but they are what the pr
 - **Try it on recent emails** shows what a rule would say of my twenty most recent emails, without changing any.
 - The rule is written in an editor that knows Elo: colours, matching brackets, completion of its functions.
 - The rule is checked against the type of the email as I write it, a moment after I stop: **Fits the email**, or the number of problems. A field an email does not have, a text used as a number, a condition that is not true-or-false is underlined where it is and said under the editor with its line and column. Where a field was probably meant (`subjet` for `subject`), one click writes it. A rule with a problem is refused when it is tried or saved.
-- Beside the editor, **What it can answer** lists each value of the attribute as a rule writes it, then `null` and the answer that says why: a click writes one in the rule. A value is written as its label; one of a pre-configured attribute, whose values are named in each reader's language, as its key (`'none'` for no reply needed). **What a rule can read** lists the fields of the email with their types: a click writes one in the rule. **Elo in brief** gives the few constructs most rules need. The editor and what sits beside it show only while a rule is asked for.
+- Beside the editor, **What it can answer** lists each value of the attribute as a rule writes it, then `null` and the answer that says why: a click writes one in the rule. A value is written as its label; one of **Stands in**, whose values are named in each reader's language, as its key (`'none'` for no reply needed). **What a rule can read** lists the fields of the email with their types: a click writes one in the rule. **Elo in brief** gives the few constructs most rules need. The editor and what sits beside it show only while a rule is asked for.
 - A rule may answer `{value: …, reason: …}`: the reason is kept with the value and shown on the email. The form of a rule says so above the editor. The rule **Stands in** starts with gives its reasons as codes, which are said in each reader's language; a reason in one's own words is shown as written.
 - Trying a rule shows, for each recent email, the value it has now beside what the rule says, and how many emails get each value. An email whose value was set by hand is marked as staying as it is.
 - **Writing a rule** (from the list of attributes, or beside the editor) is a guide: the shape of a rule, what it can read, rules to start from that can be copied, Elo in brief, what is checked, and the skill for an AI assistant.
@@ -558,7 +558,8 @@ These are behaviours of the system rather than screens, but they are what the pr
 
 - Under the header of an email, a tool bar as wide as the email holds each attribute but **Stands in**: its name, its value as a chip, and the sign of who decided it (a rule, by hand), which its tooltip says in words; an attribute without a value is offered with a “+”.
 - A click on an attribute opens its values to choose from, “no value” included, and says who decided the current one and why when that is known: the reason its rule gave.
-- In a list of emails, each email shows its values for the attributes the organisation made.
+- In a list of emails, each email shows its values for the organisation's own attributes, its priority among them.
+- An email has no value for an attribute until a rule or a member gives it one: no priority either.
 - A value I set is recorded as set by hand and is not overwritten by later sorting.
 - Where an email stands is changed by acting on it: the sorting corrections, a reply.
 

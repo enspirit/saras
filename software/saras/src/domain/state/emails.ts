@@ -59,10 +59,10 @@ export const keepFetched = async (db: Db, mailboxId: number, folder: string, ema
   void (await db.run(
     `INSERT INTO emails
        (account_id, folder, provider_id, message_id, thread_id, refs, from_name, from_addr, reply_to, to_json, cc_json,
-        subject, date, body_text, attachments_json, body_html, status, triage_source, triage_reason, priority, attributes_json, headers_json)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+        subject, date, body_text, attachments_json, body_html, status, triage_source, triage_reason, attributes_json, headers_json)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
      ON CONFLICT (account_id, folder, provider_id) DO NOTHING`,
-    [mailboxId, folder, ...whoAndWhat(email), standing.status, standing.source, standing.reason, standing.priority, JSON.stringify(standing.attributes), JSON.stringify(email.headers ?? {})],
+    [mailboxId, folder, ...whoAndWhat(email), standing.status, standing.source, standing.reason, JSON.stringify(standing.attributes), JSON.stringify(email.headers ?? {})],
   ));
 
 /** An email the organisation keeps, with the address of the mailbox it arrived in. */
@@ -76,6 +76,6 @@ export const emailsKeptBy = (db: Db, organizationId: number): Promise<KeptEmail[
 export const keepStanding = async (db: Db, emailId: number, { status, source, reason }: StatusAgain): Promise<void> =>
   void (await db.run('UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3 WHERE id = $4', [status, source, reason, emailId]));
 
-/** The values an email has from now on for the organisation's attributes; its priority too when that is one of them. */
-export const keepValues = async (db: Db, emailId: number, { attributes, priority }: ValueAgain): Promise<void> =>
-  void (await db.run('UPDATE emails SET attributes_json = $1, priority = COALESCE($2, priority) WHERE id = $3', [JSON.stringify(attributes), priority ?? null, emailId]));
+/** The values an email has from now on for the organisation's own attributes. */
+export const keepValues = async (db: Db, emailId: number, { attributes }: ValueAgain): Promise<void> =>
+  void (await db.run('UPDATE emails SET attributes_json = $1 WHERE id = $2', [JSON.stringify(attributes), emailId]));

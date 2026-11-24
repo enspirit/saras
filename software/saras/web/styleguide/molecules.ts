@@ -7,6 +7,7 @@ import { Button } from '../ui/atoms/button.ts';
 import { Checkbox, Input } from '../ui/atoms/input.ts';
 import { Spacer } from '../ui/atoms/spacer.ts';
 import { Heading, Prose, RichText, Strong, Text } from '../ui/atoms/text.ts';
+import { ValueChip } from '../ui/atoms/value-chip.ts';
 import type { Child } from '../ui/dom.ts';
 import { Callout } from '../ui/molecules/callout.ts';
 import { Card, CardSection } from '../ui/molecules/card.ts';
@@ -93,7 +94,7 @@ const navigationCard = (): HTMLDivElement =>
 
 const emailsCard = (): HTMLDivElement =>
   Card({ title: t('styleguide.emails') },
-    sampleEmail({ tags: [Badge(t('mailbox.priority'), 'warn')], shared: { label: 'contact', title: 'contact@client.example' } }),
+    sampleEmail({ tags: [ValueChip(t('attributes.color.red'), { color: 'red', small: true })], shared: { label: 'contact', title: 'contact@client.example' } }),
     sampleEmail({ current: true, from: 'Sophie Leroy', subject: t('styleguide.sample.subject2'), tags: [Badge(t('mailbox.draft'), 'neutral')] }),
     Message(Prose(t('styleguide.sample.body'))),
     MessageViews([{ label: t('reading.asWritten'), show: () => Message(RichText(t('styleguide.sample.rich'))) }, { label: t('reading.asText'), show: () => MessageText(t('styleguide.sample.body'), t('reading.earlier')) }], { label: t('reading.imagesHeldShort'), explanation: t('reading.imagesHeld') }),

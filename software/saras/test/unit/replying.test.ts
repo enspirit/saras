@@ -48,9 +48,9 @@ test('typos and style need something written; a prompt needs the content of the 
 });
 
 test('a proposal nobody asked for is written with the prompt that suits the email, else the first', () => {
-  const prompts: { id: number; affinity: Record<string, string[]> }[] = [{ id: 1, affinity: {} }, { id: 2, affinity: { 7: ['2'] } }, { id: 3, affinity: { priority: ['high'] } }];
-  assert.equal(promptToPrepareWith(prompts, { 7: '2', priority: 'normal' })?.id, 2);
-  assert.equal(promptToPrepareWith(prompts, { 7: '1', priority: 'normal' })?.id, 1, 'none suits: the first of the list');
+  const prompts: { id: number; affinity: Record<string, string[]> }[] = [{ id: 1, affinity: {} }, { id: 2, affinity: { 7: ['2'] } }, { id: 3, affinity: { 8: ['1'] } }];
+  assert.equal(promptToPrepareWith(prompts, { 7: '2', 8: '2' })?.id, 2);
+  assert.equal(promptToPrepareWith(prompts, { 7: '1', 8: '2' })?.id, 1, 'none suits: the first of the list');
   assert.equal(promptToPrepareWith([], { 7: '2' }), undefined);
 });
 

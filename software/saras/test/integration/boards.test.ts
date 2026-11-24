@@ -15,7 +15,7 @@ const actorWith = (id: number, role: 'admin' | 'user') => ({ member: { id, role 
 test('a filter is kept reduced to the attributes we know, and to the conditions that say something', () => {
   const given = { mailbox: [3, '4', 'x', 3], attributes: { status: ['todo'], 12: ['2', '2'], colour: ['red'], priority: [] }, received: '7', from: '  claire ', keywords: ' devis ', attachment: true, colour: 'red' };
   assert.deepEqual(filterGiven(given), { attributes: { 12: ['2'], status: ['todo'] }, mailbox: [3, 4], received: 7, from: 'claire', keywords: 'devis', attachment: true });
-  assert.deepEqual(filterGiven({ box: ['todo'], priority: ['high'] }), { attributes: { status: ['todo'], priority: ['high'] } }, 'a filter made before attributes existed');
+  assert.deepEqual(filterGiven({ box: ['todo'], priority: ['high'], attributes: { priority: ['high'] } }), { attributes: { status: ['todo'] } }, 'a filter made before attributes existed named the box itself; the priority is named by its number, like any attribute of the organisation');
   assert.deepEqual(filterGiven({ mailbox: [], attributes: { status: 'todo' }, received: -2, from: ' ', attachment: 'yes' }), {});
   assert.deepEqual(filterGiven(null), {});
 });

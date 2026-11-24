@@ -34,7 +34,7 @@ const snippetOf = (n: number | null): string =>
 /** The 200 most recent emails a member may see that meet these conditions, whose parameters are numbered from $3; their snippet around `around`, when said. */
 export async function emailSummaries(db: Db, { member, organization }: Actor, { sql, params }: Conditions, around = ''): Promise<EmailSummary[]> {
   const emails = await db.query<Omit<EmailSummary, 'date' | 'attributes'> & { date: Date; attributesJson: string }>(
-    `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status, e.priority,
+    `SELECT e.id, e.from_name AS "fromName", e.from_addr AS "fromAddr", e.subject, e.date, e.status,
             e.triage_source AS "triageSource", ${snippetOf(around ? 3 + params.length : null)} AS snippet, a.email AS mailbox, a.shared, e.attributes_json AS "attributesJson",
             (SELECT r.mode FROM replies r WHERE r.email_id = e.id ORDER BY r.id DESC LIMIT 1) AS "replyMode"
      ${[SEEN_BY_MEMBER, ...sql].join(' AND ')}
@@ -102,7 +102,7 @@ export async function emailWithItsReply(db: Db, actor: Actor, id: unknown, confi
   const { bodyHtml: _html, ...email } = rowToEmail(row);
   const reason = readReason(email.triageReason);
   const attributes: Record<string, ValueOfEmail> = JSON.parse(row.attributes_json);
-  const suited = bestPrompt(await promptsWithAffinity(db, actor.organization.id), valuesOf({ status: row.status, priority: row.priority, attributes }));
+  const suited = bestPrompt(await promptsWithAffinity(db, actor.organization.id), valuesOf({ status: row.status, attributes }));
   return {
     ...email,
     ...shownAs(row, config),

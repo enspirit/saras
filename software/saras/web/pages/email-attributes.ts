@@ -1,8 +1,8 @@
 // The attributes of an email being read: the value each has, who decided it and why, and a way to set it by hand.
 
-import { PRIORITY, STATUS } from '../../shared/attribute.ts';
+import { STATUS } from '../../shared/attribute.ts';
 import type { Attribute, ValueOfEmail } from '../../shared/attribute.ts';
-import type { EmailWithItsReply, Priority } from '../../shared/email.ts';
+import type { EmailWithItsReply } from '../../shared/email.ts';
 import { setEmailAttribute } from '../api/attributes.ts';
 import { t } from '../i18n.ts';
 import { messageOf, toast } from './actions.ts';
@@ -12,9 +12,8 @@ import type { Child } from '../ui/dom.ts';
 import { AttributeBar } from '../ui/molecules/attribute-bar.ts';
 import type { AttributeEntry } from '../ui/molecules/attribute-bar.ts';
 
-/** The value an email has for an attribute. Its priority always has one: what an email starts with, until a rule or a member decides it. */
-const valueOf = (email: EmailWithItsReply, attribute: Attribute): ValueOfEmail | undefined =>
-  email.attributes[attribute.key] ?? (attribute.key === PRIORITY ? { value: email.priority, source: 'nobody' } : undefined);
+/** The value an email has for an attribute, if any. */
+const valueOf = (email: EmailWithItsReply, attribute: Attribute): ValueOfEmail | undefined => email.attributes[attribute.key];
 
 /** Why a value is what it is, in the words of the rule that decided it, when it said. */
 const reasonOf = (has: ValueOfEmail): string => (has.source === 'rule' && has.reason && !has.reason.startsWith('code:') ? has.reason : '');
@@ -34,7 +33,6 @@ async function setByHand(email: EmailWithItsReply, attribute: Attribute, value: 
     await setEmailAttribute(email.id, attribute.key, value || null);
     if (value) email.attributes[attribute.key] = { value, source: 'user' };
     else delete email.attributes[attribute.key];
-    if (attribute.key === PRIORITY) email.priority = (value || 'normal') as Priority;
     shown();
     toast(t('attributes.valueSet', { name: attributeName(attribute) }));
   } catch (e) {

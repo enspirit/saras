@@ -8,7 +8,6 @@
   "back": "Retour à la liste",
   "select": "Sélectionnez un email.",
   "noSubject": "(sans objet)",
-  "priority": "Prioritaire",
   "draft": "Brouillon",
   "fetchedAt": "Relevé {time}",
   "count": "{count, plural, one {# email} other {# emails}}",

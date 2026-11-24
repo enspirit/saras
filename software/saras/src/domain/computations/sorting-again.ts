@@ -1,8 +1,7 @@
 // Pure: what applying a rule again changes for an email already kept. A rule never undoes
 // what a member decided, nor what it cannot judge.
 import type { ValueOfEmail } from '../../../shared/attribute.ts';
-import { PRIORITY } from '../../../shared/attribute.ts';
-import type { EmailStatus, Priority } from '../../../shared/email.ts';
+import type { EmailStatus } from '../../../shared/email.ts';
 import { ruleValue } from './attributes.ts';
 import type { Decided } from './attributes.ts';
 
@@ -39,12 +38,7 @@ export function standsAgain(kept: KeptSorting, decided: Decided | null): StatusA
 
 export interface ValueAgain {
   attributes: Record<string, ValueOfEmail>;
-  /** Set when the attribute is the priority, which is also kept where the lists read it. */
-  priority?: Priority;
 }
-
-/** The priority an email has once its values are these: normal when it has none. */
-const priorityOf = (key: string, value: string | undefined): Pick<ValueAgain, 'priority'> => (key === PRIORITY ? { priority: (value as Priority | undefined) ?? 'normal' } : {});
 
 /**
  * The values of an email once the rule of an attribute is applied again, or null when nothing
@@ -55,9 +49,9 @@ export function valueAgain(key: string, kept: KeptSorting, decided: Decided | nu
   if (current?.source === 'user') return null;
   if (decided) {
     if (current?.source === 'rule' && current.value === decided.value) return null;
-    return { attributes: { ...kept.attributes, [key]: ruleValue(decided) }, ...priorityOf(key, decided.value) };
+    return { attributes: { ...kept.attributes, [key]: ruleValue(decided) } };
   }
   if (current?.source !== 'rule') return null;
   const { [key]: _gone, ...left } = kept.attributes;
-  return { attributes: left, ...priorityOf(key, undefined) };
+  return { attributes: left };
 }

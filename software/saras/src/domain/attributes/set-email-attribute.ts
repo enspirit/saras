@@ -6,7 +6,7 @@
 //            the value is one of the attribute's
 //            not "Stands in": where an email stands is changed by acting on it (the sorting corrections, a reply)
 //   ReqPost  a value set by hand is not overwritten by later sorting
-import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
+import { STATUS } from '../../../shared/attribute.ts';
 import type { Attribute } from '../../../shared/attribute.ts';
 import type { Db } from '../../tooling/db.ts';
 import { Refusal } from '../refusal.ts';
@@ -32,7 +32,5 @@ export async function setEmailAttribute({ db }: World, actor: Actor, emailId: un
   const email = await emailFor(db, actor, emailId);
   const attribute = await attributeOf(db, actor.organization, key);
   const value = valueOf(attribute, given);
-  // Priority is also kept where the lists read it; without a value it goes back to normal.
-  if (attribute.key === PRIORITY) await db.run('UPDATE emails SET priority = $1 WHERE id = $2', [value ?? 'normal', email.id]);
   await (value === null ? forget(db, email.id, attribute.key) : keep(db, email.id, attribute.key, value));
 }

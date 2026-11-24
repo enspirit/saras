@@ -13,9 +13,8 @@ export type AttributeKind = (typeof ATTRIBUTE_KINDS)[number];
 export const DECIDERS = ['nobody', 'elo'] as const;
 export type Decider = (typeof DECIDERS)[number];
 
-/** The two attributes every organisation starts with, which the application itself relies on. */
+/** The attribute every organisation has, which the application itself relies on: where an email stands. */
 export const STATUS = 'status';
-export const PRIORITY = 'priority';
 
 /** The colours a value can be shown in. Grey is the one a value has until it is given another. */
 export const VALUE_COLORS = ['grey', 'red', 'orange', 'yellow', 'green', 'blue', 'purple'] as const;
@@ -35,7 +34,7 @@ export interface ValueGiven {
 }
 
 export interface Attribute {
-  /** What boards and emails name it by: `status`, `priority`, or a number for one the organisation made. */
+  /** What boards and emails name it by: `status`, or a number for one of the organisation's own. */
   key: string;
   name: string;
   kind: AttributeKind;
@@ -44,7 +43,7 @@ export interface Attribute {
   decidedBy: Decider;
   /** The rule, in Elo: given the email as `_`, the key of a value, or null to say nothing. */
   elo: string;
-  /** Pre-configured: its values are fixed and it cannot be deleted; how it is decided can be changed. */
+  /** Pre-configured ("Stands in"): its name and its values are fixed and it cannot be deleted; how it is decided and the colours of its values can be changed. */
   system: boolean;
 }
 
@@ -55,7 +54,7 @@ export const REPLIED = 'sent';
 export const valuesForRules = ({ key, values }: Pick<Attribute, 'key' | 'values'>): AttributeValue[] => (key === STATUS ? values.filter((value) => value.key !== REPLIED) : values);
 
 /**
- * What a rule writes to give a value: its label. Of a pre-configured attribute, whose values
+ * What a rule writes to give a value: its label. Of the pre-configured attribute, whose values
  * are named in each reader's language, its key.
  */
 export const saidInRule = ({ system }: Pick<Attribute, 'system'>, value: AttributeValue): string => (system ? value.key : value.label);
@@ -71,7 +70,8 @@ export interface AttributeGiven {
 
 /**
  * The value an email has for an attribute, and who decided it: a rule, or a member by hand.
- * Nobody, for where an email stands and its priority while they are what an email starts with.
+ * Nobody, for where an email stands while it is where an email starts; and for a value that
+ * comes from before attributes were decided this way (a priority the AI gave, when it sorted).
  */
 export interface ValueOfEmail {
   value: string;

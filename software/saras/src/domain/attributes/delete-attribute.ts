@@ -1,9 +1,10 @@
-// DeleteAttribute — an administrator removes an attribute the organisation made.
+// DeleteAttribute — an administrator removes one of the organisation's own attributes: one it
+// made, or the priority it started with.
 //
-//   DomPre   an attribute the organisation made
+//   DomPre   an attribute of the organisation's own
 //   DomPost  it is gone
 //   ReqPre   the member is an administrator
-//            not one of the two pre-configured attributes
+//            not the pre-configured attribute, "Stands in"
 //   ReqPost  boards that filtered on it no longer do
 import { isAdministrator } from '../computations/access.ts';
 import { Refusal, accepted } from '../refusal.ts';

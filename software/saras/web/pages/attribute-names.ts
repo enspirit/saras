@@ -1,14 +1,13 @@
-// How attributes and their values are named on screen. The two pre-configured ones are named in
-// the reader's language; those an organisation made keep the names it gave them.
+// How attributes and their values are named on screen. The pre-configured one is named in the
+// reader's language; an organisation's own keep the names it gave them.
 
-import { PRIORITY, STATUS } from '../../shared/attribute.ts';
+import { STATUS } from '../../shared/attribute.ts';
 import type { Attribute, AttributeValue } from '../../shared/attribute.ts';
 import { t } from '../i18n.ts';
 
-const NAMES: Record<string, string> = { [STATUS]: 'attributes.status', [PRIORITY]: 'attributes.priority' };
+const NAMES: Record<string, string> = { [STATUS]: 'attributes.status' };
 const VALUES: Record<string, Record<string, string>> = {
   [STATUS]: { todo: 'box.todo.label', none: 'box.none.label', sent: 'box.sent.label', ignored: 'box.ignored.label' },
-  [PRIORITY]: { high: 'attributes.priorityHigh', normal: 'attributes.priorityNormal', low: 'attributes.priorityLow' },
 };
 
 export const attributeName = (attribute: Attribute): string => (NAMES[attribute.key] ? t(NAMES[attribute.key] as string) : attribute.name);

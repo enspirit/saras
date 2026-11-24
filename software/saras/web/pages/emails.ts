@@ -48,7 +48,7 @@ export interface EmailsShown {
   selectedId: number | null;
 }
 
-/** The values an email has for the attributes the organisation made, each as a small chip. */
+/** The values an email has for the organisation's own attributes, each as a small chip. */
 const valuesOf = (e: EmailSummary): Child => session.attributes.filter((a) => !a.system).map((a) => chipFor(a, e.attributes[a.key]?.value, true));
 
 /** One email of the list: who and when, what about, and what to know first; the words searched marked. */
@@ -61,7 +61,6 @@ const entryOf = (e: EmailSummary, shown: EmailsShown): EmailListEntry => ({
     onClick: () => (location.hash = shown.hrefOf(e.id, shown.view.search ?? '')),
     marks: (shown.view.search ?? '').split(/\s+/).filter(Boolean),
     tags: [
-      e.priority === 'high' && e.status !== 'sent' && Badge(t('mailbox.priority'), 'warn'),
       e.replyMode === 'draft' && Badge(t('mailbox.draft'), 'neutral'),
       valuesOf(e),
     ],

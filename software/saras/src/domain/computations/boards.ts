@@ -1,5 +1,5 @@
 // Pure: boards — what a filter given is reduced to, the conditions it puts on emails, who manages a board.
-import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
+import { STATUS } from '../../../shared/attribute.ts';
 import type { BoardFilter, BoardGiven, ReversibleConditions } from '../../../shared/board.ts';
 import { BOXES } from '../../../shared/email.ts';
 import type { Box, EmailStatus } from '../../../shared/email.ts';
@@ -12,8 +12,8 @@ const numbers = (value: unknown): number[] => (Array.isArray(value) ? [...new Se
 const days = (value: unknown): number => (Number.isInteger(Number(value)) && Number(value) > 0 ? Math.min(Number(value), 3650) : 0);
 const texts = (value: unknown): string[] => (Array.isArray(value) ? [...new Set(value.map((v) => clipped(v, 60)).filter(Boolean))] : []);
 
-/** The key of an attribute as a filter may name it: one of the two pre-configured, or the number of one the organisation made. */
-const isAttributeKey = (key: string): boolean => key === STATUS || key === PRIORITY || /^[0-9]+$/.test(key);
+/** The key of an attribute as a filter may name it: where an email stands, or the number of one of the organisation's own. */
+const isAttributeKey = (key: string): boolean => key === STATUS || /^[0-9]+$/.test(key);
 
 /** Values by attribute, as they are kept: only attributes we know how to name, only those with a value. */
 export function attributeValuesGiven(named: Record<string, unknown>): Record<string, string[]> {
@@ -21,11 +21,10 @@ export function attributeValuesGiven(named: Record<string, unknown>): Record<str
   return Object.fromEntries(kept.map(([key, values]) => [key, texts(values)]));
 }
 
-/** The conditions on attributes: by key, the values kept. A filter made before attributes existed named two of them itself. */
+/** The conditions on attributes: by key, the values kept. A filter made before attributes existed named the box itself. */
 function attributesGiven(given: Record<string, unknown>): Record<string, string[]> {
   const named: Record<string, unknown> = given.attributes && typeof given.attributes === 'object' ? { ...given.attributes } : {};
   named[STATUS] ??= given.box;
-  named[PRIORITY] ??= given.priority;
   return attributeValuesGiven(named);
 }
 
@@ -85,10 +84,9 @@ const statusesOf = (values: string[]): EmailStatus[] => values.flatMap((value) =
 type Part = [write: (n: number) => string, param: unknown];
 const part = (sql: string, param: unknown): Part => [(n) => sql.replaceAll('?', '$' + n), param];
 
-/** The condition one attribute puts: where the email stands and its priority have their own columns, the others are kept together. */
+/** The condition one attribute puts: where the email stands has its own column, the others are kept together. */
 function onAttribute(key: string, values: string[]): Part {
   if (key === STATUS) return part('e.status = ANY(?)', statusesOf(values));
-  if (key === PRIORITY) return part('e.priority = ANY(?)', values);
   return part("(e.attributes_json::jsonb -> '" + Number(key) + "' ->> 'value') = ANY(?)", values);
 }
 
