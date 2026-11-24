@@ -4,15 +4,18 @@
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { openDb } from '../../src/tooling/db.ts';
-import type { Db } from '../../src/tooling/db.ts';
+import type { Db, DbOptions } from '../../src/tooling/db.ts';
 
 interface TestDatabase {
   db: Db;
   drop: () => Promise<void>;
 }
 
-async function inMemory(): Promise<TestDatabase> {
-  const db = await openDb();
+/** How the database is opened: migrated, as a server finds it once started, unless a test says otherwise. */
+type Open = (options: DbOptions) => Db | Promise<Db>;
+
+async function inMemory(open: Open): Promise<TestDatabase> {
+  const db = await open({});
   return { db, drop: () => db.close() };
 }
 
@@ -23,12 +26,12 @@ function scopedTo(url: string, schema: string): string {
   return scoped.toString();
 }
 
-async function inItsOwnSchema(url: string): Promise<TestDatabase> {
+async function inItsOwnSchema(url: string, open: Open): Promise<TestDatabase> {
   const schema = `test_${randomBytes(6).toString('hex')}`;
   const admin = new pg.Client({ connectionString: url });
   await admin.connect();
   await admin.query(`CREATE SCHEMA ${schema}`);
-  const db = await openDb({ databaseUrl: scopedTo(url, schema) });
+  const db = await open({ databaseUrl: scopedTo(url, schema) });
   const drop = async (): Promise<void> => {
     await db.close();
     await admin.query(`DROP SCHEMA ${schema} CASCADE`);
@@ -37,4 +40,5 @@ async function inItsOwnSchema(url: string): Promise<TestDatabase> {
   return { db, drop };
 }
 
-export const testDatabase = (): Promise<TestDatabase> => (process.env.TEST_DATABASE_URL ? inItsOwnSchema(process.env.TEST_DATABASE_URL) : inMemory());
+export const testDatabase = (open: Open = openDb): Promise<TestDatabase> =>
+  process.env.TEST_DATABASE_URL ? inItsOwnSchema(process.env.TEST_DATABASE_URL, open) : inMemory(open);

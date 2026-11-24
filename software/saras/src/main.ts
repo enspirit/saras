@@ -2,7 +2,8 @@ import { existsSync } from 'node:fs';
 import { createApp } from './tooling/http/server.ts';
 import { loadConfig, loadDotEnv } from './tooling/config.ts';
 import { createVault } from './tooling/crypto.ts';
-import { openDb } from './tooling/db.ts';
+import { connectDb } from './tooling/db.ts';
+import { migrate, standing } from './tooling/db/migrate.ts';
 import { errorMessage } from './tooling/errors.ts';
 import { createOpenRouter } from './tooling/llm/openrouter.ts';
 import { createMailService } from './tooling/mail/mail-service.ts';
@@ -26,7 +27,12 @@ if (!existsSync(new URL('../public/js/app.js', import.meta.url))) {
   process.exit(1);
 }
 
-const db = await openDb({ databaseUrl: config.databaseUrl, dataDir: config.dataDir });
+const db = connectDb({ databaseUrl: config.databaseUrl, dataDir: config.dataDir });
+const applied = await migrate(db);
+if (applied.length) console.log(`migrations applied: ${applied.join(', ')}`);
+// Not refused: a migration leaves the version before it working, which is what lets an upgrade be taken back.
+const { unknown } = await standing(db);
+if (unknown.length) console.warn(`the database was migrated by a newer version of saras, which applied: ${unknown.join(', ')}`);
 const vault = createVault(config.appSecret);
 const mail = createMailService({ db, vault, config });
 const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });

@@ -1,9 +1,12 @@
-// The schema, as SQL statements run one by one each time the database is opened.
-// The statements after the tables bring a database created by an earlier version up to date:
+// The schema as it stood when migrations began: what the server used to run each time it
+// opened its database. Every statement is safe on a database that already has it, so this
+// one, alone among the migrations, also adopts a database created by an earlier version:
 // a mailbox fetched before folders existed keeps watching its inbox, the identity of an email
 // includes its folder (IMAP numbers messages per folder), and what existed before
 // organisations did is gathered into a single one.
-export const SCHEMA = `
+import type { Migration } from '../migrations.ts';
+
+const sql = `
 CREATE TABLE IF NOT EXISTS organizations (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -188,3 +191,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS accounts_identity ON accounts (org_id, kind, e
 ALTER TABLE invitations DROP CONSTRAINT IF EXISTS invitations_email_key;
 CREATE UNIQUE INDEX IF NOT EXISTS invitations_identity ON invitations (org_id, email);
 `;
+
+export const baseline: Migration = { id: '0001-baseline', sql };
