@@ -1,12 +1,10 @@
-/* ---- Page: a scrolling column, centred, as wide as its content reads well ---- */
+/* ---- Page: a scrolling column from the same left edge as every other, as wide as what it holds ---- */
+/* Nothing is centred: the title of every page starts where the reading pane starts, and a block keeps
+   the width of its kind (a table or a panel fills the page, a form keeps --form-width). */
 .page { width: 100%; padding: var(--space-6) var(--space-6) var(--space-8); overflow-y: auto; }
-.page__inner { max-width: var(--content-width); margin-inline: auto; }
+.page__inner { max-width: var(--page-width); }
 .page__inner > h2 { margin: var(--space-6) 0 var(--space-3); }
 
-/* ---- Columns: what one works on, and what informs it beside ---- */
-.columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-5); align-items: start; }
-/* Wide: the page takes what the screen has, while something is shown beside; the work gets the room. */
-.page__inner:has(> .columns--wide > aside > :not([hidden])) { max-width: var(--content-width-wide); }
-.columns--wide { grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); }
-.columns--wide:not(:has(> aside > :not([hidden]))) { grid-template-columns: minmax(0, 1fr); }
-@media (max-width: 1100px) { .columns--wide { grid-template-columns: minmax(0, 1fr); } }
+/* ---- Columns: what one works on, and beside it a narrow column of what informs it ---- */
+.columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: var(--space-5); align-items: start; }
+@media (max-width: 1100px) { .columns { grid-template-columns: minmax(0, 1fr); } }

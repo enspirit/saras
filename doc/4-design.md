@@ -76,7 +76,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | Shape | `--radius-sm`, `--radius-md` (the brand's), `--radius-lg`, `--radius-pill`, `--border-width`, `--focus-width` | |
 | Elevation | `--shadow-1` (card, table, panel), `--shadow-2` (the docked reply area), `--shadow-3` (dialog), `--shadow-overlay` (toast) | Tinted with the brand's ink. |
 | Motion | `--duration-fast` 120 ms, `--duration-base` 200 ms, `--duration-spin`, `--ease` | Motion confirms an action; it never performs. |
-| Layout | `--nav-width`, `--list-width`, `--content-width` 1000, `--form-width` 640, `--auth-width`, `--dialog-width`, `--z-sticky`, `--z-overlay` | |
+| Layout | `--nav-width`, `--list-width`, `--page-width` 1600, `--form-width` 720, `--auth-width`, `--dialog-width`, `--z-sticky`, `--z-overlay` | |
 
 ## 5. Components
 
@@ -120,7 +120,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | --- | --- |
 | `AuthPanel` | The brand's ground with what it guarantees, and a form beside it. |
 | `AppShell` | Navigation and main area. Below 860 px the boxes become a bar at the bottom. |
-| `Page`, `Columns` | A centred scrolling column; main content with an aside. `Columns` wide (writing a rule) takes what the screen has, up to `--content-width-wide`, and keeps the aside a narrow column. |
+| `Page`, `Columns` | A scrolling column from the left edge every page starts at, up to `--page-width`; main content with a narrow aside (260 to 340px). |
 | `Mailbox` | List on one side, reading pane on the other; they alternate on a small screen. |
 | `Reading`, `ReadingHeader` | An open email: header, scrolling content, and what is docked under it. |
 | `ReplyDock`, `ClosedDock` | The reply area; the line that stands for it when no reply is expected. |
@@ -132,6 +132,8 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 The four boxes come first, each with an icon and its count. Configuration (Mailboxes, Prompts, Users, Settings) is a quieter group under its title. At the bottom: the privacy statement with its lock, then who is signed in (name, organisation) and an icon button to sign out.
 
 Below 860 px the boxes are a bar at the bottom of the screen, with a fifth entry, **More**, that leads to a page listing the configuration pages, who is signed in and Sign out.
+
+Every page beside the menu starts at the same left edge, the one the reading pane starts at; none is centred. Its header (crumbs, title, what it is for, its main action) is a row across the page, closed by a hairline, or by its tabs. Below, a block takes the width of its kind: a table, a panel in two parts or a rule being written fills the page, up to `--page-width`; a form or a text keeps `--form-width`, and a form alone on its page is no card, it stands on the page. On a wide screen a page that holds only a short form leaves room on its right, on purpose.
 
 ### 6.2 Reading and replying (US-25, US-30 to US-40)
 

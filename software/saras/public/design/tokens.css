@@ -162,10 +162,10 @@
   /* Layout */
   --nav-width: 230px;
   --list-width: 380px;
-  --content-width: 1000px;
-  /* A page whose work needs room, like writing a rule. */
-  --content-width-wide: 1480px;
-  --form-width: 640px;
+  /* Every page starts at the same left edge; what it holds sets its width: a table or a panel up to
+     --page-width, a form or a text up to --form-width, which reads well. */
+  --page-width: 1600px;
+  --form-width: 720px;
   --auth-width: 400px;
   --dialog-width: 440px;
   --logo-height: 28px;

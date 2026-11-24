@@ -9,7 +9,10 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
 }
-.card--form { max-width: var(--form-width); }
+/* A card that holds one form is no card: the form stands on the page, as wide as it reads well. */
+.card--form { --card-padding: 0; max-width: var(--form-width); background: transparent; border: 0; box-shadow: none; }
 .card__head { display: flex; gap: var(--space-3); align-items: baseline; flex-wrap: wrap; margin-bottom: var(--space-3); }
 .card__section { margin-top: var(--space-5); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-line); }
 .card__section > h3 { margin-bottom: var(--space-3); }
+/* A section that opens its card needs no line above it. */
+.card > .card__section:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
