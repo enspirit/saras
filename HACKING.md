@@ -45,14 +45,14 @@ In `software/saras`, each task is the npm script of the same name (`npm test`, `
 
 | Service | Is | On a laptop |
 | --- | --- | --- |
-| `saras` | The server, restarted and rebundled on change | http://localhost:3000 |
+| `saras` | The server, restarted and rebundled on change | http://localhost:3000 (`emb logs saras` shows its log, one JSON object per line: [decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)) |
 | `postgres` | The database | `localhost:5432`, user and database `saras` |
 | `storage` | `dbagent`, for the seeds | — |
 | `mailbox` | The mailbox of sample emails, in the network of `saras` | — (`emb logs mailbox` shows what it was given to send) |
 | `fakesmtp` | Where saras's own mail goes (the link of a lost password) | http://localhost:1080 |
 | `webspicy` | The black-box suite; it sleeps until run | — |
 
-It needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail. `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
+It needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, `LOG_LEVEL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail. `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
 
 Three compose files, two stacks: `docker-compose.base.yml` says what each service is; `devel` adds ports and mounts; `test` is what CI runs, with no published port and no secret. To try something without touching the development database, run a second stack beside the first:
 

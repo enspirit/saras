@@ -18,7 +18,8 @@ import type { FetchResult } from '../../../shared/mailbox.ts';
 import type { Config } from '../../tooling/config.ts';
 import type { Vault } from '../../tooling/crypto.ts';
 import type { Db } from '../../tooling/db.ts';
-import { errorMessage } from '../../tooling/errors.ts';
+import { errorKind, errorMessage } from '../../tooling/errors.ts';
+import { about, log } from '../../tooling/log.ts';
 import type { MailService } from '../../tooling/mail/mail-service.ts';
 import { problem } from '../../tooling/messages.ts';
 import type { ServerProblem } from '../../tooling/messages.ts';
@@ -67,6 +68,8 @@ async function broughtIn(deps: Dependencies, account: AccountRow, folder: string
   try {
     return { fetched: await bringIn(deps, account, folder), error: null };
   } catch (e) {
+    // By its kind only: the words of a mail host may name a folder. They are kept with the mailbox, for its members.
+    log.warn('mailbox not fetched', { kind: account.kind, ...errorKind(e) });
     return { fetched: 0, error: problem('sync.fetchFailed', { detail: errorMessage(e) }) };
   }
 }
@@ -79,14 +82,16 @@ async function fetchMailbox(deps: Dependencies, account: AccountRow): Promise<Sy
   const { folder } = account;
   // Nothing is fetched until the user has said which folder to watch.
   if (!folder) return { fetched: 0, error: problem('mailboxes.folderRequired') };
+  const started = Date.now();
   const brought = await broughtIn(deps, account, folder);
   const error = brought.error ?? (await prepared(deps, account));
   await recordFetch(deps.db, account.id, error);
+  log.info('mailbox fetched', { kind: account.kind, fetched: brought.fetched, problem: error?.code, ms: Date.now() - started });
   return { fetched: brought.fetched, error };
 }
 
 /** The same, once no other server is fetching this mailbox: what that one brought in is then known, sorted and prepared, and is not again. */
-async function fetchInTurn(deps: Dependencies, account: AccountRow): Promise<SyncResult> {
+async function inTurn(deps: Dependencies, account: AccountRow): Promise<SyncResult> {
   const release = await deps.db.hold(`fetch-mailbox:${account.id}`);
   try {
     return await fetchMailbox(deps, account);
@@ -95,7 +100,10 @@ async function fetchInTurn(deps: Dependencies, account: AccountRow): Promise<Syn
   }
 }
 
-const logged = (account: AccountRow) => (e: unknown) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`);
+/** Every line logged while a mailbox is fetched says which, by its number: a mailbox is never named in a log. */
+const fetchInTurn = (deps: Dependencies, account: AccountRow): Promise<SyncResult> => about({ mailbox: account.id }, () => inTurn(deps, account));
+
+const logged = (account: AccountRow) => (e: unknown) => log.error('fetch of a mailbox failed', { mailbox: account.id, error: errorMessage(e) });
 
 export function createSync(deps: Dependencies): Sync {
   /** Mailbox -> fetch in flight on this server; whoever asks it meanwhile shares it instead of fetching twice. */

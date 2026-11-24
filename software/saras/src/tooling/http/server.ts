@@ -12,6 +12,7 @@ import { createPostman } from '../postman.ts';
 import type { Postman } from '../postman.ts';
 import type { Fetch } from '../fetch.ts';
 import { ACCESS } from './access.ts';
+import { accessLog } from './access-log.ts';
 import { ATTRIBUTES } from './attributes.ts';
 import { BOARDS } from './boards.ts';
 import { EMAILS } from './emails.ts';
@@ -67,6 +68,7 @@ export interface Dependencies extends Reach {
 
 export function createApp({ sync, fetchImpl = fetch, postman, ...reach }: Dependencies): Express {
   const app = express();
+  app.use(accessLog);
   app.use(nonced);
   app.use(helmet(HEADERS));
   app.set('trust proxy', 1);

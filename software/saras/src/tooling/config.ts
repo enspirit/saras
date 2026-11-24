@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { LEVELS, isLevel } from './log.ts';
 
 const int = (v: string | undefined, d: number): number => (v === undefined || v === '' || Number.isNaN(Number(v)) ? d : Number(v));
 
@@ -55,6 +56,13 @@ const otherHosts = (env: Env) => ({
   microsoft: { clientId: env.MICROSOFT_CLIENT_ID || '', clientSecret: env.MICROSOFT_CLIENT_SECRET || '', tenant: env.MICROSOFT_TENANT || 'common' },
 });
 
+/** How much the server says of what it does, on its standard output: from this level up (tooling/log.ts). */
+function logging(env: Env) {
+  const logLevel = env.LOG_LEVEL || 'info';
+  if (!isLevel(logLevel)) throw new Error(`LOG_LEVEL is ${logLevel}: a level is one of ${LEVELS.join(', ')}`);
+  return { logLevel };
+}
+
 const ROLES = ['migrate', 'web', 'clock'];
 
 /**
@@ -76,7 +84,7 @@ export function loadConfig(env: Env = process.env) {
   if (appSecret.length < 32) {
     throw new Error('APP_SECRET is missing or too short (32 characters minimum). Generate one with: openssl rand -hex 32');
   }
-  return { appSecret, ...hosting(env), ...joining(env), ...fetching(env), ...otherHosts(env), ...roles(env) };
+  return { appSecret, ...hosting(env), ...logging(env), ...joining(env), ...fetching(env), ...otherHosts(env), ...roles(env) };
 }
 
 export function loadDotEnv(path = '.env') {

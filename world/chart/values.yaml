@@ -31,6 +31,7 @@ replicas: 1
 #   config:
 #     ALLOW_SIGNUP: 'true'
 #     RETENTION_DAYS: 90
+#     LOG_LEVEL: debug
 config: {}
 
 # The secrets of env/base.env, by name. Those given a value here are kept in a

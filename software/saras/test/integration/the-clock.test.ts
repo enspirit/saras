@@ -5,6 +5,7 @@ import { after, before, test } from 'node:test';
 import { startClock, takesTurn, tick } from '../../src/tooling/clock.ts';
 import type { Task } from '../../src/tooling/clock.ts';
 import type { Db } from '../../src/tooling/db.ts';
+import { startLogging } from '../../src/tooling/log.ts';
 import { testDatabase } from '../support/database.ts';
 
 let db: Db;
@@ -43,13 +44,14 @@ test('after a long absence the turns missed are not caught up', async () => {
   assert.equal(await secondsToNext('long-away'), 3_600);
 });
 
-test('a task that fails is told, waits for its next turn, and keeps none of the others from running', async (t) => {
-  const told = t.mock.method(console, 'error', () => {});
+test('a task that fails is told, waits for its next turn, and keeps none of the others from running', async () => {
+  const told: { level: string; msg: string; task: string; error: string }[] = [];
+  startLogging('warn', (line) => told.push(JSON.parse(line)));
   const ran: string[] = [];
   const failing = hourly('failing', async () => Promise.reject(new Error('the mail host is away')));
   await tick(db, [failing, hourly('after-it', async () => ran.push('after-it'))]);
   assert.deepEqual(ran, ['after-it']);
-  assert.deepEqual(told.mock.calls.map((call) => call.arguments[0]), ['failing failed: the mail host is away']);
+  assert.deepEqual(told.map(({ level, msg, task, error }) => ({ level, msg, task, error })), [{ level: 'error', msg: 'task failed', task: 'failing', error: 'the mail host is away' }]);
   assert.equal(await takesTurn(db, failing), false);
 });
 

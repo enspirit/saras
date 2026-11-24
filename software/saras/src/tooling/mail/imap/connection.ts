@@ -3,12 +3,24 @@ import { ImapFlow } from 'imapflow';
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import type { ImapCredentials, ServerCredentials } from '../../../domain/model/mailbox.ts';
+import { logs } from '../../log.ts';
+import { attempted } from '../log/attempt.ts';
+import { imapLogger } from '../log/imap.ts';
+import { smtpLogger } from '../log/smtp.ts';
 
 /**
  * Without direct TLS the connection must be upgraded with STARTTLS, or we refuse to log in:
  * a password or a mail never travels in clear. Loopback servers are exempt.
  */
 const mustUpgrade = ({ host, secure }: ServerCredentials): boolean => !secure && !/^(localhost|127\.\d+\.\d+\.\d+|::1)$/i.test(host);
+
+/**
+ * How long a server is given to accept the connection, then to greet. Left to themselves the
+ * libraries wait 90 seconds and two minutes, longer than a gateway waits for this server: a
+ * port that answers nothing is then a gateway's timeout for the member, and never the refusal
+ * that says what happened (decision 0012).
+ */
+const TIMEOUTS = { connectionTimeout: 15_000, greetingTimeout: 15_000 };
 
 const imapClient = ({ imap }: ImapCredentials): ImapFlow =>
   new ImapFlow({
@@ -17,8 +29,9 @@ const imapClient = ({ imap }: ImapCredentials): ImapFlow =>
     secure: imap.secure,
     doSTARTTLS: mustUpgrade(imap) ? true : undefined,
     auth: { user: imap.user, pass: imap.pass },
-    logger: false,
+    logger: imapLogger(imap),
     disableAutoIdle: true,
+    ...TIMEOUTS,
   });
 
 export const smtpTransport = ({ smtp }: ImapCredentials): Transporter =>
@@ -28,13 +41,20 @@ export const smtpTransport = ({ smtp }: ImapCredentials): Transporter =>
     secure: smtp.secure,
     requireTLS: mustUpgrade(smtp),
     auth: smtp.user ? { user: smtp.user, pass: smtp.pass } : undefined,
+    logger: smtpLogger(smtp),
+    // The commands and the answers, not the mail: they are logged while the handshake lasts.
+    transactionLog: logs('debug'),
+    ...TIMEOUTS,
   });
+
+/** The outgoing server lets us in. */
+export const smtpVerified = async (cfg: ImapCredentials): Promise<void> => void (await attempted('smtp', cfg.smtp, () => smtpTransport(cfg).verify()));
 
 /** A connected client; a failed login must not leave its socket open. */
 async function connected(cfg: ImapCredentials): Promise<ImapFlow> {
   const client = imapClient(cfg);
   try {
-    await client.connect();
+    await attempted('imap', cfg.imap, () => client.connect());
   } catch (e) {
     client.close();
     throw e;

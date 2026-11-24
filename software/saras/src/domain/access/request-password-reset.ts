@@ -9,6 +9,8 @@
 //            the link is good once, for an hour; only its hash is kept
 //            asking again within two minutes sends nothing more
 import { randomToken } from '../../tooling/crypto.ts';
+import { errorMessage } from '../../tooling/errors.ts';
+import { log } from '../../tooling/log.ts';
 import { addressGiven } from '../computations/given.ts';
 import { resetLetter, resetLink } from '../computations/password-reset.ts';
 import { Refusal } from '../refusal.ts';
@@ -23,5 +25,5 @@ export async function requestPasswordReset({ db, postman, config }: World, addre
   const token = randomToken();
   await keepPasswordReset(db, member.id, token);
   // A letter that cannot be sent is the server's trouble, not something to tell a visitor.
-  await postman.send(resetLetter(member.email, member.language, resetLink(config.baseUrl, token), RESET_MINUTES)).catch((e) => console.error(`password reset letter not sent: ${e instanceof Error ? e.message : e}`));
+  await postman.send(resetLetter(member.email, member.language, resetLink(config.baseUrl, token), RESET_MINUTES)).catch((e) => log.error('password reset letter not sent', { error: errorMessage(e) }));
 }

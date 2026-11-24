@@ -4,6 +4,7 @@
 // does not start the count again.
 import type { Db } from './db.ts';
 import { errorMessage } from './errors.ts';
+import { about, log } from './log.ts';
 
 export interface Task {
   name: string;
@@ -26,14 +27,18 @@ const TAKE_TURN = `
 /** Whether the task is due and this server is the one to run it. */
 export const takesTurn = async (db: Db, task: Task): Promise<boolean> => (await db.query(TAKE_TURN, [task.name, task.everySeconds])).length > 0;
 
+/** Runs the task if its turn is this server's, and says how long it took. */
+async function inTurn(db: Db, task: Task): Promise<void> {
+  if (!(await takesTurn(db, task))) return;
+  const started = Date.now();
+  await task.run();
+  log.info('task done', { ms: Date.now() - started });
+}
+
 /** Runs each task whose turn this server took. What fails is logged, and waits for its next turn. */
 export async function tick(db: Db, tasks: Task[]): Promise<void> {
   for (const task of tasks) {
-    try {
-      if (await takesTurn(db, task)) await task.run();
-    } catch (e) {
-      console.error(`${task.name} failed: ${errorMessage(e)}`);
-    }
+    await about({ task: task.name }, () => inTurn(db, task)).catch((e) => log.error('task failed', { task: task.name, error: errorMessage(e) }));
   }
 }
 

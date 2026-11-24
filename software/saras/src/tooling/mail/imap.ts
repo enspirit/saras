@@ -1,13 +1,13 @@
 // Generic mailbox: IMAP to read, SMTP to send.
 import type { ImapCredentials, MailProvider, Sender } from '../../domain/model/mailbox.ts';
-import { smtpTransport, withFolder } from './imap/connection.ts';
+import { smtpVerified, withFolder } from './imap/connection.ts';
 import { listFolders, listNew } from './imap/folders.ts';
 import { saveDraft, send } from './imap/replies.ts';
 
 /** Both servers let us in. */
 async function verify(cfg: ImapCredentials): Promise<void> {
   await withFolder(cfg, 'INBOX', async () => {});
-  await smtpTransport(cfg).verify();
+  await smtpVerified(cfg);
 }
 
 export const createImapProvider = (account: Sender, cfg: ImapCredentials): MailProvider => ({

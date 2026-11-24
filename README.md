@@ -32,7 +32,7 @@ This is the main design constraint.
 | Encrypted secrets | Mailbox passwords, OAuth tokens and API keys are encrypted in the database (AES-256-GCM, key derived from `APP_SECRET`). Email content itself is stored in clear: protect the database accordingly. |
 | Transport | A mail server is given a password over TLS only, unless it is one of the server's own machine. |
 | Local retention | Email content is erased from the database after `RETENTION_DAYS` days (30 by default). |
-| Logs | The server never logs the content of emails or requests. |
+| Logs | The server never logs the content of emails or requests, a password, a key, an address or who signs in at a mail server: whatever `LOG_LEVEL` says ([decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)). |
 
 **What remains your responsibility:**
 
