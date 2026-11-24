@@ -7,7 +7,6 @@
   "back": "Retour à la liste",
   "select": "Sélectionnez un email.",
   "noSubject": "(sans objet)",
-  "untriaged": "Non trié",
   "priority": "Prioritaire",
   "draft": "Brouillon",
   "fetchedAt": "Relevé {time}",

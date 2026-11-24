@@ -1,4 +1,4 @@
-// How a value of an attribute is shown, and the signs of who decides: a rule, the AI, a member by hand.
+// How a value of an attribute is shown, and the signs of who decides: a rule, a member by hand.
 
 import type { Attribute, AttributeValue, Decider, ValueOfEmail } from '../../shared/attribute.ts';
 import { t } from '../i18n.ts';
@@ -8,17 +8,16 @@ import { ValueChip } from '../ui/atoms/value-chip.ts';
 import type { Sign } from '../ui/molecules/attribute-bar.ts';
 
 /** `label` is a translation key. */
-const SOURCES: Record<ValueOfEmail['source'], { icon: IconName; label: string }> = {
+const SOURCES: Record<Exclude<ValueOfEmail['source'], 'nobody'>, { icon: IconName; label: string }> = {
   rule: { icon: 'code', label: 'attributes.sourceRule' },
-  ai: { icon: 'sparkles', label: 'attributes.sourceAi' },
   user: { icon: 'pencil', label: 'attributes.sourceUser' },
 };
 
-/** The sign of who decided a value, with the same in words. */
-export const signOf = (source: ValueOfEmail['source']): Sign => ({ icon: SOURCES[source].icon, label: t(SOURCES[source].label) });
+/** The sign of who decided a value, with the same in words; none when nobody did. */
+export const signOf = (source: ValueOfEmail['source']): Sign | undefined => (source === 'nobody' ? undefined : { icon: SOURCES[source].icon, label: t(SOURCES[source].label) });
 
 /** The signs of who decides an attribute. */
-export const DECIDER_ICONS: Record<Decider, IconName[]> = { nobody: ['pencil'], elo: ['code'], ai: ['sparkles'], eloAi: ['code', 'sparkles'] };
+export const DECIDER_ICONS: Record<Decider, IconName[]> = { nobody: ['pencil'], elo: ['code'] };
 
 /** A value as a chip, in its colour. A member is named by the part of their address before the @, the whole of it as a tooltip. */
 export const chipOf = (attribute: Attribute, value: AttributeValue, small = false): HTMLSpanElement =>

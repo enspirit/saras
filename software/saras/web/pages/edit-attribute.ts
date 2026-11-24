@@ -1,8 +1,8 @@
 // Making an attribute, or changing one: what it is, its values and their colours, and who decides
-// it when an email is sorted — a rule written in Elo, the AI, or with neither, members by hand.
+// it when an email is sorted — a rule written in Elo, or without one, members by hand.
 
-import { ATTRIBUTE_KINDS, STATUS, VALUE_COLORS } from '../../shared/attribute.ts';
-import type { Attribute, AttributeGiven, AttributeKind, Decider, ValueColor } from '../../shared/attribute.ts';
+import { ATTRIBUTE_KINDS, VALUE_COLORS } from '../../shared/attribute.ts';
+import type { Attribute, AttributeGiven, AttributeKind, ValueColor } from '../../shared/attribute.ts';
 import { createAttribute, deleteAttribute, editAttribute, readAttributes, sortAgainByRule } from '../api/attributes.ts';
 import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard, SubmitForm, toast } from './actions.ts';
@@ -31,10 +31,8 @@ interface AttributeFields {
   name: HTMLInputElement;
   kind: HTMLSelectElement;
   values: ValueEditorHandle;
-  /** Ticked when a rule decides it. */
+  /** Ticked when a rule decides it; otherwise members do, by hand. */
   byRule: HTMLInputElement;
-  /** Ticked when the AI decides it where no rule has: the two pre-configured attributes only, for now. */
-  byAi: HTMLInputElement;
 }
 
 /** The values of a choice, to type and colour; those of a pre-configured attribute are shown as they are. */
@@ -48,9 +46,6 @@ const valuesField = (attribute: Attribute | null): ValueEditorHandle => ValueEdi
   removeLabel: (label) => t('attributes.removeValue', { label }),
 });
 
-/** Who decides, from the two boxes: with neither ticked, members by hand. */
-const decider = ({ byRule, byAi }: AttributeFields): Decider => (byRule.checked ? (byAi.checked ? 'eloAi' : 'elo') : byAi.checked ? 'ai' : 'nobody');
-
 /** Shows `parts` only while `when` holds, looked at again each time `control` changes. */
 function shownWhile(control: HTMLElement, when: () => boolean, parts: HTMLElement[]): void {
   const show = (): void => parts.forEach((part) => (part.hidden = !when()));
@@ -63,12 +58,11 @@ const attributeFields = (attribute: Attribute | null): AttributeFields => ({
   name: Input({ required: true, maxLength: 60, value: attribute ? attributeName(attribute) : '', disabled: attribute?.system }),
   kind: Select(ATTRIBUTE_KINDS.map((kind) => ({ value: kind, label: t(KIND_LABEL[kind]), selected: attribute?.kind === kind })), { disabled: attribute?.system }),
   values: valuesField(attribute),
-  byRule: Checkbox({ checked: attribute?.decidedBy === 'elo' || attribute?.decidedBy === 'eloAi' }),
-  byAi: Checkbox({ checked: attribute?.decidedBy === 'ai' || attribute?.decidedBy === 'eloAi' }),
+  byRule: Checkbox({ checked: attribute?.decidedBy === 'elo' }),
 });
 
 const written = (f: AttributeFields, elo: EloEditorHandle): AttributeGiven =>
-  ({ name: f.name.value, kind: f.kind.value as AttributeKind, values: f.values.values(), decidedBy: decider(f), elo: elo.value() });
+  ({ name: f.name.value, kind: f.kind.value as AttributeKind, values: f.values.values(), decidedBy: f.byRule.checked ? 'elo' : 'nobody', elo: elo.value() });
 
 /** EditAttribute then SortAgainByRule, once confirmed: the rule as written here is kept, then applied to the emails already kept. */
 const sortAgainButton = (attribute: Attribute, given: () => AttributeGiven): HTMLButtonElement => ActionButton(t('attributes.sortAgain'), t('attributes.sortingAgain'), async () => {
@@ -95,8 +89,6 @@ function askedOf(attribute: Attribute | null, f: AttributeFields, rule: HTMLElem
     values,
     CheckField(t('attributes.byRule'), f.byRule),
     rule,
-    // Where an email stands is the one thing the AI is asked at sorting: what that costs and sends is said there.
-    attribute?.system && CheckField(t('attributes.byAi'), f.byAi, { hint: t(attribute.key === STATUS ? 'attributes.hintAiSorting' : 'attributes.hintAi') }),
   ];
 }
 

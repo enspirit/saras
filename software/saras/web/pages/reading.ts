@@ -27,7 +27,7 @@ import { ClosedDock } from '../ui/organisms/reply-dock.ts';
 /** After a decision about the email: says so, and goes back to the list. */
 type Done = (message: string) => void;
 
-/** Who sorted the email, as a badge label. */
+/** Who sorted the email, as a badge label. The AI did, on emails fetched when it could. */
 function triageSourceLabel(source: EmailWithItsReply['triageSource']): string {
   if (source === 'ai') return t('reading.triage.ai');
   if (source === 'rule') return t('reading.triage.rule');
@@ -35,7 +35,7 @@ function triageSourceLabel(source: EmailWithItsReply['triageSource']): string {
   return t('reading.triage.unknown');
 }
 
-const isWaiting = (email: EmailWithItsReply): boolean => email.status === 'pending' || email.status === 'needs_reply';
+const isWaiting = (email: EmailWithItsReply): boolean => email.status === 'needs_reply';
 /** The reply this email got, once it has one. */
 const replyOf = (email: EmailWithItsReply): Reply | null => (email.status === 'sent' ? email.reply : null);
 
@@ -57,10 +57,9 @@ function decisions(email: EmailWithItsReply, done: Done): Child {
 
 /** The verdict line: who sorted the email, and why. */
 function verdict(email: EmailWithItsReply): Child {
-  const pending = email.status === 'pending';
-  return (email.triageReason || pending) && [
-    pending ? Badge(t('mailbox.untriaged'), 'neutral') : Badge(triageSourceLabel(email.triageSource), 'neutral'),
-    pending ? t('reading.pendingTriage') : email.triageReasonCode ? problemText({ code: email.triageReasonCode, params: {}, message: email.triageReason }) : email.triageReason,
+  return email.triageReason && [
+    Badge(triageSourceLabel(email.triageSource), 'neutral'),
+    email.triageReasonCode ? problemText({ code: email.triageReasonCode, params: {}, message: email.triageReason }) : email.triageReason,
   ];
 }
 

@@ -56,7 +56,7 @@
   "lastSyncColumn": "Dernier relevé",
   "stepKey": "Donner sa clé à l’IA",
   "keyTitle": "Donner sa clé à l’IA",
-  "keyIntro": "Le tri de vos emails et la rédaction des propositions passent par OpenRouter, avec la clé de votre organisation. Sans clé, vous pouvez toujours lire et répondre à la main.",
+  "keyIntro": "La rédaction des propositions de réponse passe par OpenRouter, avec la clé de votre organisation. Sans clé, vous pouvez toujours lire et répondre à la main.",
   "keyHint": "Créez-en une dans votre <link>compte OpenRouter</link>. Elle est chiffrée dans la base et sert pour tous les membres de l’organisation.",
   "keySave": "Enregistrer et lire mes emails",
   "keyLater": "Plus tard",

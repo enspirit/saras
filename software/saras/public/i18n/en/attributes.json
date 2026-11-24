@@ -13,8 +13,6 @@
   "decidedBy": "Decided by",
   "deciderNobody": "By hand only",
   "deciderElo": "A rule",
-  "deciderAi": "The AI",
-  "deciderEloAi": "A rule, then the AI",
   "preconfigured": "Pre-configured",
   "fixed": "The name and the values of a pre-configured attribute are fixed: the application relies on them.",
   "ruleTitle": "The rule",
@@ -34,7 +32,6 @@
   "noValue": "No value",
   "valueSet": "{name}: saved.",
   "sourceRule": "Decided by a rule",
-  "sourceAi": "Decided by the AI",
   "sourceUser": "Set by hand",
   "sortAgain": "Save and apply to the emails already kept",
   "sortingAgain": "Sorting again…",
@@ -44,15 +41,13 @@
   "ofEmail": "Attributes of this email",
   "noteNone": "No value yet",
   "noteRule": "Decided by its rule",
-  "noteAi": "Decided by the AI when sorting",
   "noteUser": "Set by hand: sorting leaves it as it is",
+  "noteNobody": "Neither a rule nor a member decided it",
   "noteReason": "“{reason}”",
   "noteByHand": "A value you choose here stays as you put it.",
-  "hintAi": "Uses AI tokens, when the organisation has the AI sort.",
   "addValue": "Add a value…",
   "colorOf": "Colour of “{label}”",
   "removeValue": "Remove “{label}”",
-  "hintAiSorting": "One request per 20 emails fetched; the AI is sent their sender, subject, beginning of text and attachment names.",
   "color": {
     "grey": "Grey",
     "red": "Red",
@@ -62,6 +57,5 @@
     "blue": "Blue",
     "purple": "Purple"
   },
-  "byRule": "A rule decides it when an email is fetched",
-  "byAi": "The AI decides it when no rule has"
+  "byRule": "A rule decides it when an email is fetched"
 }

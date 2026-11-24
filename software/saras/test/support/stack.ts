@@ -3,7 +3,6 @@
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createSync } from '../../src/domain/mailboxes/fetch-mailbox.ts';
-import { createTriage } from '../../src/domain/sorting/strategies.ts';
 import { loadConfig } from '../../src/tooling/config.ts';
 import type { Config } from '../../src/tooling/config.ts';
 import { createVault } from '../../src/tooling/crypto.ts';
@@ -50,7 +49,7 @@ async function startApplication(config: Config, db: Db, postman: Postman): Promi
   const vault = createVault(config.appSecret);
   const mail = createMailService({ db, vault, config });
   const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
-  const sync = createSync({ db, mail, triage: createTriage({ config, vault, llm }), config, llm, vault });
+  const sync = createSync({ db, mail, config, llm, vault });
   const http = createApp({ config, db, vault, mail, llm, sync, postman }).listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => http.once('listening', () => resolve()));
   return http;

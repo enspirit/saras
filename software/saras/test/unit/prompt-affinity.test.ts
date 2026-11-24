@@ -12,7 +12,7 @@ const prompts = [standard, quotes, urgentQuotes, support];
 const suited = (values: Record<string, string>): number | undefined => bestPrompt(prompts, values)?.id;
 
 test('an email has a value for where it stands, for its priority, and for each attribute it was given', () => {
-  assert.deepEqual(valuesOf({ status: 'pending', priority: 'high', attributes: { 7: { value: 'sales', source: 'rule' } } }), { 7: 'sales', status: 'todo', priority: 'high' });
+  assert.deepEqual(valuesOf({ status: 'needs_reply', priority: 'high', attributes: { 7: { value: 'sales', source: 'rule' } } }), { 7: 'sales', status: 'todo', priority: 'high' });
   assert.equal(valuesOf({ status: 'no_reply', priority: 'normal', attributes: {} }).status, 'none');
   assert.equal(valuesOf({ status: 'sent', priority: 'low', attributes: { priority: { value: 'high', source: 'user' } } }).priority, 'low', 'the priority is the one the email has, wherever else it is written');
 });

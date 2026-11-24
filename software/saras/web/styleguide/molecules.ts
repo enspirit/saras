@@ -95,7 +95,7 @@ const navigationCard = (): HTMLDivElement =>
 const emailsCard = (): HTMLDivElement =>
   Card({ title: t('styleguide.emails') },
     sampleEmail({ tags: [Badge(t('mailbox.priority'), 'warn')], shared: { label: 'contact', title: 'contact@client.example' } }),
-    sampleEmail({ current: true, from: 'Sophie Leroy', subject: t('styleguide.sample.subject2'), tags: [Badge(t('mailbox.untriaged'), 'neutral'), Badge(t('mailbox.draft'), 'neutral')] }),
+    sampleEmail({ current: true, from: 'Sophie Leroy', subject: t('styleguide.sample.subject2'), tags: [Badge(t('mailbox.draft'), 'neutral')] }),
     Message(Prose(t('styleguide.sample.body'))),
     EmptyState(t('styleguide.empty')),
     EmptyState(t('styleguide.empty'), { icon: 'mail', title: t('styleguide.emptyTitle'), action: Button(t('styleguide.emptyAction'), { icon: 'refresh-cw' }) }),

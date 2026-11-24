@@ -19,7 +19,7 @@ test('where an email stands follows its rule again, unless a member placed it, i
   assert.equal(standsAgain(kept({ hasHeaders: false }), none), null, 'fetched before its headers were kept');
   assert.equal(standsAgain(kept(), { value: 'sent', reason: '' }), null, 'a rule cannot mark an email as replied');
   assert.equal(standsAgain(kept(), null), null, 'the rule says nothing of an email it had not placed');
-  assert.deepEqual(standsAgain(kept({ status: 'no_reply', source: 'rule' }), null), { status: 'pending', source: null, reason: '' }, 'the rule no longer places it: it waits to be sorted');
+  assert.deepEqual(standsAgain(kept({ status: 'no_reply', source: 'rule' }), null), { status: 'needs_reply', source: 'none', reason: '' }, 'the rule no longer places it: it is to handle, as nobody\'s decision');
 });
 
 test('a value follows its rule again; one set by hand stays, one the rule had given goes when the rule is silent', () => {
@@ -28,7 +28,6 @@ test('a value follows its rule again; one set by hand stays, one the rule had gi
   assert.equal(valueAgain('7', kept({ attributes: { 7: { value: '2', source: 'rule' } } }), two), null);
   assert.equal(valueAgain('7', kept({ attributes: { 7: { value: '1', source: 'user' } } }), two), null);
   assert.deepEqual(valueAgain('7', kept({ attributes: { 7: { value: '1', source: 'rule' }, 8: { value: 'x', source: 'user' } } }), null), { attributes: { 8: { value: 'x', source: 'user' } } });
-  assert.equal(valueAgain('7', kept({ attributes: { 7: { value: '1', source: 'ai' } } }), null), null, 'what the AI gave stays when the rule is silent');
   assert.deepEqual(valueAgain('priority', kept(), { value: 'high', reason: '' }), { attributes: { priority: { value: 'high', source: 'rule' } }, priority: 'high' });
   assert.deepEqual(valueAgain('priority', kept({ attributes: { priority: { value: 'high', source: 'rule' } } }), null), { attributes: {}, priority: 'normal' });
 });
@@ -72,7 +71,7 @@ test('"Stands in" is sorted again by its rule: what it now sets aside leaves the
   assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'elo', elo: rule })).status, 200);
   const again = (await alice('POST', '/attributes/status/sort-again')).body;
   assert.equal(again.examined, 4);
-  assert.deepEqual(await subjects('none'), ['Merci pour hier'], 'the newsletter, which the rule no longer places, went back to be sorted');
+  assert.deepEqual(await subjects('none'), ['Merci pour hier'], 'the newsletter, which the rule no longer places, is to handle again');
   const [aside] = (await alice('GET', '/emails?box=none')).body.emails;
   assert.equal((await alice('GET', `/emails/${aside.id}`)).body.triageReason, 'A thank-you note.');
 });

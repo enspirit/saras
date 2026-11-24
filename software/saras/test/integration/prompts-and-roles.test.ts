@@ -17,7 +17,7 @@ const eve = createClient(() => stack.url); // a member invited into it
 let prompts: PromptView[];
 
 before(async () => {
-  stack = await startStack({ env: { TRIAGE_STRATEGY: 'ai' } });
+  stack = await startStack();
   assert.equal((await signUp(me, 'bob@corp.example')).status, 201);
 });
 after(() => stack.stop());

@@ -55,7 +55,6 @@
   },
   "sync": {
     "fetchFailed": "Could not read the mailbox: {detail}",
-    "triageFailed": "Triage failed: {detail}",
     "prepareFailed": "Could not prepare a proposal: {detail}"
   },
   "prompts": {
@@ -97,7 +96,6 @@
   },
   "organization": {
     "nameMismatch": "This is not the name of the organisation.",
-    "invalidSorting": "Unknown way of sorting.",
     "invalidWriting": "Unknown way of preparing replies."
   },
   "assist": {
@@ -117,7 +115,6 @@
     "ruleRequired": "An attribute decided by a rule needs its rule.",
     "ruleInvalid": "The rule cannot be read: {detail}",
     "systemFixed": "The name and the values of a pre-configured attribute are fixed.",
-    "valueUnknown": "This is not a value of the attribute.",
-    "aiNotYet": "The AI does not decide the attributes an organisation makes yet: choose a rule, or nobody."
+    "valueUnknown": "This is not a value of the attribute."
   }
 }

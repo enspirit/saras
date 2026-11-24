@@ -37,13 +37,13 @@ async function keyUsedBy(as: ApiClient): Promise<string | undefined> {
   return stack.llmRequests.at(-1)!.authorization;
 }
 
-test('who sorts, when proposals are written and the LLM key belong to the organisation', async () => {
-  assert.equal((await bruno('PUT', '/organization', { sorting: 'ai' })).status, 403);
-  assert.equal((await alice('PUT', '/organization', { sorting: 'magic' })).body.code, 'organization.invalidSorting');
+test('how it works and the LLM key belong to the organisation; having the AI sort is not among its choices', async () => {
+  assert.equal((await bruno('PUT', '/organization', { skipAutomated: false })).status, 403);
   assert.equal((await alice('PUT', '/organization', { name: 'Acme SA', sorting: 'ai', skipAutomated: false, openrouterKey: 'sk-or-acme' })).status, 200);
   const a = await profile(alice);
-  assert.deepEqual([a.organization.name, a.organization.sorting, a.organization.writing, a.organization.skipAutomated, a.organization.hasKey], ['Acme SA', 'ai', 'none', false, true]);
-  assert.equal((await profile(zoe)).organization.sorting, 'none', 'another organisation keeps its own');
+  assert.deepEqual([a.organization.name, a.organization.writing, a.organization.skipAutomated, a.organization.hasKey], ['Acme SA', 'none', false, true]);
+  assert.equal(a.organization.sorting, undefined, 'a way of sorting sent is not taken');
+  assert.equal((await profile(zoe)).organization.skipAutomated, true, 'another organisation keeps its own');
 });
 
 test('the key of the organisation is sealed at rest', async () => {

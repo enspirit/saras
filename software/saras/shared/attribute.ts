@@ -9,10 +9,8 @@ export type AttributeKind = (typeof ATTRIBUTE_KINDS)[number];
  * Who decides the value when an email is sorted:
  *   nobody   no one: members set it by hand
  *   elo      a rule written in Elo, which costs nothing
- *   ai       the AI, from an instruction
- *   eloAi    the rule first, the AI where the rule says nothing
  */
-export const DECIDERS = ['nobody', 'elo', 'ai', 'eloAi'] as const;
+export const DECIDERS = ['nobody', 'elo'] as const;
 export type Decider = (typeof DECIDERS)[number];
 
 /** The two attributes every organisation starts with, which the application itself relies on. */
@@ -59,10 +57,13 @@ export interface AttributeGiven {
   elo: string;
 }
 
-/** The value an email has for an attribute, and who decided it: a rule, the AI, or a member by hand. */
+/**
+ * The value an email has for an attribute, and who decided it: a rule, or a member by hand.
+ * Nobody, for where an email stands and its priority while they are what an email starts with.
+ */
 export interface ValueOfEmail {
   value: string;
-  source: 'rule' | 'ai' | 'user';
+  source: 'rule' | 'user' | 'nobody';
   /** Why, when the rule that decided it said. */
   reason?: string;
 }

@@ -35,7 +35,7 @@ No other component of ours. Third parties, each reached through one place:
 Each is held by the test named, or by a scanner of [`tests/harness`](../../tests/harness/).
 
 1. **Send the LLM a request without the zero-retention clause**, whatever the configuration (`test/unit/privacy.test.ts`).
-2. **Send the LLM a received email when only the member's text is asked about**, or an email the rules set aside as automated (`test/unit/privacy.test.ts`, `test/integration/sorting-by-the-ai.test.ts`).
+2. **Send the LLM a received email when only the member's text is asked about**, or an email the rules set aside as automated (`test/unit/privacy.test.ts`, `test/integration/proposals-at-fetch.test.ts`).
 3. **Let anything of an organisation be reached from another** (`test/integration/separate-organisations.test.ts`).
 4. **Keep a credential unsealed, or a password other than as a hash** (`test/unit/sealing-secrets.test.ts`).
 5. **Trust incoming content**: what a reply may contain is rebuilt from a list, and a page loads only its own files (`test/unit/rich-text-replies.test.ts`, `test/integration/page-security.test.ts`).
@@ -78,8 +78,8 @@ Green means: `lint` clean, and every test passing on both databases.
 
 - `shared/`: the domain objects as members see them (mailbox, email, proposal, reply, prompt, member, organisation), declared once for the server and the browser.
 - `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`doc/2-operations.md`](../../doc/2-operations.md) is the inventory.
-- `src/domain/sorting/`: the triage gate, its strategies, and the header rules applied before it.
-- `src/domain/mailboxes/fetch-mailbox.ts`: fetch, then sort, then prepare proposals.
+- `src/domain/sorting/`: sorting by the rules of the organisation's attributes, when an email is fetched and again when a rule changes; the corrections a member makes.
+- `src/domain/mailboxes/fetch-mailbox.ts`: fetch, sorted by the rules, then prepare proposals.
 - `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (the two drivers, the migrations and what applies them), `clock.ts` (the tasks the server runs on its own, due in the database), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
 - `web/`: the interface's TypeScript, one page file per subject under `pages/` and one function per operation under `api/` (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
 - Data: PostgreSQL, a server or the embedded one (`src/tooling/db.ts`).

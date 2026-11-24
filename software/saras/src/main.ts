@@ -12,7 +12,6 @@ import { createMailService } from './tooling/mail/mail-service.ts';
 import { expireSessions } from './domain/access/expire-sessions.ts';
 import { createSync } from './domain/mailboxes/fetch-mailbox.ts';
 import { erasePastRetention } from './domain/retention/erase-past-retention.ts';
-import { createTriage } from './domain/sorting/strategies.ts';
 
 loadDotEnv();
 let config;
@@ -56,8 +55,7 @@ if (!roles.web && !roles.clock) {
 const vault = createVault(config.appSecret);
 const mail = createMailService({ db, vault, config });
 const llm = createOpenRouter({ baseUrl: config.openrouter.baseUrl });
-const triage = createTriage({ config, vault, llm });
-const sync = createSync({ db, mail, triage, config, llm, vault });
+const sync = createSync({ db, mail, config, llm, vault });
 
 if (roles.web) {
   createApp({ config, db, vault, mail, llm, sync }).listen(config.port, () => {

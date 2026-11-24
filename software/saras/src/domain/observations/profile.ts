@@ -13,7 +13,6 @@ function organizationSeenBy({ member, organization }: Actor): Organization {
   const admin = member.role === 'admin';
   return {
     name: organization.name,
-    sorting: organization.triage_strategy === 'ai' ? 'ai' : 'none',
     writing: organization.automation,
     skipAutomated: organization.skip_automated,
     model: admin ? organization.model || '' : undefined,

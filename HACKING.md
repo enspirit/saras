@@ -107,9 +107,9 @@ A new variable is read in `software/saras/src/tooling/config.ts` and described i
 ```
 mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               │
-              ├─ rules ──► "no reply needed"               (automated mail, never shown to a gate)
+              ├─ a rule sets it aside ──► "no reply needed"   (automated mail, at first; never sent to the LLM)
               │
-              └─ triage gate, 20 at a time ──► "to handle" (+ priority, with the AI strategy)
+              └─ no rule does ──► "to handle"                  (with the attributes the other rules gave it)
                                         │
                      you write in the reply area, as much as you like
                                         │
@@ -122,25 +122,7 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
 
 Every operation is one file under `software/saras/src/domain/<area>/`, named after it and headed by its clauses; [`doc/2-operations.md`](doc/2-operations.md) is the inventory. The paths below are in `software/saras/`.
 
-**The triage gate** (`src/domain/sorting/gate.ts`) answers one question about each fetched email: is a reply needed. Which prompt suits an email is not its business: that follows from the email's attributes and from what each prompt says it suits (`src/domain/computations/prompt-affinity.ts`).
-
-```ts
-interface TriageGate {
-  readonly name: string;
-  decide(batch: { prompts: TriagePrompt[]; mails: TriageMail[] }): Promise<TriageDecision[]>;
-}
-```
-
-- **In:** up to 20 mails, each with `from`, `to`, `cc`, `subject`, `body` and its attachments' names, types and sizes. Never the content of an attachment, and nothing else: no database, no mailbox.
-- **Out:** per mail, `replyNeeded`, plus an optional `reason` and `priority`.
-- A mail the gate says nothing about, or a gate that fails, leaves the mail untriaged; it is presented again at the next fetch.
-
-| Strategy | What it does | Cost |
-| --- | --- | --- |
-| `none` (default) | Decides nothing: every mail of the watched folder is to be handled, and the user picks the prompt. | None. No email content leaves the server until a proposal is asked for. |
-| `ai` | An LLM decides. It reads the sender, the subject, the first 1,500 characters of the text and the attachment names. | One LLM request per batch of 20 mails. |
-
-The strategy is chosen per organisation; `TRIAGE_STRATEGY` only sets what a new one starts with. To add a strategy, implement `TriageGate` and return it from `src/domain/sorting/strategies.ts`.
+**Sorting** is done when an email is fetched, by the rules of the organisation's attributes (`src/domain/sorting/sort-by-rules.ts`): each rule is an Elo expression given the email, which answers a value of its attribute or nothing. The rule of "Stands in" says where the email stands; when it says nothing the email is to handle. No LLM sorts ([decision 0011](doc/decisions/0011-the-ai-does-not-sort.md)), so nothing waits to be sorted and sorting cannot fail a fetch. Which prompt suits an email follows from its attributes and from what each prompt says it suits (`src/domain/computations/prompt-affinity.ts`).
 
 **A reply** is sent as HTML with a plain-text alternative, both quoting the original. Only the elements an email needs are allowed (`src/tooling/html.ts`): whatever the LLM returns, and whatever is stored or sent, is rebuilt from that list on the server, and the interface sanitises again before displaying anything. A draft is filed in the mailbox's Drafts folder: over IMAP the folder flagged `\Drafts`, or named Drafts or Brouillons.
 

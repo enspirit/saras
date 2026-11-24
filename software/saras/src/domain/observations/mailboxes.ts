@@ -15,7 +15,7 @@ export async function mailboxesOf(db: Db, actor: Actor, { syncDays, retentionDay
   const rows = await db.query<Listed>(
     `SELECT a.id, a.kind, a.email, a.display_name AS "displayName", a.shared, a.user_id, a.folder, a.folder_name AS "folderName", LEAST(COALESCE(a.fetch_days, $3), $4)::int AS "fetchDays", a.unread_only AS "unreadOnly",
             a.last_sync_at AS "lastSyncAt", a.last_error AS "lastError",
-            (SELECT count(*)::int FROM emails e WHERE e.account_id = a.id AND e.status IN ('needs_reply','pending')) AS todo
+            (SELECT count(*)::int FROM emails e WHERE e.account_id = a.id AND e.status = 'needs_reply') AS todo
      FROM accounts a WHERE ${mayUse('$1', '$2')} ORDER BY a.shared DESC, a.id`,
     [actor.organization.id, actor.member.id, syncDays, retentionDays],
   );

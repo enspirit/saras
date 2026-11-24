@@ -8,6 +8,7 @@ import type { Db } from '../../src/tooling/db.ts';
 import { migrate, standing } from '../../src/tooling/db/migrate.ts';
 import { MIGRATIONS } from '../../src/tooling/db/migrations.ts';
 import type { Migration } from '../../src/tooling/db/migrations.ts';
+import { noSortingByTheAi } from '../../src/tooling/db/migrations/0003-no-sorting-by-the-ai.ts';
 import { testDatabase } from '../support/database.ts';
 
 const ids = MIGRATIONS.map((migration) => migration.id);
@@ -65,6 +66,34 @@ test('a database created before migrations existed is adopted by the first one, 
     assert.deepEqual(await migrate(db), ids);
     assert.ok((await columnsOf(db, 'prompts')).includes('affinity_json'));
     assert.equal((await db.one<{ name: string }>('SELECT name FROM organizations'))?.name, 'Brightwater');
+  }));
+
+/** What an organisation that had the AI sort could hold, at the version before the AI stopped sorting. */
+async function leftByTheAiSorting(db: Db): Promise<void> {
+  await db.run(`INSERT INTO organizations (name, triage_strategy) VALUES ('Acme', 'ai'), ('Other', 'none')`);
+  await db.run(`INSERT INTO users (org_id, email, password_hash) VALUES (1, 'alice@acme.example', 'x')`);
+  await db.run(`INSERT INTO accounts (org_id, user_id, kind, email, config_enc) VALUES (1, 1, 'imap', 'alice@acme.example', 'x')`);
+  await db.run(`INSERT INTO emails (account_id, provider_id, date, status, triage_source, triage_reason, priority) VALUES
+    (1, 'waiting', now(), 'pending', NULL, '', 'normal'), (1, 'aside', now(), 'no_reply', 'ai', 'Plain thanks.', 'normal'),
+    (1, 'urgent', now(), 'needs_reply', 'ai', 'A quote is asked.', 'high'), (1, 'news', now(), 'no_reply', 'rule', 'code:triage.newsletter', 'normal')`);
+  await db.run(`INSERT INTO attributes (org_id, key, name, decided_by, elo) VALUES (1, 'status', 'status', 'eloAi', 'null'), (1, 'priority', 'priority', 'ai', ''), (1, NULL, 'Topic', 'elo', 'null')`);
+}
+
+test('what the AI left behind when it sorted is put right: nothing waits, and it has no say in any attribute', () =>
+  onANewDatabase(async (db) => {
+    const before = MIGRATIONS.slice(0, 2);
+    await migrate(db, before);
+    await leftByTheAiSorting(db);
+    assert.deepEqual(await migrate(db, [...before, noSortingByTheAi]), [noSortingByTheAi.id]);
+    assert.deepEqual((await db.query<{ s: string }>('SELECT triage_strategy AS s FROM organizations ORDER BY id')).map((o) => o.s), ['none', 'none']);
+    const emails = await db.query<{ status: string; triage_source: string; triage_reason: string; priority: string }>('SELECT status, triage_source, triage_reason, priority FROM emails ORDER BY id');
+    assert.deepEqual(emails.map((e) => Object.values(e).join(' | ')), [
+      'needs_reply | none |  | normal',
+      'no_reply | ai | Plain thanks. | normal',
+      'needs_reply | ai | A quote is asked. | high',
+      'no_reply | rule | code:triage.newsletter | normal',
+    ], 'what waited is to handle; what the AI had sorted stays where it put it, and says so');
+    assert.deepEqual((await db.query<{ d: string }>('SELECT decided_by AS d FROM attributes ORDER BY id')).map((a) => a.d), ['elo', 'nobody', 'elo']);
   }));
 
 test('a migration that fails leaves nothing of itself, and says where it failed', () =>

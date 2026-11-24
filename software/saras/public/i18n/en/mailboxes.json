@@ -56,7 +56,7 @@
   "lastSyncColumn": "Last fetched",
   "stepKey": "Give the AI its key",
   "keyTitle": "Give the AI its key",
-  "keyIntro": "Sorting your emails and writing proposals go through OpenRouter, with your organisation’s own key. Without one you can still read and answer by hand.",
+  "keyIntro": "Writing proposals of reply goes through OpenRouter, with your organisation’s own key. Without one you can still read and answer by hand.",
   "keyHint": "Create one in your <link>OpenRouter account</link>. It is encrypted in the database and used for every member of the organisation.",
   "keySave": "Save and read my emails",
   "keyLater": "Later",

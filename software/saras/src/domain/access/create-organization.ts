@@ -7,7 +7,7 @@
 //            the address is one
 //            the password has ten characters or more
 //   ReqPost  named after the domain of the address when no name is given
-//            it starts with the installation's way of sorting and one prompt, in the person's language
+//            it starts with one prompt, in the person's language, and sets automated mail aside or not as the installation says
 //            a refused sign-up leaves no organisation behind
 import { addressGiven, clipped, languageGiven } from '../computations/given.ts';
 import { isAnAddress, maySignUp, organizationNameFor, signUpIsOpen } from '../computations/access.ts';
@@ -36,7 +36,7 @@ export function createOrganization(world: World, origin: string, given: SignUp):
     const memberId = await db.transaction(async (tx) => {
       // Checked first, so that a refused account leaves no organisation behind even outside a transaction.
       accepted(isAnAddress(address));
-      const organizationId = await addOrganization(tx, { name: organizationNameFor(clipped(given.organization, 120), address), triage: config.triageStrategy, skipAutomated: config.skipAutomated });
+      const organizationId = await addOrganization(tx, { name: organizationNameFor(clipped(given.organization, 120), address), skipAutomated: config.skipAutomated });
       const id = await openAccount(tx, { organizationId, address, password: given.password, role: 'admin', language, name: clipped(given.name, 120) });
       await addFirstPrompt(tx, organizationId, id, language);
       return id;

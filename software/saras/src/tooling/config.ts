@@ -29,9 +29,7 @@ const joining = (env: Env) => ({
   invitationDays: int(env.INVITATION_DAYS, 7),
   // A second factor (a code from an authenticator app) is asked of every member at sign-in.
   secondFactor: env.MFA_ENABLED === 'true',
-  // How fetched emails are sorted: 'none' (the watched folder is the filter) or 'ai'.
-  triageStrategy: env.TRIAGE_STRATEGY === 'ai' ? ('ai' as const) : ('none' as const),
-  // Set plainly automated mail aside (newsletters, no-reply…) before any triage.
+  // Set plainly automated mail aside (newsletters, no-reply…), by rule.
   skipAutomated: env.TRIAGE_SKIP_AUTOMATED !== 'false',
 });
 

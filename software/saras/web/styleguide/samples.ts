@@ -47,7 +47,7 @@ export const sampleHeader = (): HTMLElement => ReadingHeader({
   to: t('reading.to', { to: 'alex@brightwater.example' }),
   attachments: ['requirements.pdf'],
   date: new Date(2026, 10, 19, 9, 30).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }),
-  triage: [Badge(t('reading.triage.ai'), 'neutral'), t('styleguide.sample.triage')],
+  triage: [Badge(t('reading.triage.rule'), 'neutral'), t('styleguide.sample.triage')],
 });
 
 /** The reply area with every part showing: recipients, a proposal, the reason, the help, the actions. */

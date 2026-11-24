@@ -71,7 +71,6 @@ const emailItem = (e: EmailSummary, { hrefOf, selectedId }: EmailsShown): HTMLBu
     onClick: () => (location.hash = hrefOf(e.id)),
     tags: [
       e.priority === 'high' && e.status !== 'sent' && Badge(t('mailbox.priority'), 'warn'),
-      e.status === 'pending' && Badge(t('mailbox.untriaged'), 'neutral'),
       e.replyMode === 'draft' && Badge(t('mailbox.draft'), 'neutral'),
       valuesOf(e),
     ],

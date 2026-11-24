@@ -28,6 +28,6 @@ saras demo — ${BASE_URL:-http://localhost:${SARAS_PORT:-3000}}
 
   The mailbox holds sample emails. Replies you send are handed to the mailbox of
   the stack and go nowhere; \`emb logs mailbox\` shows them. Nothing leaves this
-  machine, unless a key in .env lets the AI sort and write.
+  machine, unless a key in .env lets the AI write.
   \`emb run demo\` again puts the demo back as it was.
 TXT

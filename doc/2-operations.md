@@ -32,7 +32,7 @@ Where the code does not do what its own comments, the documentation or the inter
 | Frontend | software | The browser interface. Controls what is being written before it is submitted, and the language in use. |
 | Mail provider | software | IMAP / SMTP server, Gmail, Microsoft Graph. Controls the mailbox itself. |
 | Identity provider | software | Google, Microsoft: grants access to a mailbox by sign-in. |
-| LLM | software | OpenRouter. Returns sorting decisions and proposed texts. |
+| LLM | software | OpenRouter. Returns proposed texts. It sorts nothing ([decision 0011](decisions/0011-the-ai-does-not-sort.md)). |
 
 ## State variables
 
@@ -41,9 +41,8 @@ Essential state only: what another agent can observe.
 | Variable | Meaning | Controlled by | Monitored by | Concrete copies |
 | --- | --- | --- | --- | --- |
 | Organisation | A team's private space: its name. | Backend | Members | `organizations.name` |
-| Sorting | Who says whether a fetched email needs a reply: nobody (`none`: all are to handle) or the AI (`ai`). | Backend | Members | `organizations.triage_strategy`; `Organization.sorting` in `shared/` |
 | Writing | When a proposal is written for an email to handle: on demand (`none`), at fetch (`draft`), at fetch and filed in the mailbox's drafts (`mailbox`). | Backend | Members | `organizations.automation`; `Organization.writing` in `shared/` |
-| Automated mail first | Whether plainly automated mail is set aside by rule before anything else. | Backend | Members | `organizations.skip_automated` |
+| Automated mail first | Whether plainly automated mail is set aside by rule before anything else. | Backend | Members | `organizations.skip_automated` (`.triage_strategy` remains from when the AI could sort, and is no longer read) |
 | Organisation's AI | Its model and its own key, the same for every member. | Backend | Administrators (key: presence only) | `organizations.model`, `.openrouter_key_enc` |
 | Member | A person's account in one organisation: address, name, role, password. | Backend | Administrators, the member | `users.*`; `session.me` in the frontend |
 | Member's settings | Language, signature. | Backend (language also Frontend) | The member | `users.language`, `.signature` (`.model` and `.openrouter_key_enc` remain from before and are no longer read); `localStorage` (language) |
@@ -57,15 +56,15 @@ Essential state only: what another agent can observe.
 | Watched folder | The one folder of a mailbox that is fetched. | Backend | Members who may use it | `accounts.folder`, `.folder_name` |
 | Fetch state | When a mailbox was last fetched and what went wrong. | Backend | Members who may use it | `accounts.last_sync_at`, `.last_error` |
 | Email | A received message as saras keeps it: who, what, when; erased past retention. | Backend | Members who may use its mailbox | `emails.*` |
-| Email status | Where the email stands: waiting to be sorted, to handle, no reply needed, ignored, replied. | Backend | Members | `emails.status` |
-| Triage verdict | Who sorted the email, why, its priority. | Backend | Members | `emails.triage_source`, `.triage_reason`, `.priority` (`.suggested_prompt_id` remains from before and is no longer read) |
+| Email status | Where the email stands: to handle, no reply needed, ignored, replied. | Backend | Members | `emails.status` (the value `pending`, waiting to be sorted, remains in the schema from when the AI could sort; no email has it) |
+| Triage verdict | Who sorted the email (a rule, a member, nobody; the AI, on emails it sorted when it did), why, its priority. | Backend | Members | `emails.triage_source`, `.triage_reason`, `.priority` (`.suggested_prompt_id` remains from before and is no longer read) |
 | Proposal | A text the AI wrote for an email: by which help, prompt and model. | Backend | Members | `drafts` |
 | Reply in progress | What a member has written or changed in the reply area, its recipients, the reason for an edit. | Frontend | The member | the editor and fields of the composer (lost on leaving the page) |
 | Reply | What was handed to the mailbox for an email: sent or filed as a draft, to whom, by whom, whether the proposal was edited and why. | Backend | Members | `replies` |
 | Prompt | A way of replying: name, when to use it, instructions. | Backend | Administrators (members: name and description) | `prompts` |
 | Board | A named view of emails: a filter on their attributes and on their facts (mailbox, how recent, sender, keywords, attachments), personal or shared. | Backend | Its owner; every member when shared | `boards` (the filter as JSON); `shared/board.ts` |
-| Attribute | Something the organisation wants to know of each email: a choice among values, or a member. Two are pre-configured, with fixed values: "Stands in" and "Priority". Each says who decides it: nobody, a rule written in Elo, the AI, or the rule then the AI. | Backend | Members; administrators change them | `attributes`; for "Stands in", `organizations.skip_automated` and `.triage_strategy`; `shared/attribute.ts` |
-| Value of an email for an attribute | The value, and who decided it: a rule, the AI, a member by hand. | Backend | Members who may use its mailbox | `emails.status`, `.priority`, `.attributes_json` |
+| Attribute | Something the organisation wants to know of each email: a choice among values, or a member. Two are pre-configured, with fixed values: "Stands in" and "Priority". Each says who decides it: nobody, or a rule written in Elo. | Backend | Members; administrators change them | `attributes`; for "Stands in", `organizations.skip_automated`; `shared/attribute.ts` |
+| Value of an email for an attribute | The value, and who decided it: a rule, a member by hand. | Backend | Members who may use its mailbox | `emails.status`, `.priority`, `.attributes_json` |
 | Mailbox contents | The messages, drafts and flags at the provider. | Mail provider | Backend, the member in their mail client | outside saras |
 
 Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`), replies on their way to the mailbox (`World.handingOver`), the sign-in under way at a mail host (`sessions.oauth_state`), box counts cached in the frontend.
@@ -122,10 +121,9 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **ChooseLanguage** | Member, Frontend | → the language in use | A tag we recognise, else English | | language picker; also sent by the frontend at start when it differs · `PUT /settings` |
 | **SetSignature** | Member | → the member's signature | | | same |
 | **RenameOrganization** | Administrator | → the organisation's name | Administrator | An empty name changes nothing | Settings → Organisation · `PUT /organization` |
-| **ChooseSorting** | Administrator | → fetched emails are sorted by nobody, or by the AI, from the next fetch on | Administrator · `none` or `ai` | What was fetched before stays as it was sorted | step 1 of "Sorting and writing" in the tour; afterwards EditAttribute on "Stands in" · `PUT /organization` |
-| **ChooseWriting** | Administrator | → proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts | Administrator · one of those three | Nothing sends by itself | Prompts, "When the AI writes"; step 2 of "Sorting and writing" · `PUT /organization` |
+| **ChooseWriting** | Administrator | → proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts | Administrator · one of those three | Nothing sends by itself | Prompts, "When the AI writes"; the step "Writing" of the tour · `PUT /organization` |
 | **SetAsideAutomatedFirst** | Administrator | → the rule of "Stands in" is applied, or not | Administrator | | Settings → Organisation · `PUT /organization`; the same as choosing who decides "Stands in" |
-| **SetOrganizationModel** | Administrator | → the model that writes and sorts for every member, or none (the server's applies) | Administrator · looks like `provider/model` | | Settings → AI & privacy · `PUT /organization` |
+| **SetOrganizationModel** | Administrator | → the model that writes for every member, or none (the server's applies) | Administrator · looks like `provider/model` | | Settings → AI & privacy · `PUT /organization` |
 | **SetOrganizationKey** / **RemoveOrganizationKey** | Administrator | → the organisation has a key / has none | Administrator | Stored sealed | same; the key step of the tour |
 
 ### Mailboxes
@@ -140,17 +138,17 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **ChangeMailboxServers** | Member | A mailbox reached by its servers → the same, reached by these servers; its last error is forgotten | Manages it · both servers with their ports · a password left empty keeps the one it has · the mailbox was just seen to answer there | Address, folder watched, emails kept and owner unchanged · credentials sealed · ReqTrig: a mailbox that watches a folder is fetched at once | "Edit" in Mailboxes, "How saras reaches it" · `PUT /mailboxes/:id/servers`. Observation: `GET /mailboxes/:id/servers` (never the password) |
 | **ChooseWatchedFolder** | Member | A mailbox → it watches this folder, this far back (1, 7, 14 or 30 days; the server's `SYNC_DAYS` when none is given), unread mail only or not | Manages it · the folder exists at the provider | Its last error is forgotten · what was fetched before, from another folder or further back, is kept · ReqTrig: a fetch is started | "Watch this folder" · `PUT /mailboxes/:id/folder` |
 | **DisconnectMailbox** | Member | A mailbox → none | Manages it | Its emails, proposals and replies go with it · the mailbox at the provider is untouched | red bin in Mailboxes · `DELETE /mailboxes/:id` |
-| **FetchMailbox** | Member, Backend | A mailbox with a watched folder → the folder's new messages, as far back as the mailbox says and only the unread ones when it says so, are stored as emails, each waiting to be sorted | May use it (when a member asks) · at most a set number per fetch · a message already known is left as it is | When asked for, plainly automated mail is set aside at once, by rule · then **SortWaitingEmails**, then **PrepareProposals** · the time and any failure are recorded · one fetch at a time per mailbox, whichever server is asked | "Fetch", "Fetch now" · `POST /mailboxes/:id/fetch`. ReqTrig: every `SYNC_INTERVAL_MINUTES`, for every mailbox with a folder; after ChooseWatchedFolder; after RenewMailboxCredentials |
+| **FetchMailbox** | Member, Backend | A mailbox with a watched folder → the folder's new messages, as far back as the mailbox says and only the unread ones when it says so, are stored as emails, each where the rules put it: to handle, unless one sets it aside (**SortByRules**) | May use it (when a member asks) · at most a set number per fetch · a message already known is left as it is | When asked for, plainly automated mail is set aside at once, by rule · then **PrepareProposals** · the time and any failure are recorded · one fetch at a time per mailbox, whichever server is asked | "Fetch", "Fetch now" · `POST /mailboxes/:id/fetch`. ReqTrig: every `SYNC_INTERVAL_MINUTES`, for every mailbox with a folder; after ChooseWatchedFolder; after RenewMailboxCredentials |
 
 ### Sorting
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **SortWaitingEmails** | Backend | Emails waiting to be sorted → to handle, or no reply needed, with who decided, why and a priority | The organisation's strategy can decide (for `ai`: a key in force, as the mailbox's owner) | An email the strategy says nothing about stays waiting · if it fails, all stay waiting and the failure is recorded on the mailbox | part of FetchMailbox (`sorting/sort-waiting-emails.ts`) |
 | **MarkNoReplyNeeded** | Member | An email not replied → no reply needed | May use its mailbox | The verdict becomes the member's | "No reply needed" · `POST /emails/:id/status` |
 | **IgnoreEmail** | Member | An email not replied → ignored | same | same | "Ignore" · same route |
 | **MoveBackToHandle** | Member | An email not replied → to handle | same | same | "Move back to 'To handle'" · same route |
-| **SortAgainUnsorted** | Administrator | Emails to handle that no strategy sorted and that have no proposal → waiting to be sorted | Administrator | The next fetch sorts them the organisation's way | end of the tour's "Choose how it works" · `POST /organization/sort-again` |
+
+An email is sorted when it is fetched, by the rules of the attributes (**SortByRules**, under Attributes), and afterwards by members. The AI sorts nothing ([decision 0011](decisions/0011-the-ai-does-not-sort.md)).
 
 ### Replying
 
@@ -178,11 +176,11 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **CreateAttribute** | Administrator | → the organisation has one more attribute | Administrator · a name · two values for a choice · decided by a rule: it has one, which Elo can read · not left to the AI (not yet) | Emails fetched from then on get its value from its rule | Configuration → Attributes → "New attribute" · `POST /attributes` |
-| **EditAttribute** | Administrator | An attribute → decided this way; one the organisation made also has this name and these values | Administrator · the same as above | Of the two pre-configured ones only how they are decided changes · "Stands in": that is the organisation's two sorting settings | pencil in Attributes · `PUT /attributes/:key` |
+| **CreateAttribute** | Administrator | → the organisation has one more attribute | Administrator · a name · two values for a choice · decided by a rule: it has one, which Elo can read | Emails fetched from then on get its value from its rule | Configuration → Attributes → "New attribute" · `POST /attributes` |
+| **EditAttribute** | Administrator | An attribute → decided this way; one the organisation made also has this name and these values | Administrator · the same as above | Of the two pre-configured ones only how they are decided changes · "Stands in": whether its rule decides it is the organisation's setting, automated mail first | pencil in Attributes · `PUT /attributes/:key` |
 | **DeleteAttribute** | Administrator | An attribute the organisation made → none | Administrator · not pre-configured | | "Delete the attribute" · `DELETE /attributes/:key` |
-| **SortByRules** | Backend | An email just fetched → it has, for each attribute whose rule speaks of it, that value, as the rule's | | A rule that says nothing, fails or runs too long leaves the attribute undecided · "Stands in" undecided, the email waits to be sorted · a rule cannot mark an email as replied | part of FetchMailbox (`sorting/sort-by-rules.ts`) |
-| **SortAgainByRule** | Administrator | An attribute decided by a rule, the emails kept → each has for it what the rule says now | Administrator · decided by a rule Elo can read | A value set by hand stays · a value the rule had given goes where it no longer speaks · "Stands in": emails replied, placed by a member, or fetched before their headers were kept stay; one the rule no longer places waits to be sorted, and the mailboxes are fetched at once | "Save and apply to the emails already kept" on the attribute · `POST /attributes/:key/sort-again` |
+| **SortByRules** | Backend | An email just fetched → it has, for each attribute whose rule speaks of it, that value, as the rule's | | A rule that says nothing, fails or runs too long leaves the attribute undecided · "Stands in" undecided, the email is to handle, as nobody's decision · a rule cannot mark an email as replied | part of FetchMailbox (`sorting/sort-by-rules.ts`) |
+| **SortAgainByRule** | Administrator | An attribute decided by a rule, the emails kept → each has for it what the rule says now | Administrator · decided by a rule Elo can read | A value set by hand stays · a value the rule had given goes where it no longer speaks · "Stands in": emails replied, placed by a member, or fetched before their headers were kept stay; one the rule no longer places is to handle | "Save and apply to the emails already kept" on the attribute · `POST /attributes/:key/sort-again` |
 | **SetEmailAttribute** | Member | An email → it has this value for the attribute, as the member's, or none | May use the email's mailbox · a value of the attribute · not "Stands in" | Not overwritten by later sorting | the selects above an email · `PUT /emails/:id/attributes/:key` |
 
 Observations: `GET /attributes`; `POST /attributes/try` (what a rule would say of the member's twenty most recent emails, changing none). `POST /attributes/check` (what is wrong in a rule being written, each problem with its line, its column and the field probably meant: `computations/rule-problems.ts`). `GET /attributes/:key/skill` hands an AI agent what it needs to write the rule of that attribute (`computations/rule-writing-skill.ts`).
@@ -217,8 +215,8 @@ Sequences of operations that the interface or the server runs as one story.
 
 | Chain | Operations |
 | --- | --- |
-| A fetch | FetchMailbox → SortWaitingEmails → PrepareProposals (→ FileProposalAsDraft) |
-| Getting started | CreateOrganization → ConnectMailbox → ChooseWatchedFolder → FetchMailbox → (SetOrganizationKey) → EditPrompt, AddReadyMadePrompt → ChooseSorting + ChooseWriting → SortAgainUnsorted → FetchMailbox |
+| A fetch | FetchMailbox (SortByRules) → PrepareProposals (→ FileProposalAsDraft) |
+| Getting started | CreateOrganization → ConnectMailbox → ChooseWatchedFolder → FetchMailbox → (SetOrganizationKey) → EditPrompt, AddReadyMadePrompt → ChooseWriting → FetchMailbox |
 | Answering | (WriteWithPrompt \| CheckTypos \| ImproveStyle)* → SendReply \| FileReplyAsDraft |
 
 ## Computations
@@ -229,16 +227,15 @@ Pure, in `src/domain/computations/` unless said otherwise.
 | --- | --- |
 | `access.ts` | Is sign-up open; may this account be opened (address, password length); is the address free; the name of a new organisation; the role an invitation gives; may the last administrator be demoted; may one delete oneself; is this origin locked out. |
 | `mailboxes.ts` | Who manages a mailbox; shared or personal; is the address already connected; what is given to connect by servers; the same servers with a new password; is it the very mailbox to renew; is the folder one of the mailbox's; what a session remembers of a sign-in at a host, and whether an answer is to it. |
-| `settings.ts` | Is this a model identifier; a way of sorting; a way of writing. |
+| `settings.ts` | Is this a model identifier; a way of writing. |
 | `sorting.ts` | May an email be sorted again by a member. |
 | `replying.ts` | The proposal as HTML; is something written; is the email's content kept; may the reply be handed over (recipients, text, status, none in flight); what a hand-over records (edited or not, the reason kept or dropped); which prompt a prepared proposal uses. |
 | `reply.ts` | Who to reply to, the subject, the threading headers, the quoted body; whether the proposal was edited. |
 | `prompts.ts` | What a prompt must contain. |
 | `given.ts` | What a client gives, reduced: clipped text, addresses, a language tag. |
-| `emails.ts` | A stored row as an email, and as the sorting gate is given it. |
+| `emails.ts` | A stored row as an email. |
 | `key-in-force.ts` | Member, organisation, configuration → the key and model in force. |
 | `llm-prompts.ts` | An email, a prompt, a text → what is sent to the LLM. |
-| `sorting/gate.ts`, `ai.ts`, `rules.ts` | The AI's answer as decisions we trust; automated mail by its headers. |
 | `tooling/llm/openrouter.ts` (`buildChatRequest`, `explainError`) | The request with its privacy clause; an error as a problem. |
 | `tooling/html.ts`, `text.ts` | What a reply may contain; text ↔ HTML. |
 | `tooling/mail/lookup.ts` (`classifyMx`, `domainOf`), `gmail.ts`, `graph.ts` | MX names → who hosts the mail; a provider's message → an email. |
@@ -268,7 +265,7 @@ Recorded, not fixed. Each is a decision for the product's owner.
 9. *(Settled.)* A sole administrator could never leave. **DeleteOrganization** now lets them; **DeleteOwnAccount** is still refused to the last administrator.
 10. **A proposal prepared at fetch for an email with nobody to reply to is not filed**, and the email stays to handle with its proposal, without any sign of why (`prepare-proposals.ts`, way `mailbox`).
 11. **Two definitions of "the member edited the proposal"**: the frontend's (`norm`: whitespace collapsed) decides whether the reason is asked; the backend's (`wasEdited`) decides whether it is kept. They can disagree.
-12. **Fetching is done as the mailbox's owner**, including for a shared mailbox: their key, model and language sort it, and their signature and corrections write the prepared proposals, whoever reads them.
+12. **Proposals are prepared as the mailbox's owner**, including for a shared mailbox: their signature and corrections write them, whoever reads them.
 13. **A settings request is applied field by field.** `PUT /settings` and `PUT /organization` run one operation per field, in order; a field that is refused stops there, and those before it stay applied, although the request as a whole is answered as refused.
 14. **Renewing by password keeps the servers.** A mailbox whose servers changed is disconnected and connected again, which forgets what was kept from it.
 
@@ -279,16 +276,17 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 | # | Question | Decision | Status |
 | --- | --- | --- | --- |
 | 1 | Connecting an address already connected renewed its credentials. | **RenewMailboxCredentials** is an operation of its own, on the mailbox. **ConnectMailbox** refuses an address already connected. | Done. A second connection is refused where it was accepted; the mailbox list offers "Renew access". |
-| 2 | Sorting again what the first fetch let through was a flag on the organisation's settings. | **SortAgainUnsorted** is an operation of its own, with its own entry. | Done: `POST /organization/sort-again`. |
-| 3 | Sorting and proposals were two settings; the interface showed four ways of working. | First merged into one way of working of four values; then **reversed**: the four ways did not explain themselves. An email goes through two steps, sorting then writing, and the organisation chooses what the AI does at each: **ChooseSorting** and **ChooseWriting**. | Done. The two choices are independent: writing at fetch without sorting is possible again. |
+| 2 | Sorting again what the first fetch let through was a flag on the organisation's settings. | **SortAgainUnsorted** is an operation of its own, with its own entry. | Done, then gone with the AI's sorting (7). |
+| 3 | Sorting and proposals were two settings; the interface showed four ways of working. | First merged into one way of working of four values; then **reversed**: the four ways did not explain themselves. An email goes through two steps, sorting then writing, and the organisation chooses what the AI does at each: **ChooseSorting** and **ChooseWriting**. | Done. The two choices are independent: writing at fetch without sorting is possible again. Since 7, one choice is left: **ChooseWriting**. |
 | 4 | The reply in progress is lost when the member leaves the page. | It stays in the browser. Nothing unsent reaches the server. | Nothing to do. |
 | 5 | Checking an invitation link counts a wrong token towards the lock-out. | **CheckInvitation** is an operation. | Done: listed and filed as one. |
 | 6 | Nothing changed a password, deleted one's own account, or deleted an organisation. | **ChangePassword**, **DeleteOwnAccount** (refused to the last administrator; what the member made passes to the longest-standing other administrator), **DeleteOrganization** (confirmed by the password and the organisation's name). | Done, all three. |
+| 7 | Emails could be sorted by nobody, by rules, or by the AI. | The AI no longer sorts: rules do, and members ([decision 0011](decisions/0011-the-ai-does-not-sort.md)). **ChooseSorting**, **SortWaitingEmails** and **SortAgainUnsorted** are gone, and so is the state of an email waiting to be sorted. | Done. |
 
 ### Open questions
 
 - **DeleteOrganization tells nobody.** The other members find themselves signed out. saras sends no email of its own today; telling them would be its first.
-- **A shared mailbox that changes owner changes voice**: it is fetched with its owner's key, model, signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who sorts and writes for it.
+- **A shared mailbox that changes owner changes voice**: it is fetched with its owner's key, model, signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who writes for it.
 - Deviations 1 to 14 (9 aside), each of which is a rule to confirm or a behaviour to change.
 - The frontend asks for each operation through a function named after it (`web/api/`), and its pages are named after what a person does (`web/pages/`). Its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) could still be brought out as pure functions with unit tests.
 - Black-box specifications of the operations have begun in [`tests/webspicy`](../tests/webspicy/), with what reads and what refuses; the HTTP tests in `test/integration/` play that part for everything else.

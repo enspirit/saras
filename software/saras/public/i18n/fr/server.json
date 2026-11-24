@@ -55,7 +55,6 @@
   },
   "sync": {
     "fetchFailed": "Lecture de la boîte impossible : {detail}",
-    "triageFailed": "Échec du tri : {detail}",
     "prepareFailed": "Impossible de préparer une proposition : {detail}"
   },
   "prompts": {
@@ -97,7 +96,6 @@
   },
   "organization": {
     "nameMismatch": "Ce n’est pas le nom de l’organisation.",
-    "invalidSorting": "Façon de trier inconnue.",
     "invalidWriting": "Façon de préparer les réponses inconnue."
   },
   "assist": {
@@ -117,7 +115,6 @@
     "ruleRequired": "Un attribut décidé par une règle a besoin de sa règle.",
     "ruleInvalid": "La règle est illisible : {detail}",
     "systemFixed": "Le nom et les valeurs d’un attribut préconfiguré sont fixes.",
-    "valueUnknown": "Ce n’est pas une valeur de cet attribut.",
-    "aiNotYet": "L’IA ne décide pas encore des attributs créés par une organisation : choisissez une règle, ou personne."
+    "valueUnknown": "Ce n’est pas une valeur de cet attribut."
   }
 }

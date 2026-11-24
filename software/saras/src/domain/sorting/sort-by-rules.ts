@@ -4,7 +4,7 @@
 //   DomPre   an email just fetched
 //   DomPost  for each attribute decided by a rule that speaks of this email: the email has that value, as the rule's
 //   ReqPost  a rule that says nothing, fails or takes too long leaves the attribute undecided
-//            "Stands in" undecided, the email waits to be sorted (see SortWaitingEmails)
+//            "Stands in" undecided, the email is to handle, and nobody decided so
 //            a rule cannot mark an email as replied
 import { EMAIL_FOR_RULES } from '../../../shared/attribute.ts';
 import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
@@ -54,8 +54,8 @@ export function sortByRules(rules: Ruled[], email: IncomingEmail, mailboxAddress
   const attributes: Record<string, ValueOfEmail> = {};
   for (const [key, said] of decided) if (key !== STATUS) attributes[key] = ruleValue(said);
   return {
-    status: stands ?? 'pending',
-    source: stands ? 'rule' : null,
+    status: stands ?? 'needs_reply',
+    source: stands ? 'rule' : 'none',
     reason: stands ? decided.get(STATUS)!.reason : '',
     priority: (decided.get(PRIORITY)?.value as Priority | undefined) ?? 'normal',
     attributes,

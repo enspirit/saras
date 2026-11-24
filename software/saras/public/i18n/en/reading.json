@@ -7,6 +7,5 @@
     "user": "You",
     "unknown": "Triage"
   },
-  "pendingTriage": "Not sorted yet: it will be at the next fetch.",
   "erased": "Content erased (retention period exceeded)."
 }

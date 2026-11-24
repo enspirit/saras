@@ -3,7 +3,7 @@ import type { Address, Attachment, EmailStatus, Priority } from '../../../shared
 
 export type { Address, Attachment, EmailStatus, Priority } from '../../../shared/email.ts';
 
-/** The few headers triage rules look at. */
+/** The few headers sorting rules look at. */
 export interface MailHeaders {
   listUnsubscribe?: string;
   listId?: string;
@@ -34,7 +34,7 @@ export interface IncomingEmail {
   answered: boolean;
 }
 
-/** Who decided: the header rules, the user, or a triage strategy by its name ('none', 'ai'…). */
+/** Who decided where an email stands: 'rule', 'user', or 'none' for nobody ('ai' on an email the AI sorted, when it did). */
 export type TriageSource = string;
 
 /** An email once stored. */

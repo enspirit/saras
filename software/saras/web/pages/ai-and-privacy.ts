@@ -1,6 +1,6 @@
 // Settings → AI & privacy: which AI works for the organisation, and what the product guarantees
-// about the emails it is sent. Administrators choose; members read. What the AI does is chosen
-// where it applies: sorting on an attribute, writing with the prompts.
+// about the emails it is sent. Administrators choose; members read. When the AI writes is chosen
+// where it applies: with the prompts.
 
 import type { Profile } from '../../shared/member.ts';
 import type { Organization } from '../../shared/organization.ts';
@@ -20,19 +20,16 @@ import { Field } from '../ui/molecules/field.ts';
 import { Actions } from '../ui/molecules/form.ts';
 import { PartTitle, SplitPanel, Standings } from '../ui/molecules/split-panel.ts';
 
-/** The two steps an email goes through are named as in getting started. */
-const SORTING_LABEL = { none: 'welcome.sortingNone', ai: 'welcome.sortingAi' };
+/** When the AI writes is named as in getting started. */
 const WRITING_LABEL = { none: 'welcome.writingNone', draft: 'welcome.writingDraft', mailbox: 'welcome.writingMailbox' };
 
-/** What the AI is sent at each step, as things stand: translation keys. */
-const SENT_SORTING = { none: 'settings.sentSortingNone', ai: 'settings.sentSortingAi' };
+/** What the AI is sent then, as things stand: translation keys. */
 const SENT_WRITING = { none: 'settings.sentWritingAsked', draft: 'settings.sentWritingFetch', mailbox: 'settings.sentWritingFetch' };
 
-/** What the AI does at the two steps an email goes through, what it is sent then, and for administrators where each is chosen. */
-const whatItDoes = ({ sorting, writing }: Organization): Child => [
+/** When the AI writes, what it is sent then, and for administrators where that is chosen. */
+const whatItDoes = ({ writing }: Organization): Child => [
   PartTitle(t('settings.aiDoesTitle')),
   Standings([
-    { label: t('settings.factSorting'), now: t(SORTING_LABEL[sorting]), detail: t(SENT_SORTING[sorting]), link: isAdmin() ? { label: t('settings.chosenIn', { page: t('nav.attributes') }), href: '#/attributes/edit/status' } : undefined },
     { label: t('settings.factWriting'), now: t(WRITING_LABEL[writing]), detail: t(SENT_WRITING[writing]), link: isAdmin() ? { label: t('settings.chosenIn', { page: t('nav.prompts') }), href: '#/prompts' } : undefined },
   ]),
 ];

@@ -2,7 +2,7 @@
   "title": "Organisation",
   "name": "Name",
   "model": "Model",
-  "modelHint": "An OpenRouter identifier, “provider/model”: it writes and sorts for every member. Leave empty for the server’s. It must have a provider that keeps no data, otherwise requests are refused.",
+  "modelHint": "An OpenRouter identifier, “provider/model”: it writes for every member. Leave empty for the server’s. It must have a provider that keeps no data, otherwise requests are refused.",
   "key": "OpenRouter API key of the organisation",
   "keyHint": "Encrypted in the database. Used for every member of the organisation.",
   "deleteKey": "Delete the organisation's key",

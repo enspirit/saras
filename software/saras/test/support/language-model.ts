@@ -1,5 +1,5 @@
 // A stand-in for the language model: it speaks just enough of the OpenRouter chat-completions
-// protocol, answers as a model would for each kind of request, and records what it was sent.
+// protocol, answers as a model would for each kind of writing, and records what it was sent.
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ChatMessage } from '../../src/domain/model/llm.ts';
@@ -8,22 +8,6 @@ import type { ChatMessage } from '../../src/domain/model/llm.ts';
 export interface RecordedLlmRequest {
   authorization: string | undefined;
   body: { model: string; messages: ChatMessage[]; provider?: unknown };
-}
-
-/** One decision per email of the batch, as the AI sorting asks: thank-you notes need no reply, quotes are urgent. */
-function sorted(system: string, user: string): string {
-  const promptId = Number(system.match(/id (\d+): (?:Appointment scheduling|Prise de rendez-vous)/)?.[1]) || null;
-  const decisions = [...user.matchAll(/<email id="(\d+)">([\s\S]*?)<\/email>/g)].map(([, id, mail = '']) => {
-    const needs = !/Merci pour la reunion/.test(mail);
-    return {
-      id: Number(id),
-      needs_reply: needs,
-      reason: needs ? 'Une réponse est attendue.' : 'Simple remerciement.',
-      prompt_id: /rendez-vous/.test(mail) ? promptId : null,
-      priority: /devis/.test(mail) ? 'high' : 'normal',
-    };
-  });
-  return JSON.stringify(decisions);
 }
 
 /** A proposal: what was written, proofread or reworded, or else a reply with a passage to complete. */
@@ -40,7 +24,7 @@ function written(system: string, user: string): string {
 function answerTo(body: RecordedLlmRequest['body']): { status: number; json: unknown } {
   if (body.model === 'nozdr/model') return { status: 404, json: { error: { code: 404, message: 'No endpoints found matching your data policy.' } } };
   const [system, user] = body.messages as [ChatMessage, ChatMessage];
-  const content = system.content.includes('You triage the inbox') ? sorted(system.content, user.content) : written(system.content, user.content);
+  const content = written(system.content, user.content);
   return { status: 200, json: { model: body.model, provider: 'FakeZDR', choices: [{ message: { role: 'assistant', content } }] } };
 }
 

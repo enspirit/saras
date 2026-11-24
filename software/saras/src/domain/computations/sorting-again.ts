@@ -9,7 +9,7 @@ import type { Decided } from './attributes.ts';
 /** What is kept of an email that sorting again looks at. */
 export interface KeptSorting {
   status: EmailStatus;
-  /** Who decided where it stands: 'rule', 'user', a strategy's name, or nobody yet. */
+  /** Who decided where it stands: 'rule', 'user', or nobody ('none'; 'ai' on an email the AI sorted, when it did). */
   source: string | null;
   /** The headers a rule on where an email stands needs; emails fetched before they were kept have none. */
   hasHeaders: boolean;
@@ -21,19 +21,19 @@ const STATUS_OF: Record<string, EmailStatus> = { todo: 'needs_reply', none: 'no_
 
 export interface StatusAgain {
   status: EmailStatus;
-  source: string | null;
+  source: string;
   reason: string;
 }
 
 /**
  * Where an email stands once its rule is applied again, or null when nothing changes.
  * Left as it is: an email replied, one a member placed, one whose headers were not kept.
- * A rule that no longer speaks of an email it had placed sends it back to be sorted.
+ * A rule that no longer speaks of an email it had placed leaves it to handle, as nobody's decision.
  */
 export function standsAgain(kept: KeptSorting, decided: Decided | null): StatusAgain | null {
   if (kept.status === 'sent' || kept.source === 'user' || !kept.hasHeaders) return null;
   const status = STATUS_OF[decided?.value ?? ''];
-  if (!status) return kept.source === 'rule' ? { status: 'pending', source: null, reason: '' } : null;
+  if (!status) return kept.source === 'rule' ? { status: 'needs_reply', source: 'none', reason: '' } : null;
   return kept.status === status && kept.source === 'rule' ? null : { status, source: 'rule', reason: decided!.reason };
 }
 

@@ -13,8 +13,6 @@
   "decidedBy": "Décidé par",
   "deciderNobody": "À la main seulement",
   "deciderElo": "Une règle",
-  "deciderAi": "L’IA",
-  "deciderEloAi": "Une règle, puis l’IA",
   "preconfigured": "Préconfiguré",
   "fixed": "Le nom et les valeurs d’un attribut préconfiguré sont fixes : l’application s’appuie dessus.",
   "ruleTitle": "La règle",
@@ -34,7 +32,6 @@
   "noValue": "Aucune valeur",
   "valueSet": "{name} : enregistré.",
   "sourceRule": "Décidé par une règle",
-  "sourceAi": "Décidé par l’IA",
   "sourceUser": "Fixé à la main",
   "sortAgain": "Enregistrer et appliquer aux emails déjà conservés",
   "sortingAgain": "Nouveau tri…",
@@ -44,15 +41,13 @@
   "ofEmail": "Attributs de cet email",
   "noteNone": "Pas encore de valeur",
   "noteRule": "Décidé par sa règle",
-  "noteAi": "Décidé par l’IA lors du tri",
   "noteUser": "Fixé à la main : le tri n’y touche plus",
+  "noteNobody": "Ni une règle ni un membre n’en a décidé",
   "noteReason": "« {reason} »",
   "noteByHand": "Une valeur que vous choisissez ici reste telle que vous l’avez mise.",
-  "hintAi": "Consomme des jetons d’IA, quand l’organisation fait trier l’IA.",
   "addValue": "Ajouter une valeur…",
   "colorOf": "Couleur de « {label} »",
   "removeValue": "Retirer « {label} »",
-  "hintAiSorting": "Une requête par 20 emails relevés ; l’IA reçoit leur expéditeur, leur objet, le début de leur texte et le nom de leurs pièces jointes.",
   "color": {
     "grey": "Gris",
     "red": "Rouge",
@@ -62,6 +57,5 @@
     "blue": "Bleu",
     "purple": "Violet"
   },
-  "byRule": "Une règle le décide quand un email est relevé",
-  "byAi": "L’IA le décide quand aucune règle ne l’a fait"
+  "byRule": "Une règle le décide quand un email est relevé"
 }

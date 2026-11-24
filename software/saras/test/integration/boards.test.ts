@@ -32,7 +32,7 @@ test('a board needs a name; only administrators share one; its owner manages it,
 
 test('each condition of a filter is one condition on emails, with its own parameter', () => {
   const { sql, params } = conditionsOf({ attributes: { status: ['todo', 'sent'], 12: ['2'] }, mailbox: [3], received: 7, from: '50%_off', keywords: 'devis  licences', attachment: false }, 3);
-  assert.deepEqual(params, [['2'], ['needs_reply', 'pending', 'sent'], [3], 7, '%50\\%\\_off%', '%devis%', '%licences%']);
+  assert.deepEqual(params, [['2'], ['needs_reply', 'sent'], [3], 7, '%50\\%\\_off%', '%devis%', '%licences%']);
   assert.equal(sql.length, 8);
   assert.equal(sql[0], `(e.attributes_json::jsonb -> '12' ->> 'value') = ANY($3)`);
   assert.equal(sql[1], 'e.status = ANY($4)');

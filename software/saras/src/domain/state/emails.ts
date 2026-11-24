@@ -4,7 +4,6 @@ import { textToKeep } from '../computations/emails.ts';
 import type { Standing } from '../computations/emails.ts';
 import type { StatusAgain, ValueAgain } from '../computations/sorting-again.ts';
 import type { EmailRow, IncomingEmail } from '../model/email.ts';
-import type { TriageDecision } from '../sorting/gate.ts';
 import { Refusal } from '../refusal.ts';
 import type { Actor } from '../world.ts';
 import { mayUse } from './mailboxes.ts';
@@ -65,22 +64,6 @@ export const keepFetched = async (db: Db, mailboxId: number, folder: string, ema
     [mailboxId, folder, ...whoAndWhat(email), standing.status, standing.source, standing.reason, standing.priority, JSON.stringify(standing.attributes), JSON.stringify(email.headers ?? {})],
   ));
 
-/** The emails of a mailbox that wait to be sorted, most recent first. */
-export const emailsWaiting = (db: Db, mailboxId: number): Promise<EmailRow[]> =>
-  db.query<EmailRow>(`SELECT * FROM emails WHERE account_id = $1 AND status = 'pending' ORDER BY date DESC`, [mailboxId]);
-
-/** Records what a gate decided about an email, if it still waits. */
-export const keepVerdict = async (db: Db, gate: string, decision: TriageDecision): Promise<void> =>
-  void (await db.run(`UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3,
-       priority = CASE WHEN attributes_json::jsonb ? 'priority' THEN priority ELSE $4 END
-     WHERE id = $5 AND status = 'pending'`, [
-    decision.replyNeeded ? 'needs_reply' : 'no_reply',
-    gate,
-    decision.reason ?? '',
-    decision.priority ?? 'normal',
-    decision.mailId,
-  ]));
-
 /** An email the organisation keeps, with the address of the mailbox it arrived in. */
 export type KeptEmail = EmailRow & { mailbox: string };
 
@@ -88,7 +71,7 @@ export type KeptEmail = EmailRow & { mailbox: string };
 export const emailsKeptBy = (db: Db, organizationId: number): Promise<KeptEmail[]> =>
   db.query<KeptEmail>('SELECT e.*, a.email AS mailbox FROM emails e JOIN accounts a ON a.id = e.account_id WHERE a.org_id = $1 ORDER BY e.id', [organizationId]);
 
-/** Where an email stands from now on, who decided it and why. One that goes back to waiting loses the prompt suggested for it. */
+/** Where an email stands from now on, who decided it and why. */
 export const keepStanding = async (db: Db, emailId: number, { status, source, reason }: StatusAgain): Promise<void> =>
   void (await db.run('UPDATE emails SET status = $1, triage_source = $2, triage_reason = $3 WHERE id = $4', [status, source, reason, emailId]));
 

@@ -43,7 +43,7 @@ async function startApplication(): Promise<void> {
   try {
     const who = await refreshMe();
     await Promise.all([refreshBoards(), refreshAttributes()]);
-    // The server writes on the user's behalf (triage reasons, reply quoting): keep it told of their language.
+    // The server writes on the user's behalf (reply quoting): keep it told of their language.
     if (who.language !== language()) void chooseLanguage(language()).catch(() => {});
   } catch (e) {
     if (!isSignedOut(e)) toast(messageOf(e), true);

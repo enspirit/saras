@@ -40,14 +40,10 @@ export function attributeGiven(given: Record<string, unknown>): Verdict<Attribut
 
 /** ReqPre of an attribute decided by a rule: there is one. */
 export const hasItsRule = ({ decidedBy, elo }: Pick<AttributeGiven, 'decidedBy' | 'elo'>): Verdict<true> =>
-  (decidedBy === 'elo' || decidedBy === 'eloAi') && !elo ? refuse('invalid', 'attributes.ruleRequired') : accept(true);
+  decidedByRule(decidedBy) && !elo ? refuse('invalid', 'attributes.ruleRequired') : accept(true);
 
-/** Whether a rule, the AI, has a say in an attribute. */
-export const decidedByRule = (decidedBy: Decider): boolean => decidedBy === 'elo' || decidedBy === 'eloAi';
-export const decidedByAi = (decidedBy: Decider): boolean => decidedBy === 'ai' || decidedBy === 'eloAi';
-
-/** How the first of the two pre-configured attributes is decided, from the two settings that keep it. */
-export const deciderOfStatus = (byRule: boolean, byAi: boolean): Decider => (byRule ? (byAi ? 'eloAi' : 'elo') : byAi ? 'ai' : 'nobody');
+/** Whether a rule has a say in an attribute. */
+export const decidedByRule = (decidedBy: Decider): boolean => decidedBy === 'elo';
 
 /** The email as a rule sees it: `_` in Elo. */
 export const emailForRules = (email: IncomingEmail, mailboxAddress: string) => ({

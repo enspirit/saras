@@ -1,7 +1,6 @@
-// Pure: an email, from how it is kept to how operations and the sorting gate see it.
+// Pure: an email, from how it is kept to how operations see it.
 import type { ValueOfEmail } from '../../../shared/attribute.ts';
 import type { Priority } from '../../../shared/email.ts';
-import type { TriageMail } from '../sorting/gate.ts';
 import type { Email, EmailRow, EmailStatus } from '../model/email.ts';
 
 /** What saras keeps of a message, and how it is sorted, from its row. */
@@ -37,28 +36,15 @@ export const rowToEmail = (row: EmailRow): Email => ({
   ...sortingOf(row),
 });
 
-/** Pure: a stored email, as the triage gate is given it. */
-export function toTriageMail(email: Email): TriageMail {
-  return {
-    id: email.id,
-    from: { name: email.fromName, address: email.fromAddr },
-    to: email.to,
-    cc: email.cc,
-    subject: email.subject,
-    body: email.bodyText,
-    attachments: email.attachments,
-  };
-}
-
 const MAX_STORED_BODY = 100_000;
 
 /** The text kept of an email. PostgreSQL text cannot hold a NUL character, which a malformed mail may contain. */
 export const textToKeep = (body: string): string => body.replaceAll('\u0000', '').slice(0, MAX_STORED_BODY);
 
-/** Where a fetched email first stands and why, its priority, and the other attributes the rules gave it. */
+/** Where a fetched email first stands, who decided so ('rule', or 'none' for nobody) and why, its priority, and the other attributes the rules gave it. */
 export interface Standing {
   status: EmailStatus;
-  source: string | null;
+  source: string;
   reason: string;
   priority: Priority;
   attributes: Record<string, ValueOfEmail>;

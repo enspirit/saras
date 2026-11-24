@@ -5,7 +5,7 @@ import { after, before, test } from 'node:test';
 import { createClient, installTemplates, signUp } from '../support/client.ts';
 import type { ApiResponse } from '../support/client.ts';
 import { connectInbox } from '../support/connected-mailbox.ts';
-import { lastOf, writingRequests } from '../support/llm-requests.ts';
+import { lastOf } from '../support/llm-requests.ts';
 import { startStack } from '../support/stack.ts';
 import type { Stack } from '../support/stack.ts';
 import type { ChatMessage } from '../../src/domain/model/llm.ts';
@@ -26,17 +26,18 @@ interface EmailDetail {
 let stack: Stack;
 const me = createClient(() => stack.url);
 let prompts: PromptView[];
-/** The emails to handle once the AI has sorted the inbox: the request for a quote, then the rescheduling. */
+/** Two of the emails to handle: the request for a quote, then the rescheduling. */
 let todo: { id: number }[];
 
 before(async () => {
-  stack = await startStack({ env: { TRIAGE_STRATEGY: 'ai' } });
+  stack = await startStack();
   assert.equal((await signUp(me, 'bob@corp.example')).status, 201);
   await installTemplates(me);
   await connectInbox(me, stack.imapAccount);
   prompts = (await me('GET', '/prompts')).body;
-  todo = (await me('GET', '/emails?box=todo')).body.emails;
-  assert.equal(todo.length, 2);
+  const toHandle: { id: number; subject: string }[] = (await me('GET', '/emails?box=todo')).body.emails;
+  assert.equal(toHandle.length, 3);
+  todo = [/devis/, /rendez-vous/].map((subject) => toHandle.find((email) => subject.test(email.subject))!);
 });
 after(() => stack.stop());
 
@@ -46,7 +47,7 @@ function promptNamed(name: string): PromptView {
   return prompt;
 }
 
-const lastDraftSystemPrompt = (): string => lastOf(writingRequests(stack.llmRequests)).body.messages[0]?.content ?? '';
+const lastDraftSystemPrompt = (): string => lastOf(stack.llmRequests).body.messages[0]?.content ?? '';
 /** A mail as it left, its long lines unfolded: the quoted-printable encoding folds them. */
 const unfolded = (raw: string): string => raw.replace(/=\r\n/g, '');
 
@@ -57,7 +58,7 @@ test('a proposal is written with the chosen prompt, from the email and from what
   draft = await me('POST', `/emails/${todo[0]!.id}/assist`, { action: 'prompt', promptId: support.id, html: '<p>proposer 1200 euros</p>' });
   assert.equal(draft.status, 201);
   assert.match(draft.body.html, /Voici notre proposition/);
-  const [system, user] = lastOf(writingRequests(stack.llmRequests)).body.messages as [ChatMessage, ChatMessage];
+  const [system, user] = lastOf(stack.llmRequests).body.messages as [ChatMessage, ChatMessage];
   assert.ok(system.content.startsWith(support.systemPrompt));
   assert.match(user.content, /proposer 1200 euros/);
   assert.match(user.content, /equiper 20 personnes/);

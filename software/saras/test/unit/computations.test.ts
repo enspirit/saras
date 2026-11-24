@@ -5,7 +5,7 @@ import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, 
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../../src/domain/computations/given.ts';
 import { addressIsNotConnected, answersSignIn, connectsAsShared, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../../src/domain/computations/mailboxes.ts';
 import { promptContent } from '../../src/domain/computations/prompts.ts';
-import { modelGiven, sortingGiven, writingGiven } from '../../src/domain/computations/settings.ts';
+import { modelGiven, writingGiven } from '../../src/domain/computations/settings.ts';
 import { mayBeSortedAgain } from '../../src/domain/computations/sorting.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import type { Actor } from '../../src/domain/world.ts';
@@ -21,7 +21,6 @@ test('maintaining the organisation is for its administrators', () => {
 
 test('an email can be sorted again by a member until it is replied', () => {
   const cases: [EmailStatus, string][] = [
-    ['pending', 'ok'],
     ['needs_reply', 'ok'],
     ['no_reply', 'ok'],
     ['ignored', 'ok'],
@@ -111,9 +110,7 @@ test('a model is named "provider/model", or not at all', () => {
   assert.equal(outcome(modelGiven('open ai/gpt')), 'invalid: settings.invalidModel');
 });
 
-test('an organisation chooses who sorts and when proposals are written, each for itself', () => {
-  assert.deepEqual(['none', 'ai'].map((s) => outcome(sortingGiven(s))), ['ok', 'ok']);
-  assert.deepEqual(['magic', '', undefined].map((s) => outcome(sortingGiven(s))), Array(3).fill('invalid: organization.invalidSorting'));
+test('an organisation chooses when proposals are written', () => {
   assert.deepEqual(['none', 'draft', 'mailbox'].map((w) => outcome(writingGiven(w))), ['ok', 'ok', 'ok']);
   assert.deepEqual(['send', '', undefined].map((w) => outcome(writingGiven(w))), Array(3).fill('invalid: organization.invalidWriting'), 'nothing sends by itself');
 });

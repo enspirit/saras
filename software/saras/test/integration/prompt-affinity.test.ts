@@ -55,5 +55,5 @@ test('proposals written at fetch use the prompt that suits each email, else the 
   const used: Record<string, number> = {};
   for (const email of emails) used[email.subject] = (await alice('GET', `/emails/${email.id}`)).body.proposal.promptId;
   assert.deepEqual(used, { 'Demande de devis pour 20 licences': first, 'Merci pour hier': first, 'Report de notre rendez-vous': quotes });
-  assert.ok(stack.llmRequests.every((r) => !r.body.messages[0]?.content.includes('You triage the inbox')), 'the AI wrote, it did not sort or choose');
+  assert.equal(stack.llmRequests.length, emails.length, 'the AI wrote each proposal, and was asked nothing else: it neither sorts nor chooses');
 });

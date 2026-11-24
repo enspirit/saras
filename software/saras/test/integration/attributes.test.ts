@@ -1,8 +1,8 @@
 // Attributes: what an organisation wants to know of each email, decided by rules written in
-// Elo, by the AI, or by hand.
+// Elo, or by hand.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { attributeGiven, decidedFrom, deciderOfStatus } from '../../src/domain/computations/attributes.ts';
+import { attributeGiven, decidedFrom } from '../../src/domain/computations/attributes.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import { EloError, compileRule } from '../../src/tooling/elo.ts';
 import { createClient, join } from '../support/client.ts';
@@ -28,11 +28,12 @@ test('what a rule answers is taken as a value of the attribute, by key or by lab
   assert.deepEqual([decidedFrom(null, values), decidedFrom('Billing', values), decidedFrom(42, values)], [null, null, null]);
 });
 
-test('an attribute needs a name, and a choice two values; "Stands in" is decided as the two sorting settings say', () => {
+test('an attribute needs a name, and a choice two values; a rule decides it, or nobody: never the AI', () => {
   assert.equal(outcome(attributeGiven({ name: '', values: ['a', 'b'] })), 'invalid: attributes.nameRequired');
   assert.equal(outcome(attributeGiven({ name: 'Topic', values: ['a', 'a', ' '] })), 'invalid: attributes.valuesRequired');
   assert.equal(outcome(attributeGiven({ name: 'Assignee', kind: 'member' })), 'ok');
-  assert.deepEqual([deciderOfStatus(true, true), deciderOfStatus(true, false), deciderOfStatus(false, true), deciderOfStatus(false, false)], ['eloAi', 'elo', 'ai', 'nobody']);
+  const decider = (decidedBy: string) => { const given = attributeGiven({ name: 'Topic', values: ['a', 'b'], decidedBy }); return given.ok && given.value.decidedBy; };
+  assert.deepEqual(['elo', 'nobody', 'ai', 'eloAi'].map(decider), ['elo', 'nobody', 'nobody', 'nobody'], 'a way of deciding that is not known leaves it to members');
 });
 
 let stack: Stack;
@@ -50,13 +51,12 @@ test('an organisation starts with two attributes, whose logic is there to read: 
   const [stands, priority] = (await alice('GET', '/attributes')).body;
   assert.deepEqual([stands.key, stands.system, stands.decidedBy, stands.values.map((v: { key: string }) => v.key)], ['status', true, 'elo', ['todo', 'none', 'sent', 'ignored']]);
   assert.match(stands.elo, /triage\.newsletter/, 'the automated-mail rule, written in Elo');
-  assert.deepEqual([priority.key, priority.system, priority.decidedBy], ['priority', true, 'ai']);
+  assert.deepEqual([priority.key, priority.system, priority.decidedBy], ['priority', true, 'nobody']);
 });
 
-test('an administrator makes an attribute with its rule; a rule Elo cannot read is refused, and so is leaving it to the AI', async () => {
+test('an administrator makes an attribute with its rule; a rule Elo cannot read is refused', async () => {
   assert.equal((await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'elo', elo: 'if then' })).body.code, 'attributes.ruleInvalid');
   assert.equal((await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'elo' })).body.code, 'attributes.ruleRequired');
-  assert.equal((await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'ai' })).body.code, 'attributes.aiNotYet');
   const made = await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'], decidedBy: 'elo', elo: topicRule });
   assert.equal(made.status, 201);
   assert.deepEqual([made.body.name, made.body.system, made.body.values], ['Topic', false, [{ key: '1', label: 'Sales', color: 'grey' }, { key: '2', label: 'Planning', color: 'grey' }]]);
@@ -94,11 +94,13 @@ test('a member sets a value by hand, or takes it away; "Stands in" is not set th
   assert.equal((await alice('PUT', `/emails/${email.id}/attributes/status`, { value: 'none' })).body.code, 'attributes.valueUnknown');
 });
 
-test('how "Stands in" is decided is the organisation\'s sorting; its values cannot be changed, nor it deleted', async () => {
-  const edited = await alice('PUT', '/attributes/status', { name: 'Renamed', values: ['x', 'y'], decidedBy: 'eloAi', elo: `if _.from.address == '' then 'none' else null` });
-  assert.deepEqual([edited.body.name, edited.body.values.length, edited.body.decidedBy], ['Stands in', 4, 'eloAi']);
-  const org = (await alice('GET', '/me')).body.organization;
-  assert.deepEqual([org.sorting, org.skipAutomated], ['ai', true]);
+test('whether its rule decides "Stands in" is the organisation\'s setting; its values cannot be changed, nor it deleted', async () => {
+  const skipsAutomated = async () => (await alice('GET', '/me')).body.organization.skipAutomated;
+  assert.equal((await alice('PUT', '/attributes/status', { decidedBy: 'nobody' })).body.decidedBy, 'nobody');
+  assert.equal(await skipsAutomated(), false);
+  const edited = await alice('PUT', '/attributes/status', { name: 'Renamed', values: ['x', 'y'], decidedBy: 'elo', elo: `if _.from.address == '' then 'none' else null` });
+  assert.deepEqual([edited.body.name, edited.body.values.length, edited.body.decidedBy], ['Stands in', 4, 'elo']);
+  assert.equal(await skipsAutomated(), true);
   assert.equal((await alice('DELETE', '/attributes/status')).body.code, 'attributes.systemFixed');
 });
 
