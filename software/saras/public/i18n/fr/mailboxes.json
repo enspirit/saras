@@ -46,7 +46,6 @@
   "imapHint": "Avec son adresse et un mot de passe (IMAP / SMTP).",
   "continueAt": "Continuer chez {provider}",
   "serverSettings": "Réglages des serveurs",
-  "passwordHint": "Le mot de passe est chiffré dans la base. Préférez un mot de passe d’application.",
   "connectHint": "La connexion est testée avant tout enregistrement.",
   "chooseFolderTitle": "Choisir le dossier à surveiller",
   "connectedShort": "{email} est connectée.",

@@ -46,7 +46,6 @@
   "imapHint": "With its address and a password (IMAP / SMTP).",
   "continueAt": "Continue at {provider}",
   "serverSettings": "Server settings",
-  "passwordHint": "The password is encrypted in the database. Prefer an application password.",
   "connectHint": "The connection is tested before anything is saved.",
   "chooseFolderTitle": "Choose the folder to watch",
   "connectedShort": "{email} is connected.",
