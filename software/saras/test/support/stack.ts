@@ -66,10 +66,10 @@ const seenInMailbox = ({ imap }: Mailbox) => ({
   folderFlags: (folder: string) => imap.getMailbox(folder).messages.map((m) => m.flags),
 });
 
-async function stopAll(http: Server, llm: Server, { imap, smtp }: Mailbox, drop: () => Promise<void>): Promise<void> {
-  http.closeAllConnections();
+async function stopAll(https: Server[], llm: Server, { imap, smtp }: Mailbox, drop: () => Promise<void>): Promise<void> {
+  for (const http of https) http.closeAllConnections();
   llm.closeAllConnections();
-  await Promise.all([closed(http), closed(smtp), closed(llm)]);
+  await Promise.all([...https.map(closed), closed(smtp), closed(llm)]);
   // The IMAP test server has no way to drop idle sockets: stop accepting and let the process exit.
   imap.close();
   imap.server.unref();
@@ -80,18 +80,24 @@ async function stopAll(http: Server, llm: Server, { imap, smtp }: Mailbox, drop:
 const postmanFor = (ownMail: boolean, smtpPort: number): Postman =>
   createPostman({ smtpUrl: ownMail ? `smtp://saras:testpass@127.0.0.1:${smtpPort}` : '', mailFrom: 'saras@server.example' });
 
+const urlOf = (http: Server): string => `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
+
 export async function startStack({ messages = INBOX, folders = {}, env = {}, ownMail = false }: StackOptions = {}) {
   const mailbox = await startMailbox(messages, folders);
   const openrouter = fakeOpenRouter();
-  const { db, drop } = await testDatabase();
-  const http = await startApplication(testConfig(await listen(openrouter.server), env), db, postmanFor(ownMail, mailbox.imapAccount.smtpPort));
+  const { db, another, drop } = await testDatabase();
+  const config = testConfig(await listen(openrouter.server), env);
+  const postman = postmanFor(ownMail, mailbox.imapAccount.smtpPort);
+  const servers = [await startApplication(config, db, postman)];
   return {
-    url: `http://127.0.0.1:${(http.address() as AddressInfo).port}`,
+    url: urlOf(servers[0] as Server),
+    /** A second server on the same database, set up as the first: where it is reached. */
+    another: async (): Promise<string> => urlOf(servers[servers.push(await startApplication(config, another(), postman)) - 1] as Server),
     db,
     outbox: mailbox.outbox,
     llmRequests: openrouter.requests,
     ...seenInMailbox(mailbox),
     imapAccount: mailbox.imapAccount,
-    stop: () => stopAll(http, openrouter.server, mailbox, drop),
+    stop: () => stopAll(servers, openrouter.server, mailbox, drop),
   };
 }

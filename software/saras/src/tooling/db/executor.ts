@@ -14,8 +14,11 @@ export function queries(executor: Executor): Pick<Db, 'query' | 'one' | 'run'> {
   };
 }
 
+/** Holding a key is the database's, not a transaction's. */
+export type Holds = Pick<Db, 'hold' | 'holdIfFree'>;
+
 /** Inside a transaction, a nested one simply joins it. */
-export const inTransaction = (executor: Executor): Db => {
-  const tx: Db = { ...queries(executor), transaction: (fn) => fn(tx), close: async () => {} };
+export const inTransaction = (executor: Executor, holds: Holds): Db => {
+  const tx: Db = { ...queries(executor), ...holds, transaction: (fn) => fn(tx), close: async () => {} };
   return tx;
 };

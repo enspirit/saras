@@ -19,19 +19,17 @@ export interface Reach {
   config: Config;
 }
 
-/** The same, with what this running server keeps in memory only. */
+/** The same, with what this running server keeps in memory only: several servers on one database do not share it. */
 export interface World extends Reach {
   /** Wrong guesses of passwords and invitation links, per origin. */
   attempts: Map<string, Attempts>;
-  /** Emails whose reply is on its way to the mailbox. */
-  handingOver: Set<number>;
   /** The fetching of mailboxes: one at a time per mailbox, whoever asks. */
   fetching: Sync;
   /** The server's own outgoing mail, when it was given one. */
   postman: Postman;
 }
 
-export const createWorld = (reach: Reach, fetching: Sync, postman: Postman): World => ({ ...reach, attempts: new Map(), handingOver: new Set(), fetching, postman });
+export const createWorld = (reach: Reach, fetching: Sync, postman: Postman): World => ({ ...reach, attempts: new Map(), fetching, postman });
 
 /** The member an operation is performed by, with their organisation. */
 export interface Actor {

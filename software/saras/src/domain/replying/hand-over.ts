@@ -1,7 +1,7 @@
 // What SendReply and FileReplyAsDraft have in common: the reply is handed to the mailbox,
 // one way or the other, and what happened to the proposal on the way is recorded.
 //
-//   fetch    the email
+//   fetch    the email, held so that no other hand-over of it is under way
 //   decide   may it be handed over                                  (pure: mayHandOver)
 //   execute  the mailbox takes it; what is recorded is worked out   (pure: handOverRecord)
 //            and kept, and the email is replied
@@ -52,16 +52,16 @@ async function handOverAndRecord(world: World, actor: Actor, row: OwnedEmailRow,
 }
 
 export async function handOver(world: World, actor: Actor, request: ReplyRequest, mode: ReplyMode): Promise<{ wasEdited: boolean }> {
-  // `handingOver` holds the emails with a hand-over in flight, so that a double click cannot send twice.
-  const inFlight = world.handingOver;
-  const row = await emailFor(world.db, actor, request.emailId);
   const html = writtenSoFar(request.html);
-  // Decided and claimed in the same breath, before anything else is awaited, so that a second request cannot slip in between.
-  accepted(mayHandOver({ status: row.status, inFlight: inFlight.has(row.id), html, to: request.to, cc: request.cc }));
-  inFlight.add(row.id);
+  const asked = await emailFor(world.db, actor, request.emailId);
+  // One hand-over at a time per email, whichever server is asked, so that a double click cannot send twice.
+  const release = await world.db.holdIfFree(`hand-over:${asked.id}`);
   try {
+    // Read again once it is held: a hand-over that has just ended has replied it. Not held, a reply is on its way.
+    const row = release ? await emailFor(world.db, actor, asked.id) : asked;
+    accepted(mayHandOver({ status: row.status, inFlight: !release, html, to: request.to, cc: request.cc }));
     return await handOverAndRecord(world, actor, row, request, html, mode);
   } finally {
-    inFlight.delete(row.id);
+    await release?.();
   }
 }

@@ -22,8 +22,19 @@ export interface Db {
   run(sql: string, params?: unknown[]): Promise<number>;
   /** Runs `fn` in a transaction: committed when it resolves, rolled back when it throws. */
   transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T>;
+  /**
+   * Takes `key` once nobody holds it, and returns what gives it up: for what must be done by
+   * one at a time, whichever of the servers on this database is asked. Held outside any
+   * transaction, and given up by a server that dies.
+   */
+  hold(key: string): Promise<Release>;
+  /** The same without waiting: null when the key is held. */
+  holdIfFree(key: string): Promise<Release | null>;
   close(): Promise<void>;
 }
+
+/** Gives up a key that was held. */
+export type Release = () => Promise<void>;
 
 export interface DbOptions {
   /** URL of a PostgreSQL server. Empty for the embedded database. */

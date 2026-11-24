@@ -3,11 +3,13 @@
 // own so that test files running side by side do not see each other's rows.
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
-import { openDb } from '../../src/tooling/db.ts';
+import { connectDb, openDb } from '../../src/tooling/db.ts';
 import type { Db, DbOptions } from '../../src/tooling/db.ts';
 
 interface TestDatabase {
   db: Db;
+  /** The same database as a second server reaches it: connections of its own on a PostgreSQL server; the embedded one is opened once. */
+  another: () => Db;
   drop: () => Promise<void>;
 }
 
@@ -16,7 +18,7 @@ type Open = (options: DbOptions) => Db | Promise<Db>;
 
 async function inMemory(open: Open): Promise<TestDatabase> {
   const db = await open({});
-  return { db, drop: () => db.close() };
+  return { db, another: () => db, drop: () => db.close() };
 }
 
 /** The same server, seen through a schema of its own. */
@@ -31,13 +33,14 @@ async function inItsOwnSchema(url: string, open: Open): Promise<TestDatabase> {
   const admin = new pg.Client({ connectionString: url });
   await admin.connect();
   await admin.query(`CREATE SCHEMA ${schema}`);
-  const db = await open({ databaseUrl: scopedTo(url, schema) });
+  const databaseUrl = scopedTo(url, schema);
+  const opened = [await open({ databaseUrl })];
   const drop = async (): Promise<void> => {
-    await db.close();
+    await Promise.all(opened.map((db) => db.close()));
     await admin.query(`DROP SCHEMA ${schema} CASCADE`);
     await admin.end();
   };
-  return { db, drop };
+  return { db: opened[0] as Db, another: () => opened[opened.push(connectDb({ databaseUrl })) - 1] as Db, drop };
 }
 
 export const testDatabase = (open: Open = openDb): Promise<TestDatabase> =>

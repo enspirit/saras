@@ -10,7 +10,8 @@
 //            no further back than the days chosen for the mailbox (those the server is set up for, when none were),
 //            only what is unread when the mailbox says so, and no more at a time than the number the server is set up for
 //            what went wrong, fetching, sorting or preparing, is kept as the mailbox's last error
-//            one fetch at a time per mailbox: whoever asks meanwhile shares the one under way
+//            one fetch at a time per mailbox: whoever asks meanwhile shares the one under way,
+//            or waits for its turn when it is under way on another server
 //   ReqTrig  on the server's clock, for every mailbox that watches a folder
 //            when a member asks, when a folder is chosen, when a mailbox is reconnected
 //   Then     SortWaitingEmails, and PrepareProposals, unless fetching failed
@@ -95,13 +96,23 @@ async function fetchMailbox(deps: Dependencies, account: AccountRow): Promise<Sy
   return { fetched, ...after };
 }
 
+/** The same, once no other server is fetching this mailbox: what that one brought in is then known, sorted and prepared, and is not again. */
+async function fetchInTurn(deps: Dependencies, account: AccountRow): Promise<SyncResult> {
+  const release = await deps.db.hold(`fetch-mailbox:${account.id}`);
+  try {
+    return await fetchMailbox(deps, account);
+  } finally {
+    await release();
+  }
+}
+
 const logged = (account: AccountRow) => (e: unknown) => console.error(`sync of account ${account.id} failed: ${errorMessage(e)}`);
 
 export function createSync(deps: Dependencies): Sync {
-  /** Mailbox -> fetch in flight; whoever asks meanwhile shares it instead of fetching twice. */
+  /** Mailbox -> fetch in flight on this server; whoever asks it meanwhile shares it instead of fetching twice. */
   const running = new Map<number, Promise<SyncResult>>();
   const syncAccount = (account: AccountRow): Promise<SyncResult> => {
-    const inFlight = running.get(account.id) ?? fetchMailbox(deps, account).finally(() => running.delete(account.id));
+    const inFlight = running.get(account.id) ?? fetchInTurn(deps, account).finally(() => running.delete(account.id));
     running.set(account.id, inFlight);
     return inFlight;
   };
