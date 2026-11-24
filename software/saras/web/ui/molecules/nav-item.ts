@@ -11,6 +11,7 @@ export interface NavEntry {
   current?: boolean;
 }
 
+/** An entry of the menu, on one line: a name too long for it is cut, and read in full on hover. */
 export function NavItem({ href, label, icon, count, current }: NavEntry): HTMLAnchorElement {
-  return h('a', { class: 'nav-item', href, 'aria-current': current ? 'page' : null }, icon && Icon(icon), h('span', { class: 'nav-item__label' }, label), count ? h('span', { class: 'nav-item__count' }, count) : null);
+  return h('a', { class: 'nav-item', href, 'aria-current': current ? 'page' : null }, icon && Icon(icon), h('span', { class: 'nav-item__label', title: label }, label), count ? h('span', { class: 'nav-item__count' }, count) : null);
 }
