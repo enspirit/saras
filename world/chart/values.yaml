@@ -18,6 +18,14 @@ fullnameOverride: ''
 # is what `kubectl port-forward` gives.
 baseUrl: ''
 
+# How many pods of saras. One is a whole installation. Several share one
+# PostgreSQL server: any of them answers, a migration is applied once, and what
+# the server does on its own (fetching mailboxes, erasing what is past its
+# retention) is done by one of them at a time. With more than one, an upgrade
+# replaces them one after the other, the old ones answering meanwhile. Not with
+# the embedded database, which is opened by a single process.
+replicas: 1
+
 # The variables of env/base.env that are not secrets, by name. What is left
 # out keeps the server's default.
 #   config:

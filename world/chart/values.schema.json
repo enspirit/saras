@@ -16,6 +16,7 @@
     "imagePullSecrets": { "type": "array" },
     "nameOverride": { "type": "string" },
     "fullnameOverride": { "type": "string" },
+    "replicas": { "type": "integer", "minimum": 1 },
     "baseUrl": { "type": "string", "pattern": "^(https?://.+)?$" },
     "config": {
       "type": "object",

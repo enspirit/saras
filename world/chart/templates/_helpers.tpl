@@ -31,7 +31,7 @@ APP_SECRET DATABASE_URL OPENROUTER_API_KEY SMTP_URL GOOGLE_CLIENT_SECRET MICROSO
 
 {{/* The variables of env/base.env the chart sets itself, from values of its own. */}}
 {{- define "saras.ownVariables" -}}
-PORT BASE_URL DATA_DIR BRAND_DIR
+PORT BASE_URL DATA_DIR BRAND_DIR ROLES
 {{- end }}
 
 {{/* The PostgreSQL server of the release, when it has one: its name, and what saras and it agree on. */}}
@@ -78,7 +78,7 @@ secretKeyRef:
 {{- fail (printf "config.%s: %s is a secret. Give it as secrets.%s, or in existingSecret" $name $name $name) }}
 {{- end }}
 {{- if has $name $own }}
-{{- fail (printf "config.%s: the chart sets %s itself, from baseUrl, brand.configMap or embeddedDatabase" $name $name) }}
+{{- fail (printf "config.%s: the chart sets %s itself, from baseUrl, brand.configMap or embeddedDatabase; every pod takes every role, and replicas says how many there are" $name $name) }}
 {{- end }}
 {{- end }}
 {{- range $name, $_ := .Values.secrets }}
@@ -98,6 +98,9 @@ secretKeyRef:
 {{- end }}
 {{- if and (not $chosen) (not .Values.existingSecret) }}
 {{- fail "No database: name a PostgreSQL server of yours with secrets.DATABASE_URL (or in existingSecret), set postgresql.enabled=true for one in the release, or embeddedDatabase.enabled=true to try saras on its embedded one" }}
+{{- end }}
+{{- if and .Values.embeddedDatabase.enabled (gt (int .Values.replicas) 1) }}
+{{- fail (printf "replicas=%d and embeddedDatabase.enabled: the embedded database is opened by one process. Several replicas need a PostgreSQL server" (int .Values.replicas)) }}
 {{- end }}
 {{- if .Values.postgresql.enabled }}
 {{- if and .Values.postgresql.password .Values.postgresql.existingSecret }}

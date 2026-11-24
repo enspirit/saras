@@ -33,4 +33,4 @@ The chart has since been given a PostgreSQL server it runs when asked: [decision
 
 ## What would reverse this
 
-A second replica becoming possible (the timers moved out of the server, or made to agree): `replicas` becomes a value, and upgrades stop interrupting. Or a database the chart cannot leave to the operator: it then answers for one, and says how it is upgraded and backed up.
+A second replica becoming possible (the timers moved out of the server, or made to agree): `replicas` becomes a value, and upgrades stop interrupting. It has: [decision 0010](0010-the-server-migrates-its-database-and-several-may-share-it.md). Or a database the chart cannot leave to the operator: it then answers for one, and says how it is upgraded and backed up.
