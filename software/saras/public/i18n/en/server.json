@@ -38,6 +38,7 @@
     "serversRequired": "IMAP and SMTP servers and ports are required.",
     "passwordRequired": "Password required.",
     "connectionFailed": "Could not connect: {detail}",
+    "notDirectTls": "Could not connect: a server does not start in TLS on that port. Untick \"Direct TLS\" for it: the connection is then upgraded with STARTTLS, as on ports 587 and 143.",
     "folderRequired": "Choose the folder to watch.",
     "unknownFolder": "This folder does not exist in the mailbox.",
     "foldersFailed": "Could not list the folders: {detail}",

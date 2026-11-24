@@ -35,6 +35,7 @@ export const MESSAGES = {
   'mailboxes.serversRequired': 'IMAP and SMTP servers and ports are required.',
   'mailboxes.passwordRequired': 'Password required.',
   'mailboxes.connectionFailed': 'Could not connect: {detail}',
+  'mailboxes.notDirectTls': 'Could not connect: a server does not start in TLS on that port. Untick "Direct TLS" for it: the connection is then upgraded with STARTTLS, as on ports 587 and 143.',
   'oauth.notConfigured': 'This OAuth provider is not configured on this server.',
   'oauth.denied': 'Authorisation refused ({detail}).',
   'oauth.expired': 'The OAuth session expired, start again.',

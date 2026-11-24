@@ -31,6 +31,8 @@ test('a wrong IMAP password is refused, a right one connects', async () => {
   assert.equal(bad.body.code, 'mailboxes.connectionFailed');
   assert.match(bad.body.error, /^Could not connect: /);
   assert.ok(bad.body.params.detail);
+  // Direct TLS asked of a port that starts in clear, as 587 does: told as what to untick, not in the words of the TLS library.
+  assert.equal((await me('POST', '/mailboxes/imap', { ...stack.imapAccount, smtpSecure: true })).body.code, 'mailboxes.notDirectTls');
   assert.equal((await me('POST', '/mailboxes/imap', stack.imapAccount)).status, 201);
   const stored = (await stack.db.one<{ config_enc: string }>('SELECT config_enc FROM accounts'))?.config_enc ?? '';
   assert.ok(stored.length > 20);

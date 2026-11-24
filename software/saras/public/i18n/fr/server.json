@@ -38,6 +38,7 @@
     "serversRequired": "Serveurs et ports IMAP et SMTP requis.",
     "passwordRequired": "Mot de passe requis.",
     "connectionFailed": "Connexion impossible : {detail}",
+    "notDirectTls": "Connexion impossible : un serveur ne démarre pas en TLS sur ce port. Décochez « TLS direct » pour lui : la connexion passe alors en TLS par STARTTLS, comme sur les ports 587 et 143.",
     "folderRequired": "Choisissez le dossier à surveiller.",
     "unknownFolder": "Ce dossier n’existe pas dans la boîte.",
     "foldersFailed": "Impossible de lister les dossiers : {detail}",

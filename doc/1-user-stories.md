@@ -118,7 +118,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 - For my first mailbox the address and the name are those I signed up with, and the servers are proposed from the address; I can change all of them.
 - saras looks up who hosts my address's domain. When it is Google or Microsoft, I am pointed to signing in there (US-11, US-12), or told that my usual password will probably be refused when that is not set up.
 - Changing a port sets "Direct TLS" accordingly (993 / 465 direct; otherwise STARTTLS, which is then required).
-- The connection is tested before anything is saved; a failure shows the server's own message.
+- The connection is tested before anything is saved; a failure shows the server's own message. When direct TLS was asked of a port that starts in clear (587, 143), it says so instead, and what to untick.
 - The password is stored encrypted. An address is connected once per organisation: connecting it again is refused (see US-17 to renew its access).
 
 ### US-11 — Connect Gmail / Google Workspace
