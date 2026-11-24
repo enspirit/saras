@@ -11,6 +11,7 @@ export interface EditedValue {
 }
 
 export interface ValueEditorHandle {
+  /** It says `change` each time a value is added, removed or given another colour. */
   element: HTMLDivElement;
   /** The values as they stand, what is being typed included. */
   values(): EditedValue[];
@@ -72,9 +73,10 @@ function AddInput(placeholder: string, values: EditedValue[], changed: Change): 
 export function ValueEditor(options: ValueEditorOptions): ValueEditorHandle {
   const values = options.values.map((value) => ({ ...value }));
   const element = h('div', { class: 'value-editor' });
-  const input = AddInput(options.placeholder, values, () => render(true));
+  const changed = (refocus = false): void => (render(refocus), void element.dispatchEvent(new Event('change')));
+  const input = AddInput(options.placeholder, values, () => changed(true));
   function render(refocus = false): void {
-    const chips = options.fixed ? values.map((value) => ValueChip(value.label, { color: value.color })) : values.map((value) => EditedChip(value, options, values, () => render()));
+    const chips = options.fixed ? values.map((value) => ValueChip(value.label, { color: value.color })) : values.map((value) => EditedChip(value, options, values, () => changed()));
     element.replaceChildren(...chips, ...(options.fixed ? [] : [input]));
     if (refocus) input.focus();
   }

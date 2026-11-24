@@ -23,6 +23,11 @@
     "autoSubmitted": "Renseigné par les expéditeurs automatiques",
     "precedence": "bulk, junk ou list pour les envois en masse"
   },
+  "answersTitle": "Ce qu’elle peut répondre",
+  "answersPick": "Une valeur de l’attribut, écrite comme elle l’est ici. Cliquez sur l’une d’elles pour l’écrire dans la règle.",
+  "answerNothing": "Ne dit rien de l’email",
+  "answerWhy": "Une valeur, et pourquoi",
+  "answerCodes": "La règle de départ de cet attribut donne ses raisons sous forme de codes (<code>'triage.newsletter'</code>) : saras les dit dans la langue de chaque lecteur. Une raison écrite avec vos mots s’affiche telle que vous l’avez écrite.",
   "briefTitle": "Elo en bref",
   "brief": {
     "choice": "Un choix. null ne dit rien.",
@@ -47,8 +52,8 @@
   "triedNew": "nouveau",
   "shapeTitle": "La forme d’une règle",
   "shapeGiven": "Une règle reçoit l’email sous le nom <code>_</code> : son expéditeur, son objet, son texte, ses pièces jointes, la boîte où il est arrivé, quelques en-têtes.",
-  "shapeAnswers": "Elle répond une valeur de l’attribut, par son nom (<code>'billing'</code>), ou <code>null</code> pour ne rien dire. Pour dire pourquoi, elle répond <code>'{'value: …, reason: …'}'</code> : la raison s’affiche avec la valeur sur l’email.",
-  "shapeNothing": "Quand une règle ne dit rien, l’email n’a pas de valeur pour cet attribut, sauf si l’attribut demande aussi à l’IA. Une valeur fixée à la main par un membre n’est jamais remplacée par une règle.",
+  "shapeAnswers": "Elle répond une valeur de l’attribut, par son nom (<code>'billing'</code>), ou <code>null</code> pour ne rien dire. Pour dire pourquoi, elle répond <code>'{'value: …, reason: …'}'</code> : la raison s’affiche avec la valeur sur l’email. À côté d’une règle en cours d’écriture, chaque valeur est listée comme elle s’écrit.",
+  "shapeNothing": "Quand une règle ne dit rien, l’email n’a pas de valeur pour cet attribut ; quand c’est la règle qui dit où il se trouve, l’email est à traiter. Une valeur fixée à la main par un membre n’est jamais remplacée par une règle.",
   "recipesTitle": "Des règles dont partir",
   "recipe": {
     "domain": "Selon le domaine de l’expéditeur",

@@ -1,10 +1,11 @@
 // Beside a rule being written, and in the guide: what a rule can read and Elo in a few lines;
-// in the guide, the skill that has an AI assistant write a rule.
+// beside a rule, what it can answer; in the guide, the skill that has an AI assistant write a rule.
 
-import { EMAIL_FIELDS } from '../../shared/attribute.ts';
-import type { EmailFieldPath } from '../../shared/attribute.ts';
+import { EMAIL_FIELDS, STATUS, saidInRule, valuesForRules } from '../../shared/attribute.ts';
+import type { Attribute, EmailFieldPath } from '../../shared/attribute.ts';
 import { ELO_IN_BRIEF } from '../../shared/rule-recipes.ts';
 import { t, tRich } from '../i18n.ts';
+import { valueLabel } from './attribute-names.ts';
 import { ButtonLink } from '../ui/atoms/button.ts';
 import { Code, Link, Text } from '../ui/atoms/text.ts';
 import { Card } from '../ui/molecules/card.ts';
@@ -52,6 +53,23 @@ export const fieldsCard = (onPick?: (path: string) => void): HTMLDivElement =>
 /** Elo in a few lines, and where the rest is. */
 export const briefCard = (more: { label: string; href: string }): HTMLDivElement =>
   Card({ title: t('rules.briefTitle') }, ELO_IN_BRIEF.map(({ key, elo }) => Snippet(elo, t(BRIEF[key]))), Text({ small: true }, Link(more.label, more.href)));
+
+/** A text as Elo writes one. */
+const quoted = (text: string): string => `'${text.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
+
+/** What the rule of an attribute may answer, each as it is written: one of its values, nothing, a value and why. */
+function answers(attribute: Attribute): FieldEntry[] {
+  const values = valuesForRules(attribute).map((value) => ({ path: quoted(saidInRule(attribute, value)), type: '', what: attribute.system ? valueLabel(attribute, value) : '' }));
+  const why = values[0] ? [{ path: `{value: ${values[0].path}, reason: '…'}`, type: '', what: t('rules.answerWhy') }] : [];
+  return [...values, { path: 'null', type: '', what: t('rules.answerNothing') }, ...why];
+}
+
+/** What the rule of this attribute can answer: a click writes one in the rule. */
+export const answersCard = (attribute: Attribute, onPick: (answer: string) => void): HTMLDivElement =>
+  Card({ title: t('rules.answersTitle') },
+    Text({ muted: true, small: true }, t('rules.answersPick')),
+    FieldList(answers(attribute), onPick),
+    attribute.key === STATUS && Text({ muted: true, small: true }, tRich('rules.answerCodes', {}, { code: Code })));
 
 /** The skill to hand an AI assistant, in the guide: each attribute offers its own beside its rule. */
 export const skillCard = (): HTMLDivElement =>

@@ -2,9 +2,9 @@
 // skill that says how to write one.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { EMAIL_FOR_RULES } from '../../shared/attribute.ts';
+import { EMAIL_FOR_RULES, saidInRule, valuesForRules } from '../../shared/attribute.ts';
 import type { Attribute } from '../../shared/attribute.ts';
-import { emailForRules } from '../../src/domain/computations/attributes.ts';
+import { STATUS_VALUES, decidedFrom, emailForRules } from '../../src/domain/computations/attributes.ts';
 import { DEFAULT_STATUS_RULE } from '../../src/domain/computations/default-rules.ts';
 import { SKILL_NAME, ruleWritingSkill } from '../../src/domain/computations/rule-writing-skill.ts';
 import { EloError, compileRule, problemsOf } from '../../src/tooling/elo.ts';
@@ -40,6 +40,14 @@ test('the skill handed to an AI agent names the attribute and its values, and ev
   assert.equal(rules.length, 3);
   for (const rule of rules) assert.deepEqual(problemsOf(rule, EMAIL_FOR_RULES), [], rule);
   assert.match(ruleWritingSkill(null), /Ask which attribute the rule is for/);
+});
+
+test('a rule names a value by its label, and one of a pre-configured attribute by its key; no rule says an email was replied', () => {
+  const standsIn: Attribute = { key: 'status', name: 'Stands in', kind: 'choice', values: STATUS_VALUES, decidedBy: 'elo', elo: '', system: true };
+  assert.deepEqual(valuesForRules(topic).map((value) => saidInRule(topic, value)), ['Billing', 'Support']);
+  assert.deepEqual(valuesForRules(standsIn).map((value) => saidInRule(standsIn, value)), ['todo', 'none', 'ignored']);
+  for (const attribute of [topic, standsIn]) for (const value of valuesForRules(attribute)) assert.equal(decidedFrom(saidInRule(attribute, value), attribute.values)?.value, value.key);
+  assert.match(ruleWritingSkill(standsIn), /- `'todo'` \(To handle\)\n- `'none'` \(No reply needed\)\n- `'ignored'` \(Ignored\)\n/);
 });
 
 test('every Elo function the skill names exists', () => {

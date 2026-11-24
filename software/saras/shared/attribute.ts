@@ -48,6 +48,18 @@ export interface Attribute {
   system: boolean;
 }
 
+/** The value of "Stands in" no rule gives: an email is replied by replying to it. */
+export const REPLIED = 'sent';
+
+/** The values a rule may give. */
+export const valuesForRules = ({ key, values }: Pick<Attribute, 'key' | 'values'>): AttributeValue[] => (key === STATUS ? values.filter((value) => value.key !== REPLIED) : values);
+
+/**
+ * What a rule writes to give a value: its label. Of a pre-configured attribute, whose values
+ * are named in each reader's language, its key.
+ */
+export const saidInRule = ({ system }: Pick<Attribute, 'system'>, value: AttributeValue): string => (system ? value.key : value.label);
+
 /** What an administrator gives to make or change an attribute. */
 export interface AttributeGiven {
   name: string;

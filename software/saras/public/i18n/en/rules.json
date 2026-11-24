@@ -23,6 +23,11 @@
     "autoSubmitted": "Set by automatic senders",
     "precedence": "bulk, junk or list for mass mail"
   },
+  "answersTitle": "What it can answer",
+  "answersPick": "A value of the attribute, written as it is here. Click one to write it in the rule.",
+  "answerNothing": "Says nothing of the email",
+  "answerWhy": "A value, and why",
+  "answerCodes": "The rule this attribute starts with gives its reasons as codes (<code>'triage.newsletter'</code>): saras says those in each reader’s language. A reason in your own words is shown as you wrote it.",
   "briefTitle": "Elo in brief",
   "brief": {
     "choice": "A choice. null says nothing.",
@@ -47,8 +52,8 @@
   "triedNew": "new",
   "shapeTitle": "The shape of a rule",
   "shapeGiven": "A rule is given the email as <code>_</code>: who sent it, its subject, its text, its attachments, the mailbox it arrived in, a few headers.",
-  "shapeAnswers": "It answers a value of the attribute, by its name (<code>'billing'</code>), or <code>null</code> to say nothing. To say why, it answers <code>'{'value: …, reason: …'}'</code>: the reason is shown with the value on the email.",
-  "shapeNothing": "When a rule says nothing, the email keeps no value for that attribute, unless the attribute also asks the AI. A value a member set by hand is never replaced by a rule.",
+  "shapeAnswers": "It answers a value of the attribute, by its name (<code>'billing'</code>), or <code>null</code> to say nothing. To say why, it answers <code>'{'value: …, reason: …'}'</code>: the reason is shown with the value on the email. Beside a rule being written, each value is listed as it is written.",
+  "shapeNothing": "When a rule says nothing, the email keeps no value for that attribute; when it is the rule of where the email stands, the email is to handle. A value a member set by hand is never replaced by a rule.",
   "recipesTitle": "Rules to start from",
   "recipe": {
     "domain": "By the sender’s domain",

@@ -16,7 +16,7 @@
   "preconfigured": "Pre-configured",
   "fixed": "The name and the values of a pre-configured attribute are fixed: the application relies on them.",
   "ruleTitle": "The rule",
-  "ruleIntro": "Written in <link>Elo</link>, a small expression language: it costs nothing to run and says exactly what it does. It is given the email as <code>_</code> and answers a value, or <code>null</code> to say nothing.",
+  "ruleIntro": "Written in <link>Elo</link>, a small expression language: it costs nothing to run and says exactly what it does. It is given the email as <code>_</code> and answers a value, or <code>null</code> to say nothing. To say why, it answers <code>'{'value: …, reason: …'}'</code>: the reason is shown with the value on the email.",
   "ruleExample": "if contains(lower(_.subject), 'invoice') then 'Billing' else null",
   "try": "Try it on recent emails",
   "triedEmail": "Email",

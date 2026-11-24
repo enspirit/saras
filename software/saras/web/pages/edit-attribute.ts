@@ -7,13 +7,14 @@ import { createAttribute, deleteAttribute, editAttribute, readAttributes, sortAg
 import { t } from '../i18n.ts';
 import { ActionButton, confirmAction, guard, SubmitForm, toast } from './actions.ts';
 import { attributeName, valueLabel } from './attribute-names.ts';
-import { ruleSection } from './attribute-rule.ts';
+import { ruleSection, typed } from './attribute-rule.ts';
 import type { EloEditorMaker } from './attribute-rule.ts';
-import { briefCard, fieldsCard } from './rule-aside.ts';
+import { answersCard, briefCard, fieldsCard } from './rule-aside.ts';
 import { shell } from './shell.ts';
 import { Button, ButtonLink } from '../ui/atoms/button.ts';
 import type { Child } from '../ui/dom.ts';
 import { Checkbox, Input, Select } from '../ui/atoms/input.ts';
+import { Slot } from '../ui/atoms/slot.ts';
 import { Card } from '../ui/molecules/card.ts';
 import type { EloEditorHandle } from '../ui/molecules/elo-editor.ts';
 import { CheckField, Field } from '../ui/molecules/field.ts';
@@ -91,6 +92,15 @@ function askedOf(attribute: Attribute | null, f: AttributeFields): Child[] {
   ];
 }
 
+/** Beside the form, while a rule is asked for: what the rule can answer, as the values being typed make it, what a rule can read, and Elo in brief. */
+function helpBeside(attribute: Attribute | null, f: AttributeFields, editor: EloEditorHandle): HTMLElement[] {
+  const answers = Slot();
+  const said = (): void => answers.show(answersCard(typed(attribute, f.kind.value === 'member' ? [] : f.values.values()), (answer) => editor.insert(answer)));
+  [f.values.element, f.kind].forEach((control) => control.addEventListener('change', said));
+  said();
+  return [answers.element, fieldsCard((path) => editor.insert(path)), briefCard({ label: t('rules.guideMore'), href: '#/attributes/guide' })];
+}
+
 interface AttributeForm {
   form: HTMLFormElement;
   aside: HTMLElement[];
@@ -116,8 +126,7 @@ function attributeForm(attribute: Attribute | null, EloEditor: EloEditorMaker): 
     rule,
     Actions(save, sortAgain, ButtonLink(t('common.cancel'), { href: '#/attributes' }), attribute && !attribute.system && deleteButton(attribute)),
   );
-  // Beside the form, while a rule is asked for: what a rule can read, and Elo in brief.
-  const aside = [fieldsCard((path) => editor.insert(path)), briefCard({ label: t('rules.guideMore'), href: '#/attributes/guide' })];
+  const aside = helpBeside(attribute, f, editor);
   return { form, aside, byRule: f.byRule, ruleParts: [rule, ...aside, ...(sortAgain ? [sortAgain] : [])] };
 }
 

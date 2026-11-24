@@ -38,7 +38,7 @@ const problemsOf = (problems: RuleProblem[], editor: () => EloEditorHandle): HTM
   })));
 
 /** The attribute as the values being typed make it: so that what a rule answers is shown as it will be. */
-const typed = (attribute: Attribute | null, values: ValueGiven[]): Attribute => {
+export const typed = (attribute: Attribute | null, values: ValueGiven[]): Attribute => {
   const made: AttributeValue[] = values.map(({ label, color }, index) => ({ key: String(index + 1), label, color }));
   return attribute && (attribute.system || attribute.kind === 'member') ? attribute : { key: '', name: '', kind: 'choice', values: made, decidedBy: 'elo', elo: '', system: false };
 };
