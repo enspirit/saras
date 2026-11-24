@@ -2,6 +2,8 @@
 .mailbox { display: grid; grid-template-columns: minmax(280px, var(--list-width)) 1fr; flex: 1; min-height: 0; }
 .mailbox__list { overflow-y: auto; background: var(--color-surface); border-right: var(--border-width) solid var(--color-line); }
 .mailbox__list-top { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--color-surface); border-bottom: var(--border-width) solid var(--color-line); }
+/* While emails are ticked, their bar lies over the head of the list, title and search: the list does not move. */
+.mailbox__list-top > .slot > .selection-bar { position: absolute; inset: 0; align-content: center; }
 .mailbox__list-top > .search-field { margin: 0 var(--space-3) var(--space-3) var(--space-4); }
 .mailbox__list-head {
   display: flex; align-items: center; gap: var(--space-2);
