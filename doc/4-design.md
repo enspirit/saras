@@ -86,7 +86,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | --- | --- |
 | `Icon`, `Spinner` | One glyph of the icon font; something in progress. |
 | `Button`, `ButtonLink`, `setBusy` | Variants: default, primary, danger (a destructive action at rest), destructive (the same about to happen), ghost, link, tool. Sizes small, medium, large. Optional icon, icon-only, block, flush. Busy: a spinner replaces the icon, the label and width stay. |
-| `Input`, `Select`, `Textarea`, `Checkbox` | One field style; invalid state through `aria-invalid`. The checkbox is drawn; the select keeps its native arrow. |
+| `Input`, `Select`, `Textarea`, `Checkbox` | One field style; invalid state through `aria-invalid`; the ring of focus is drawn over the field's edge, inward, so it never reaches the label. The checkbox is drawn; the select keeps its native arrow. Password managers and the browser's autofill are kept off every field but a password and what signs in beside it (`autocomplete` `username`, `current-password`, `new-password`, `one-time-code`): `NOT_A_CREDENTIAL`. |
 | `Badge` | accent, ok, warn, danger, neutral. |
 | `Notice` | A tinted paragraph: info, ok, warn, danger. |
 | `Avatar` | A person as initials, or a mailbox as an icon. |

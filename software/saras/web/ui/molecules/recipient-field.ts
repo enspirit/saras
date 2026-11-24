@@ -1,3 +1,4 @@
+import { NOT_A_CREDENTIAL } from '../atoms/input.ts';
 import { Chip } from '../atoms/chip.ts';
 import { h } from '../dom.ts';
 
@@ -47,7 +48,7 @@ function wireTyping(input: HTMLInputElement, current: () => string[], change: (n
 export function RecipientField({ label, values = [], removeLabel }: RecipientFieldOptions): RecipientFieldHandle {
   let addresses: string[] = [];
   const listeners: (() => void)[] = [];
-  const input = h('input', { class: 'recipients__input', type: 'email', 'aria-label': label, autocomplete: 'off' });
+  const input = h('input', { ...NOT_A_CREDENTIAL, class: 'recipients__input', type: 'email', 'aria-label': label });
   const element = h('div', { class: 'recipients' });
   const chip = (address: string): HTMLSpanElement =>
     Chip(address, { invalid: !isAddress(address), removeLabel: removeLabel(address), onRemove: () => change(addresses.filter((a) => a !== address)) });

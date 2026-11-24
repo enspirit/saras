@@ -11,6 +11,8 @@
 }
 .input { min-height: var(--control-md); transition: border-color var(--duration-fast) var(--ease); }
 .input:hover { --input-border: var(--color-border-strong); }
+/* The ring of focus is drawn over the field's own edge, inward: the field takes no more room, and its label keeps its distance. */
+.input:focus-visible { outline-offset: calc(var(--border-width) * -1); }
 .input:disabled { --input-border: var(--color-border); background: var(--color-bg); color: var(--color-text-muted); }
 .input[aria-invalid="true"] { --input-border: var(--color-danger); }
 textarea.input { resize: vertical; min-height: 90px; padding-block: var(--space-2); }

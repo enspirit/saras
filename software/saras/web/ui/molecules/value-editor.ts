@@ -1,3 +1,4 @@
+import { NOT_A_CREDENTIAL } from '../atoms/input.ts';
 import { Icon } from '../atoms/icon.ts';
 import { ValueChip, toneClass } from '../atoms/value-chip.ts';
 import type { Tone } from '../atoms/value-chip.ts';
@@ -58,7 +59,7 @@ function add(input: HTMLInputElement, values: EditedValue[], changed: Change): v
 
 /** Where a value is typed: Enter or a comma adds it, Backspace on nothing removes the last. */
 function AddInput(placeholder: string, values: EditedValue[], changed: Change): HTMLInputElement {
-  const input = h('input', { class: 'value-editor__input', type: 'text', maxLength: 60, placeholder, 'aria-label': placeholder });
+  const input = h('input', { ...NOT_A_CREDENTIAL, class: 'value-editor__input', type: 'text', maxLength: 60, placeholder, 'aria-label': placeholder });
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ',') (event.preventDefault(), add(input, values, changed), input.focus());
     else if (event.key === 'Backspace' && !input.value && values.pop()) changed();
