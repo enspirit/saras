@@ -46,5 +46,6 @@
   "aiDoesTitle": "Ce qu’elle fait pour vous",
   "chosenIn": "{page} →",
   "sentWritingAsked": "Un email n’est envoyé à l’IA qu’à ce moment-là.",
-  "sentWritingFetch": "Le contenu de chaque email à traiter est envoyé à l’IA au relevé."
+  "sentWritingFetch": "Le contenu de chaque email à traiter est envoyé à l’IA au relevé.",
+  "profileTitle": "Profil"
 }

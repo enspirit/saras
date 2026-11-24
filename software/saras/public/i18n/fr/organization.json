@@ -12,5 +12,6 @@
   "deletePassword": "Votre mot de passe",
   "delete": "Supprimer l’organisation",
   "confirmDelete": "Supprimer {organization} et tout ce que saras détient pour elle, pour tous ses membres ? Cette action est définitive.",
-  "deleted": "L’organisation a été supprimée."
+  "deleted": "L’organisation a été supprimée.",
+  "generalTitle": "Général"
 }

@@ -39,6 +39,6 @@ const deleteOrganisationForm = (org: Organization): Child => LeavingForm({
 
 /** The organisation's own settings, for its administrators. */
 export const organisationSettings = (who: Profile): Child => [
-  Card({ form: true }, organisationForm(who.organization)),
-  Card({ title: t('organization.deleteTitle'), form: true }, deleteOrganisationForm(who.organization)),
+  Card({ title: t('organization.generalTitle'), form: true }, organisationForm(who.organization)),
+  Card({ title: t('organization.deleteTitle'), form: true, danger: true }, deleteOrganisationForm(who.organization)),
 ];

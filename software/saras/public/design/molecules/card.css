@@ -9,8 +9,11 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
 }
-/* A card that holds one form is no card: the form stands on the page, as wide as it reads well. */
-.card--form { --card-padding: 0; max-width: var(--form-width); background: transparent; border: 0; box-shadow: none; }
+/* A card that holds a form, or one part of a page of forms, keeps to the width a form reads well at. */
+.card--form { max-width: var(--form-width); }
+/* What cannot be undone: said by its title and its edge. */
+.card--danger { border-color: var(--color-danger); }
+.card--danger > .card__head > h2 { color: var(--color-danger); }
 .card__head { display: flex; gap: var(--space-3); align-items: baseline; flex-wrap: wrap; margin-bottom: var(--space-3); }
 .card__section { margin-top: var(--space-5); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-line); }
 .card__section > h3 { margin-bottom: var(--space-3); }

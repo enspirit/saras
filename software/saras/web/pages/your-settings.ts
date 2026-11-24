@@ -59,8 +59,8 @@ const deleteAccountForm = (who: Profile): Child => LeavingForm({
 
 /** One's own settings. */
 export const yourSettings = (who: Profile): Child => [
-  Card({ form: true }, ownSettingsForm(who)),
+  Card({ title: t('settings.profileTitle'), form: true }, ownSettingsForm(who)),
   Card({ title: t('settings.passwordTitle'), form: true }, passwordForm()),
   languages().length > 1 && Card({ title: t('settings.display'), form: true }, LanguagePicker()),
-  Card({ title: t('settings.deleteAccountTitle'), form: true }, deleteAccountForm(who)),
+  Card({ title: t('settings.deleteAccountTitle'), form: true, danger: true }, deleteAccountForm(who)),
 ];

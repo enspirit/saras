@@ -46,5 +46,6 @@
   "aiDoesTitle": "What it does for you",
   "chosenIn": "{page} →",
   "sentWritingAsked": "An email is sent to the AI only then.",
-  "sentWritingFetch": "The content of each email to handle is sent to the AI at fetch."
+  "sentWritingFetch": "The content of each email to handle is sent to the AI at fetch.",
+  "profileTitle": "Profile"
 }

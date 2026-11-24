@@ -133,7 +133,7 @@ The four boxes come first, each with an icon and its count. Configuration (Mailb
 
 Below 860 px the boxes are a bar at the bottom of the screen, with a fifth entry, **More**, that leads to a page listing the configuration pages, who is signed in and Sign out.
 
-Every page beside the menu starts at the same left edge, the one the reading pane starts at; none is centred. Its header (crumbs, title, what it is for, its main action) is a row across the page, closed by a hairline, or by its tabs. Below, a block takes the width of its kind: a table, a panel in two parts or a rule being written fills the page, up to `--page-width`; a form or a text keeps `--form-width`, and a form alone on its page is no card, it stands on the page. On a wide screen a page that holds only a short form leaves room on its right, on purpose.
+Every page beside the menu starts at the same left edge, the one the reading pane starts at; none is centred. Its header (crumbs, title, what it is for, its main action) is a row across the page, closed by a hairline, or by its tabs. Below, a block takes the width of its kind: a table, a panel in two parts or a rule being written fills the page, up to `--page-width`; a form or a text keeps `--form-width`. A form is a white card with its title; a page of forms (Settings, a mailbox) is a stack of them, one per thing one saves, and the one that deletes something says so in red, by its title and its edge. On a wide screen a page that holds only a short form leaves room on its right, on purpose.
 
 ### 6.2 Reading and replying (US-25, US-30 to US-40)
 

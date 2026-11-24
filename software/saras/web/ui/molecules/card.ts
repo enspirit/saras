@@ -9,9 +9,9 @@ export interface CardOptions extends Attrs {
   badges?: Child[];
 }
 
-export function Card({ title, badges = [], form = false, ...attrs }: CardOptions & { form?: boolean } = {}, ...children: Child[]): HTMLDivElement {
-  // A card that holds one form keeps to a readable width.
-  return h('div', { ...attrs, class: cx('card', form && 'card--form') }, title && h('div', { class: 'card__head' }, Heading(2, title), badges), children);
+/** `form`: it holds a form, or one part of a page of forms, and keeps to a readable width. `danger`: what it does cannot be undone. */
+export function Card({ title, badges = [], form = false, danger = false, ...attrs }: CardOptions & { form?: boolean; danger?: boolean } = {}, ...children: Child[]): HTMLDivElement {
+  return h('div', { ...attrs, class: cx('card', form && 'card--form', danger && 'card--danger') }, title && h('div', { class: 'card__head' }, Heading(2, title), badges), children);
 }
 
 /** A titled sub-part inside a card. */
