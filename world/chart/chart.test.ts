@@ -49,6 +49,9 @@ test('secrets takes every secret, keeps them in a Secret, and takes nothing else
   assert.match(render({ ...LEAST, 'secrets.ALLOW_SIGNUP': 'yes' }).out, /secrets.ALLOW_SIGNUP: not a secret saras reads/);
 });
 
+/** How helm says a value is not one of the schema's: its wording changed between versions. */
+const notAllowed = (name: string): RegExp => new RegExp(`'${name}' not allowed|Additional property ${name} is not allowed`);
+
 const REFUSED: [string, Record<string, string>, RegExp][] = [
   ['no master key', { 'secrets.DATABASE_URL': SERVER }, /APP_SECRET is missing or too short/],
   ['a master key too short for the server', { ...LEAST, 'secrets.APP_SECRET': 'short' }, /APP_SECRET is missing or too short/],
@@ -58,10 +61,10 @@ const REFUSED: [string, Record<string, string>, RegExp][] = [
   ['a server of the release and the embedded database', { ...INCLUDED, 'embeddedDatabase.enabled': 'true' }, /postgresql.enabled and embeddedDatabase.enabled: one database, not 2/],
   ['a server of the release without a password', { 'secrets.APP_SECRET': KEY, 'postgresql.enabled': 'true' }, /a password is required, as postgresql.password .* or in a Secret of yours/],
   ['a server of the release with two passwords', { ...INCLUDED, 'postgresql.existingSecret': 'mine' }, /postgresql.password and postgresql.existingSecret: one password, not 2/],
-  ['a second replica of the database', { ...INCLUDED, 'postgresql.replicas': '2' }, /'replicas' not allowed/],
+  ['a second replica of the database', { ...INCLUDED, 'postgresql.replicas': '2' }, notAllowed('replicas')],
   ['an ingress without a host', { ...LEAST, 'ingress.enabled': 'true' }, /ingress.host is required/],
-  ['a second replica', { ...LEAST, replicas: '2' }, /'replicas' not allowed/],
-  ['a value it does not know', { ...LEAST, 'secret.APP_SECRET': KEY }, /'secret' not allowed/],
+  ['a second replica', { ...LEAST, replicas: '2' }, notAllowed('replicas')],
+  ['a value it does not know', { ...LEAST, 'secret.APP_SECRET': KEY }, notAllowed('secret')],
 ];
 
 for (const [what, values, why] of REFUSED) {
