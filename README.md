@@ -39,6 +39,7 @@ This is the main design constraint.
 - In your OpenRouter account (*Settings → Privacy*), keep logging of prompts and responses **disabled**. Per-request ZDR covers the model providers, not this account setting.
 - Check that the chosen model has a ZDR provider; otherwise requests fail (on purpose).
 - ZDR is a contractual commitment of the providers, relayed by OpenRouter: it cannot be verified from the application.
+- Where the model runs is yours to choose. To keep inference in Europe, set `OPENROUTER_BASE_URL=https://eu.openrouter.ai/api/v1`: OpenRouter then sends requests only to provider endpoints in Europe, and refuses a model that has none there. Your OpenRouter plan must include in-region routing, and the chosen model must be served in Europe.
 
 The content of a received email is treated as untrusted data: it is delimited in the prompts and the model is told not to follow instructions it may contain. Human review before sending remains the real protection.
 
