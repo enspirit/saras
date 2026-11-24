@@ -2,7 +2,7 @@
 // the facts of an email. Only those the board has are there; the others are offered.
 
 import type { Attribute } from '../../shared/attribute.ts';
-import type { BoardFilter } from '../../shared/board.ts';
+import type { BoardFilter, ReversibleConditions } from '../../shared/board.ts';
 import type { Mailbox } from '../../shared/mailbox.ts';
 import { t } from '../i18n.ts';
 import { attributeCondition, pickedCondition } from './attribute-conditions.ts';
@@ -19,14 +19,34 @@ interface BoardCondition extends Condition {
 /** How recent, in days. */
 const RECENT = [1, 7, 30, 90];
 
-const onAttribute = (attribute: Attribute, filter: BoardFilter, changed: () => void): BoardCondition => {
-  const picked = attributeCondition(attribute, filter.attributes?.[attribute.key] ?? [], changed);
-  return { ...picked, write: (written) => void (picked.values().length && (written.attributes = { ...written.attributes, [attribute.key]: picked.values() })) };
-};
+/** A condition that can be said both ways: an email is this, or is not. */
+interface TwoWay<T> {
+  /** What the filter has for it, whichever way it says it. */
+  given: T | undefined;
+  /** Its linking word, to choose: "is" or "is not". */
+  verb: HTMLSelectElement;
+  /** Where it is written: among the conditions an email must meet, or among those it must not. */
+  side(written: BoardFilter): ReversibleConditions;
+}
+
+/** What `filter` says of one thing, read from either side by `read`, and the choice between the two `words` that say which side. */
+function twoWay<T>(filter: BoardFilter, read: (side: ReversibleConditions) => T | undefined, words: [string, string], changed: () => void): TwoWay<T> {
+  const except = filter.except && read(filter.except);
+  const verb = Select([{ value: '', label: words[0], selected: except === undefined }, { value: 'not', label: words[1], selected: except !== undefined }], { onchange: changed });
+  return { given: except ?? read(filter), verb, side: (written) => (verb.value ? (written.except ??= {}) : written) };
+}
+
+function onAttribute(attribute: Attribute, filter: BoardFilter, changed: () => void): BoardCondition {
+  const way = twoWay(filter, (side) => side.attributes?.[attribute.key], [t('boards.is'), t('boards.isNot')], changed);
+  const picked = attributeCondition(attribute, way.given ?? [], changed);
+  const write = (side: ReversibleConditions): void => void (side.attributes = { ...side.attributes, [attribute.key]: picked.values() });
+  return { ...picked, verb: way.verb, write: (written) => void (picked.values().length && write(way.side(written))) };
+}
 
 function onMailbox(mailboxes: Mailbox[], filter: BoardFilter, changed: () => void): BoardCondition {
-  const picked = pickedCondition('mailbox', t('boards.mailbox'), t('boards.groupEmail'), mailboxes.map((m) => ({ key: String(m.id), label: m.email })), (filter.mailbox ?? []).map(String), changed);
-  return { ...picked, write: (written) => void (picked.values().length && (written.mailbox = picked.values().map(Number))) };
+  const way = twoWay(filter, (side) => side.mailbox, [t('boards.is'), t('boards.isNot')], changed);
+  const picked = pickedCondition('mailbox', t('boards.mailbox'), t('boards.groupEmail'), mailboxes.map((m) => ({ key: String(m.id), label: m.email })), (way.given ?? []).map(String), changed);
+  return { ...picked, verb: way.verb, write: (written) => void (picked.values().length && (way.side(written).mailbox = picked.values().map(Number))) };
 }
 
 function onReceived(filter: BoardFilter, changed: () => void): BoardCondition {
@@ -41,8 +61,9 @@ function onAttachment(filter: BoardFilter, changed: () => void): BoardCondition 
 
 /** A condition on a text the email holds: its sender, or words of its subject and text. */
 function onText(key: 'from' | 'keywords', name: string, placeholder: string, filter: BoardFilter, changed: () => void): BoardCondition {
-  const text = Input({ value: filter[key] ?? '', placeholder, oninput: changed });
-  return { key, name, group: t('boards.groupEmail'), verb: t('boards.contains'), control: text, has: Boolean(filter[key]), write: (written) => void (text.value.trim() && (written[key] = text.value)) };
+  const way = twoWay(filter, (side) => side[key], [t('boards.contains'), t('boards.containsNot')], changed);
+  const text = Input({ value: way.given ?? '', placeholder, oninput: changed });
+  return { key, name, group: t('boards.groupEmail'), verb: way.verb, control: text, has: Boolean(way.given), write: (written) => void (text.value.trim() && (way.side(written)[key] = text.value)) };
 }
 
 export interface BoardConditions {

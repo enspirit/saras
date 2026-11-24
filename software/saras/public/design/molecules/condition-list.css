@@ -16,6 +16,7 @@
 .condition__verb { flex: none; font-size: var(--text-sm); color: var(--color-text-muted); }
 .condition__value { flex: 1; min-width: 0; display: flex; }
 .condition__value > select, .condition__value > input { min-height: var(--control-sm); }
+.condition__verb > select { width: auto; min-height: var(--control-sm); padding: 0 var(--space-1); font-size: inherit; }
 
 /* ---- Value picker: a few values picked among those there are ---- */
 .value-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }

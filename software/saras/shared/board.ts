@@ -2,23 +2,35 @@
 import type { EmailSummary } from './email.ts';
 
 /**
- * What a board filters on: the attributes of the organisation, and the facts of an email.
- * Every condition given must hold; within one made of several values, any of them does.
+ * The conditions that can be said both ways: an email is this, or is not.
  *   attributes  its values for the attributes of the organisation, by their key: where it
  *               stands, its priority, and those the organisation made
  *   mailbox     the mailboxes it arrived in
- *   received    how recently it arrived, in days
  *   from        part of the sender's name or address
- *   keywords    words that all appear in its subject or text
- *   attachment  whether it came with attachments
+ *   keywords    words of its subject or text
  */
-export interface BoardFilter {
+export interface ReversibleConditions {
   attributes?: Record<string, string[]>;
   mailbox?: number[];
-  received?: number;
   from?: string;
   keywords?: string;
+}
+
+/**
+ * What a board filters on: the attributes of the organisation, and the facts of an email.
+ * Every condition given must hold; within one made of several values, any of them does, and
+ * every keyword must appear.
+ *   received    how recently it arrived, in days
+ *   attachment  whether it came with attachments
+ *   except      what it must not be: an email is left out when it has one of these values for
+ *               an attribute, arrived in one of these mailboxes, has this in its sender's name
+ *               or address, or holds any of these keywords. An email without a value for an
+ *               attribute is not one of those left out.
+ */
+export interface BoardFilter extends ReversibleConditions {
+  received?: number;
   attachment?: boolean;
+  except?: ReversibleConditions;
 }
 
 /** A board as a member sees it. */

@@ -1,6 +1,6 @@
 // Pure: boards — what a filter given is reduced to, the conditions it puts on emails, who manages a board.
 import { PRIORITY, STATUS } from '../../../shared/attribute.ts';
-import type { BoardFilter, BoardGiven } from '../../../shared/board.ts';
+import type { BoardFilter, BoardGiven, ReversibleConditions } from '../../../shared/board.ts';
 import { BOXES } from '../../../shared/email.ts';
 import type { Box, EmailStatus } from '../../../shared/email.ts';
 import { accept, refuse } from '../refusal.ts';
@@ -29,16 +29,26 @@ function attributesGiven(given: Record<string, unknown>): Record<string, string[
   return attributeValuesGiven(named);
 }
 
+const record = (value: unknown): Record<string, unknown> => (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+
+/** The conditions that can be said both ways, as they are kept. */
+function reversibleGiven(given: Record<string, unknown>): ReversibleConditions {
+  const kept: ReversibleConditions = {};
+  if (Object.keys(attributesGiven(given)).length) kept.attributes = attributesGiven(given);
+  if (numbers(given.mailbox).length) kept.mailbox = numbers(given.mailbox);
+  if (clipped(given.from, 200)) kept.from = clipped(given.from, 200);
+  if (clipped(given.keywords, 200)) kept.keywords = clipped(given.keywords, 200);
+  return kept;
+}
+
 /** A filter as it is kept: only what we know how to filter on, only the conditions that say something. */
 export function filterGiven(value: unknown): BoardFilter {
-  const given = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
-  const filter: BoardFilter = {};
-  if (Object.keys(attributesGiven(given)).length) filter.attributes = attributesGiven(given);
-  if (numbers(given.mailbox).length) filter.mailbox = numbers(given.mailbox);
+  const given = record(value);
+  const filter: BoardFilter = reversibleGiven(given);
   if (days(given.received)) filter.received = days(given.received);
-  if (clipped(given.from, 200)) filter.from = clipped(given.from, 200);
-  if (clipped(given.keywords, 200)) filter.keywords = clipped(given.keywords, 200);
   if (typeof given.attachment === 'boolean') filter.attachment = given.attachment;
+  const except = reversibleGiven(record(given.except));
+  if (Object.keys(except).length) filter.except = except;
   return filter;
 }
 
@@ -89,15 +99,20 @@ const whatItIs = (filter: BoardFilter): Part[] => [
   ...(filter.received ? [part('e.date > now() - make_interval(days => ?)', filter.received)] : []),
 ];
 
-/** The conditions on what an email says: who wrote it, and the words it holds, each of which must appear. */
+/** The conditions on what an email says: who wrote it, and the words it holds, each of them a condition. */
 const whatItSays = (filter: BoardFilter): Part[] => [
   ...(filter.from ? [part('(e.from_name ILIKE ? OR e.from_addr ILIKE ?)', containing(filter.from))] : []),
   ...(filter.keywords ?? '').split(/\s+/).filter(Boolean).map((word) => part('(e.subject ILIKE ? OR e.body_text ILIKE ?)', containing(word))),
 ];
 
-/** The conditions a filter puts on emails, their parameters numbered from `first`. */
+const partsOf = (filter: BoardFilter): Part[] => [...whatItIs(filter), ...whatItSays(filter)];
+
+/** A condition said the other way round. What is unknown is not true: an email without a value for an attribute is none of its values. */
+const reversed = ([write, param]: Part): Part => [(n) => `(${write(n)}) IS NOT TRUE`, param];
+
+/** The conditions a filter puts on emails, their parameters numbered from `first`: those an email must meet, then those it must not. */
 export function conditionsOf(filter: BoardFilter, first: number): Conditions {
-  const parts = [...whatItIs(filter), ...whatItSays(filter)];
+  const parts = [...partsOf(filter), ...partsOf(filter.except ?? {}).map(reversed)];
   const sql = parts.map(([write], index) => write(first + index));
   if (filter.attachment !== undefined) sql.push(filter.attachment ? "e.attachments_json <> '[]'" : "e.attachments_json = '[]'");
   return { sql, params: parts.map(([, param]) => param) };

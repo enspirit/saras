@@ -55,7 +55,8 @@ export function ValuePicker({ options, picked, addLabel, removeLabel, onChange }
 export interface Condition {
   key: string;
   name: string;
-  verb: string;
+  /** The linking word, or the control that chooses it when the condition can be said both ways: "is", "is not". */
+  verb: string | HTMLElement;
   control: HTMLElement;
   /** The group it is offered under, when one adds a condition. */
   group: string;

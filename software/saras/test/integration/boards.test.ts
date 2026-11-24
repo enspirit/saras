@@ -20,6 +20,13 @@ test('a filter is kept reduced to the attributes we know, and to the conditions 
   assert.deepEqual(filterGiven(null), {});
 });
 
+test('what an email must not be is kept the same way, for the conditions that can be said both ways', () => {
+  const except = { attributes: { 12: ['1', '1'], colour: ['red'] }, mailbox: ['4', 'x'], from: ' noreply ', keywords: ' promo ', received: 7, attachment: true, except: { from: 'x' } };
+  assert.deepEqual(filterGiven({ from: 'client.example', except }), { from: 'client.example', except: { attributes: { 12: ['1'] }, mailbox: [4], from: 'noreply', keywords: 'promo' } });
+  assert.deepEqual(filterGiven({ except: { from: ' ', mailbox: [], attributes: {} } }), {}, 'an exclusion that says nothing is not kept');
+  assert.deepEqual(filterGiven({ except: 'noreply' }), {});
+});
+
 test('a board needs a name; only administrators share one; its owner manages it, administrators when it is shared', () => {
   assert.equal(outcome(boardGiven({ name: ' ' })), 'invalid: boards.nameRequired');
   assert.deepEqual(boardGiven({ name: ' Quotes ', filter: { attributes: { status: ['todo'] } } }), { ok: true, value: { name: 'Quotes', shared: false, filter: { attributes: { status: ['todo'] } } } });
@@ -43,6 +50,21 @@ test('each condition of a filter is one condition on emails, with its own parame
   const hostile = conditionsOf({ attributes: { "1' OR '1'='1": ["x' OR '1'='1"] }, from: "'; DROP TABLE emails; --" }, 3);
   assert.deepEqual(hostile.sql, [`(e.attributes_json::jsonb -> 'NaN' ->> 'value') = ANY($3)`, '(e.from_name ILIKE $4 OR e.from_addr ILIKE $4)']);
   assert.deepEqual(hostile.params, [["x' OR '1'='1"], "%'; DROP TABLE emails; --%"]);
+});
+
+test('what an email must not be is the same condition, not true: after the others, each word on its own', () => {
+  const { sql, params } = conditionsOf({ attributes: { status: ['todo'] }, attachment: true, except: { attributes: { 12: ['2'] }, mailbox: [3], from: 'no_reply', keywords: 'promo soldes' } }, 3);
+  assert.deepEqual(params, [['needs_reply'], ['2'], [3], '%no\\_reply%', '%promo%', '%soldes%']);
+  assert.deepEqual(sql, [
+    'e.status = ANY($3)',
+    `((e.attributes_json::jsonb -> '12' ->> 'value') = ANY($4)) IS NOT TRUE`,
+    '(e.account_id = ANY($5)) IS NOT TRUE',
+    '((e.from_name ILIKE $6 OR e.from_addr ILIKE $6)) IS NOT TRUE',
+    '((e.subject ILIKE $7 OR e.body_text ILIKE $7)) IS NOT TRUE',
+    '((e.subject ILIKE $8 OR e.body_text ILIKE $8)) IS NOT TRUE',
+    `e.attachments_json <> '[]'`,
+  ]);
+  assert.deepEqual(conditionsOf({ except: {} }, 3), { sql: [], params: [] });
 });
 
 let stack: Stack;
@@ -76,6 +98,22 @@ test('the attributes combine: sender, how recent, attachments, where the email s
   assert.equal(await board({ attachment: true }), 0);
   assert.equal(await board({ attributes: { status: ['sent', 'ignored'] } }), 0);
   assert.equal(await board({ mailbox: [999] }), 0, 'a mailbox one does not have shows nothing');
+});
+
+test('a condition is said the other way round: the sender is not, the keywords do not appear, the attribute is not', async () => {
+  const board = async (filter: unknown): Promise<number> => (await alice('POST', '/boards', { name: 'x', filter })).body.count;
+  assert.equal(await board({ except: { from: 'client.example' } }), 2, 'the newsletter and the thank-you note');
+  assert.equal(await board({ except: { from: 'CLAIRE MARTIN' } }), 3, 'by the name as by the address, whatever the case');
+  assert.equal(await board({ from: 'client.example', except: { from: 'sophie' } }), 1, 'a sender, but not this one');
+  assert.equal(await board({ from: 'client.example', except: { keywords: 'rendez-vous' } }), 1);
+  assert.equal(await board({ except: { keywords: 'devis rendez-vous' } }), 2, 'none of the words may appear');
+  assert.equal(await board({ except: { attributes: { status: ['none'] } } }), 3, 'all but the newsletter');
+  assert.equal(await board({ except: { attributes: { status: ['todo', 'none'] } } }), 0);
+  assert.equal(await board({ except: { mailbox: [999] } }), 4);
+  const topic = (await alice('POST', '/attributes', { name: 'Topic', values: ['Sales', 'Planning'] })).body.key;
+  assert.deepEqual([await board({ attributes: { [topic]: ['1'] } }), await board({ except: { attributes: { [topic]: ['1'] } } })], [0, 4], 'an email without a value for an attribute is not that value');
+  const kept = (await alice('GET', '/boards')).body.at(-1);
+  assert.deepEqual(kept.filter, { except: { attributes: { [topic]: ['1'] } } }, 'a board keeps what it leaves out');
 });
 
 test('a personal board is its owner\'s alone; an administrator shares one with every member', async () => {
