@@ -5,3 +5,8 @@
 
 /* ---- Columns: what one works on, and what informs it beside ---- */
 .columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-5); align-items: start; }
+/* Wide: the page takes what the screen has, while something is shown beside; the work gets the room. */
+.page__inner:has(> .columns--wide > aside > :not([hidden])) { max-width: var(--content-width-wide); }
+.columns--wide { grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); }
+.columns--wide:not(:has(> aside > :not([hidden]))) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .columns--wide { grid-template-columns: minmax(0, 1fr); } }

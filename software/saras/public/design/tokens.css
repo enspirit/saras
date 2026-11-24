@@ -163,6 +163,8 @@
   --nav-width: 230px;
   --list-width: 380px;
   --content-width: 1000px;
+  /* A page whose work needs room, like writing a rule. */
+  --content-width-wide: 1480px;
   --form-width: 640px;
   --auth-width: 400px;
   --dialog-width: 440px;

@@ -6,7 +6,7 @@
   overflow: hidden;
 }
 .elo-editor:focus-within { border-color: var(--color-accent); }
-.elo-editor .cm-editor { min-height: calc(var(--control-md) * 5); max-height: calc(var(--control-md) * 14); font-size: var(--text-sm); }
+.elo-editor .cm-editor { min-height: calc(var(--control-md) * 5); max-height: calc(var(--control-md) * 20); font-size: var(--text-sm); }
 .elo-editor .cm-editor.cm-focused { outline: none; }
 .elo-editor .cm-scroller { font-family: var(--font-mono); line-height: 1.6; }
 .elo-editor .cm-content { padding: var(--space-2) 0; caret-color: var(--color-text); }

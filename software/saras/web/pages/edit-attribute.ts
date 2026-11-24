@@ -128,6 +128,6 @@ export const editAttributePage = guard(async (key: string | null) => {
   shownWhile(byRule, () => byRule.checked, [...ruleParts, ...aside]);
   shell(Page(
     PageHeader({ title: attribute ? t('attributes.editTitle', { name: attributeName(attribute) }) : t('attributes.newTitle'), crumbs: [{ label: t('attributes.title'), href: '#/attributes' }] }),
-    Columns(Card({}, form), aside),
+    Columns(Card({}, form), aside, { wide: true }),
   ));
 });

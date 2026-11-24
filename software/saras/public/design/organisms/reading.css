@@ -11,9 +11,9 @@
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
-/* So is the email: written, it may be wider than a line reads well, and its page fills the place it is read in;
-   with a reply under it, a good part of it. As text, the sheet is as long as the text. */
-.reading__body > .message-views { max-width: 104ch; }
+/* So is the email, as wide as the place it is read in (its text keeps a measure of its own, inside): written, its
+   page fills that place; with a reply under it, a good part of it. As text, the sheet is as long as the text. */
+.reading__body > .message-views { max-width: none; }
 .reading__body > .message-views:has(.message-frame) { height: 100%; }
 .reading__body > .message-views:not(:only-child):has(.message-frame) { height: 60vh; }
 

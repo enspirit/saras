@@ -32,7 +32,7 @@ export function tokensSection(tokens: string[]): Child[] {
     ),
     Card({ title: t('styleguide.typography') }, [...group('--font-'), ...group('--text-'), ...group('--weight-'), ...group('--leading')].map(valueLine)),
     Card({ title: t('styleguide.layout') },
-      [...group('--space-'), ...group('--radius-'), '--border-width', '--nav-width', '--list-width', '--content-width', '--auth-width', '--dialog-width', '--logo-height'].map(valueLine),
+      [...group('--space-'), ...group('--radius-'), '--border-width', '--nav-width', '--list-width', '--content-width', '--content-width-wide', '--auth-width', '--dialog-width', '--logo-height'].map(valueLine),
     ),
     Card({ title: t('styleguide.elevation') }, [...group('--shadow-'), ...group('--duration-'), '--ease', ...group('--control-'), ...group('--icon-')].map(valueLine)),
   ];

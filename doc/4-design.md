@@ -120,7 +120,7 @@ Three tiers: **brand inputs** → **semantic tokens** → **component tokens** d
 | --- | --- |
 | `AuthPanel` | The brand's ground with what it guarantees, and a form beside it. |
 | `AppShell` | Navigation and main area. Below 860 px the boxes become a bar at the bottom. |
-| `Page`, `Columns` | A centred scrolling column; main content with an aside. |
+| `Page`, `Columns` | A centred scrolling column; main content with an aside. `Columns` wide (writing a rule) takes what the screen has, up to `--content-width-wide`, and keeps the aside a narrow column. |
 | `Mailbox` | List on one side, reading pane on the other; they alternate on a small screen. |
 | `Reading`, `ReadingHeader` | An open email: header, scrolling content, and what is docked under it. |
 | `ReplyDock`, `ClosedDock` | The reply area; the line that stands for it when no reply is expected. |
@@ -135,7 +135,7 @@ Below 860 px the boxes are a bar at the bottom of the screen, with a fifth entry
 
 ### 6.2 Reading and replying (US-25, US-30 to US-40)
 
-The reading pane has three parts: a header, the email itself, and the reply area docked at the bottom. The email is one sheet of paper, as text and as it was written alike, with a bar on top: a small switch between "As written" and "Text only", and, when images hosted elsewhere were held back, a word that says so. One written in HTML is shown as written, its page filling the sheet as tall as the room it has, from the top (an email that centres itself on its height does not float in the middle), on white whatever the theme and in the system's own font where it names none (a frame loads no font of a brand). As text, the sheet is as long as the text: what is quoted is set back and muted, the history at the end folds under "Earlier messages", and a signature or "Sent from my iPhone" steps back; the names of its files, in the header, open them. The email scrolls on its own; when room is short the reply area gives way first and its writing area scrolls, so Send stays in view.
+The reading pane has three parts: a header, the email itself, and the reply area docked at the bottom. The email is one sheet of paper as wide as the pane, as text and as it was written alike (a text keeps a measure of its own, inside), with a bar on top: a small switch between "As written" and "Text only", and, when images hosted elsewhere were held back, a word that says so. One written in HTML is shown as written, its page filling the sheet as tall as the room it has, from the top (an email that centres itself on its height does not float in the middle), on white whatever the theme and in the system's own font where it names none (a frame loads no font of a brand). As text, the sheet is as long as the text: what is quoted is set back and muted, the history at the end folds under "Earlier messages", and a signature or "Sent from my iPhone" steps back; the names of its files, in the header, open them. The email scrolls on its own; when room is short the reply area gives way first and its writing area scrolls, so Send stays in view.
 
 - **Header.** Subject, then the decisions about the email: *No reply needed* and *Ignore* while it waits, *Move back to "To handle"* once set aside. Under it the sender (avatar, name, address), "To … · Cc …", attachments as chips, and a short date with the full date as a tooltip. Last, the triage verdict: who sorted it, and why.
 - **Recipients.** To and Cc as removable chips on one line, with *Reply to all* when the email had other recipients.

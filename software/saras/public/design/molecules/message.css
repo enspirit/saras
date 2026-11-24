@@ -65,4 +65,4 @@
 .message-views__note { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); cursor: help; }
 .message-views__shown { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 /* A text reads on the sheet; a page as written brings its own margins. */
-.message-views__shown > .message-text { padding: var(--space-4) var(--space-5) var(--space-5); }
+.message-views__shown > .message-text { max-width: 80ch; padding: var(--space-4) var(--space-5) var(--space-5); }
