@@ -1,5 +1,7 @@
 import { existsSync } from 'node:fs';
 import { createApp } from './tooling/http/server.ts';
+import { startClock } from './tooling/clock.ts';
+import type { Task } from './tooling/clock.ts';
 import { loadConfig, loadDotEnv } from './tooling/config.ts';
 import { createVault } from './tooling/crypto.ts';
 import { connectDb } from './tooling/db.ts';
@@ -53,18 +55,10 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-/** Hourly: the two operations the backend owes on its own, ExpireSessions and ErasePastRetention. */
-const housekeeping = async (): Promise<void> => {
-  try {
-    await expireSessions({ db });
-    await erasePastRetention({ db, config });
-  } catch (e) {
-    console.error(`housekeeping failed: ${errorMessage(e)}`);
-  }
-};
-void housekeeping();
-setInterval(housekeeping, 3_600_000).unref();
-
-if (config.syncIntervalMinutes > 0) {
-  setInterval(() => void sync.syncAll(), config.syncIntervalMinutes * 60_000).unref();
-}
+/** What the backend owes on its own, the ReqTrig of each operation: run by one server at a time, however many keep the clock. */
+const tasks: Task[] = [
+  { name: 'expire-sessions', everySeconds: 3_600, run: () => expireSessions({ db }) },
+  { name: 'erase-past-retention', everySeconds: 3_600, run: () => erasePastRetention({ db, config }) },
+  ...(config.syncIntervalMinutes > 0 ? [{ name: 'fetch-mailboxes', everySeconds: config.syncIntervalMinutes * 60, run: () => sync.syncAll() }] : []),
+];
+startClock(db, tasks);

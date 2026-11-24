@@ -6,6 +6,7 @@
 // migration leaves the version before it working. What it stops using is removed by a later
 // one, once no server of that version is left.
 import { baseline } from './migrations/0001-baseline.ts';
+import { scheduledTasks } from './migrations/0002-scheduled-tasks.ts';
 
 export interface Migration {
   /** Its number and its name, as its file: 0002-what-it-does. */
@@ -14,4 +15,4 @@ export interface Migration {
   sql: string;
 }
 
-export const MIGRATIONS: Migration[] = [baseline];
+export const MIGRATIONS: Migration[] = [baseline, scheduledTasks];
