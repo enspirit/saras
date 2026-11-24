@@ -27,3 +27,5 @@ The server creates its schema when it starts: `software/saras/src/tooling/db/sch
 ## What would reverse this
 
 The first change of schema that cannot be written as a statement safe to repeat. That is the moment to give the schema to `dbagent` too, for the server mode, and to decide then whether the embedded mode is created from the same files or let go.
+
+That change came, and the schema is now a list of migrations: [decision 0010](0010-the-server-migrates-its-database-and-several-may-share-it.md). The server still creates and changes its schema itself, on both databases, and `dbagent` still owns the seeds only: what is reversed here is "statements that can be run again".

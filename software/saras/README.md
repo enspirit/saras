@@ -12,9 +12,10 @@ Nothing else is public.
 - **Its configuration**: the environment variables of [`env/base.env`](env/base.env), each described there with its default, and nothing else. `APP_SECRET` is the only one it refuses to start without.
 - **The brand folder** named by `BRAND_DIR`: `theme.css`, `brand.json`, a logo, a favicon. [`brands/example/`](brands/example/) is a complete one.
 - **The image** `saras/saras`, built from this directory and published as [`enspirit/saras`](https://hub.docker.com/r/enspirit/saras): it listens on `PORT` (3000), keeps the embedded database under `/data`, and is healthy when `GET /api/public` answers.
-- **What it does on its own**: ExpireSessions and ErasePastRetention hourly and at start; FetchMailbox for every mailbox each `SYNC_INTERVAL_MINUTES`.
+- **What it does on its own**: ExpireSessions and ErasePastRetention hourly; FetchMailbox for every mailbox each `SYNC_INTERVAL_MINUTES`.
+- **Its roles**, `ROLES`: `migrate` (bringing the database to what this version expects, at start), `web` (the two first items above) and `clock` (the one just above). A process takes all three unless told otherwise, and is then a whole installation. Several may run on one PostgreSQL server, with all three or sharing them out; `migrate` alone ends once the database is migrated, with status 0.
 
-**The state it controls** is every variable `doc/2-operations.md` gives to the Backend, kept in PostgreSQL. It creates the schema itself when it starts (`src/tooling/db/schema.ts`): see [the decision](../../doc/decisions/0001-the-server-creates-its-schema.md).
+**The state it controls** is every variable `doc/2-operations.md` gives to the Backend, kept in PostgreSQL. It changes the schema itself, one migration after the other, when it starts (`src/tooling/db/migrations/`): see [the decision](../../doc/decisions/0010-the-server-migrates-its-database-and-several-may-share-it.md).
 
 ## Depends on
 
@@ -42,6 +43,8 @@ Each is held by the test named, or by a scanner of [`tests/harness`](../../tests
 7. **Know HTTP in the domain, or the server in the browser**: an operation refuses with a kind, and `src/tooling/http/refusals.ts` alone turns it into a status; `web/` reaches the server through `/api` and shares only `shared/` with it (`tests/harness`, the boundaries).
 8. **Grow a file past 200 lines or a function past 20** (`test/unit/size.test.ts`).
 9. **Write a colour, a font or a sentence where it does not belong**: the design system's layering and the translations' completeness (`test/unit/design-system.test.ts`, `test/unit/i18n.test.ts`).
+10. **Do twice, with several servers on one database, what one server does once**: apply a migration, run a task of its clock, fetch a mailbox while it is being fetched, hand a reply over (`test/integration/migrations.test.ts`, `the-clock.test.ts`, `several-servers.test.ts`). What a server keeps in its memory alone is the count of wrong guesses.
+11. **Edit a migration that was released, or write one the version before cannot live with**: the first is not applied again, and the second breaks the servers still running during an upgrade. Held by nothing but the one who writes it.
 
 ## Harness
 
@@ -77,7 +80,7 @@ Green means: `lint` clean, and every test passing on both databases.
 - `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`doc/2-operations.md`](../../doc/2-operations.md) is the inventory.
 - `src/domain/sorting/`: the triage gate, its strategies, and the header rules applied before it.
 - `src/domain/mailboxes/fetch-mailbox.ts`: fetch, then sort, then prepare proposals.
-- `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (driver and schema), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
+- `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (the two drivers, the migrations and what applies them), `clock.ts` (the tasks the server runs on its own, due in the database), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
 - `web/`: the interface's TypeScript, one page file per subject under `pages/` and one function per operation under `api/` (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
 - Data: PostgreSQL, a server or the embedded one (`src/tooling/db.ts`).
 

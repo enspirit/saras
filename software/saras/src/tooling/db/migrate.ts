@@ -59,3 +59,14 @@ export async function migrate(db: Db, migrations: Migration[] = MIGRATIONS): Pro
   }
   return here;
 }
+
+/** For a server that does not migrate: waits for the one that does to bring the database to what this version expects. */
+export async function migrated(db: Db, migrations: Migration[] = MIGRATIONS, { everyMs = 2_000, forMs = 300_000 } = {}): Promise<void> {
+  const until = Date.now() + forMs;
+  for (;;) {
+    const { pending } = await standing(db, migrations);
+    if (!pending.length) return;
+    if (Date.now() >= until) throw new Error(`the database still lacks ${pending.join(', ')}: is a server with the role "migrate" started on it?`);
+    await new Promise((resolve) => setTimeout(resolve, everyMs));
+  }
+}

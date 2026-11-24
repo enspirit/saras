@@ -57,12 +57,28 @@ const otherHosts = (env: Env) => ({
   microsoft: { clientId: env.MICROSOFT_CLIENT_ID || '', clientSecret: env.MICROSOFT_CLIENT_SECRET || '', tenant: env.MICROSOFT_TENANT || 'common' },
 });
 
+const ROLES = ['migrate', 'web', 'clock'];
+
+/**
+ * What this process takes on, of what a server does: migrating the database, answering over
+ * HTTP, and what the backend does on its own clock. All three unless ROLES says less, for
+ * several processes on one database. The embedded database is opened by a single process,
+ * which therefore takes them all.
+ */
+function roles(env: Env) {
+  const named = (env.ROLES || ROLES.join(',')).split(',').map((role) => role.trim()).filter(Boolean);
+  const unknown = named.filter((role) => !ROLES.includes(role));
+  if (unknown.length) throw new Error(`ROLES names ${unknown.join(', ')}: a role is one of ${ROLES.join(', ')}`);
+  if (!env.DATABASE_URL && named.length < ROLES.length) throw new Error('ROLES leaves a role out, which needs a PostgreSQL server (DATABASE_URL): the embedded database is opened by one process only');
+  return { roles: { migrate: named.includes('migrate'), web: named.includes('web'), clock: named.includes('clock') } };
+}
+
 export function loadConfig(env: Env = process.env) {
   const appSecret = env.APP_SECRET || '';
   if (appSecret.length < 32) {
     throw new Error('APP_SECRET is missing or too short (32 characters minimum). Generate one with: openssl rand -hex 32');
   }
-  return { appSecret, ...hosting(env), ...joining(env), ...fetching(env), ...otherHosts(env) };
+  return { appSecret, ...hosting(env), ...joining(env), ...fetching(env), ...otherHosts(env), ...roles(env) };
 }
 
 export function loadDotEnv(path = '.env') {

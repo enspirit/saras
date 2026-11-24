@@ -43,6 +43,7 @@ In `software/saras`: `npm test`, `npm run test:unit`, `npm run typecheck`, one f
 - **Guarantees that are not settings.** Every LLM request carries the zero-retention clause; a mail server gets a password over TLS only, unless it is local (which is why `world/mailbox` runs in the network of the saras container: decision 0005); nothing of an organisation is reachable from another; credentials are sealed with `APP_SECRET`. A change that makes one of these configurable is the wrong change.
 - **`kubectl` may point at a real cluster.** The chart is held by `helm lint` and `helm template`, which reach none. Never `helm install` or `kubectl apply` to see whether it works: ask.
 - **The mailbox container follows saras.** Recreating `saras` alone leaves `mailbox` in the old network; `emb up` or `emb run demo` puts it right.
+- **A migration is applied when it is saved.** The development stack watches the sources: a file added to `software/saras/src/tooling/db/migrations/` and listed is applied to the development database at once, and not again once edited. Write it right first (`npm test`, or a stack of its own), and never edit one that was released: add another.
 - **A seed is flushed, not written.** Change the demo by changing `software/saras/scripts/demo/setup.ts`, then `emb run storage:demo.rebuild`, and review the diff. A mailbox's access is sealed with the server's secret, so no seed carries one.
 
 ## Rules of the code (`software/saras`)
@@ -55,6 +56,8 @@ Each is held by a test, which will tell you:
 - No sentence in the code: the interface's words are in `public/i18n/`, in every language; the server sends codes (`src/tooling/messages.ts`).
 - Colours and fonts only in `public/design/tokens.css`; pages call components (`test/unit/design-system.test.ts`).
 - Erasable TypeScript only (no enum, no parameter property): Node strips the types and runs the file.
+- The schema changes by a new migration, numbered, that leaves the previous version of the server working (`test/integration/migrations.test.ts` holds the numbering; the rest is yours).
+- Several servers may share one database. What must happen once is decided there, not in a server's memory: a turn of the clock (`src/tooling/clock.ts`), a key held (`db.hold`).
 
 ## Writing here
 
@@ -66,7 +69,7 @@ Each is held by a test, which will tell you:
 
 | Task | Read |
 | --- | --- |
-| Running the stack, the suites, the env files, translations | [`HACKING.md`](HACKING.md) |
+| Running the stack, the suites, the env files, translations, changing the schema | [`HACKING.md`](HACKING.md) |
 | What a feature is meant to do | [`doc/1-user-stories.md`](doc/1-user-stories.md) |
 | An operation, the state it changes, known deviations | [`doc/2-operations.md`](doc/2-operations.md) |
 | Where a new thing goes; who may rely on whom | [`doc/3-architecture.md`](doc/3-architecture.md) |

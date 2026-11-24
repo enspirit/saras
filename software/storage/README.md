@@ -2,7 +2,7 @@
 
 The seeds: the datasets the stack's database is put into, loaded by [`dbagent`](https://github.com/enspirit/dbagent). It is responsible for one thing: that a named state of saras can be reached with one command, on a laptop and under the suites.
 
-It does not own the schema. saras creates its tables when it starts ([decision 0001](../../doc/decisions/0001-the-server-creates-its-schema.md)); the compose service `storage` waits for it, and a seed fills tables that are already there.
+It does not own the schema. saras migrates its database when it starts ([decision 0010](../../doc/decisions/0010-the-server-migrates-its-database-and-several-may-share-it.md)); the compose service `storage` waits for it, and a seed fills tables that are already there.
 
 ## Public interface
 
@@ -33,7 +33,7 @@ Other components reach it at `http://storage:9292`, on the compose network only:
 | --- | --- |
 | `enspirit/dbagent` | The image, pinned in `docker-compose.base.yml`. It reads `data/`, mounted. |
 | PostgreSQL | The stack's database. |
-| [`software/saras`](../saras/) | The schema, which it creates when it starts. And the way to the demo's state: `scripts/demo-organisation.ts` sets the organisation up through the API, which is what `demo.rebuild` flushes. |
+| [`software/saras`](../saras/) | The schema, which it migrates when it starts. And the way to the demo's state: `scripts/demo-organisation.ts` sets the organisation up through the API, which is what `demo.rebuild` flushes. |
 
 ## Must not
 
@@ -53,4 +53,5 @@ Other components reach it at `http://storage:9292`, on the compose network only:
 
 - **The demo's mailbox is not in the seed.** The access to a mailbox is sealed with the server's `APP_SECRET`: a seed could carry it for one secret only. So the seed holds the organisation, and `emb run demo` connects the mailbox of the stack through the API, whatever the secret.
 - **What the seed carries that looks like a credential**, and is one only for the demo: the hash of the published demo password.
+- **Two tables are the server's alone, and in no seed**: `schema_migrations`, the ledger of what was applied to the schema, and `scheduled_tasks`, when what the server does on its own is next due. `empty` does not name them, so installing a seed leaves them as they are: emptied, the ledger would have the server apply every migration again. A new table of that kind is left out of `empty` the same way.
 - **No suite starts from a seed yet.** `tests/webspicy` could now name one, but installing a seed empties the database, and on a laptop that is the development database. See its status.

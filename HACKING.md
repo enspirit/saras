@@ -66,6 +66,18 @@ COMPOSE_PROJECT_NAME=saras-try COMPOSE_FILE=docker-compose.base.yml:docker-compo
 
 A seed is not written by hand: `emb run storage:demo.rebuild` sets the organisation up through the API in a stack of its own and flushes it. See [`software/storage`](software/storage/README.md).
 
+## Changing the schema
+
+The schema is the migrations of `software/saras/src/tooling/db/migrations/`, applied in order by the server when it starts, each once ([decision 0010](doc/decisions/0010-the-server-migrates-its-database-and-several-may-share-it.md)). To change it:
+
+1. Add `NNNN-what-it-does.ts`, with the next number, and list it last in `src/tooling/db/migrations.ts`. It is SQL, run in one transaction: it need not be safe to run twice.
+2. Write it so that **the version before still works on the result**: during an upgrade, servers of both versions share the database. Add now; remove what is no longer used in a later release.
+3. Leave the ones before it alone. A migration that was applied is not applied again.
+
+The development stack watches the sources: **the migration is applied to your development database the moment the file is saved and listed**. Get it right in a stack of its own first (below, `saras-try`), or with `npm test`, which starts from nothing each time. A table that is the server's own and belongs in no seed (the ledger, `scheduled_tasks`) is left out of `software/storage/data/empty`; any other is added there, by `emb run storage:demo.rebuild`.
+
+Several servers on one database: `ROLES` says what a process takes on (`migrate`, `web`, `clock`; all three by default), and `test/integration/several-servers.test.ts` starts two on one database.
+
 ## Tests
 
 | Level | Holds | Where | Runs with |

@@ -13,8 +13,8 @@ The code is laid out the same way, in [`software/saras/`](../software/saras/): e
 | `src/domain/model/` | The state as it is kept: rows, credentials, what a mail provider knows how to do. |
 | `shared/` | The domain objects as members see them, declared once for the server and the browser. |
 | `src/domain/refusal.ts`, `world.ts` | A refusal and its kind (invalid, forbidden, not found, conflict…); what an operation acts in (`World`) and on behalf of whom (`Actor`). |
-| `src/tooling/` | What is not the domain: HTTP (`http/server.ts`, and one file of routes per area: each route calls one operation or one observation), database driver and schema, mail protocols, the LLM client, sealing, configuration, messages. |
-| `src/main.ts` | Wiring, and the server's own clock. |
+| `src/tooling/` | What is not the domain: HTTP (`http/server.ts`, and one file of routes per area: each route calls one operation or one observation), database driver and migrations, the clock, mail protocols, the LLM client, sealing, configuration, messages. |
+| `src/main.ts` | Wiring: the roles this process takes (`ROLES`), and the tasks of the server's own clock. |
 
 The domain knows nothing of HTTP: an operation refuses with a kind, and `tooling/http/refusals.ts` turns the kind into a status.
 
@@ -28,7 +28,7 @@ Where the code does not do what its own comments, the documentation or the inter
 | Member | human | Answers email: reads, writes, asks the AI, sends or files; connects and manages their own mailboxes; sets their own settings. |
 | Administrator | human | A member who also invites and removes members, connects shared mailboxes, maintains the prompts, sets how the organisation works. |
 | Operator | human | Hosts the installation: environment variables, brand folder. Acts outside the running system. |
-| Backend | software | The saras server. Performs every operation below on behalf of a human, and some on its own (timers). |
+| Backend | software | The saras server. Performs every operation below on behalf of a human, and some on its own (its clock). It may be several servers on one database: what is done on its own is done by one of them at a time, and so is what must not be done twice ([decision 0010](decisions/0010-the-server-migrates-its-database-and-several-may-share-it.md)). |
 | Frontend | software | The browser interface. Controls what is being written before it is submitted, and the language in use. |
 | Mail provider | software | IMAP / SMTP server, Gmail, Microsoft Graph. Controls the mailbox itself. |
 | Identity provider | software | Google, Microsoft: grants access to a mailbox by sign-in. |
@@ -110,7 +110,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **ResetPassword** | Visitor | A live link → the member's password is the new one; the link is spent; all their sessions are closed | The link is live · 10+ characters · not locked out | Nobody is signed in by it: the second factor is still asked · a link that opens nothing counts as a wrong guess | the page a link opens · `POST /auth/password-reset/check`, `PUT /auth/password-reset` |
 | **DeleteOwnAccount** | Member | A member → none, with their sessions | The current password is given · not the organisation's last administrator · not locked out | Their prompts, shared mailboxes and shared boards pass to the longest-standing other administrator · their personal mailboxes go, with what was stored from them · a wrong password counts as a wrong guess | Settings → You → "Delete my account", then the confirmation · `DELETE /me` |
 | **DeleteOrganization** | Administrator | An organisation → none, with its members, sessions, invitations, prompts, mailboxes and everything kept from them | Administrator · the current password is given · the organisation's name is given, as it is · not locked out | The mailboxes at the providers are untouched · the other members are not told · a wrong password counts as a wrong guess | Settings → Organisation → "Delete the organisation", then the confirmation · `DELETE /organization` |
-| **ExpireSessions** | Backend | Sessions past their date → none | | | ReqTrig: hourly, and at start (`main.ts`) |
+| **ExpireSessions** | Backend | Sessions past their date → none | | | ReqTrig: hourly, by one server whatever their number (`main.ts`, `tooling/clock.ts`) |
 
 ### Settings
 
@@ -140,7 +140,7 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 | **ChangeMailboxServers** | Member | A mailbox reached by its servers → the same, reached by these servers; its last error is forgotten | Manages it · both servers with their ports · a password left empty keeps the one it has · the mailbox was just seen to answer there | Address, folder watched, emails kept and owner unchanged · credentials sealed · ReqTrig: a mailbox that watches a folder is fetched at once | "Edit" in Mailboxes, "How saras reaches it" · `PUT /mailboxes/:id/servers`. Observation: `GET /mailboxes/:id/servers` (never the password) |
 | **ChooseWatchedFolder** | Member | A mailbox → it watches this folder, this far back (1, 7, 14 or 30 days; the server's `SYNC_DAYS` when none is given), unread mail only or not | Manages it · the folder exists at the provider | Its last error is forgotten · what was fetched before, from another folder or further back, is kept · ReqTrig: a fetch is started | "Watch this folder" · `PUT /mailboxes/:id/folder` |
 | **DisconnectMailbox** | Member | A mailbox → none | Manages it | Its emails, proposals and replies go with it · the mailbox at the provider is untouched | red bin in Mailboxes · `DELETE /mailboxes/:id` |
-| **FetchMailbox** | Member, Backend | A mailbox with a watched folder → the folder's new messages, as far back as the mailbox says and only the unread ones when it says so, are stored as emails, each waiting to be sorted | May use it (when a member asks) · at most a set number per fetch · a message already known is left as it is | When asked for, plainly automated mail is set aside at once, by rule · then **SortWaitingEmails**, then **PrepareProposals** · the time and any failure are recorded · one fetch at a time per mailbox | "Fetch", "Fetch now" · `POST /mailboxes/:id/fetch`. ReqTrig: every `SYNC_INTERVAL_MINUTES`, for every mailbox with a folder; after ChooseWatchedFolder; after RenewMailboxCredentials |
+| **FetchMailbox** | Member, Backend | A mailbox with a watched folder → the folder's new messages, as far back as the mailbox says and only the unread ones when it says so, are stored as emails, each waiting to be sorted | May use it (when a member asks) · at most a set number per fetch · a message already known is left as it is | When asked for, plainly automated mail is set aside at once, by rule · then **SortWaitingEmails**, then **PrepareProposals** · the time and any failure are recorded · one fetch at a time per mailbox, whichever server is asked | "Fetch", "Fetch now" · `POST /mailboxes/:id/fetch`. ReqTrig: every `SYNC_INTERVAL_MINUTES`, for every mailbox with a folder; after ChooseWatchedFolder; after RenewMailboxCredentials |
 
 ### Sorting
 
@@ -205,7 +205,7 @@ Observations: `GET /boards` (the boards a member sees, each with how many emails
 
 | Operation | Agent | DomPre → DomPost | ReqTrig | Entry |
 | --- | --- | --- | --- | --- |
-| **ErasePastRetention** | Backend | Emails older than the retention period, with content → their content, proposals and reply texts are erased; the triage row and the reasons for corrections are kept | Hourly, and at start, when a retention period is set | `retention/erase-past-retention.ts`, from `main.ts` |
+| **ErasePastRetention** | Backend | Emails older than the retention period, with content → their content, proposals and reply texts are erased; the triage row and the reasons for corrections are kept | Hourly, by one server whatever their number, when a retention period is set | `retention/erase-past-retention.ts`, from `main.ts` |
 
 ### Observations
 
@@ -257,7 +257,7 @@ Recorded, not fixed. Each is a decision for the product's owner.
 
 ### Deviations
 
-1. **The lock-out is per origin, not per address.** US-02 says "per address"; the code counts by origin, the IP address (`req.ip`). Behind a proxy that does not forward the client's address, everyone shares one count. The table of counts is never emptied.
+1. **The lock-out is per origin, not per address, and per server.** US-02 says "per address"; the code counts by origin, the IP address (`req.ip`). Behind a proxy that does not forward the client's address, everyone shares one count. The table of counts is never emptied. It is kept in each server's memory: on an installation of several servers, an origin has as many times the guesses.
 2. **Expired invitations are not forgotten.** The comment on the hourly housekeeping says "forget expired sessions and invitations"; only sessions are deleted. Expired invitations stay listed until revoked.
 3. **An address can be connected twice in one organisation.** "An address is connected once per organisation" is enforced per kind: the same address can be connected over IMAP and again by Google or Microsoft sign-in, and its emails would then be fetched twice.
 4. **Asking for a shared mailbox without being an administrator is not refused**: a personal one is connected instead, silently.
