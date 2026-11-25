@@ -102,7 +102,7 @@ The interface follows the hierarchy tokens → atoms → molecules → organisms
 
 | Tier | Styles (`public/design/`) | Components (`web/ui/`) | Content |
 | --- | --- | --- | --- |
-| Tokens | `tokens.css` | — | Brand inputs `--brand-*`, then semantic tokens `--color-*`, `--font-*`, `--space-*`, `--radius-*`… |
+| Tokens | `tokens.css`, after `public/brand/theme.css` | — | Brand inputs `--brand-*`, declared by the default brand; then the semantic tokens derived from them, `--color-*`, `--font-*`, `--space-*`, `--radius-*`… |
 | Base | `base.css` | `dom.ts` | HTML element defaults; the single element-creation function. |
 | Atoms | `atoms/*.css` | `atoms/*.ts` | `Icon`, `Button`, `Badge`, `Input`, `Select`, `Textarea`, `Checkbox`, `Notice`, `Avatar`, `Chip`, `Text`, `BrandMark`… |
 | Molecules | `molecules/*.css` | `molecules/*.ts` | `Field`, `Card`, `PageHeader`, `Tabs`, `Table`, `Choices`, dialogs, `NavItem`, `EmailListItem`, `RichEditor`, `RecipientField`, toast… |
@@ -111,13 +111,14 @@ The interface follows the hierarchy tokens → atoms → molecules → organisms
 
 Rules, enforced by `test/unit/design-system.test.ts`:
 
-- a colour or a font is written as a literal only in `tokens.css`;
+- a colour or a font is written as a literal only in `tokens.css`, or in a brand's `theme.css`;
 - components use semantic tokens only, never `--brand-*`;
 - pages write neither class names nor HTML elements: they call components;
 - dependencies only point downwards (an atom never imports a molecule);
-- a brand theme may only set tokens that exist.
+- a brand theme may only set tokens that exist;
+- the default brand declares every brand input and `tokens.css` none: each is written once.
 
-CSS cascade layers (`@layer`) make the hierarchy effective: a molecule always wins over an atom, and `theme.css`, loaded outside any layer, wins over everything without `!important`.
+CSS cascade layers (`@layer`) make the hierarchy effective: a molecule always wins over an atom, and `theme.css`, loaded outside any layer, wins over everything without `!important`. The default brand's is also bundled with the tokens, in their layer, so a brand that leaves an input out keeps the default's ([decision 0015](../../doc/decisions/0015-the-default-brand-declares-the-brand-inputs.md)).
 
 To add a component: the function in `web/ui/<tier>/<component>.ts`, its style in `public/design/<tier>/<component>.css` (listed in `public/design/index.css`), an example in `web/styleguide/<tier>.ts`.
 

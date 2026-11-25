@@ -8,6 +8,9 @@
  */
 @layer tokens, base, atoms, molecules, organisms;
 
+/* The default brand: where the brand inputs are declared, each once. In the layer of the tokens, so that
+   the theme.css of a brand, loaded outside any layer, changes those it names and keeps the others. */
+@import url("../brand/theme.css") layer(tokens);
 @import url("tokens.css") layer(tokens);
 @import url("base.css") layer(base);
 

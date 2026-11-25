@@ -55,7 +55,7 @@ Each is held by a test, which will tell you:
 - The domain knows nothing of HTTP; the browser imports nothing of the server; `shared/` declares the domain objects once and imports nothing (`tests/harness`, `test/unit/shared-types.test.ts`).
 - Nothing is said with `console`: `log.info('what happened', { fields })` (`src/tooling/log.ts`), which redacts every line. Never a field holding an address, a folder, a body or anything of a mail: a mailbox, a member and an organisation are numbers in a log (`test/unit/logging.test.ts`, `test/integration/what-the-log-says.test.ts`, decision 0012).
 - No sentence in the code: the interface's words are in `public/i18n/`, in every language; the server sends codes (`src/tooling/messages.ts`).
-- Colours and fonts only in `public/design/tokens.css`; pages call components (`test/unit/design-system.test.ts`).
+- Colours and fonts only in `public/design/tokens.css`, and a brand's inputs only in its `theme.css`, the default brand's in `public/brand/`; pages call components (`test/unit/design-system.test.ts`).
 - Erasable TypeScript only (no enum, no parameter property): Node strips the types and runs the file.
 - The schema changes by a new migration, numbered, that leaves the previous version of the server working (`test/integration/migrations.test.ts` holds the numbering; the rest is yours).
 - Several servers may share one database. What must happen once is decided there, not in a server's memory: a turn of the clock (`src/tooling/clock.ts`), a key held (`db.hold`).

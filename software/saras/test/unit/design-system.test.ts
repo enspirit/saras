@@ -20,6 +20,14 @@ const WEB = filesOf('web', '.ts');
 const UI = WEB.filter((file) => file.startsWith('ui/'));
 /** Everything else composes components: the pages, what they share, the entry files and the style guide. */
 const PAGES = WEB.filter((file) => !file.startsWith('ui/') && !file.startsWith('vendor/'));
+/** The custom properties a sheet declares. */
+const declaredIn = (css: string): string[] => [...stripComments(css).matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1] ?? '');
+/** The default brand declares the brand inputs; tokens.css, what is derived from them. Together, every token there is. */
+const DEFAULT_BRAND = declaredIn(read('brand/theme.css'));
+const TOKENS = declaredIn(read('design/tokens.css'));
+const DECLARED = new Set([...DEFAULT_BRAND, ...TOKENS]);
+/** The default brand's theme, as index.css names it: loaded with the tokens, whose inputs it holds. */
+const DEFAULT_THEME = '../brand/theme.css';
 /** All the modules of a tier, read as one text. */
 const modulesOf = (tier: string): string => UI.filter((file) => file.startsWith(`${tier}/`, 'ui/'.length)).map(readWeb).join('\n');
 
@@ -39,31 +47,37 @@ test('components use semantic tokens, never brand inputs', () => {
 });
 
 test('every token a component uses is declared', () => {
-  const declared = new Set([...read('design/tokens.css').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
   for (const sheet of COMPONENT_SHEETS) {
     const css = stripComments(read(`design/${sheet}`));
-    const local = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
+    const local = new Set(declaredIn(css));
     for (const [, name] of css.matchAll(/var\((--[\w-]+)/g)) {
-      assert.ok(declared.has(name) || local.has(name), `${sheet}: ${name} is not declared`);
+      assert.ok(DECLARED.has(name ?? '') || local.has(name ?? ''), `${sheet}: ${name} is not declared`);
     }
   }
 });
 
-test('the brand theme only sets tokens that exist', () => {
-  const declared = new Set([...read('design/tokens.css').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
-  const themes = [read('brand/theme.css'), ...['example', 'klaro'].map((brand) => readFileSync(new URL(`../../brands/${brand}/theme.css`, import.meta.url), 'utf8'))];
-  for (const theme of themes) {
-    const set = [...stripComments(theme).matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]);
-    assert.ok(set.length > 0);
-    for (const name of set) assert.ok(declared.has(name), `${name} is not a token`);
+test('the default brand declares every brand input, and nothing is declared twice', () => {
+  const inputsRead = [...stripComments(read('design/tokens.css')).matchAll(/var\((--brand-[\w-]+)/g)].map((m) => m[1] ?? '');
+  for (const name of inputsRead) assert.ok(DEFAULT_BRAND.includes(name), `${name} is read by tokens.css, and the default brand does not declare it`);
+  assert.deepEqual(TOKENS.filter((name) => name.startsWith('--brand-')), [], 'a brand input is declared by the default brand, not by tokens.css');
+  assert.deepEqual(TOKENS.filter((name) => DEFAULT_BRAND.includes(name)), [], 'declared by tokens.css and by the default brand');
+  assert.equal(new Set(DEFAULT_BRAND).size, DEFAULT_BRAND.length, 'the default brand declares an input twice');
+});
+
+test('a brand theme only sets tokens that exist', () => {
+  for (const brand of ['example', 'klaro']) {
+    const set = declaredIn(readFileSync(new URL(`../../brands/${brand}/theme.css`, import.meta.url), 'utf8'));
+    assert.ok(set.length > 0, brand);
+    for (const name of set) assert.ok(DECLARED.has(name), `${brand}: ${name} is not a token`);
   }
 });
 
-test('every sheet is loaded by index.css, in the layer of its tier and in the order of the tiers', () => {
+test('every sheet is loaded by index.css, in the layer of its tier and in the order of the tiers; the default brand, with the tokens', () => {
   const imports = [...stripComments(read('design/index.css')).matchAll(/@import url\("([^"]+)"\) layer\((\w+)\);/g)].map((m) => ({ sheet: m[1] ?? '', layer: m[2] ?? '' }));
-  assert.deepEqual(imports.map((i) => i.sheet).sort(), ['tokens.css', ...COMPONENT_SHEETS].sort());
+  assert.deepEqual(imports.map((i) => i.sheet).sort(), [DEFAULT_THEME, 'tokens.css', ...COMPONENT_SHEETS].sort());
   const order = ['tokens', 'base', ...TIERS];
-  for (const { sheet, layer } of imports) assert.equal(layer, sheet.includes('/') ? sheet.split('/')[0] : sheet.replace('.css', ''), `${sheet} is in layer ${layer}`);
+  const layerOf = (sheet: string): string => (sheet === DEFAULT_THEME ? 'tokens' : sheet.includes('/') ? (sheet.split('/')[0] ?? '') : sheet.replace('.css', ''));
+  for (const { sheet, layer } of imports) assert.equal(layer, layerOf(sheet), `${sheet} is in layer ${layer}`);
   assert.deepEqual(imports.map((i) => order.indexOf(i.layer)), imports.map((i) => order.indexOf(i.layer)).sort((x, y) => x - y), 'the tiers are loaded lowest first');
 });
 

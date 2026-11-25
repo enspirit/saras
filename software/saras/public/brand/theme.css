@@ -1,10 +1,14 @@
 /*
- * BRAND THEME — the file to change to put the tool in a company's colours.
+ * BRAND THEME — the default brand, and the file to change to put the tool in a company's colours.
+ *
+ * This one declares every brand input, and is the only place where the default brand's are
+ * written: design/tokens.css derives everything else from them, and design/index.css loads this
+ * file with it.
  *
  * Do not edit it here for a deployment: copy the `public/brand` folder elsewhere, change
- * the copy, and point the BRAND_DIR environment variable at it (see README, "Branding").
+ * the copy, and point the BRAND_DIR environment variable at it (see README, "Your brand").
  *
- * Everything below is optional. A line left out keeps the default of design/tokens.css.
+ * In a copy, everything below is optional. A line left out keeps the value it has here.
  * The complete result can be checked on /styleguide.html.
  */
 

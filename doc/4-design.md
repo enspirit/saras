@@ -28,7 +28,7 @@ Principles that follow:
 | --- | --- |
 | **No framework, no bundler.** Plain CSS files and TypeScript functions that build DOM nodes. | A component is a function plus a few CSS rules. |
 | **Strict layering**: tokens → base → atoms → molecules → organisms → pages. | Pages hold behaviour only: they write no class name and create no element. Anything visual is a component. |
-| **Literals only in `tokens.css`.** | Every colour and font is a token. Components read semantic tokens (`--color-*`), never brand inputs (`--brand-*`). |
+| **Literals only in `tokens.css` and in a brand's `theme.css`.** | Every colour and font is a token, and the inputs of a brand are written once, in its `theme.css`. Components read semantic tokens (`--color-*`), never brand inputs (`--brand-*`). |
 | **Brandable.** A brand sets about a dozen inputs; the rest is derived with `color-mix()` and `light-dark()`. | Every screen must hold when accent, canvas, ink, fonts and radius change. Status colours keep their meaning across brands. |
 | **Light and dark** from the same tokens, following the visitor's system. | Nothing is designed for one scheme only. |
 | **Content-Security-Policy `default-src 'self'`.** | Fonts and icons are self-hosted; there is no inline `style` attribute and no asset from another site. |
@@ -56,15 +56,15 @@ brands/
   klaro/         the Klaro Cards brand: purple, Poppins (self-hosted), sign-in extras
 ```
 
-CSS cascade layers (`@layer tokens, base, atoms, molecules, organisms`) make the hierarchy effective: a later layer wins whatever the selectors. `theme.css` is loaded outside any layer and wins without `!important`.
+CSS cascade layers (`@layer tokens, base, atoms, molecules, organisms`) make the hierarchy effective: a later layer wins whatever the selectors. `theme.css` is loaded outside any layer and wins without `!important`. The default brand's is also loaded with the tokens, in their layer: it is where the brand inputs are declared, so a brand that leaves one out keeps the default's ([decision 0015](decisions/0015-the-default-brand-declares-the-brand-inputs.md)).
 
 ## 4. Tokens (`public/design/tokens.css`)
 
-Three tiers: **brand inputs** → **semantic tokens** → **component tokens** declared on the component itself (`--btn-bg`, `--card-padding`, `--badge-text`…).
+Three tiers: **brand inputs**, declared by the default brand in `public/brand/theme.css` → **semantic tokens**, derived from them in `tokens.css` → **component tokens** declared on the component itself (`--btn-bg`, `--card-padding`, `--badge-text`…).
 
 | Group | Tokens | Notes |
 | --- | --- | --- |
-| Brand inputs | `--brand-accent`, `--brand-on-accent`, `--brand-canvas`, `--brand-ink` (and `-dark` of each), `--brand-font-body`, `--brand-font-heading`, `--brand-radius`, `--brand-color-scheme`, `--logo-height` | Default: accent `#1f5fbf` / `#7fb0ff`, canvas `#f6f5f1` / `#15171b`, ink `#1d1f24` / `#e8e9ec`, system font stack, radius 8 px. |
+| Brand inputs | `--brand-accent`, `--brand-on-accent`, `--brand-canvas`, `--brand-ink` (and `-dark` of each), `--brand-font-body`, `--brand-font-heading`, `--brand-radius`, `--brand-color-scheme`, `--logo-height` | Their values are a brand's, and the default brand's are written in `public/brand/theme.css` only: a blue accent, a warm off-white canvas, the system font stack, a radius of 8 px. |
 | Surfaces and text | `--color-bg`, `--color-surface`, `--color-surface-sunken`, `--color-text`, `--color-text-soft`, `--color-text-muted`, `--color-border`, `--color-border-strong`, `--color-line`, `--color-hover`, `--color-scrim` | All mixes of ink into canvas. `line` is a hairline inside a surface; `sunken` is the navigation; `scrim` veils the page behind a dialog. |
 | Accent | `--color-accent`, `--color-on-accent`, `--color-accent-soft`, `--color-focus` | Soft is 12 % accent on surface. |
 | AI | `--color-ai`, `--color-ai-border` | The surface under text the AI proposed, until the user takes it over. |
@@ -200,7 +200,7 @@ A brand is a folder, named by `BRAND_DIR`: the look is changed without touching 
 
 | File | Role |
 | --- | --- |
-| `theme.css` | The inputs of section 4, a dozen variables: accent colour, background, text (light and dark), fonts, corner radius, light/dark mode. Everything else is derived from them. |
+| `theme.css` | The inputs of section 4, a dozen variables: accent colour, background, text (light and dark), fonts, corner radius, light/dark mode. Everything else is derived from them. One left out keeps the default brand's value. |
 | `brand.json` | `name` (title, tab, wording), `tagline` (one text, or one per language: `{ "fr": "…", "en": "…" }`), `logo` and `logoDark` (file names in the folder, optional). For the sign-in page, optionally: `byline` and `credit` (one text, or one per language) and `euHosting` (`true` when the installation and the AI it calls are hosted in Europe: the page then says so). |
 | `favicon.svg`, logos, fonts | Served from the folder. |
 
@@ -222,7 +222,7 @@ Fonts of a brand live in its folder and are declared with `@font-face` in its `t
 
 - **A component:** the function in `web/ui/<tier>/<component>.ts`, its style in `public/design/<tier>/<component>.css` (listed in `public/design/index.css`), an example in `web/styleguide/<tier>.ts`.
 - **An icon:** its name in the `IconName` type and its glyph code in `atoms/icon.css`, taken from the pinned Lucide version.
-- **A token:** in `tokens.css`, derived from the brand inputs where it is a colour.
+- **A token:** in `tokens.css`, derived from the brand inputs where it is a colour. **A brand input:** in `public/brand/theme.css`, with the default brand's value, and read in `tokens.css`.
 - **Wording:** a key in the section's file under `public/i18n/en/` and `public/i18n/fr/`; the tests check that both have it and that it is used.
 
 ## 9. Known limits

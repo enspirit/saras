@@ -4,12 +4,14 @@
  *
  * Three tiers, each built from the one above:
  *
- *   1. brand     --brand-*   the handful of inputs a company changes (brand/theme.css)
+ *   1. brand     --brand-*   the handful of inputs a company changes. They are declared by the
+ *                              default brand, brand/theme.css, and nowhere else: index.css loads
+ *                              it before this file, and a brand's own theme.css changes those it names
  *   2. semantic  --color-*, --font-*, --radius-* …   what components are allowed to use
  *   3. component --btn-*, --card-* …   declared next to each component, from tier 2
  *
  * Components never read --brand-* directly and never contain literals: rebranding is
- * done by overriding tier 1 (or, for fine tuning, any tier 2 token) in brand/theme.css.
+ * done by setting tier 1 (or, for fine tuning, any tier 2 token) in a brand's theme.css.
  */
 
 /* Icons: Lucide (ISC licence), taken from its package and put next to the built interface by `npm run build`. */
@@ -22,26 +24,7 @@
 }
 
 :root {
-  /* ---- 1. Brand inputs (defaults; overridden by brand/theme.css) ---------------------- */
-
-  /* Accent: buttons, links, selection. One value per colour scheme, with its text colour. */
-  --brand-accent: #1f5fbf;
-  --brand-on-accent: #ffffff;
-  --brand-accent-dark: #7fb0ff;
-  --brand-on-accent-dark: #0d1b33;
-
-  /* Canvas (page background) and ink (text). Surfaces, borders and muted text derive from them. */
-  --brand-canvas: #f6f5f1;
-  --brand-ink: #1d1f24;
-  --brand-canvas-dark: #15171b;
-  --brand-ink-dark: #e8e9ec;
-
-  --brand-font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --brand-font-heading: var(--brand-font-body);
-  --brand-radius: 8px;
-
-  /* "light dark" follows the visitor's system; "light" or "dark" forces one. */
-  --brand-color-scheme: light dark;
+  /* ---- 1. Brand inputs: in brand/theme.css, the default brand ----------------------------- */
 
   /* ---- 2. Semantic tokens ------------------------------------------------------------- */
   color-scheme: var(--brand-color-scheme);
@@ -168,7 +151,6 @@
   --form-width: 720px;
   --auth-width: 400px;
   --dialog-width: 440px;
-  --logo-height: 28px;
   --z-sticky: 1;
   --z-overlay: 10;
 }
