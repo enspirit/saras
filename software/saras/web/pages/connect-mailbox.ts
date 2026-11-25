@@ -29,10 +29,11 @@ const whoseChoice = (onChange: () => void): ChoicesHandle =>
 /** Where the mailbox is hosted. A host the server is not set up for cannot be chosen, and says why. */
 function hostChoice(oauth: Profile['oauth'], onChange: () => void): ChoicesHandle {
   const unavailable = (kind: 'google' | 'microsoft'): string | undefined => (oauth[kind] ? undefined : t('mailboxes.oauthUnavailable', { prefix: kind.toUpperCase() }));
-  return Choices({ legend: t('mailboxes.where'), name: 'host', value: oauth.google ? 'google' : oauth.microsoft ? 'microsoft' : 'imap', options: [
+  // Any standard mailbox comes first, and is chosen to begin with: it is the one way that works with every host.
+  return Choices({ legend: t('mailboxes.where'), name: 'host', value: 'imap', options: [
+    { value: 'imap', title: t('mailboxes.imapTitle'), hint: t('mailboxes.imapHint') },
     { value: 'google', title: t('mailboxes.connectGoogle'), hint: unavailable('google'), disabled: !oauth.google },
     { value: 'microsoft', title: t('mailboxes.connectMicrosoft'), hint: unavailable('microsoft'), disabled: !oauth.microsoft },
-    { value: 'imap', title: t('mailboxes.imapTitle'), hint: t('mailboxes.imapHint') },
   ], onChange });
 }
 
