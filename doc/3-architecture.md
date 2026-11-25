@@ -53,12 +53,14 @@ Inside `software/saras`, dependencies point one way, and `tests/harness` holds e
 
 ```
 web/ ──/api──► src/tooling/http ──► src/domain ──► src/tooling (database, mail, LLM, sealing)
-  └──────────────► shared/ ◄──────────┘
+  │                                    └────────► src/assistant (skills: what a model is told, how its answer is read)
+  └──────────────► shared/ ◄───────────┴──────────────┘
 ```
 
 - The browser is a client of the API with no privileged path: `web/` imports nothing of `src/`.
 - `shared/` declares the domain objects once, for both, and imports nothing.
 - The domain knows nothing of HTTP: an operation refuses with a kind, and the tooling turns the kind into a status.
+- The assistant knows neither the domain nor the tooling: it imports `shared/` alone, and an operation gives it the means to ask a model and to have its answer judged. The tooling does not reach it: only an operation does ([decision 0017](decisions/0017-the-assistant-is-a-subsystem-of-its-own-and-configures-through-data.md)).
 - One place wires everything together: `src/main.ts`.
 - One adapter per third party: the table of `software/saras/README.md`, "Depends on", names the one module that reaches each.
 

@@ -19,6 +19,7 @@ test('what a file imports: values, types, re-exports, side effects and imports o
 const RULES: Boundary[] = [
   { within: 'app/src/domain', mayNotImport: ['express', 'app/src/tooling/http'], why: 'the domain knows nothing of HTTP' },
   { within: 'app/web', mayNotImport: ['app/src'], why: 'the browser is a client of the API' },
+  { within: 'app/src/assistant', mayNotImport: ['app/src/domain', 'app/src/tooling'], why: 'the assistant is given its means' },
 ];
 
 const CASES: [string, string, string, string[]][] = [
@@ -28,6 +29,8 @@ const CASES: [string, string, string, string[]][] = [
   ['a package whose name only starts the same is another package', 'app/src/domain/world.ts', "import x from 'express-session';", []],
   ['the tooling is not held to the rule of the domain', 'app/src/tooling/http/server.ts', "import express from 'express';", []],
   ['the browser may use what is shared', 'app/web/api.ts', "import type { Mailbox } from '../shared/mailbox.ts';", []],
+  ['the assistant may use what is shared, and itself', 'app/src/assistant/skills/x.ts', "import type { Configuration } from '../../../shared/configuration.ts';\nimport { perform } from '../perform.ts';", []],
+  ['the assistant may not use the LLM client, nor an operation', 'app/src/assistant/perform.ts', "import { createOpenRouter } from '../tooling/llm/openrouter.ts';\nimport { applyConfiguration } from '../domain/configuration/apply-configuration.ts';", ['app/src/assistant/perform.ts imports app/src/tooling/llm/openrouter.ts: the assistant is given its means', 'app/src/assistant/perform.ts imports app/src/domain/configuration/apply-configuration.ts: the assistant is given its means']],
   ['the browser may not use the server', 'app/web/pages/x.ts', "import { MESSAGES } from '../../src/tooling/messages.ts';", ['app/web/pages/x.ts imports app/src/tooling/messages.ts: the browser is a client of the API']],
 ];
 

@@ -13,6 +13,7 @@ The code is laid out the same way, in [`software/saras/`](../software/saras/): e
 | `src/domain/model/` | The state as it is kept: rows, credentials, what a mail provider knows how to do. |
 | `shared/` | The domain objects as members see them, declared once for the server and the browser. |
 | `src/domain/refusal.ts`, `world.ts` | A refusal and its kind (invalid, forbidden, not found, conflict…); what an operation acts in (`World`) and on behalf of whom (`Actor`). |
+| `src/assistant/` | What a language model is asked that is not a reply: skills, each saying what to tell a model and how to read its answer. It knows nothing of the domain nor of the tooling: an operation gives it the means to ask ([decision 0017](decisions/0017-the-assistant-is-a-subsystem-of-its-own-and-configures-through-data.md)). |
 | `src/tooling/` | What is not the domain: HTTP (`http/server.ts`, and one file of routes per area: each route calls one operation or one observation), database driver and migrations, the clock, mail protocols, the LLM client, sealing, configuration, messages. |
 | `src/main.ts` | Wiring: the roles this process takes (`ROLES`), and the tasks of the server's own clock. |
 
@@ -254,6 +255,8 @@ Pure, in `src/domain/computations/` unless said otherwise.
 | `configuration.ts` | The attributes and shared boards kept → the configuration told by names; what is given as one, reduced. |
 | `configuration-names.ts` | What the names of a configuration stand for in an organisation: the filter a board is kept with, the attributes there would be once it is applied, the names that stand for nothing. |
 | `configuration-changes.ts` | What of a configuration is not already so. |
+| `src/assistant/skills/configure-organisation.ts`, `knowledge/` | What the organisation said, its configuration → what a model is told; its answer → questions, a proposal, or what is wrong in it. How small a proposal is kept. |
+| `src/assistant/perform.ts` | A skill, the means to ask → its answer, the model asked again with what is wrong, a few times at most. |
 | `tooling/llm/openrouter.ts` (`buildChatRequest`, `explainError`) | The request with its privacy clause; an error as a problem. |
 | `tooling/html.ts`, `text.ts` | What a reply may contain; text ↔ HTML. |
 | `tooling/mail/lookup.ts` (`classifyMx`, `domainOf`), `gmail.ts`, `graph.ts` | MX names → who hosts the mail; a provider's message → an email. |
