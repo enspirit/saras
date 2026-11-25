@@ -10,6 +10,7 @@ import { invitationToken, passwordResetToken, route, wireNavigation } from './na
 import { attributesPage } from './pages/attributes.ts';
 import { ruleGuidePage } from './pages/rule-guide.ts';
 import { boardPage } from './pages/board.ts';
+import { configurationAssistantPage } from './pages/configuration-assistant.ts';
 import { editAttributePage } from './pages/edit-attribute.ts';
 import { editBoardPage } from './pages/edit-board.ts';
 import { newPasswordPage } from './pages/lost-password.ts';
@@ -68,10 +69,11 @@ function showBoards(part: string, id: number | null, email: string | null, searc
   else void boardPage(id, Number(email) || null, search);
 }
 
-/** The attributes, the form that changes one (named by the last part of the address), the form for a new one, or the guide to writing a rule. */
+/** The attributes, the form that changes one (named by the last part of the address), the form for a new one, the guide to writing a rule, or the assistant that proposes a configuration. */
 function showAttributes(part: string): void {
   if (part === 'new') void editAttributePage(null);
   else if (part === 'guide') void ruleGuidePage();
+  else if (part === 'assistant') void configurationAssistantPage();
   else if (part === 'edit') void editAttributePage(location.hash.split('/')[3] ?? null);
   else void attributesPage();
 }

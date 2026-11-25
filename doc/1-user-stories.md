@@ -18,7 +18,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 | Area | Stories |
 | --- | --- |
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
-| [J. Boards and attributes](#j-boards) | US-90 – US-98 |
+| [J. Boards and attributes](#j-boards) | US-90 – US-99 |
 | [B. Mailboxes](#b-mailboxes) | US-10 – US-18 |
 | [C. Sorting and the four boxes](#c-sorting-and-the-four-boxes) | US-20 – US-27 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
@@ -591,3 +591,15 @@ These are behaviours of the system rather than screens, but they are what the pr
 - `PUT /api/configuration` takes the same: what is named and we do not have is made, what we have is changed, what is not named is left as it is. It is applied whole or refused whole, with what is wrong.
 - `POST /api/configuration/check` says everything wrong in one, each with its place, and changes nothing.
 - A board may name an attribute made in the same configuration.
+
+### US-99 — Have the AI propose how we sort our mail
+**As** an administrator, **I want** to say what my organisation does and be proposed the attributes, rules and boards that fit it, **so that** I start from something that works without learning Elo first.
+
+- **Configuration → Sorting → Have it proposed by the AI** opens a page where I describe the organisation and its mail in my own words: what we do, who writes to us, who answers what, what tells one kind of email from another.
+- The page says what the AI is sent: that text, my answers, and our attributes and shared boards as they are. No email is sent, and nothing of what I write is kept.
+- The AI may first ask up to three questions, each with a few answers to pick from. It asks once: I answer what I can, and an answer left empty leaves the choice to it.
+- What it proposes is small: at most three attributes and five boards, and only what is new or would change what we have. Each is a card: an attribute with its values in their colours and its rule to read, a board with its conditions in words, and whether it is new or changes ours.
+- Every rule proposed is one saras accepts: it was checked against the email as a rule I would write is.
+- Nothing changes until I apply. I untick what I do not want; **Apply what is ticked** makes and changes the rest at once, all of it or none of it. Nothing we have is deleted.
+- Ticked by default, **Apply the rules to the emails already kept too** has the new rules look at the emails we have, so that the boards show them at once; values set by hand stay.
+- What is applied is ours like anything we made: each attribute and each board is changed or deleted on its own page. I can ask again later, with what we now have as the starting point.

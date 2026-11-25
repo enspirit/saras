@@ -211,7 +211,7 @@ The attributes of an organisation and the boards its members share, as data: nam
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **ApplyConfiguration** | Administrator | → the organisation has each attribute named, as given: made when it has none of that name, changed otherwise; and each board named, shared with every member, the same way | Administrator · each attribute is one CreateAttribute or EditAttribute accepts, its rule included · nothing is named twice · a board has a name · a filter names attributes there will be, values they will have, and mailboxes the administrator may use | All of it, or none of it · what is not named is left as it is: nothing is deleted · of "Stands in", only how it is decided and the colours given change · emails already kept stay as they were sorted · nothing is done that CreateAttribute, EditAttribute, CreateBoard and EditBoard do not do | `PUT /configuration` |
+| **ApplyConfiguration** | Administrator | → the organisation has each attribute named, as given: made when it has none of that name, changed otherwise; and each board named, shared with every member, the same way | Administrator · each attribute is one CreateAttribute or EditAttribute accepts, its rule included · nothing is named twice · a board has a name · a filter names attributes there will be, values they will have, and mailboxes the administrator may use | All of it, or none of it · what is not named is left as it is: nothing is deleted · of "Stands in", only how it is decided and the colours given change · emails already kept stay as they were sorted · nothing is done that CreateAttribute, EditAttribute, CreateBoard and EditBoard do not do | "Apply what is ticked" on a proposal · `PUT /configuration` |
 
 Observations: `GET /configuration` (the configuration as it is: told, then applied, an organisation is as it was), `POST /configuration/check` (everything that keeps a configuration from being applied, each with its place, `attributes.1`, `boards.0.filter`; nothing is changed). Both are the administrators'.
 
@@ -221,7 +221,7 @@ What an administrator asks the assistant. An operation here gives a skill of `sr
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **ProposeConfiguration** | Administrator | Any → the same; the administrator is told questions, or a configuration proposed | Administrator · something is said of the organisation · a key in force · the model has a zero-retention provider | The LLM is sent what the administrator wrote, their answers and the configuration as it is: no email, nothing else of the organisation · a proposal is one ApplyConfiguration takes as it is, and holds only what is new or would change · at most three attributes and five boards · questions, three at most, are asked once: answered, even by nothing, a proposal follows · the model is told what is wrong in its answer and asked again, three times at most · nothing is kept | `POST /assistant/configuration` |
+| **ProposeConfiguration** | Administrator | Any → the same; the administrator is told questions, or a configuration proposed | Administrator · something is said of the organisation · a key in force · the model has a zero-retention provider | The LLM is sent what the administrator wrote, their answers and the configuration as it is: no email, nothing else of the organisation · a proposal is one ApplyConfiguration takes as it is, and holds only what is new or would change · at most three attributes and five boards · questions, three at most, are asked once: answered, even by nothing, a proposal follows · the model is told what is wrong in its answer and asked again, three times at most · nothing is kept | Sorting → "Have it proposed by the AI" · `POST /assistant/configuration` |
 
 ### Retention
 
@@ -242,6 +242,7 @@ Sequences of operations that the interface or the server runs as one story.
 | A fetch | FetchMailbox (SortByRules) → PrepareProposals (→ FileProposalAsDraft) |
 | Getting started | CreateOrganization → ConnectMailbox → ChooseWatchedFolder → FetchMailbox → (SetOrganizationKey) → EditPrompt, AddReadyMadePrompt → ChooseWriting → FetchMailbox |
 | Answering | (WriteWithPrompt \| CheckTypos \| ImproveStyle)* → SendReply \| FileReplyAsDraft |
+| Configuring with the assistant | ProposeConfiguration (questions) → ProposeConfiguration (a proposal) → ApplyConfiguration (CreateAttribute \| EditAttribute \| CreateBoard \| EditBoard)* → SortAgainByRule* |
 
 ## Computations
 

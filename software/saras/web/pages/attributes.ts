@@ -33,7 +33,7 @@ const attributeRow = (attribute: Attribute): Child[] => [
 export const attributesPage = guard(async () => {
   const attributes = await readAttributes();
   shell(Page(
-    PageHeader({ title: t('attributes.title'), intro: t('attributes.intro') }, ButtonLink(t('attributes.new'), { href: '#/attributes/new', variant: 'primary' })),
+    PageHeader({ title: t('attributes.title'), intro: t('attributes.intro') }, ButtonLink(t('assistant.entry'), { href: '#/attributes/assistant' }), ButtonLink(t('attributes.new'), { href: '#/attributes/new', variant: 'primary' })),
     Table({ columns: [t('attributes.name'), t('attributes.values'), t('attributes.decidedBy')], actions: t('common.actions') }, attributes.map(attributeRow)),
     Block(Text({ muted: true, small: true }, tRich('rules.guideLink', {}, { link: (label) => Link(label, '#/attributes/guide') }))),
   ));

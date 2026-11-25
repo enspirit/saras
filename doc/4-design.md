@@ -180,9 +180,10 @@ Getting started is a path, shown at the top of each of its screens (US-08). It i
 
 Once connected, **Mailboxes** is a table: mailbox, folder watched, last fetched, to handle. *Fetch now* is labelled; changing the folder and disconnecting are icon buttons. A connection error shows as a callout above the table.
 
-### 6.6 Administration (US-05 to US-07, US-50 to US-53)
+### 6.6 Administration (US-05 to US-07, US-50 to US-53, US-99)
 
 - **Prompts** is a table of name, description and use, followed by the choice of when the AI writes, then the ready-made prompts not yet added. A prompt is edited on its own address, with a breadcrumb back; what members changed in its proposals, and why, sits beside the instructions.
+- **Sorting** lists the attributes, with *New attribute* and, beside it and quieter, *Have it proposed by the AI* (US-99). That page is three steps in one place: a text to write, with what the AI is sent said under it; its questions, each with the answers offered as small buttons that fill the field; then what it proposes, as cards to read, each with a badge (*New*, or *Changes the one you have*) and a tick box, above one *Apply what is ticked*. A rule is shown as code, a board's conditions in words with its values as chips. No chat, and nothing is applied by reading.
 - **Users** is a table of members (name, role, joined, personal mailboxes) and one of pending invitations. *Invite someone* opens the form; the fresh link appears as a callout with Copy.
 
 A destructive action at rest is a red icon button. It is always confirmed in a dialog whose red button says what will happen.
