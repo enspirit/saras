@@ -47,7 +47,7 @@ Each is a skill in `src/assistant/skills/`, an operation in `src/domain/advice/`
 
 - **Refining the rule of one attribute**, from a request in words and the emails it sorted wrongly. Its `check` is the rule tried on those emails. It would be the first skill to be sent emails for something else than a reply: that is a decision of its own, to be taken then, against [0011](0011-the-ai-does-not-sort.md).
 - **Refining a prompt** from the proposals members changed and the reasons they gave.
-- **Proposing in getting started**, once a first fetch has shown what the mail looks like.
+- **Proposing in getting started.** The whole of it, a few attributes and boards at once, belongs there more than under Sorting, which keeps the narrow asks: one attribute, the rule of one, one board. That experience is asked of a designer in [a brief](../briefs/ai-assisted-setup-of-sorting.md).
 
 ## What would reverse it
 
