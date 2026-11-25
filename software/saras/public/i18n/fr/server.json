@@ -129,5 +129,9 @@
     "attributeUnknown": "Aucun attribut ne s’appelle « {name} ».",
     "valueUnknown": "« {value} » n’est pas une valeur de « {attribute} ».",
     "mailboxUnknown": "Aucune de vos boîtes n’a l’adresse {address}."
+  },
+  "assistant": {
+    "descriptionRequired": "Dites ce que fait votre organisation, et comment elle traite son courrier.",
+    "noUsableAnswer": "L’IA n’a rien donné d’utilisable. Redemandez, ou dites-en plus sur votre organisation."
   }
 }

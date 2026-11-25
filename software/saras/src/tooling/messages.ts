@@ -71,6 +71,8 @@ export const MESSAGES = {
   'configuration.attributeUnknown': 'No attribute is named “{name}”.',
   'configuration.valueUnknown': '“{value}” is not a value of “{attribute}”.',
   'configuration.mailboxUnknown': 'None of your mailboxes has the address {address}.',
+  'assistant.descriptionRequired': 'Say what your organisation does, and how it handles its mail.',
+  'assistant.noUsableAnswer': 'The AI gave nothing that could be used. Ask again, or say more of your organisation.',
   'prompts.notFound': 'Prompt not found.',
   'prompts.incomplete': 'Name and instructions are required.',
   'emails.notFound': 'Email not found.',

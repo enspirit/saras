@@ -129,5 +129,9 @@
     "attributeUnknown": "No attribute is named “{name}”.",
     "valueUnknown": "“{value}” is not a value of “{attribute}”.",
     "mailboxUnknown": "None of your mailboxes has the address {address}."
+  },
+  "assistant": {
+    "descriptionRequired": "Say what your organisation does, and how it handles its mail.",
+    "noUsableAnswer": "The AI gave nothing that could be used. Ask again, or say more of your organisation."
   }
 }

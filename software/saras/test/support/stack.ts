@@ -95,6 +95,7 @@ export async function startStack({ messages = INBOX, folders = {}, env = {}, own
     db,
     outbox: mailbox.outbox,
     llmRequests: openrouter.requests,
+    llmAnswers: openrouter.answers,
     ...seenInMailbox(mailbox),
     imapAccount: mailbox.imapAccount,
     stop: () => stopAll(servers, openrouter.server, mailbox, drop),

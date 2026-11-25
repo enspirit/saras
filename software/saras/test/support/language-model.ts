@@ -20,11 +20,11 @@ function written(system: string, user: string): string {
   return '<p>Bonjour,</p><p>Merci pour votre message. Voici notre proposition : [À COMPLÉTER : montant].</p><p>Cordialement</p>';
 }
 
-/** What the model answers, with its status. One model has no provider that keeps nothing. */
-function answerTo(body: RecordedLlmRequest['body']): { status: number; json: unknown } {
+/** What the model answers, with its status: what a test told it to say next, when it did. One model has no provider that keeps nothing. */
+function answerTo(body: RecordedLlmRequest['body'], told: string | undefined): { status: number; json: unknown } {
   if (body.model === 'nozdr/model') return { status: 404, json: { error: { code: 404, message: 'No endpoints found matching your data policy.' } } };
   const [system, user] = body.messages as [ChatMessage, ChatMessage];
-  const content = written(system.content, user.content);
+  const content = told ?? written(system.content, user.content);
   return { status: 200, json: { model: body.model, provider: 'FakeZDR', choices: [{ message: { role: 'assistant', content } }] } };
 }
 
@@ -37,11 +37,13 @@ const received = (req: IncomingMessage): Promise<string> =>
 
 export function fakeOpenRouter() {
   const requests: RecordedLlmRequest[] = [];
+  /** What it answers next, one text per request, before it answers as a model would again. */
+  const answers: string[] = [];
   const answer = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const body = JSON.parse(await received(req)) as RecordedLlmRequest['body'];
     requests.push({ authorization: req.headers.authorization, body });
-    const { status, json } = answerTo(body);
+    const { status, json } = answerTo(body, answers.shift());
     res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(json));
   };
-  return { server: createServer((req, res) => void answer(req, res)), requests };
+  return { server: createServer((req, res) => void answer(req, res)), requests, answers };
 }

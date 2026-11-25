@@ -33,7 +33,7 @@ Where the code does not do what its own comments, the documentation or the inter
 | Frontend | software | The browser interface. Controls what is being written before it is submitted, and the language in use. |
 | Mail provider | software | IMAP / SMTP server, Gmail, Microsoft Graph. Controls the mailbox itself. |
 | Identity provider | software | Google, Microsoft: grants access to a mailbox by sign-in. |
-| LLM | software | OpenRouter. Returns proposed texts. It sorts nothing ([decision 0011](decisions/0011-the-ai-does-not-sort.md)). |
+| LLM | software | OpenRouter. Returns proposed texts, and proposed configurations for an administrator to read ([decision 0017](decisions/0017-the-assistant-is-a-subsystem-of-its-own-and-configures-through-data.md)). It sorts nothing ([decision 0011](decisions/0011-the-ai-does-not-sort.md)). |
 
 ## State variables
 
@@ -207,13 +207,21 @@ Observations: `GET /boards` (the boards a member sees, each with how many emails
 
 ### Configuration
 
-The attributes of an organisation and the boards its members share, as data: named as an administrator names them, never by a number of the installation (`shared/configuration.ts`). Whatever writes one, a person or a script, has it applied here.
+The attributes of an organisation and the boards its members share, as data: named as an administrator names them, never by a number of the installation (`shared/configuration.ts`). Whatever writes one, a person, a script or the assistant, has it applied here.
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
 | **ApplyConfiguration** | Administrator | → the organisation has each attribute named, as given: made when it has none of that name, changed otherwise; and each board named, shared with every member, the same way | Administrator · each attribute is one CreateAttribute or EditAttribute accepts, its rule included · nothing is named twice · a board has a name · a filter names attributes there will be, values they will have, and mailboxes the administrator may use | All of it, or none of it · what is not named is left as it is: nothing is deleted · of "Stands in", only how it is decided and the colours given change · emails already kept stay as they were sorted · nothing is done that CreateAttribute, EditAttribute, CreateBoard and EditBoard do not do | `PUT /configuration` |
 
 Observations: `GET /configuration` (the configuration as it is: told, then applied, an organisation is as it was), `POST /configuration/check` (everything that keeps a configuration from being applied, each with its place, `attributes.1`, `boards.0.filter`; nothing is changed). Both are the administrators'.
+
+### Advice
+
+What an administrator asks the assistant. An operation here gives a skill of `src/assistant/` its means, the key and model in force and a say on its answer, and tells what it answers. None changes anything.
+
+| Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
+| --- | --- | --- | --- | --- | --- |
+| **ProposeConfiguration** | Administrator | Any → the same; the administrator is told questions, or a configuration proposed | Administrator · something is said of the organisation · a key in force · the model has a zero-retention provider | The LLM is sent what the administrator wrote, their answers and the configuration as it is: no email, nothing else of the organisation · a proposal is one ApplyConfiguration takes as it is, and holds only what is new or would change · at most three attributes and five boards · questions, three at most, are asked once: answered, even by nothing, a proposal follows · the model is told what is wrong in its answer and asked again, three times at most · nothing is kept | `POST /assistant/configuration` |
 
 ### Retention
 
@@ -255,6 +263,7 @@ Pure, in `src/domain/computations/` unless said otherwise.
 | `configuration.ts` | The attributes and shared boards kept → the configuration told by names; what is given as one, reduced. |
 | `configuration-names.ts` | What the names of a configuration stand for in an organisation: the filter a board is kept with, the attributes there would be once it is applied, the names that stand for nothing. |
 | `configuration-changes.ts` | What of a configuration is not already so. |
+| `advice.ts` | What is told to have a configuration proposed; a problem of a configuration as a model is told. |
 | `src/assistant/skills/configure-organisation.ts`, `knowledge/` | What the organisation said, its configuration → what a model is told; its answer → questions, a proposal, or what is wrong in it. How small a proposal is kept. |
 | `src/assistant/perform.ts` | A skill, the means to ask → its answer, the model asked again with what is wrong, a few times at most. |
 | `tooling/llm/openrouter.ts` (`buildChatRequest`, `explainError`) | The request with its privacy clause; an error as a problem. |

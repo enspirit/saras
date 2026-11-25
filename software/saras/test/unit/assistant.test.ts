@@ -10,6 +10,7 @@ import { ATTEMPTS, Unusable, perform } from '../../src/assistant/perform.ts';
 import type { Skill, Turn } from '../../src/assistant/skill.ts';
 import { CONFIGURE_ORGANISATION } from '../../src/assistant/skills/configure-organisation.ts';
 import type { ConfigurationAsked } from '../../src/assistant/skills/configure-organisation.ts';
+import { objectionOf, wantedGiven } from '../../src/domain/computations/advice.ts';
 import { problemsOf } from '../../src/tooling/elo.ts';
 
 const current: Configuration = { attributes: [{ name: 'Priorité', kind: 'choice', values: [{ label: 'Haute', color: 'red' }, { label: 'Basse', color: 'blue' }], decidedBy: 'nobody', elo: '' }], boards: [] };
@@ -89,4 +90,12 @@ test('it is asked a few times and no more; what asking itself throws is left to 
   assert.equal(stubborn.heard.length, ATTEMPTS);
   const down = async (): Promise<string> => { throw new Error('no key'); };
   await assert.rejects(perform(number, 'x', { ask: down }), /no key/);
+});
+
+test('the assistant is asked with something said of the organisation; what is wrong in a proposal is told to the model with its place', () => {
+  const given = (value: unknown): unknown => { const verdict = wantedGiven(value); return verdict.ok ? verdict.value : verdict.refusal.problem.code; };
+  assert.deepEqual([given(null), given({ description: '  ' }), given({ answers: [{ question: 'x', answer: 'y' }] })], Array(3).fill('assistant.descriptionRequired'));
+  assert.deepEqual(given({ description: ' Un cabinet. ', answers: [{ question: ' Qui ? ', answer: '' }, { answer: 'x' }, 'y'], other: 1 }), { description: 'Un cabinet.', answers: [{ question: 'Qui ?', answer: '' }] });
+  assert.deepEqual(given({ description: 'x', answers: 'y' }), { description: 'x', answers: [] });
+  assert.equal(objectionOf({ at: 'boards.2.filter', code: 'c', params: {}, message: 'No attribute is named “Urgency”.' }), 'boards[2].filter: No attribute is named “Urgency”.');
 });

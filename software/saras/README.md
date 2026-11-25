@@ -6,7 +6,7 @@ The server and the interface it serves: the **Backend** and the **Frontend** of 
 
 Nothing else is public.
 
-- **The operations, over HTTP**, under `/api`: one route per operation or observation, requests and answers in JSON. Their inventory, with the clauses of each, is [`doc/2-operations.md`](../../doc/2-operations.md), by area: access, settings, mailboxes, sorting, replying, prompts, attributes, boards, configuration. A route is open to visitors, to members (the default) or to administrators only; a write that is not JSON is answered `415`.
+- **The operations, over HTTP**, under `/api`: one route per operation or observation, requests and answers in JSON. Their inventory, with the clauses of each, is [`doc/2-operations.md`](../../doc/2-operations.md), by area: access, settings, mailboxes, sorting, replying, prompts, attributes, boards, configuration, advice. A route is open to visitors, to members (the default) or to administrators only; a write that is not JSON is answered `415`.
 - **A refusal** is a status and a message code the interface translates: invalid `400`, unauthenticated `401`, forbidden `403`, not found `404`, conflict `409`, gone `410`, too many attempts `429`, a mail host or the LLM failing `502`.
 - **The interface**: `/` and `/styleguide.html`, with the files they load. `/brand/*` is the brand folder when there is one, file by file, over the default brand.
 - **Its configuration**: the environment variables of [`env/base.env`](env/base.env), each described there with its default, and nothing else. `APP_SECRET` is the only one it refuses to start without.
@@ -46,8 +46,9 @@ Each is held by the test named, or by a scanner of [`tests/harness`](../../tests
 9. **Write a colour, a font or a sentence where it does not belong**: the design system's layering and the translations' completeness (`test/unit/design-system.test.ts`, `test/unit/i18n.test.ts`).
 10. **Do twice, with several servers on one database, what one server does once**: apply a migration, run a task of its clock, fetch a mailbox while it is being fetched, hand a reply over (`test/integration/migrations.test.ts`, `the-clock.test.ts`, `several-servers.test.ts`). What a server keeps in its memory alone is the count of wrong guesses.
 11. **Log a password, a key, a cookie, who signs in at a mail server, an address, a folder, or anything of a mail or of a request's body**, at any level; or say anything other than through its log (`test/unit/logging.test.ts`, `test/integration/what-the-log-says.test.ts`).
-12. **Know the domain or the tooling in the assistant, or reach the assistant from the tooling**: `src/assistant/` imports `shared/` alone, is given the means to ask a model by an operation, and proposes little, by its own rule (`tests/harness`, the boundaries; `test/unit/assistant.test.ts`).
-13. **Edit a migration that was released, or write one the version before cannot live with**: the first is not applied again, and the second breaks the servers still running during an upgrade. Held by nothing but the one who writes it.
+12. **Send the LLM anything of an email, of a mailbox or of a member to have a configuration proposed**: what the administrator wrote and the configuration as it is go, nothing else; and **apply anything by proposing** (`test/integration/configuration-assistant.test.ts`).
+13. **Know the domain or the tooling in the assistant, or reach the assistant from the tooling**: `src/assistant/` imports `shared/` alone, is given the means to ask a model by an operation, and proposes little, by its own rule (`tests/harness`, the boundaries; `test/unit/assistant.test.ts`).
+14. **Edit a migration that was released, or write one the version before cannot live with**: the first is not applied again, and the second breaks the servers still running during an upgrade. Held by nothing but the one who writes it.
 
 ## Harness
 
@@ -63,7 +64,7 @@ emb run test:webspicy            # its contract over HTTP, from outside; needs `
 Each task calls the npm script of the same name, so `npm test` in this directory is the same run.
 
 - **`test/unit/`**: a table of cases per pure function of `src/domain/computations/` and of the tooling, without a mock; and the checks that read the sources (sizes, shared types, design system, translations).
-- **`test/integration/`**: one file per subject, in the words of the user stories. Each starts the application wired as `src/main.ts` wires it, on a database of its own, with a real local IMAP server, a real local SMTP server and a stand-in for OpenRouter that records what it is sent (`test/support/`). No secret and no outside service.
+- **`test/integration/`**: one file per subject, in the words of the user stories. Each starts the application wired as `src/main.ts` wires it, on a database of its own, with a real local IMAP server, a real local SMTP server and a stand-in for OpenRouter that records what it is sent, and answers what a test tells it to where no stand-in could guess (`test/support/`). No secret and no outside service.
 - The database is the embedded one, in memory; with `TEST_DATABASE_URL`, a PostgreSQL server, where each file works in a schema of its own.
 
 Green means: `lint` clean, and every test passing on both databases.
@@ -82,7 +83,7 @@ Green means: `lint` clean, and every test passing on both databases.
 
 - `shared/`: the domain objects as members see them (mailbox, email, proposal, reply, prompt, member, organisation, attribute, board, the configuration as data, what the assistant advises), declared once for the server and the browser.
 - `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`doc/2-operations.md`](../../doc/2-operations.md) is the inventory.
-- `src/domain/configuration/`: the configuration of an organisation as data, applied whole by the operations on one attribute and one board.
+- `src/domain/configuration/`: the configuration of an organisation as data, applied whole by the operations on one attribute and one board; `src/domain/advice/`: what an administrator asks the assistant, each operation giving a skill its means.
 - `src/assistant/`: the assistant, a subsystem of its own. `skill.ts` says what a skill is (what to tell a model, how to read its answer) and what it is given (a way to ask, a say on the answer); `perform.ts` runs one, asking again with what is wrong, a few times at most; `skills/` holds them, one file each; `knowledge/` what they tell a model, said once: what a rule is and enough Elo to write one, what is configured and how small. It imports `shared/` and nothing else.
 - `src/domain/sorting/`: sorting by the rules of the organisation's attributes, when an email is fetched and again when a rule changes; the corrections a member makes.
 - `src/domain/mailboxes/fetch-mailbox.ts`: fetch, sorted by the rules, then prepare proposals.

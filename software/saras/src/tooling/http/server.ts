@@ -13,6 +13,7 @@ import type { Postman } from '../postman.ts';
 import type { Fetch } from '../fetch.ts';
 import { ACCESS } from './access.ts';
 import { accessLog } from './access-log.ts';
+import { ADVICE } from './advice.ts';
 import { ATTRIBUTES } from './attributes.ts';
 import { BOARDS } from './boards.ts';
 import { CONFIGURATION } from './configuration.ts';
@@ -28,7 +29,7 @@ import { administratorsOnly, membersOnly } from './session.ts';
 import { SETTINGS } from './settings.ts';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
-const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES, ...CONFIGURATION];
+const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES, ...CONFIGURATION, ...ADVICE];
 
 /** Cross-site forms cannot send JSON: requiring it on writes is our CSRF barrier, with SameSite=Lax. */
 const jsonOnly: RequestHandler = (req, res, next) => {
