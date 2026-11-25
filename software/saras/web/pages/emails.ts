@@ -108,6 +108,7 @@ export async function showEmails(shown: EmailsShown, prompts: Prompt[], mailboxe
   const places = slots();
   const search = searchField(shown.view.search ?? '', (text) => void searched(shown, text, () => redraw(shown, places, mailboxes)));
   shell(MailboxView({
+    place: () => shown.listHref(shown.view.search ?? ''),
     title: shown.title,
     count: places.count.element,
     meta: lastFetch ? t('mailbox.fetchedAt', { time: fmtWhen(lastFetch) }) : undefined,

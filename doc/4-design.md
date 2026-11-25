@@ -156,6 +156,8 @@ An email in **No reply needed** or **Ignored** shows one line in place of the re
 
 The list header gives the box's name, how many emails it holds, when mail was last fetched, and a fetch button. A row has three lines: sender with its tags (*Draft*, and a chip for each value it has for the organisation's own attributes) and the time; the subject, with the short name of the shared mailbox when there is one; the first words.
 
+Opening an email leaves the list where it was scrolled: each list (a box or a board, as searched) is scrolled back to where it was whenever it is shown again.
+
 An empty box says so with an icon and a sentence, and links to Mailboxes when none is connected. With no email open, the reading pane names how many are in the box and what to do.
 
 ### 6.4 Arriving (US-01 to US-04)
