@@ -6,7 +6,7 @@ The server and the interface it serves: the **Backend** and the **Frontend** of 
 
 Nothing else is public.
 
-- **The operations, over HTTP**, under `/api`: one route per operation or observation, requests and answers in JSON. Their inventory, with the clauses of each, is [`doc/2-operations.md`](../../doc/2-operations.md), by area: access, settings, mailboxes, sorting, replying, prompts, attributes, boards. A route is open to visitors, to members (the default) or to administrators only; a write that is not JSON is answered `415`.
+- **The operations, over HTTP**, under `/api`: one route per operation or observation, requests and answers in JSON. Their inventory, with the clauses of each, is [`doc/2-operations.md`](../../doc/2-operations.md), by area: access, settings, mailboxes, sorting, replying, prompts, attributes, boards, configuration. A route is open to visitors, to members (the default) or to administrators only; a write that is not JSON is answered `415`.
 - **A refusal** is a status and a message code the interface translates: invalid `400`, unauthenticated `401`, forbidden `403`, not found `404`, conflict `409`, gone `410`, too many attempts `429`, a mail host or the LLM failing `502`.
 - **The interface**: `/` and `/styleguide.html`, with the files they load. `/brand/*` is the brand folder when there is one, file by file, over the default brand.
 - **Its configuration**: the environment variables of [`env/base.env`](env/base.env), each described there with its default, and nothing else. `APP_SECRET` is the only one it refuses to start without.
@@ -78,8 +78,9 @@ Green means: `lint` clean, and every test passing on both databases.
 
 ## Inside
 
-- `shared/`: the domain objects as members see them (mailbox, email, proposal, reply, prompt, member, organisation), declared once for the server and the browser.
+- `shared/`: the domain objects as members see them (mailbox, email, proposal, reply, prompt, member, organisation, attribute, board, the configuration as data), declared once for the server and the browser.
 - `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`doc/2-operations.md`](../../doc/2-operations.md) is the inventory.
+- `src/domain/configuration/`: the configuration of an organisation as data, applied whole by the operations on one attribute and one board.
 - `src/domain/sorting/`: sorting by the rules of the organisation's attributes, when an email is fetched and again when a rule changes; the corrections a member makes.
 - `src/domain/mailboxes/fetch-mailbox.ts`: fetch, sorted by the rules, then prepare proposals.
 - `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (the two drivers, the migrations and what applies them), `clock.ts` (the tasks the server runs on its own, due in the database), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `log.ts` (the one place that writes the log) and `redaction.ts` (what no line may hold), `mail/log/` (what is repeated of a conversation with a mail server), `http/access-log.ts` (what is logged of a request), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.

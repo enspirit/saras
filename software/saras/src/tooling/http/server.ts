@@ -15,6 +15,7 @@ import { ACCESS } from './access.ts';
 import { accessLog } from './access-log.ts';
 import { ATTRIBUTES } from './attributes.ts';
 import { BOARDS } from './boards.ts';
+import { CONFIGURATION } from './configuration.ts';
 import { EMAILS } from './emails.ts';
 import { MAILBOXES } from './mailboxes.ts';
 import { MEMBERS } from './members.ts';
@@ -27,7 +28,7 @@ import { administratorsOnly, membersOnly } from './session.ts';
 import { SETTINGS } from './settings.ts';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
-const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES];
+const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES, ...CONFIGURATION];
 
 /** Cross-site forms cannot send JSON: requiring it on writes is our CSRF barrier, with SameSite=Lax. */
 const jsonOnly: RequestHandler = (req, res, next) => {

@@ -13,6 +13,10 @@ import type { Actor } from '../world.ts';
  */
 export const mayUse = (org: string, user: string): string => `a.org_id = ${org} AND (a.user_id = ${user} OR a.shared)`;
 
+/** The mailboxes a member may use, each as its number and its address: what names a mailbox to them. */
+export const mailboxesUsedBy = (db: Db, { member, organization }: Actor): Promise<{ id: number; email: string }[]> =>
+  db.query<{ id: number; email: string }>(`SELECT a.id, a.email FROM accounts a WHERE ${mayUse('$1', '$2')} ORDER BY a.id`, [organization.id, member.id]);
+
 export const mailboxById = async (db: Db, id: number): Promise<AccountRow> => (await db.one<AccountRow>('SELECT * FROM accounts WHERE id = $1', [id]))!;
 
 /** The mailbox with this number, if the member may use it. Refused as not found otherwise: what one may not see does not exist. */

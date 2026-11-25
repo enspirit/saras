@@ -204,6 +204,16 @@ The rule "Stands in" starts with is in `computations/default-rules.ts`: what use
 
 Observations: `GET /boards` (the boards a member sees, each with how many emails it shows them), `GET /boards/:id/emails` (searched as `/emails` is), `POST /boards/try` (what a filter being written would show: how many emails, and the five most recent; nothing is kept).
 
+### Configuration
+
+The attributes of an organisation and the boards its members share, as data: named as an administrator names them, never by a number of the installation (`shared/configuration.ts`). Whatever writes one, a person or a script, has it applied here.
+
+| Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
+| --- | --- | --- | --- | --- | --- |
+| **ApplyConfiguration** | Administrator | → the organisation has each attribute named, as given: made when it has none of that name, changed otherwise; and each board named, shared with every member, the same way | Administrator · each attribute is one CreateAttribute or EditAttribute accepts, its rule included · nothing is named twice · a board has a name · a filter names attributes there will be, values they will have, and mailboxes the administrator may use | All of it, or none of it · what is not named is left as it is: nothing is deleted · of "Stands in", only how it is decided and the colours given change · emails already kept stay as they were sorted · nothing is done that CreateAttribute, EditAttribute, CreateBoard and EditBoard do not do | `PUT /configuration` |
+
+Observations: `GET /configuration` (the configuration as it is: told, then applied, an organisation is as it was), `POST /configuration/check` (everything that keeps a configuration from being applied, each with its place, `attributes.1`, `boards.0.filter`; nothing is changed). Both are the administrators'.
+
 ### Retention
 
 | Operation | Agent | DomPre → DomPost | ReqTrig | Entry |
@@ -241,6 +251,9 @@ Pure, in `src/domain/computations/` unless said otherwise.
 | `emails.ts` | A stored row as an email. |
 | `key-in-force.ts` | Member, organisation, configuration → the key and model in force. |
 | `llm-prompts.ts` | An email, a prompt, a text → what is sent to the LLM. |
+| `configuration.ts` | The attributes and shared boards kept → the configuration told by names; what is given as one, reduced. |
+| `configuration-names.ts` | What the names of a configuration stand for in an organisation: the filter a board is kept with, the attributes there would be once it is applied, the names that stand for nothing. |
+| `configuration-changes.ts` | What of a configuration is not already so. |
 | `tooling/llm/openrouter.ts` (`buildChatRequest`, `explainError`) | The request with its privacy clause; an error as a problem. |
 | `tooling/html.ts`, `text.ts` | What a reply may contain; text ↔ HTML. |
 | `tooling/mail/lookup.ts` (`classifyMx`, `domainOf`), `gmail.ts`, `graph.ts` | MX names → who hosts the mail; a provider's message → an email. |

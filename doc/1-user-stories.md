@@ -18,7 +18,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 | Area | Stories |
 | --- | --- |
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
-| [J. Boards and attributes](#j-boards) | US-90 – US-97 |
+| [J. Boards and attributes](#j-boards) | US-90 – US-98 |
 | [B. Mailboxes](#b-mailboxes) | US-10 – US-18 |
 | [C. Sorting and the four boxes](#c-sorting-and-the-four-boxes) | US-20 – US-27 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
@@ -583,3 +583,11 @@ These are behaviours of the system rather than screens, but they are what the pr
 **As** a member, **I want** a board to filter on the organisation's attributes, **so that** a board is "Sales, to handle" or "Assigned to me".
 
 - The board form has one line of values per attribute; within a line any ticked value matches, and a line with nothing ticked keeps every email.
+
+### US-98 — Configure an organisation from data
+**As** an administrator, or a tool acting for one, **I want** to read, check and apply our attributes and shared boards as one piece of data, **so that** a configuration can be written elsewhere, reviewed, and applied in one step.
+
+- `GET /api/configuration` tells the attributes and the boards every member sees, by names: an attribute by its name, a value by its label, a mailbox by its address; where an email stands as `status`, with its values `todo`, `none`, `sent`, `ignored`.
+- `PUT /api/configuration` takes the same: what is named and we do not have is made, what we have is changed, what is not named is left as it is. It is applied whole or refused whole, with what is wrong.
+- `POST /api/configuration/check` says everything wrong in one, each with its place, and changes nothing.
+- A board may name an attribute made in the same configuration.

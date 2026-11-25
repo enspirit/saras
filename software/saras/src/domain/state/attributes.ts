@@ -21,7 +21,7 @@ interface AttributeRow {
 const rowsOf = (db: Db, organizationId: number): Promise<AttributeRow[]> => db.query<AttributeRow>('SELECT * FROM attributes WHERE org_id = $1 ORDER BY id', [organizationId]);
 
 /** The members of an organisation as the values of a "member" attribute: their number, and their address to name them in a rule. */
-const membersAsValues = (db: Db, organizationId: number): Promise<AttributeValue[]> =>
+export const membersAsValues = (db: Db, organizationId: number): Promise<AttributeValue[]> =>
   db.query<AttributeValue>(`SELECT id::text AS key, email AS label FROM users WHERE org_id = $1 ORDER BY id`, [organizationId]);
 
 /**

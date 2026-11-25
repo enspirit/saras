@@ -123,5 +123,11 @@
     "systemFixed": "Le nom et les valeurs d’un attribut préconfiguré sont fixes.",
     "valueUnknown": "Ce n’est pas une valeur de cet attribut.",
     "deciderUnknown": "Façon de décider un attribut inconnue."
+  },
+  "configuration": {
+    "namedTwice": "« {name} » est nommé deux fois.",
+    "attributeUnknown": "Aucun attribut ne s’appelle « {name} ».",
+    "valueUnknown": "« {value} » n’est pas une valeur de « {attribute} ».",
+    "mailboxUnknown": "Aucune de vos boîtes n’a l’adresse {address}."
   }
 }
