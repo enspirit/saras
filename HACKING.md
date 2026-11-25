@@ -147,6 +147,7 @@ The server never sends sentences of its own to the interface: errors, verdicts m
 | What it does, as state and operations; where the code deviates | [`doc/2-operations.md`](doc/2-operations.md) |
 | Who may rely on whom; the stacks; the test levels | [`doc/3-architecture.md`](doc/3-architecture.md) |
 | The design system, the screens, the brands | [`doc/4-design.md`](doc/4-design.md) |
+| How a designer works on them, with Node.js alone | [`DESIGN.md`](DESIGN.md) |
 | Why a thing is the way it is, and what would reverse it | [`doc/decisions/`](doc/decisions/) |
 | What a component answers for, and how to test it | Its `README.md` |
 

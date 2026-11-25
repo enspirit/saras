@@ -17,7 +17,7 @@ Nothing is sent without explicit validation. The interface is in English and in 
 - **Mailboxes, personal or shared.** A member connects their own address, which only they see. An administrator may connect a shared one (contact@, info@…), which every member reads and replies from.
 - **Sorting.** Plainly automated mail (newsletters, no-reply senders, automatic replies) is set aside before anything else. What an organisation wants to know of each email is an *attribute*, decided by hand or by a rule written in [Elo](https://elo-lang.org), which costs no tokens and says what it does: the AI decides none. *Boards* are saved views filtered on them.
 - **Writing.** One reply area. Send what you wrote as it is, or ask the AI to check typos, to improve the style, or to apply one of the organisation's prompts. When you change a proposal you can say why: the reason steers your next ones.
-- **Your brand.** A folder with a `theme.css`, a `brand.json` and a logo changes the look without touching the code (`BRAND_DIR`, see [the design](doc/4-design.md#7-brands)); `/styleguide.html` shows it in place.
+- **Your brand.** A folder with a `theme.css`, a `brand.json` and a logo changes the look without touching the code (`BRAND_DIR`, see [the design](doc/4-design.md#7-brands)); `/styleguide.html` shows it in place. To work on the design itself, with Node.js alone: [`DESIGN.md`](DESIGN.md).
 
 Each of these is told in full in the [user stories](doc/1-user-stories.md).
 

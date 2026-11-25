@@ -12,7 +12,7 @@
 
 It is connected to the demo organisation by `emb run demo` ([`bin/demo`](../../bin/demo)), which makes the container anew first: it keeps nothing, so that puts the mailbox back as it was.
 
-Without the stack, `npm run design` in [`software/saras`](../../software/saras/) starts it beside a server run from the checkout, on the loopback of the laptop, and connects it the same way.
+Without the stack, `npm run design` in [`software/saras`](../../software/saras/) starts it beside a server run from the checkout, on the loopback of the laptop, and connects it the same way ([`DESIGN.md`](../../DESIGN.md)).
 
 ## What it stands in for
 

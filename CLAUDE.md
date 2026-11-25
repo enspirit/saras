@@ -75,6 +75,7 @@ Each is held by a test, which will tell you:
 | An operation, the state it changes, known deviations | [`doc/2-operations.md`](doc/2-operations.md) |
 | Where a new thing goes; who may rely on whom | [`doc/3-architecture.md`](doc/3-architecture.md) |
 | The interface: tokens, components, screens, brands | [`doc/4-design.md`](doc/4-design.md) |
+| Working on the brand or the design system with Node.js alone: no `emb`, no Docker | [`DESIGN.md`](DESIGN.md) |
 | The code layout of the server | [`software/saras/README.md`](software/saras/README.md) |
 | Seeds, the demo | [`software/storage/README.md`](software/storage/README.md) |
 | The Helm chart | [`world/chart/README.md`](world/chart/README.md) |
