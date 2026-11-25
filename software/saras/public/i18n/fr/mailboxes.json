@@ -86,5 +86,10 @@
   "testAndSave": "Tester et enregistrer",
   "serversSaved": "La boîte répond à cette adresse : enregistré. Relève en cours…",
   "passwordKept": "Inchangé",
-  "passwordKeptHint": "Laissez vide pour garder le mot de passe que saras a déjà. Il n’est jamais affiché."
+  "passwordKeptHint": "Laissez vide pour garder le mot de passe que saras a déjà. Il n’est jamais affiché.",
+  "shareTitle": "Partager avec l’équipe",
+  "shareIntro": "Cette boîte n’est qu’à vous. Une fois partagée, chaque membre de {organization} voit ses emails et peut y répondre, et les administrateurs la gèrent.",
+  "share": "Partager cette boîte",
+  "confirmShare": "Partager {email} avec tous les membres ? Ils verront les emails déjà relevés et répondront en son nom. Pour la rendre à nouveau personnelle, il faudra la déconnecter et la reconnecter.",
+  "sharedNow": "Boîte partagée avec l’équipe."
 }

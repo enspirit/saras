@@ -1,7 +1,7 @@
 // Boards: named views of emails, defined by a filter on their attributes.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { boardGiven, conditionsOf, filterGiven, managesBoard, mayShare } from '../../src/domain/computations/boards.ts';
+import { boardGiven, boardsArranged, conditionsOf, filterGiven, managesBoard, mayShare } from '../../src/domain/computations/boards.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import type { Actor } from '../../src/domain/world.ts';
 import { createClient, join } from '../support/client.ts';
@@ -67,6 +67,14 @@ test('what an email must not be is the same condition, not true: after the other
   assert.deepEqual(conditionsOf({ except: {} }, 3), { sql: [], params: [] });
 });
 
+test('boards come in the order given; those not named after, as they were; what one does not see has no place', () => {
+  assert.deepEqual(boardsArranged([1, 2, 3], [3, 1, 2]), [3, 1, 2]);
+  assert.deepEqual(boardsArranged([1, 2, 3], [3]), [3, 1, 2]);
+  assert.deepEqual(boardsArranged([1, 2, 3], ['2', 9, 2, 'x', null]), [2, 1, 3]);
+  assert.deepEqual(boardsArranged([1, 2], 'first'), [1, 2]);
+  assert.deepEqual(boardsArranged([], [4]), []);
+});
+
 let stack: Stack;
 before(async () => (stack = await startStack()));
 after(() => stack.stop());
@@ -127,6 +135,22 @@ test('a personal board is its owner\'s alone; an administrator shares one with e
   assert.deepEqual(await subjectsOf(bruno, quotes), []);
   assert.equal((await bruno('PUT', `/boards/${quotes}`, { name: 'Pris' })).body.code, 'boards.notYours');
   assert.equal((await bruno('DELETE', `/boards/${quotes}`)).status, 403);
+});
+
+test('a member puts the boards of their menu in the order they want; it is theirs alone, and a new board comes last', async () => {
+  const names = async (as: typeof alice): Promise<string[]> => (await as('GET', '/boards')).body.map((b: { name: string }) => b.name);
+  const mine = (await bruno('POST', '/boards', { name: 'À moi' })).body.id;
+  assert.deepEqual(await names(bruno), ['Devis', 'À moi'], 'until arranged: the shared ones first');
+  assert.equal((await bruno('PUT', '/boards/order', { boards: [mine, quotes] })).status, 200);
+  assert.deepEqual(await names(bruno), ['À moi', 'Devis']);
+  assert.equal((await alice('GET', '/boards')).body[0].id, quotes, 'the menu of another member is as it was');
+  const before = (await alice('GET', '/boards')).body.map((b: { id: number }) => b.id);
+  assert.equal((await alice('PUT', '/boards/order', { boards: [before.at(-1), mine, 'x'] })).status, 200, 'a board one does not see is left out');
+  assert.deepEqual((await alice('GET', '/boards')).body.map((b: { id: number }) => b.id), [before.at(-1), ...before.slice(0, -1)]);
+  await bruno('POST', '/boards', { name: 'Plus tard' });
+  assert.deepEqual(await names(bruno), ['À moi', 'Devis', 'Plus tard']);
+  assert.equal((await bruno('PUT', '/boards/order', {})).status, 200);
+  assert.deepEqual(await names(bruno), ['À moi', 'Devis', 'Plus tard'], 'nothing named: nothing moves');
 });
 
 test('deleting a board leaves its emails where they were', async () => {

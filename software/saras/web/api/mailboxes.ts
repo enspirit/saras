@@ -34,5 +34,7 @@ export const readMailboxServers = (id: number): Promise<MailboxServers> => api<M
 export const changeMailboxServers = (id: number, servers: MailboxServers & { password: string }): Promise<unknown> => api('PUT', `/mailboxes/${id}/servers`, servers);
 /** NameMailbox: the name its replies show to recipients. */
 export const nameMailbox = (id: number, displayName: string): Promise<unknown> => api('PUT', `/mailboxes/${id}/name`, { displayName });
+/** ShareMailbox: every member of the organisation uses it from then on. */
+export const shareMailbox = (id: number): Promise<unknown> => api('PUT', `/mailboxes/${id}/shared`);
 export const disconnectMailbox = (id: number): Promise<unknown> => api('DELETE', `/mailboxes/${id}`);
 export const fetchMailbox = (id: number): Promise<FetchResult> => api<FetchResult>('POST', `/mailboxes/${id}/fetch`);

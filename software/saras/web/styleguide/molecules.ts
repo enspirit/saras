@@ -24,6 +24,7 @@ import { Person } from '../ui/molecules/person.ts';
 import { RecipientField } from '../ui/molecules/recipient-field.ts';
 import { Remark } from '../ui/molecules/remark.ts';
 import { RichEditor } from '../ui/molecules/rich-editor.ts';
+import { Sortable } from '../ui/molecules/sortable.ts';
 import { Steps } from '../ui/molecules/steps.ts';
 import { Table } from '../ui/molecules/table.ts';
 import { Tabs } from '../ui/molecules/tabs.ts';
@@ -90,6 +91,7 @@ const navigationCard = (): HTMLDivElement =>
     NavItem({ href: '#', label: t('styleguide.navCurrent'), icon: 'mail', count: 4, current: true }),
     NavItem({ href: '#', label: t('styleguide.navEntry'), icon: 'archive', count: 12 }),
     Block(NavItem({ href: '#', label: t('styleguide.navNoCount') })),
+    Block(Sortable([t('styleguide.navCurrent'), t('styleguide.navEntry'), t('styleguide.navNoCount')].map((label) => ({ key: label, node: NavItem({ href: '#', label, icon: 'list' }) })), () => {})),
   );
 
 const emailsCard = (): HTMLDivElement =>

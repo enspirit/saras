@@ -68,6 +68,15 @@ export const managesBoard = ({ member }: Actor, board: Owned): boolean => (board
 
 export const mayManageBoard = (actor: Actor, board: Owned): Verdict<true> => (managesBoard(actor, board) ? accept(true) : refuse('forbidden', 'boards.notYours'));
 
+/**
+ * The order of ArrangeBoards: the boards given, each once and only those the member sees, then
+ * the ones they did not name, in the order they had. Whatever is given, every board seen has a place.
+ */
+export function boardsArranged(seen: number[], given: unknown): number[] {
+  const named = (Array.isArray(given) ? given : []).map(Number).filter((id) => seen.includes(id));
+  return [...new Set([...named, ...seen])];
+}
+
 /** Conditions on the emails table (aliased `e`), with their parameters. */
 export interface Conditions {
   sql: string[];

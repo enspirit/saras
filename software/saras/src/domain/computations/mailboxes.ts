@@ -19,6 +19,9 @@ export const mayManage = (actor: Actor, mailbox: Pick<AccountRow, 'shared' | 'us
 /** Only administrators connect shared mailboxes; anyone else asking for one gets a personal one. */
 export const connectsAsShared = ({ member }: Actor, asked: unknown): boolean => member.role === 'admin' && asked === true;
 
+/** ReqPre of ShareMailbox: only administrators decide what every member uses. */
+export const mayShareMailbox = ({ member }: Actor): Verdict<true> => (member.role === 'admin' ? accept(true) : refuse('forbidden', 'mailboxes.sharedByAdministrators'));
+
 /** DomPre of ConnectMailbox: an address is connected once per organisation. */
 export const addressIsNotConnected = (existing: unknown): Verdict<true> => (existing ? refuse('conflict', 'mailboxes.alreadyConnected') : accept(true));
 

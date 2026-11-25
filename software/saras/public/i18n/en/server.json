@@ -43,6 +43,7 @@
     "unknownFolder": "This folder does not exist in the mailbox.",
     "foldersFailed": "Could not list the folders: {detail}",
     "adminOnly": "A shared mailbox is managed by administrators.",
+    "sharedByAdministrators": "Only administrators share a mailbox with the organisation.",
     "alreadyConnected": "This mailbox is already connected in your organisation.",
     "otherMailbox": "You signed in to another mailbox than the one to renew.",
     "renewAtHost": "Access to this mailbox is renewed by signing in at its host."

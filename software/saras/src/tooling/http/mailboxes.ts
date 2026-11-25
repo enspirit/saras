@@ -9,6 +9,7 @@ import { fetchMailboxNow } from '../../domain/mailboxes/fetch-mailbox-now.ts';
 import { nameMailbox } from '../../domain/mailboxes/name-mailbox.ts';
 import { listFolders } from '../../domain/mailboxes/list-folders.ts';
 import { renewMailboxPassword } from '../../domain/mailboxes/renew-mailbox-credentials.ts';
+import { shareMailbox } from '../../domain/mailboxes/share-mailbox.ts';
 import { mailboxesOf } from '../../domain/observations/mailboxes.ts';
 import { Refusal } from '../../domain/refusal.ts';
 import { errorMessage } from '../errors.ts';
@@ -48,6 +49,11 @@ const name: Handle = async ({ world }, req, res) => {
   done(res);
 };
 
+const share: Handle = async ({ world }, req, res) => {
+  await shareMailbox(world, actorOf(req), req.params.id);
+  done(res);
+};
+
 const disconnect: Handle = async ({ world }, req, res) => {
   await disconnectMailbox(world, actorOf(req), req.params.id);
   done(res);
@@ -82,6 +88,7 @@ export const MAILBOXES: Route[] = [
   { method: 'get', path: '/mailboxes/:id/servers', handle: servers },
   { method: 'put', path: '/mailboxes/:id/servers', handle: changeServers },
   { method: 'put', path: '/mailboxes/:id/name', handle: name },
+  { method: 'put', path: '/mailboxes/:id/shared', handle: share },
   { method: 'delete', path: '/mailboxes/:id', handle: disconnect },
   { method: 'post', path: '/mailboxes/:id/fetch', handle: fetchNow },
   { method: 'get', path: '/oauth/:kind/start', handle: signInAtHost },

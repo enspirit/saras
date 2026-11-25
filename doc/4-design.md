@@ -107,6 +107,7 @@ Three tiers: **brand inputs**, declared by the default brand in `public/brand/th
 | `Callout`, `Features`, `EmptyState`, `Loading` | Something to know, with room for a control; points of equal weight with their sign; what an empty region says; a screen on its way. |
 | `confirmDialog`, `promptDialog` | A question before something happens, in a native dialog. Destructive ones focus Cancel. |
 | `NavItem` | A navigation entry with icon and count. |
+| `Sortable` | Entries put in order by dragging one onto another, a line showing where it lands, or with Alt and an arrow; the order is told to whoever keeps it. |
 | `EmailListItem`, `TickableEmailListItem` | Sender, tags and time; subject and shared mailbox; first words; the words searched marked. Tickable: a box before it, on hover and once any is ticked. |
 | `SearchField`, `SearchScope` | A list searched as one types, its cross and Escape clearing it; under it, where it searched. |
 | `SelectionBar`, `GroupedMenu` | Above a list some of whose emails are ticked: how many, a box for all or none, the actions, the way out; a menu of choices under their group. |

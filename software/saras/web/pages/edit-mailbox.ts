@@ -2,10 +2,11 @@
 // and how saras reaches it — its servers and password, or a new sign-in at its host.
 
 import type { Mailbox, MailboxServers } from '../../shared/mailbox.ts';
-import { changeMailboxServers, hostSignInAddress, nameMailbox, readMailboxServers } from '../api/mailboxes.ts';
+import { changeMailboxServers, hostSignInAddress, nameMailbox, readMailboxServers, shareMailbox } from '../api/mailboxes.ts';
 import { t } from '../i18n.ts';
 import { goTo } from '../navigation.ts';
-import { SubmitForm, toast } from './actions.ts';
+import { ActionButton, SubmitForm, confirmAction, toast } from './actions.ts';
+import { isAdmin, me } from '../session.ts';
 import { shell } from './shell.ts';
 import { Button, ButtonLink } from '../ui/atoms/button.ts';
 import { Checkbox, Input } from '../ui/atoms/input.ts';
@@ -91,6 +92,17 @@ function signInCard(mailbox: Mailbox): HTMLDivElement {
     Actions(ButtonLink(t('mailboxes.continueAt', { provider }), { href: hostSignInAddress(mailbox.kind, `?renew=${mailbox.id}`) })));
 }
 
+/** ShareMailbox, once confirmed: an administrator hands a mailbox of their own to the whole organisation. */
+const sharingCard = (mailbox: Mailbox): HTMLDivElement =>
+  Card({ title: t('mailboxes.shareTitle'), form: true },
+    Block(Text({ muted: true }, t('mailboxes.shareIntro', { organization: me().organization.name }))),
+    Actions(ActionButton(t('mailboxes.share'), '…', async () => {
+      if (!(await confirmAction(t('mailboxes.confirmShare', { email: mailbox.email }), t('mailboxes.share'), false))) return;
+      await shareMailbox(mailbox.id);
+      toast(t('mailboxes.sharedNow'));
+      goTo('#/mailboxes');
+    }, { icon: 'users' })));
+
 /** Everything that can be changed of a connected mailbox, for who manages it. */
 export async function editMailboxPage(mailbox: Mailbox): Promise<void> {
   const servers = mailbox.kind === 'imap' ? await readMailboxServers(mailbox.id) : null;
@@ -99,5 +111,6 @@ export async function editMailboxPage(mailbox: Mailbox): Promise<void> {
     nameCard(mailbox),
     mailbox.folder && fetchedCard(mailbox),
     servers ? serversCard(mailbox, servers) : signInCard(mailbox),
+    isAdmin() && !mailbox.shared && sharingCard(mailbox),
   ));
 }

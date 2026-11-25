@@ -1,0 +1,11 @@
+/* ---- Sortable: entries put in order by dragging ---- */
+.sortable { display: grid; gap: 2px; }
+.sortable > * { position: relative; }
+.sortable--moving { opacity: 0.55; }
+/* Where the entry being dragged would land: a line above or under the one it is over. */
+.sortable--before::before, .sortable--after::after {
+  content: ""; position: absolute; inset-inline: 0; height: 2px;
+  border-radius: var(--radius-sm); background: var(--color-accent); pointer-events: none;
+}
+.sortable--before::before { top: -2px; }
+.sortable--after::after { bottom: -2px; }

@@ -2,20 +2,21 @@
 // and the way out. On a phone, the page that leads to everything that is not a box.
 
 import { signOut } from '../api/access.ts';
+import { arrangeBoards } from '../api/boards.ts';
 import { t } from '../i18n.ts';
-import { route, start } from '../navigation.ts';
-import { ActionButton } from './actions.ts';
+import { route, showPage, start } from '../navigation.ts';
+import { ActionButton, messageOf, toast } from './actions.ts';
 import { BOXES_ON_SCREEN } from './boxes.ts';
 import { called } from './people.ts';
 import { showScreen } from './screen.ts';
-import { isAdmin, me, session } from '../session.ts';
+import { isAdmin, me, refreshBoards, session } from '../session.ts';
 import type { ButtonOptions } from '../ui/atoms/button.ts';
 import type { IconName } from '../ui/atoms/icon.ts';
 import type { Child } from '../ui/dom.ts';
 import { Card } from '../ui/molecules/card.ts';
 import { NavItem } from '../ui/molecules/nav-item.ts';
-import type { NavEntry } from '../ui/molecules/nav-item.ts';
 import { PageHeader } from '../ui/molecules/page-header.ts';
+import { Sortable } from '../ui/molecules/sortable.ts';
 import { AppShell } from '../ui/organisms/app-shell.ts';
 import { Page } from '../ui/organisms/page.ts';
 
@@ -29,12 +30,27 @@ const CONFIGURATION: { path: string; label: string; icon: IconName; admin?: bool
   { path: 'settings', label: 'nav.settings', icon: 'settings' },
 ];
 
-/** The boards of the menu, then the entry that makes a new one. */
-function boardEntries(): NavEntry[] {
+/**
+ * ArrangeBoards: the menu shows the new order already, and the server is told. Refused, the
+ * menu is put back as the server has it.
+ */
+async function arrange(ids: number[]): Promise<void> {
+  session.boards = ids.flatMap((id) => session.boards.find((b) => b.id === id) ?? []);
+  try {
+    await arrangeBoards(ids);
+  } catch (e) {
+    toast(messageOf(e), true);
+    await refreshBoards();
+    showPage();
+  }
+}
+
+/** The boards of the menu, which the member puts in order by dragging them, then the entry that makes a new one. */
+function boardEntries(): Child[] {
   const { page, part, id } = route();
   const at = (boardId: number): boolean => page === 'boards' && id === boardId;
-  const boards = session.boards.map((b) => ({ href: `#/boards/${b.id}`, label: b.name, icon: 'list' as const, count: b.count, current: at(b.id) }));
-  return [...boards, { href: '#/boards/new', label: t('nav.newBoard'), icon: 'plus' as const, current: page === 'boards' && part === 'new' }];
+  const boards = session.boards.map((b) => ({ key: b.id, node: NavItem({ href: `#/boards/${b.id}`, label: b.name, icon: 'list', count: b.count, current: at(b.id) }) }));
+  return [Sortable(boards, (ids) => void arrange(ids)), NavItem({ href: '#/boards/new', label: t('nav.newBoard'), icon: 'plus', current: page === 'boards' && part === 'new' })];
 }
 
 const pagesOfUser = () => CONFIGURATION.filter((p) => !p.admin || isAdmin());
@@ -68,7 +84,7 @@ export function morePage(): void {
   shell(
     Page(
       PageHeader({ title: called(me().name, me().email), intro: me().organization.name }),
-      Card({ title: t('nav.boards') }, boardEntries().map(NavItem)),
+      Card({ title: t('nav.boards') }, boardEntries()),
       Card({}, pagesOfUser().map((p) => NavItem({ href: `#/${p.path}`, label: t(p.label), icon: p.icon }))),
       signOutButton({ icon: 'log-out' }),
     ),

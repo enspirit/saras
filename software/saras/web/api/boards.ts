@@ -10,3 +10,5 @@ export const tryFilter = (filter: BoardFilter): Promise<FilterTried> => api<Filt
 export const createBoard = (board: BoardGiven): Promise<Board> => api<Board>('POST', '/boards', board);
 export const editBoard = (id: number, board: BoardGiven): Promise<Board> => api<Board>('PUT', `/boards/${id}`, board);
 export const deleteBoard = (id: number): Promise<unknown> => api('DELETE', `/boards/${id}`);
+/** ArrangeBoards: the boards of the member's menu, in the order they want them. */
+export const arrangeBoards = (boards: number[]): Promise<unknown> => api('PUT', '/boards/order', { boards });

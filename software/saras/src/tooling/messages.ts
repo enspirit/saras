@@ -44,6 +44,7 @@ export const MESSAGES = {
   'sync.fetchFailed': 'Could not read the mailbox: {detail}',
   'sync.prepareFailed': 'Could not prepare a proposal: {detail}',
   'mailboxes.adminOnly': 'A shared mailbox is managed by administrators.',
+  'mailboxes.sharedByAdministrators': 'Only administrators share a mailbox with the organisation.',
   'mailboxes.alreadyConnected': 'This mailbox is already connected in your organisation.',
   'mailboxes.otherMailbox': 'You signed in to another mailbox than the one to renew.',
   'mailboxes.renewAtHost': 'Access to this mailbox is renewed by signing in at its host.',

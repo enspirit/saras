@@ -43,6 +43,7 @@
     "unknownFolder": "Ce dossier n’existe pas dans la boîte.",
     "foldersFailed": "Impossible de lister les dossiers : {detail}",
     "adminOnly": "Une boîte partagée est gérée par les administrateurs.",
+    "sharedByAdministrators": "Seuls les administrateurs partagent une boîte avec l’organisation.",
     "alreadyConnected": "Cette boîte est déjà connectée dans votre organisation.",
     "otherMailbox": "Vous vous êtes connecté à une autre boîte que celle à renouveler.",
     "renewAtHost": "L’accès à cette boîte se renouvelle en se connectant chez son hébergeur."

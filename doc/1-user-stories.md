@@ -18,8 +18,8 @@ How the screens are designed and built is in [the design document](4-design.md).
 | Area | Stories |
 | --- | --- |
 | [A. Access and organisation](#a-access-and-organisation) | US-01 – US-09, US-0A |
-| [J. Boards and attributes](#j-boards) | US-90 – US-96 |
-| [B. Mailboxes](#b-mailboxes) | US-10 – US-17 |
+| [J. Boards and attributes](#j-boards) | US-90 – US-97 |
+| [B. Mailboxes](#b-mailboxes) | US-10 – US-18 |
 | [C. Sorting and the four boxes](#c-sorting-and-the-four-boxes) | US-20 – US-27 |
 | [D. Writing and sending a reply](#d-writing-and-sending-a-reply) | US-30 – US-41 |
 | [E. Prompts](#e-prompts) | US-50 – US-53 |
@@ -148,6 +148,7 @@ How the screens are designed and built is in [the design document](4-design.md).
 - When connecting (by OAuth or IMAP) I choose "Shared by the team" rather than "Mine".
 - Every member sees a shared mailbox in **Mailboxes** and its emails in the boxes; only administrators change its folder or disconnect it.
 - A personal mailbox is seen by its owner only — administrators included.
+- A mailbox I connected as mine can be shared later (US-18).
 
 ### US-15 — Fetch new email
 **As** a member, **I want** new emails fetched automatically and on demand, **so that** my list is current when I sit down to answer.
@@ -174,6 +175,14 @@ How the screens are designed and built is in [the design document](4-design.md).
 - The address of a mailbox cannot be changed: another address is another mailbox.
 - The new access is tested before it is saved. Signing in to another mailbox than the one being renewed is refused.
 - The folder watched and the emails kept do not change; the mailbox's last error is cleared and it is fetched at once.
+
+### US-18 — Share a mailbox I connected as mine
+**As** an administrator, **I want** to share with my team a mailbox I connected as mine, **so that** I need not disconnect it, and lose what it holds, for having forgotten to say it was shared.
+
+- On the page of a mailbox that is mine (US-17), **Share this mailbox**, once confirmed.
+- From then on it is a shared mailbox like any other (US-14): every member sees its emails, those already fetched included, and replies from it; administrators manage it.
+- Only an administrator shares a mailbox, and only their own: nobody shares the mailbox of someone else.
+- A shared mailbox does not become personal again: for that it is disconnected and connected anew.
 
 ---
 
@@ -528,6 +537,13 @@ These are behaviours of the system rather than screens, but they are what the pr
 - A board is its owner's alone unless an administrator shares it. A shared board is managed by administrators.
 - Through a shared board, each member sees only the emails of mailboxes they may use.
 - When the member who shared a board leaves, the board stays with the organisation.
+
+### US-97 — Put my boards in order
+**As** a member, **I want** to arrange the boards of my menu, **so that** the ones I work from most come first.
+
+- I drag a board of the menu and drop it where I want it; a line shows where it will land. With the keyboard, Alt and the up or down arrow moves the board that has the focus.
+- The order is mine: arranging my menu changes nobody else's, even for shared boards.
+- Until I arrange them, shared boards come first, then mine, each in the order they were made. A board made or shared later comes last.
 
 ### US-93 — Give emails our own attributes
 **As** an administrator, **I want** to define the attributes we organise ourselves by (a topic, an assignee, urgent or not), **so that** boards can show our mail the way we work.

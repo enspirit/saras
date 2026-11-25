@@ -62,6 +62,7 @@
 @import url("molecules/empty-state.css") layer(molecules);
 @import url("molecules/loading.css") layer(molecules);
 @import url("molecules/nav-item.css") layer(molecules);
+@import url("molecules/sortable.css") layer(molecules);
 @import url("molecules/email-list-item.css") layer(molecules);
 @import url("molecules/search-field.css") layer(molecules);
 @import url("molecules/selection-bar.css") layer(molecules);

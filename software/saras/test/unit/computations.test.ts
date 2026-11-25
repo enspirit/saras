@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LOCK_OUT_MS, addressIsFree, isAdministrator, isAnAddress, isLockedOut, mayDeleteMember, mayLeave, mayOpenAccount, namesTheOrganization, mayRemoveAdministratorRole, maySignUp, opensNewWindow, organizationNameFor, roleInvitedAs, signUpIsOpen } from '../../src/domain/computations/access.ts';
 import { addressGiven, addressesGiven, clipped, languageGiven } from '../../src/domain/computations/given.ts';
-import { addressIsNotConnected, answersSignIn, connectsAsShared, notLetIn, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../../src/domain/computations/mailboxes.ts';
+import { addressIsNotConnected, answersSignIn, connectsAsShared, mayShareMailbox, notLetIn, isRenewedByPassword, isSameMailbox, withNewPassword, folderAmong, manages, mayManage, portGiven, rememberedSignIn, serversGiven, signInRemembered } from '../../src/domain/computations/mailboxes.ts';
 import { promptContent } from '../../src/domain/computations/prompts.ts';
 import { modelGiven, writingGiven } from '../../src/domain/computations/settings.ts';
 import { mayBeSortedAgain } from '../../src/domain/computations/sorting.ts';
@@ -127,10 +127,11 @@ test('a mailbox is managed by its owner; a shared one, by the administrators', (
   assert.equal(outcome(mayManage(actorWith(8, 'user'), shared)), 'forbidden: mailboxes.adminOnly');
 });
 
-test('only an administrator connects a shared mailbox', () => {
+test('only an administrator connects a shared mailbox, or shares one later', () => {
   assert.equal(connectsAsShared(actorWith(1, 'admin'), true), true);
   assert.equal(connectsAsShared(actorWith(1, 'admin'), 'yes'), false);
   assert.equal(connectsAsShared(actorWith(1, 'user'), true), false);
+  assert.deepEqual([outcome(mayShareMailbox(actorWith(1, 'admin'))), outcome(mayShareMailbox(actorWith(1, 'user')))], ['ok', 'forbidden: mailboxes.sharedByAdministrators']);
 });
 
 test('connecting by servers takes an address, both servers with their ports, and a password', () => {

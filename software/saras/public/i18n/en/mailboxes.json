@@ -86,5 +86,10 @@
   "testAndSave": "Test and save",
   "serversSaved": "The mailbox answers there: saved. Fetching…",
   "passwordKept": "Unchanged",
-  "passwordKeptHint": "Leave empty to keep the password saras already has. It is never shown."
+  "passwordKeptHint": "Leave empty to keep the password saras already has. It is never shown.",
+  "shareTitle": "Share with the team",
+  "shareIntro": "This mailbox is yours alone. Once shared, every member of {organization} sees its emails and can reply from it, and administrators manage it.",
+  "share": "Share this mailbox",
+  "confirmShare": "Share {email} with every member? They will see the emails already fetched from it, and reply in its name. To make it personal again, it has to be disconnected and connected anew.",
+  "sharedNow": "Mailbox shared with the team."
 }
