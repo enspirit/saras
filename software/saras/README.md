@@ -92,7 +92,7 @@ Everything is TypeScript in strict mode.
 
 - **Server and tests** run directly on Node.js, which strips the types itself: there is nothing to compile, `npm start` and `npm test` execute the `.ts` files. The code therefore only uses erasable syntax (no enums, no parameter properties), which the compiler enforces.
 - **Browser code** is bundled by `npm run build` ([esbuild](https://esbuild.github.io), `scripts/build.ts`) into `public/js/` (not committed): the interface from `web/` and `shared/` with the two browser libraries (see "Third-party software"), the design system's style sheets as one file, and the translations as one file per language. A first page load is about ten requests.
-- `npm run typecheck` checks both; the bundler itself does not check types. `npm run dev` rebuilds the bundles and restarts the server on change.
+- `npm run typecheck` checks both; the bundler itself does not check types. `npm run dev` rebuilds the bundles and restarts the server on change. `npm run design` does the same with the mailbox of sample emails of [`world/mailbox`](../../world/mailbox/) beside it and the demo organisation set up, for who works on the design with Node.js alone.
 - **What the server returns is typed once**, in `shared/`: the server's read queries and operations return those types, and `web/api/` reads them. A test (`test/unit/shared-types.test.ts`) keeps either side from declaring a domain object of its own.
 - **Small files, small functions**: no source file (TypeScript, CSS) has more than 200 lines, and no function more than 20. `test/unit/size.test.ts` enforces both, and lists what is over.
 

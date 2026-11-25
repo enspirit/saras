@@ -12,6 +12,7 @@
     "build": "node scripts/build.ts",
     "start": "node src/main.ts",
     "dev": "node scripts/build.ts --watch & node --watch src/main.ts",
+    "design": "node scripts/design.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.web.json",
     "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
     "test:unit": "node --test --test-reporter=spec \"test/unit/*.test.ts\"",
