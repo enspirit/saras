@@ -104,19 +104,18 @@ async function searched(shown: EmailsShown, text: string, redrawn: () => void): 
 /** Shows a list of emails, with the one selected open beside it. Searching and ticking change the list only: an email open, a reply being written, stay as they are. */
 export async function showEmails(shown: EmailsShown, prompts: Prompt[], mailboxes: Mailbox[]): Promise<void> {
   const lastFetch = lastFetchOf(mailboxes);
-  const detail = shown.selectedId ? emailDetail(await readEmail(shown.selectedId), prompts, shown.listHref(shown.view.search ?? '')) : null;
+  const here = (): string => shown.listHref(shown.view.search ?? '');
+  const detail = shown.selectedId ? emailDetail(await readEmail(shown.selectedId), prompts, here()) : null;
   const places = slots();
   const search = searchField(shown.view.search ?? '', (text) => void searched(shown, text, () => redraw(shown, places, mailboxes)));
   shell(MailboxView({
-    place: () => shown.listHref(shown.view.search ?? ''),
+    place: here,
     title: shown.title,
     count: places.count.element,
     meta: lastFetch ? t('mailbox.fetchedAt', { time: fmtWhen(lastFetch) }) : undefined,
     action: [shown.actions, fetchButton(mailboxes)],
     tools: [search, places.scope.element, places.bar.element],
-    empty: null,
-    backHref: shown.listHref(shown.view.search ?? ''),
-    backLabel: t('mailbox.back'),
+    empty: null, backHref: here(), backLabel: t('mailbox.back'),
     idle: places.idle.element,
     detail,
     items: [places.items.element],
