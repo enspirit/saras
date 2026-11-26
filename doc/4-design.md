@@ -113,6 +113,7 @@ Three tiers: **brand inputs**, declared by the default brand in `public/brand/th
 | `SelectionBar`, `GroupedMenu` | Above a list some of whose emails are ticked: how many, a box for all or none, the actions, the way out; a menu of choices under their group. |
 | `RichEditor` | Squire with an icon toolbar. It can show an `AiNote` and tint its text as a proposal, and highlight passages matching a pattern without changing the text. |
 | `RecipientField` | Addresses as removable chips, with a place to type one more. |
+| `AttributeBar` | The attributes of an open email as a tool bar: name and value chip, who decided it and why as a tooltip. Its menu lists the values as chips; the row of the one it has is tinted with its colour and ends with a cross in that colour that clears it, the menu staying open. For an administrator, a last row adds a value as one types it, in the next colour unused, and gives it to the email. |
 | `AiNote`, `AiHelp`, `PromptPick`, `ReasonField`, `Caution` | The parts of the reply area that concern the AI (see 6.2). |
 | `Panel`, `Message`, `MessageAsWritten`, `MessageText`, `MessageViews` | A record with its facts; a reply's body; an email as it was written, in a frame; an email's text, its quotes set back, the history at its end folded and its signature stepping back; and one sheet that shows them one at a time, chosen in its bar. |
 | Toast (`createToast`), `Swatch` | One message at a time, at the top, clear of the reply area; a colour token in the style guide. |

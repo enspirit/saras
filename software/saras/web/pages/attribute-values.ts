@@ -5,16 +5,11 @@ import { t } from '../i18n.ts';
 import { valueLabel } from './attribute-names.ts';
 import type { IconName } from '../ui/atoms/icon.ts';
 import { ValueChip } from '../ui/atoms/value-chip.ts';
-import type { Sign } from '../ui/molecules/attribute-bar.ts';
 
-/** `label` is a translation key. */
-const SOURCES: Record<Exclude<ValueOfEmail['source'], 'nobody'>, { icon: IconName; label: string }> = {
-  rule: { icon: 'code', label: 'attributes.sourceRule' },
-  user: { icon: 'pencil', label: 'attributes.sourceUser' },
-};
+const SOURCES: Record<Exclude<ValueOfEmail['source'], 'nobody'>, string> = { rule: 'attributes.sourceRule', user: 'attributes.sourceUser' };
 
-/** The sign of who decided a value, with the same in words; none when nobody did. */
-export const signOf = (source: ValueOfEmail['source']): Sign | undefined => (source === 'nobody' ? undefined : { icon: SOURCES[source].icon, label: t(SOURCES[source].label) });
+/** Who decided a value, in words; nothing when nobody did. */
+export const whoDecided = (source: ValueOfEmail['source']): string => (source === 'nobody' ? '' : t(SOURCES[source]));
 
 /** The signs of who decides an attribute. */
 export const DECIDER_ICONS: Record<Decider, IconName[]> = { nobody: ['pencil'], elo: ['code'] };

@@ -36,12 +36,6 @@
   "sortedAgain": "{examined, plural, one {# email examiné} other {# emails examinés}}, {changed, plural, =0 {aucun modifié} one {# modifié} other {# modifiés}}.",
   "skill": "Télécharger la compétence pour un agent IA",
   "ofEmail": "Attributs de cet email",
-  "noteNone": "Pas encore de valeur",
-  "noteRule": "Décidé par sa règle",
-  "noteUser": "Fixé à la main : le tri n’y touche plus",
-  "noteNobody": "Ni une règle ni un membre n’en a décidé",
-  "noteReason": "« {reason} »",
-  "noteByHand": "Une valeur que vous choisissez ici reste telle que vous l’avez mise.",
   "addValue": "Ajouter une valeur…",
   "colorOf": "Couleur de « {label} »",
   "removeValue": "Retirer « {label} »",
@@ -54,5 +48,7 @@
     "blue": "Bleu",
     "purple": "Violet"
   },
-  "byRule": "Une règle le décide quand un email est relevé"
+  "byRule": "Une règle le décide quand un email est relevé",
+  "decidedBecause": "{who} : « {reason} »",
+  "clearValue": "Effacer : {name}"
 }
