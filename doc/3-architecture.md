@@ -86,7 +86,7 @@ A named state is a seed of `software/storage`, loaded by `dbagent`: `emb run dem
 
 | | Compose files | For |
 | --- | --- | --- |
-| On a laptop | `base` + `devel` | Developing: saras on `localhost:3000` with its sources mounted and watched, PostgreSQL on `localhost:5432` |
+| On a laptop | `base` + `devel` | Developing: saras on `localhost:7230` with its sources mounted and watched, PostgreSQL on `localhost:7254` ([the ports](../HACKING.md#the-stack)) |
 | Under the suites | `base` + `test` | CI: no published port, sources baked into the images, no secret read, sign-up open |
 
 `emb up` starts the first; `COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up` the second. `base` names images and `emb` builds them, from each component's Embfile.

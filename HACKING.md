@@ -45,12 +45,14 @@ In `software/saras`, each task is the npm script of the same name (`npm test`, `
 
 | Service | Is | On a laptop |
 | --- | --- | --- |
-| `saras` | The server, restarted and rebundled on change | http://localhost:3000 (`emb logs saras` shows its log, one JSON object per line: [decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)) |
-| `postgres` | The database | `localhost:5432`, user and database `saras` |
+| `saras` | The server, restarted and rebundled on change | http://localhost:7230 (`emb logs saras` shows its log, one JSON object per line: [decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)) |
+| `postgres` | The database | `localhost:7254`, user and database `saras` |
 | `storage` | `dbagent`, for the seeds and the pages of the schema | — |
 | `mailbox` | The mailbox of sample emails, in the network of `saras` | — (`emb logs mailbox` shows what it was given to send) |
-| `fakesmtp` | Where saras's own mail goes (the link of a lost password) | http://localhost:1080 |
+| `fakesmtp` | Where saras's own mail goes (the link of a lost password) | http://localhost:7210 |
 | `webspicy` | The black-box suite; it sleeps until run | — |
+
+The ports are saras's own, so that the stack starts beside another project's: **72, then the two digits the usual port starts with** (3000 is 7230, 5432 is 7254, 1080 is 7210). They are numbered in [`.env.commons`](.env.commons), and `SARAS_PORT=3000 emb up` takes another for once ([decision 0018](doc/decisions/0018-the-stack-takes-the-ports-72xx-of-a-laptop.md)).
 
 It needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, `LOG_LEVEL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail. `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
 

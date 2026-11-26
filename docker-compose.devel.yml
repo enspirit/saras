@@ -1,6 +1,9 @@
 # The stack on a laptop. Ports to open in a browser, env files, and the bind
 # mounts that make a source change visible without a rebuild.
 #
+# The ports are saras's own, 72xx, so that the stack starts beside another
+# project's: .env.commons says how they are numbered.
+#
 # Nothing here belongs in docker-compose.base.yml, and nothing in base belongs
 # here: base says what a component *is*, this says what a developer needs.
 
@@ -8,13 +11,13 @@ services:
   postgres:
     ports:
       # For a host-side psql, and for `emb run test` on this server:
-      #   TEST_DATABASE_URL=postgres://saras:saras@localhost:5432/saras emb run test
-      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+      #   TEST_DATABASE_URL=postgres://saras:saras@localhost:7254/saras emb run test
+      - '127.0.0.1:${POSTGRES_PORT:-7254}:5432'
 
   saras:
     ports:
       # The front door, and the one address worth bookmarking.
-      - '127.0.0.1:${SARAS_PORT:-3000}:3000'
+      - '127.0.0.1:${SARAS_PORT:-7230}:3000'
     env_file:
       # After env/base.env, which docker-compose.base.yml lists. Later files win.
       #
@@ -50,7 +53,7 @@ services:
   fakesmtp:
     ports:
       # The page that shows what saras gave it to send.
-      - '127.0.0.1:${FAKESMTP_PORT:-1080}:1080'
+      - '127.0.0.1:${FAKESMTP_PORT:-7210}:1080'
 
   webspicy:
     volumes:

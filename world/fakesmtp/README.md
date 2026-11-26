@@ -7,7 +7,7 @@
 ## Public interface
 
 - **SMTP on `fakesmtp:25`**, on the compose network, without authentication. saras is pointed at it by `SMTP_URL` in [`software/saras/env/devel.env`](../../software/saras/env/devel.env), and again under the suites.
-- **What it was given**, on port 1080: a page on a laptop, [http://localhost:1080](http://localhost:1080) (`FAKESMTP_PORT`), and an API on the compose network, `GET` and `DELETE http://fakesmtp:1080/api/emails`.
+- **What it was given**, on port 1080: a page on a laptop, [http://localhost:7210](http://localhost:7210) (`FAKESMTP_PORT`), and an API on the compose network, `GET` and `DELETE http://fakesmtp:1080/api/emails`.
 - Its tasks:
 
 ```sh

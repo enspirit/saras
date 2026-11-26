@@ -25,7 +25,7 @@ Each component's `README.md` is its contract. Read it before changing the compon
 ```sh
 emb run lint            # type-check, links, import boundaries, helm lint — seconds
 emb run test            # unit + integration, on a checkout (no stack)
-emb up                  # the stack: saras on :3000, postgres, storage, mailbox, fakesmtp, webspicy
+emb up                  # the stack: saras on :7230, postgres, storage, mailbox, fakesmtp, webspicy
 emb run test:postgres   # integration tests on the stack's PostgreSQL
 emb run test:webspicy   # the API's contract
 emb run demo            # the demo organisation and its mailbox
