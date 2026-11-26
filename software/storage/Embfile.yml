@@ -1,9 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
-description: The seeds — datasets the stack's database is put into, by dbagent
+description: The seeds — datasets the stack's database is put into, by dbagent — and its schema as pages to read
 
 # Thin wrappers over dbagent's rake tasks, all in its container (the compose
 # service `storage`). No image of ours: the service runs enspirit/dbagent,
-# pinned in docker-compose.base.yml, with data/ mounted.
+# pinned in docker-compose.base.yml, with data/ mounted, and schema/ on a
+# laptop.
 tasks:
   demo.rebuild:
     description: Rebuild data/demo by setting the demo organisation up through the API, in a stack of its own. Review the diff
@@ -57,6 +58,29 @@ tasks:
     executors:
       - container
     script: bundle exec rake db:tables
+
+  db.spy:
+    description: Write the schema of the stack's database as pages to read, by SchemaSpy — open schema/spy/index.html
+    executors:
+      - container
+    # Made anew each time: no page stays of a table that is gone.
+    #
+    # `-norows`: the pages say what the schema is, and nothing of what the
+    # database holds, not even how many rows.
+    #
+    # What is kept from the terminal, and from emb's log of the task: the
+    # command dbagent echoes before it runs it, WHICH HOLDS THE PASSWORD OF THE
+    # DATABASE (`java -jar … -p …`, the one line that does); and Graphviz's two
+    # warnings per diagram that a cell is small, which SchemaSpy prints as
+    # errors and are none.
+    #
+    # rake answers 0 whatever SchemaSpy did: the `test` is what fails the task.
+    script: | # shell
+      rm -rf /home/app/schema/spy
+      SCHEMA_SPY_ARGS=-norows bundle exec rake db:spy 2>&1 \
+        | grep -v -e '^java -jar ' -e 'cell size too small for content' -e 'in label of node'
+      test -f /home/app/schema/spy/index.html || { echo 'SchemaSpy wrote no page: see above' >&2; exit 1; }
+      echo 'The schema is at software/storage/schema/spy/index.html'
 
   db.repl:
     description: psql on the stack's database

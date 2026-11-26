@@ -40,6 +40,13 @@ services:
       # its own, so two builds never fight over one directory.
       - /app/public/js
 
+  storage:
+    volumes:
+      # Where `emb run storage:db.spy` writes the pages of the schema: read
+      # from the checkout, since the service publishes no port to serve them
+      # on. Beside the seeds, which docker-compose.base.yml mounts.
+      - ./software/storage/schema:/home/app/schema
+
   fakesmtp:
     ports:
       # The page that shows what saras gave it to send.

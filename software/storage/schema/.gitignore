@@ -1,0 +1,6 @@
+# What `emb run storage:db.spy` writes: made from the schema, never committed.
+# This file is what keeps the folder in a checkout, so that the stack mounts a
+# folder of yours rather than one Docker makes, which the container could not
+# write in.
+*
+!.gitignore

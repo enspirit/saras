@@ -47,7 +47,7 @@ In `software/saras`, each task is the npm script of the same name (`npm test`, `
 | --- | --- | --- |
 | `saras` | The server, restarted and rebundled on change | http://localhost:3000 (`emb logs saras` shows its log, one JSON object per line: [decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)) |
 | `postgres` | The database | `localhost:5432`, user and database `saras` |
-| `storage` | `dbagent`, for the seeds | — |
+| `storage` | `dbagent`, for the seeds and the pages of the schema | — |
 | `mailbox` | The mailbox of sample emails, in the network of `saras` | — (`emb logs mailbox` shows what it was given to send) |
 | `fakesmtp` | Where saras's own mail goes (the link of a lost password) | http://localhost:1080 |
 | `webspicy` | The black-box suite; it sleeps until run | — |
@@ -75,6 +75,8 @@ The schema is the migrations of `software/saras/src/tooling/db/migrations/`, app
 3. Leave the ones before it alone. A migration that was applied is not applied again.
 
 The development stack watches the sources: **the migration is applied to your development database the moment the file is saved and listed**. Get it right in a stack of its own first (below, `saras-try`), or with `npm test`, which starts from nothing each time. A table that is the server's own and belongs in no seed (the ledger, `scheduled_tasks`) is left out of `software/storage/data/empty`; any other is added there, by `emb run storage:demo.rebuild`.
+
+To read the schema as it stands, with its tables, constraints and diagrams: `emb run storage:db.spy`, then open `software/storage/schema/spy/index.html`. See [`software/storage`](software/storage/README.md).
 
 Several servers on one database: `ROLES` says what a process takes on (`migrate`, `web`, `clock`; all three by default), and `test/integration/several-servers.test.ts` starts two on one database.
 

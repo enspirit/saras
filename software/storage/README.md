@@ -2,11 +2,13 @@
 
 The seeds: the datasets the stack's database is put into, loaded by [`dbagent`](https://github.com/enspirit/dbagent). It is responsible for one thing: that a named state of saras can be reached with one command, on a laptop and under the suites.
 
+It also draws the schema of that database, as pages to read: `emb run storage:db.spy`.
+
 It does not own the schema. saras migrates its database when it starts ([decision 0010](../../doc/decisions/0010-the-server-migrates-its-database-and-several-may-share-it.md)); the compose service `storage` waits for it, and a seed fills tables that are already there.
 
 ## Public interface
 
-Its seeds, by id, and its tasks. Nothing else.
+Its seeds, by id, its tasks, and the pages of the schema. Nothing else.
 
 | Seed | Is | Load it with |
 | --- | --- | --- |
@@ -20,10 +22,13 @@ emb run demo                   # the demo: this seed, then the mailbox of the st
 emb run storage:demo.rebuild   # rebuild data/demo by setting the organisation up through the API
 emb run storage:db.repl        # psql on the stack's database
 emb run storage:db.tables      # the tables, fewest dependencies first
+emb run storage:db.spy         # the schema as pages: open software/storage/schema/spy/index.html
 S=<seed> emb run storage:db.apply   # add a seed as a slice: nothing else is emptied
 S=<seed> emb run storage:db.seed    # install a seed: EMPTIES every table first. Asks to type "empty"
 S=<seed> emb run storage:db.flush   # write the database as a seed
 ```
+
+`db.spy` has [SchemaSpy](https://schemaspy.org) read the schema of the stack's database, as the server migrated it, and write tables, columns, constraints and diagrams in `schema/spy/`, made anew each time and never committed. The development stack mounts `schema/`, so the pages are read from the checkout: the service publishes no port to serve them on. They say what the schema is and nothing of what the database holds, not even how many rows.
 
 Other components reach it at `http://storage:9292`, on the compose network only: `POST /seeds/apply?id=demo`, `POST /seeds/install?id=empty`.
 
@@ -31,7 +36,7 @@ Other components reach it at `http://storage:9292`, on the compose network only:
 
 | | |
 | --- | --- |
-| `enspirit/dbagent` | The image, pinned in `docker-compose.base.yml`. It reads `data/`, mounted. |
+| `enspirit/dbagent` | The image, pinned in `docker-compose.base.yml`. It reads `data/`, mounted, and holds SchemaSpy, which writes in `schema/`, mounted by `docker-compose.devel.yml`. |
 | PostgreSQL | The stack's database. |
 | [`software/saras`](../saras/) | The schema, which it migrates when it starts. And the way to the demo's state: `scripts/demo-organisation.ts` sets the organisation up through the API, which is what `demo.rebuild` flushes. |
 
@@ -54,4 +59,7 @@ Other components reach it at `http://storage:9292`, on the compose network only:
 - **The demo's mailbox is not in the seed.** The access to a mailbox is sealed with the server's `APP_SECRET`: a seed could carry it for one secret only. So the seed holds the organisation, and `emb run demo` connects the mailbox of the stack through the API, whatever the secret.
 - **What the seed carries that looks like a credential**, and is one only for the demo: the hash of the published demo password.
 - **Two tables are the server's alone, and in no seed**: `schema_migrations`, the ledger of what was applied to the schema, and `scheduled_tasks`, when what the server does on its own is next due. `empty` does not name them, so installing a seed leaves them as they are: emptied, the ledger would have the server apply every migration again. A new table of that kind is left out of `empty` the same way.
+- **`rake db:spy`, run by hand in the container, prints the password of the database**: dbagent 3.11.0 echoes the command it gives SchemaSpy, `-p` and all. `emb run storage:db.spy` keeps that line from the terminal and from emb's log of the task; use it rather than the rake task.
+- **The pages miss two things**, which SchemaSpy 6.2.4 asks PostgreSQL 16 for in the words of an older one, and says so in two errors each time: the comment of the database, and the routines. The schema has neither.
+- **Under the suites the pages stay in the container**: only the development stack mounts `schema/`.
 - **No suite starts from a seed yet.** `tests/webspicy` could now name one, but installing a seed empties the database, and on a laptop that is the development database. See its status.
