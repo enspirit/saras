@@ -36,12 +36,6 @@
   "sortedAgain": "{examined, plural, one {# email} other {# emails}} looked at, {changed, plural, =0 {none changed} one {# changed} other {# changed}}.",
   "skill": "Download the skill for an AI agent",
   "ofEmail": "Attributes of this email",
-  "noteNone": "No value yet",
-  "noteRule": "Decided by its rule",
-  "noteUser": "Set by hand: sorting leaves it as it is",
-  "noteNobody": "Neither a rule nor a member decided it",
-  "noteReason": "“{reason}”",
-  "noteByHand": "A value you choose here stays as you put it.",
   "addValue": "Add a value…",
   "colorOf": "Colour of “{label}”",
   "removeValue": "Remove “{label}”",
@@ -54,5 +48,7 @@
     "blue": "Blue",
     "purple": "Purple"
   },
-  "byRule": "A rule decides it when an email is fetched"
+  "byRule": "A rule decides it when an email is fetched",
+  "decidedBecause": "{who}: “{reason}”",
+  "clearValue": "Clear {name}"
 }

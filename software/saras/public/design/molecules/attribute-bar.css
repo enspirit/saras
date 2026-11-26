@@ -21,7 +21,6 @@
 }
 .attribute-prop__button:hover { background: var(--color-hover); }
 .attribute-prop__button[aria-expanded="true"] { background: var(--color-accent-soft); color: var(--color-text); }
-.attribute-prop__button > .icon:last-child { opacity: 0.7; }
 /* One hairline between two attributes, as between the tools of a bar. */
 .attribute-prop + .attribute-prop { margin-left: var(--space-1); padding-left: var(--space-1); border-left: var(--border-width) solid var(--color-line); }
 
@@ -34,8 +33,14 @@
   overflow: hidden;
 }
 .value-menu__choices { display: grid; padding: var(--space-1); max-height: 280px; overflow-y: auto; }
+.value-menu__row { display: flex; align-items: center; gap: var(--space-1); padding-right: var(--space-2); border-radius: var(--radius-sm); }
+.value-menu__row:hover { background: var(--color-hover); }
+.value-menu__row--chosen { background: color-mix(in srgb, var(--value) 8%, var(--color-surface)); }
+.value-menu__row--chosen:hover { background: color-mix(in srgb, var(--value) 12%, var(--color-surface)); }
+.value-menu__row--chosen > .clear-value { margin-left: auto; color: var(--value); }
+.value-menu__row--chosen > .clear-value:hover { background: color-mix(in srgb, var(--value) 16%, var(--color-surface)); color: var(--value); }
 .value-menu__choice {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  display: flex; align-items: center;
   min-height: var(--control-md);
   padding: 0 var(--space-2);
   border: 0; border-radius: var(--radius-sm);
@@ -43,9 +48,22 @@
   font: inherit; font-size: var(--text-sm); text-align: left;
   cursor: pointer;
 }
-.value-menu__choice:hover, .value-menu__choice[aria-pressed="true"] { background: var(--color-hover); }
-.value-menu__note { display: grid; gap: var(--space-1); padding: var(--space-3); border-top: var(--border-width) solid var(--color-line); background: var(--color-bg); font-size: var(--text-xs); color: var(--color-text-soft); }
-.value-menu__note > p:first-child { font-weight: var(--weight-strong); color: var(--color-text); }
+.value-menu__row:not(.value-menu__row--chosen) > .value-menu__choice { flex: 1; }
+
+.value-menu__add { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-top: var(--border-width) solid var(--color-line); color: var(--color-text-muted); }
+.value-menu__input { flex: 1; min-width: 0; min-height: var(--control-md); border: 0; background: transparent; color: var(--color-text); font: inherit; font-size: var(--text-sm); }
+.value-menu__input:focus { outline: none; }
+.value-menu__add:focus-within { color: var(--color-accent); }
+
+/* The cross that clears a value, beside its chip in the menu. */
+.clear-value {
+  display: inline-grid; place-items: center;
+  width: var(--control-sm); height: var(--control-sm);
+  padding: 0; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--color-text-muted);
+  cursor: pointer;
+}
+.clear-value:hover { background: var(--color-hover); color: var(--color-danger); }
 
 .decided-by { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-text-soft); }
 .decided-by > .icon { color: var(--color-text-muted); }
