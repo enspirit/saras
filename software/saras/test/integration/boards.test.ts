@@ -125,6 +125,7 @@ test('a personal board is its owner\'s alone; an administrator shares one with e
   assert.deepEqual([seen.name, seen.shared, seen.canManage, seen.count], ['Devis', true, false, 0], 'he sees the board, not the emails of a mailbox that is not his');
   assert.deepEqual(await subjectsOf(bruno, quotes), []);
   assert.equal((await bruno('PUT', `/boards/${quotes}`, { name: 'Pris', shared: false, filter: {} })).body.code, 'boards.notYours');
+  assert.deepEqual((await alice('PUT', `/boards/${quotes}`, { name: 'Pris' })).body.params, { at: '.shared' }, 'a change is said whole');
   assert.equal((await bruno('DELETE', `/boards/${quotes}`)).status, 403);
 });
 
@@ -137,6 +138,8 @@ test('a member puts the boards of their menu in the order they want; it is their
   assert.equal((await alice('GET', '/boards')).body[0].id, quotes, 'the menu of another member is as it was');
   const before = (await alice('GET', '/boards')).body.map((b: { id: number }) => b.id);
   assert.equal((await alice('PUT', '/boards/order', { boards: [before.at(-1), 'x'] })).status, 400, 'a board is named by its number');
+  assert.deepEqual((await alice('PUT', '/boards/order', { boards: [mine, mine] })).body.params, { at: '.boards' }, 'each once');
+  assert.deepEqual((await alice('PUT', '/boards/order', {})).body.params, { at: '.boards' }, 'an order is a list');
   assert.equal((await alice('PUT', '/boards/order', { boards: [before.at(-1), mine] })).status, 200, 'a board one does not see is left out');
   assert.deepEqual((await alice('GET', '/boards')).body.map((b: { id: number }) => b.id), [before.at(-1), ...before.slice(0, -1)]);
   await bruno('POST', '/boards', { name: 'Plus tard', shared: false, filter: {} });
@@ -146,6 +149,7 @@ test('a member puts the boards of their menu in the order they want; it is their
 });
 
 test('deleting a board leaves its emails where they were', async () => {
+  assert.deepEqual((await alice('DELETE', '/boards/first')).body.params, { at: '.id' }, 'a board is named by its number');
   assert.equal((await alice('DELETE', `/boards/${quotes}`)).status, 200);
   assert.equal((await alice('GET', `/boards/${quotes}/emails`)).status, 404);
   assert.equal((await alice('GET', '/emails?box=todo')).body.emails.length, 3);

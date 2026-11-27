@@ -13,7 +13,6 @@ DomPost:
       && among(output.emails, old.emails.emails)
 ReqPre:
   - (x) the requester is signed in
-  - ( ) what is given is of the type of its input
 ReqPost:
   - (x) nothing is kept, and nothing changes: nothingChanged
   - ( ) every condition given must hold, and within one made of several values, any of them
@@ -172,16 +171,3 @@ examples:
     then: 200
     and:
       - no email of another organisation is shown: output.count == 0 && output.emails == []
-
-counterexamples:
-  - when: the filter holds what is no condition
-    for: what is given is of the type of its input
-    given: test/base, as admin
-    input: { filter: { keywords: invoice, colour: red } }
-    then: 400 request.invalid
-
-  - when: no filter is given
-    for: what is given is of the type of its input
-    given: test/base, as member
-    input: {}
-    then: 400 request.invalid

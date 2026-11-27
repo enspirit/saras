@@ -15,7 +15,6 @@ DomPost:
   - (x) it has this filter, for the conditions we know: sameFilter(output.filter, input.filter)
 ReqPre:
   - (x) the requester is signed in
-  - ( ) what is given is of the type of its input
   - (x) the member manages it, as its owner or, for a shared one, as an administrator
   - (x) it has a name
   - (x) only an administrator makes it shared
@@ -107,18 +106,6 @@ examples:
       - they are kept as given, and show nothing: output.filter == input.filter && output.count == 0
 
 counterexamples:
-  - when: the filter given holds what is no condition
-    for: what is given is of the type of its input
-    given: test/base, as member
-    input: { id: 1003, name: Northwind, shared: false, filter: { from: northwind, colour: red } }
-    then: 400 request.invalid
-
-  - when: a name alone is given, for a change is said whole
-    for: what is given is of the type of its input
-    given: test/base, as admin
-    input: { id: 1001, name: All of it }
-    then: 400 request.invalid
-
   - when: the board is of another organisation
     for: it is a board the member sees
     given: test/base, as outsider
