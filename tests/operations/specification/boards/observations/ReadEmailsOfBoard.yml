@@ -1,0 +1,127 @@
+name: ReadEmailsOfBoard
+agent: Member
+entry: GET /api/boards/:id/emails
+description: >-
+  Tells a member a board they see, with the most recent emails it shows them,
+  as searched.
+input: BoardAsked
+output: EmailsOfBoard
+
+DomPre:
+  - (x) it is a board the member sees
+DomPost:
+  - (x) the board is told as the member sees it: among([output.board], old.boards)
+  - (x) the emails it shows them are told, the most recent first: >-
+      among(ids(output.emails), ids(old.emails.emails | [])) && mostRecentFirst(output.emails)
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) when nothing is searched, as many as the board says, and each as its box lists it: >-
+      !isBlank(input.search | '')
+      || (count(output.emails) == output.board.count && among(output.emails, old.emails.emails))
+  - ( ) when something is searched, only the emails that hold every word in their sender, their subject or their text
+  - ( ) the 200 most recent, of the mailboxes the member may use
+
+examples:
+  - when: an administrator reads a shared board
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - the emails whose Topic is Billing, wherever they stand: >-
+          ids(output.emails) == [1018, 1010, 1001]
+          && all(output.emails, e ~> fetch(e.attributes, '1002').value == '1')
+          && map(output.emails, e ~> e.status) == ['no_reply', 'needs_reply', 'needs_reply']
+
+  - when: a member reads the same board
+    given: test/base, as member
+    input: { id: 1001 }
+    then: 200
+    and:
+      - the same emails, of the shared mailbox: ids(output.emails) == [1018, 1010, 1001]
+      - on a board they do not manage: "!output.board.canManage"
+
+  - when: an administrator reads their own board
+    given: test/base, as admin
+    input: { id: 1002 }
+    then: 200
+    and:
+      - every email, the most recent first: ids(output.emails) == ids(old.emails.emails) && count(output.emails) == 20
+
+  - when: a word is searched
+    given: test/base, as admin
+    input: { id: 1002, search: invoice }
+    then: 200
+    and:
+      - the emails of the board that hold it: ids(output.emails) == [1018, 1001]
+      - the board still says how many it shows in all: output.board.count == 20
+      - each tells the text around the word: all(output.emails, e ~> contains(lower(e.snippet), 'invoice'))
+
+  - when: two words are searched, one of the sender and one of the text, in any case
+    given: test/base, as admin
+    input: { id: 1002, search: " CLAIRE  quote " }
+    then: 200
+    and:
+      - the email that holds both: ids(output.emails) == [1020]
+
+  - when: a word of the sender's address is searched in a shared board
+    given: test/base, as member
+    input: { id: 1001, search: northwind }
+    then: 200
+    and:
+      - only the emails of the board are searched: ids(output.emails) == [1018, 1001]
+
+  - when: what is searched is nowhere
+    given: test/base, as admin
+    input: { id: 1002, search: nothing-like-this }
+    then: 200
+    and:
+      - no email is told: output.emails == [] && output.board.count == 20
+
+  - when: a member reads their own board
+    given: test/base, as member
+    input: { id: 1003 }
+    then: 200
+    and:
+      - the emails to handle are told, and no other: >-
+          output.board.count == 10 && count(output.emails) == 10
+          && notStanding(output.emails, 'needs_reply') == []
+
+  - when: nothing was fetched yet
+    given: test/unfetched, as member
+    input: { id: 1001 }
+    then: 200
+    and:
+      - the board is told, with no email: output.board.name == 'Billing' && output.emails == [] && output.board.count == 0
+
+  - when: somebody who may use no mailbox reads a board without a condition
+    given: test/base, as outsider
+    input: { id: 1004 }
+    then: 200
+    and:
+      - no email of another organisation is told: output.emails == [] && output.board.count == 0
+
+counterexamples:
+  - when: the board is of another organisation
+    for: it is a board the member sees
+    given: test/base, as outsider
+    input: { id: 1001 }
+    then: 404 boards.notFound
+
+  - when: the board is another member's own
+    for: it is a board the member sees
+    given: test/base, as member
+    input: { id: 1002 }
+    then: 404 boards.notFound
+
+  - when: an administrator asks for a member's own board
+    for: it is a board the member sees
+    given: test/base, as admin
+    input: { id: 1003 }
+    then: 404 boards.notFound
+
+  - when: no board has this number
+    for: it is a board the member sees
+    given: test/base, as admin
+    input: { id: 9999, search: invoice }
+    then: 404 boards.notFound

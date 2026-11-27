@@ -1,0 +1,62 @@
+# What is read of the attributes of the organisation, as somebody sees them at
+# one moment. An attribute is named by its key: its number as a text, or
+# `status`.
+
+- name: attribute(key)
+  description: The attribute of this key.
+  formaldef: find(attributes | [], a ~> a.key == key)
+
+- name: preconfigured
+  description: >-
+    The attribute every organisation starts with and cannot remove: "Stands in".
+  formaldef: find(attributes | [], a ~> a.system)
+
+- name: labels(values)
+  description: The labels of the values of an attribute, or of those given for one.
+  formaldef: map(values, v ~> v.label)
+
+- name: labelled(given)
+  description: Of the values given for a choice, those that have a label.
+  formaldef: filter(given | [], v ~> !isBlank(v.label | ''))
+
+- name: labelsKept(given)
+  description: >-
+    What a choice keeps of the labels given: trimmed, and each once.
+  formaldef: unique(map(given, v ~> trim(v.label)))
+
+- name: numbered(values)
+  description: The keys values have when they are numbered from 1, in their order.
+  formaldef: map(values, v ~> String(indexOf(labels(values), v.label) + 1))
+
+- name: colourGiven(given, place)
+  description: >-
+    The colour given for the value at this place, when it is one we know: nothing
+    otherwise.
+  formaldef: >-
+    let colour = at(given | [], place).color | ''
+    in if contains(['grey', 'red', 'orange', 'yellow', 'green', 'blue', 'purple'], colour) then colour else null
+
+# What is read of the emails a rule was tried on, as TryRule answers them: each
+# tells `value`, what the rule would give it, and `now`, what it has and who
+# decided it.
+
+- name: wouldGet(tried, value)
+  description: Those the rule would give this value.
+  formaldef: filter(tried, one ~> one.value == value)
+
+- name: wouldGetAny(tried)
+  description: Those the rule would give a value, whichever.
+  formaldef: filter(tried, one ~> one.value != null)
+
+- name: nowHas(tried, value)
+  description: Those that have this value now.
+  formaldef: filter(tried, one ~> one.now.value == value)
+
+- name: nowHasAny(tried)
+  description: Those that have a value now, whichever.
+  formaldef: filter(tried, one ~> one.now != null)
+
+- name: nowBy(tried, who)
+  description: >-
+    Those whose value was decided by this one: a `rule`, the `user`, `nobody`.
+  formaldef: filter(tried, one ~> one.now.source == who)

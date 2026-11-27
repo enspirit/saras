@@ -1,0 +1,59 @@
+name: DisconnectMailbox
+agent: Member
+entry: DELETE /api/mailboxes/:id
+description: >-
+  The one who manages a mailbox takes it away from saras, with everything
+  saras kept from it.
+input: MailboxNamed
+output: Done
+
+DomPost:
+  - (x) the organisation no longer has it: >-
+      !seesMailbox(input.id) && !seenBy.member.seesMailbox(input.id)
+      && !seenBy.coadmin.seesMailbox(input.id)
+  - (+) nothing of the mailbox is kept, not its credentials: withId(db.accounts, input.id) == null
+  - (x) its emails are gone with it: >-
+      let address = old.mailbox(input.id).email
+      in count(emailsOf(address)) == 0 && count(seenBy.member.emailsOf(address)) == 0
+  # The Backgrounds have one mailbox: what was kept is what was kept from it.
+  - (+) their proposals and the record of their replies are gone with it: >-
+      count(db.emails) == 0 && count(db.drafts) == 0 && count(db.replies) == 0
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - (x) the requester manages the mailbox
+ReqPost:
+  - ( ) nothing changes in the mailbox itself
+  - (x) the members, the prompts, the attributes and the boards of the organisation stay: >-
+      members == old.members && prompts == old.prompts && attributes == old.attributes
+      && count(boards) == count(old.boards)
+  - (x) what another organisation sees is as it was: >-
+      seenBy.outsider.mailboxes == old.seenBy.outsider.mailboxes && seenBy.outsider.boards == old.seenBy.outsider.boards
+      && seenBy.outsider.emails == old.seenBy.outsider.emails
+
+examples:
+  - when: the administrator who connected the shared mailbox disconnects it
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - there were emails, proposals to forget: >-
+          count(old.emails.emails) == 20 && any(old.emails.emails, e ~> e.replyMode != null)
+      - (+) there were twenty emails in all, and a record of replies: count(old.db.emails) == 20 && count(old.db.replies) > 0
+
+  - when: another administrator disconnects it
+    given: test/base, as coadmin
+    input: { id: 1001 }
+    then: 200
+
+  - when: nothing was fetched from it yet
+    given: test/unfetched, as admin
+    input: { id: 1001 }
+    then: 200
+
+counterexamples:
+  - when: no mailbox has this number
+    for: the requester may use the mailbox
+    given: test/base, as admin
+    input: { id: 4242 }
+    then: 404 mailboxes.notFound

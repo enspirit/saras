@@ -12,6 +12,13 @@
 # take from a laptop's `.env`.
 
 services:
+  postgres:
+    volumes:
+      # A database of the suites' own, whatever the project this is started in: the suites empty
+      # it. Compose merges volumes by the path they are mounted at, so this one takes the place
+      # of base's postgres-data, and the development database is never under this stack.
+      - postgres-suites:/var/lib/postgresql/data
+
   saras:
     env_file:
       # After env/base.env, which docker-compose.base.yml lists. Later files win.
@@ -24,3 +31,18 @@ services:
       # Read-only here, writable on a laptop: a suite that could rewrite the
       # seed it just installed is a suite that can make itself pass.
       - ./software/storage/data:/home/app/data:ro
+
+  operations:
+    environment:
+      # Every case of the suite installs a seed, which empties the database.
+      # Only this stack says it may: its database is nobody's but the suites'
+      # (postgres-suites, above), which is what makes this true and not the
+      # name of this file. The development stack does not say it, and the
+      # suite refuses to run there.
+      OPERATIONS_MAY_EMPTY_THE_DATABASE: 'yes'
+    volumes:
+      # Where the runner writes its report, for the explorer: written, never read back by the suite.
+      - ./tests/operations/.report:/report
+
+volumes:
+  postgres-suites:

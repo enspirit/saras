@@ -1,0 +1,46 @@
+name: ReadRuleWritingSkill
+agent: Administrator
+entry: GET /api/attributes/:key/skill
+description: >-
+  Hands an administrator what an AI agent needs to write the rule of an
+  attribute: a skill that names it and its values, as an archive to download.
+input: AttributeNamed
+
+DomPre:
+  - (x) an attribute of the organisation
+DomPost:
+  - ( ) the skill is handed as an archive of one file, which names the attribute and the values a rule may give
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - "(x) what is answered is a file to download, not data": output == null
+
+examples:
+  - when: an administrator asks for the skill of the topic
+    given: test/base, as admin
+    input: { key: "1002" }
+    then: 200
+
+  - when: an administrator asks for the skill of "Stands in"
+    given: test/base, as coadmin
+    input: { key: status }
+    then: 200
+
+  - when: an administrator asks for the skill of an attribute whose values are the members
+    given: test/base, as admin
+    input: { key: "1003" }
+    then: 200
+
+counterexamples:
+  - when: nobody has an attribute of this key
+    for: an attribute of the organisation
+    given: test/base, as admin
+    input: { key: "9999" }
+    then: 404 attributes.notFound
+
+  - when: the administrator of Bureau Sud names the topic of Atelier Nord
+    for: an attribute of the organisation
+    given: test/base, as outsider
+    input: { key: "1002" }
+    then: 404 attributes.notFound

@@ -1,0 +1,109 @@
+name: ChangeMailboxServers
+agent: Member
+entry: PUT /api/mailboxes/:id/servers
+description: >-
+  The one who manages a mailbox reached by its servers corrects them: a host
+  that moved, a port, the user name, and the password if it changed too.
+input: MailboxServersGiven
+output: Done
+
+DomPost:
+  - (x) the same mailbox: count(mailboxes) == count(old.mailboxes)
+  - (+) what is kept to reach it is no longer what it was: >-
+      withId(db.accounts, input.id).config_enc != withId(old.db.accounts, input.id).config_enc
+  - (x) its last error is forgotten: mailbox(input.id).lastError == null
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - (x) the requester manages the mailbox
+  - (x) the mailbox is reached by its servers
+  - (x) both servers are given, with their ports: >-
+      !isBlank(input.imapHost | '') && !isBlank(input.smtpHost | '')
+      && (input.imapPort | 0) > 0 && (input.imapPort | 0) < 65536
+      && (input.smtpPort | 0) > 0 && (input.smtpPort | 0) < 65536
+  # On this stack, what answers is the mailbox of world/mailbox. Servers are asked once they are given.
+  - (x) the mailbox was just seen to answer there: >-
+      let i = input,
+          asked = !isBlank(i.imapHost | '') && !isBlank(i.smtpHost | '')
+            && (i.imapPort | 0) > 0 && (i.imapPort | 0) < 65536 && (i.smtpPort | 0) > 0 && (i.smtpPort | 0) < 65536
+      in !asked
+        || ((i.imapHost == '127.0.0.1' || i.imapHost == 'localhost') && i.imapPort == 1143 && !(i.imapSecure | false)
+          && (i.smtpHost == '127.0.0.1' || i.smtpHost == 'localhost') && i.smtpPort == 1025 && !(i.smtpSecure | false)
+          && i.username == 'testuser' && (length(i.password | '') == 0 || i.password == 'testpass'))
+ReqPost:
+  - ( ) a password left empty keeps the one it has
+  - (+) the credentials are kept sealed: >-
+      !contains(withId(db.accounts, input.id).config_enc, input.password | 'testpass')
+  - (x) the address, the folder watched and the emails kept do not change: >-
+      let b = old.mailbox(input.id), a = mailbox(input.id)
+      in a.email == b.email && sameWatch(a, b) && a.todo == b.todo && emails == old.emails
+  - ( ) who owns the mailbox does not change
+  - (x) its name, and that it is shared or not, do not change: >-
+      let b = old.mailbox(input.id), a = mailbox(input.id)
+      in a.kind == b.kind && a.displayName == b.displayName && a.shared == b.shared && a.canManage == b.canManage
+  - (x) who may use it, and who manages it, do not change: >-
+      seenBy.member.onlyUses(input.id) && seenBy.coadmin.manages(input.id) && !seenBy.outsider.seesMailbox(input.id)
+ReqTrig:
+  - a mailbox that watches a folder is fetched at once
+
+examples:
+  - when: an administrator names the servers by another name, leaving the password empty
+    given: test/base, as admin
+    input: { id: 1001, username: testuser, imapHost: localhost, imapPort: 1143, imapSecure: false, smtpHost: localhost, smtpPort: 1025, smtpSecure: false }
+    then: 200
+
+  - when: another administrator gives the servers again, and the password with them
+    given: test/base, as coadmin
+    input: { id: 1001, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 200
+
+counterexamples:
+  # These three come first, and are told of no mailbox: the fetch an example started
+  # may still be under way, and ends on the mailbox of the Background.
+  - when: the organisation has no mailbox
+    for: the requester may use the mailbox
+    given: test/unconnected, as admin
+    input: { id: 1001, username: testuser, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 404 mailboxes.notFound
+
+  - when: what is given as its number is not one
+    for: the requester may use the mailbox
+    given: test/unconnected, as coadmin
+    input: { id: not-a-number, username: testuser, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 404 mailboxes.notFound
+
+  - when: a member who is not an administrator asks, of a number no mailbox has
+    for: the requester may use the mailbox
+    given: test/unconnected, as member
+    input: { id: 4242, username: testuser, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 404 mailboxes.notFound
+
+  - when: the incoming server is not named
+    for: both servers are given, with their ports
+    given: test/base, as admin
+    input: { id: 1001, username: testuser, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.serversRequired
+
+  - when: a port is left out
+    for: both servers are given, with their ports
+    given: test/base, as admin
+    input: { id: 1001, username: testuser, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1 }
+    then: 400 mailboxes.serversRequired
+
+  - when: nothing listens where the incoming server is said to be
+    for: the mailbox was just seen to answer there
+    given: test/base, as admin
+    input: { id: 1001, username: testuser, imapHost: 127.0.0.1, imapPort: 1144, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.connectionFailed
+
+  - when: the password given is not the mailbox's
+    for: the mailbox was just seen to answer there
+    given: test/base, as admin
+    input: { id: 1001, username: testuser, password: not-the-password, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.connectionFailed
+
+  - when: the user name is left empty, and the address is not what the server knows the mailbox by
+    for: the mailbox was just seen to answer there
+    given: test/base, as admin
+    input: { id: 1001, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.connectionFailed

@@ -28,6 +28,7 @@
   "status": "Stands in",
   "noValue": "No value",
   "valueSet": "{name}: saved.",
+  "valueNotAdded": "{name} has all the values it can hold: this one was not added.",
   "sourceRule": "Decided by a rule",
   "sourceUser": "Set by hand",
   "sortAgain": "Save and apply to the emails already kept",

@@ -1,0 +1,86 @@
+name: SortAgainByRule
+agent: Administrator
+entry: POST /api/attributes/:key/sort-again
+description: >-
+  An administrator has the rule of an attribute applied to the emails already
+  kept, after writing or changing it.
+input: AttributeNamed
+output: SortedAgain
+
+DomPre:
+  - (x) an attribute of the organisation
+DomPost:
+  - ( ) each email has, for that attribute, what the rule says of it now
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) the attribute is decided by a rule: >-
+      !hasAttribute(input.key) || (attribute(input.key).decidedBy == 'elo' && attribute(input.key).elo != '')
+  - ( ) its rule is one Elo can read
+# On test/base no rule changed since the emails were fetched and no value was set by hand: what
+# sorting again changes is told, and shown by software/saras/test/integration/sorting-again.test.ts.
+ReqPost:
+  - (x) it tells how many emails the organisation keeps, and how many of them changed: >-
+      output.examined == count(old.emails.emails) && output.changed <= output.examined
+  - (x) a value a member set by hand is left as it is: >-
+      all(old.emails.emails, b ~>
+        let a = email(b.id) in
+          (valueFor(b, '1001').source != 'user' || valueFor(a, '1001') == valueFor(b, '1001'))
+          && (valueFor(b, '1002').source != 'user' || valueFor(a, '1002') == valueFor(b, '1002'))
+          && (valueFor(b, '1003').source != 'user' || valueFor(a, '1003') == valueFor(b, '1003')))
+  - ( ) a value the rule had given goes where the rule no longer speaks
+  - '(x) "Stands in": emails replied, placed by a member, or fetched before their headers were kept are left where they stand': >-
+      input.key != 'status' || all(old.emails.emails, b ~>
+        !(b.status == 'sent' || b.triageSource == 'user') || sorted(b.id, b.status, b.triageSource))
+  - '( ) "Stands in": one the rule no longer places is to handle'
+  - (x) only what the emails have for that attribute changes: >-
+      all(old.emails.emails, b ~> seesEmail(b.id) &&
+        (if input.key == 'status' then email(b.id).attributes == b.attributes else sorted(b.id, b.status, b.triageSource)))
+  - (x) the attributes are as they were
+
+examples:
+  - when: an administrator has the rule of the topic applied again, which has not changed
+    given: test/base, as admin
+    input: { key: "1002" }
+    then: 200
+    and:
+      - the twenty emails are examined, and none changes: "output == {examined: 20, changed: 0}"
+      - every email is as it was: emails == old.emails
+      - (+) nothing kept of an email changes, for anybody: db.emails == old.db.emails
+
+  - when: an administrator has the rule of "Stands in" applied again, which has not changed
+    given: test/base, as coadmin
+    input: { key: status }
+    then: 200
+    and:
+      - the twenty emails are examined, and none changes: "output == {examined: 20, changed: 0}"
+      - every email is as it was: emails == old.emails
+      - (+) nothing kept of an email changes, for anybody: db.emails == old.db.emails
+
+  - when: the administrator of Bureau Sud has the rule of its "Stands in" applied again
+    given: test/base, as outsider
+    input: { key: status }
+    then: 200
+    and:
+      - it keeps no email, so none is examined: "output == {examined: 0, changed: 0}"
+      - the emails of Atelier Nord are as they were: seenBy.admin.emails == old.seenBy.admin.emails
+      - (+) nothing kept of an email changes, for anybody: db.emails == old.db.emails
+
+counterexamples:
+  - when: nobody has an attribute of this key
+    for: an attribute of the organisation
+    given: test/base, as admin
+    input: { key: "9999" }
+    then: 404 attributes.notFound
+
+  - when: the administrator of Bureau Sud names the topic of Atelier Nord
+    for: an attribute of the organisation
+    given: test/base, as outsider
+    input: { key: "1002" }
+    then: 404 attributes.notFound
+
+  - when: the priority is decided by nobody
+    for: the attribute is decided by a rule
+    given: test/base, as admin
+    input: { key: "1001" }
+    then: 400 attributes.ruleRequired

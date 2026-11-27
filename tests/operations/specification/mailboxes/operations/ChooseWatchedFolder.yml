@@ -1,0 +1,106 @@
+name: ChooseWatchedFolder
+agent: Member
+entry: PUT /api/mailboxes/:id/folder
+description: >-
+  The one who manages a mailbox chooses the one folder saras watches, and what
+  is fetched from it: how far back, and whether only what is unread.
+input: FolderToWatch
+output: FolderWatched
+
+DomPost:
+  - (x) the mailbox watches this folder: >-
+      let a = mailbox(input.id)
+      in output.ok && output.folder == input.folder
+        && a != null && a.folder == input.folder && a.folderName == output.folderName
+  - (x) this far back, when it is one of the spans offered: >-
+      !contains([1, 7, 14, 30], input.days | 0) || mailbox(input.id).fetchDays == input.days
+  - (x) unread only or not: mailbox(input.id).unreadOnly == (input.unreadOnly | false)
+  - (x) its last error is forgotten: mailbox(input.id).lastError == null
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - (x) the requester manages the mailbox
+  - ( ) the mailbox answers
+  # On this stack, the folders of the mailbox of world/mailbox.
+  - (x) the folder is one of its folders: contains(['INBOX', 'Drafts', 'Sent'], input.folder | '')
+ReqPost:
+  - ( ) how far back is otherwise left to what the server is set up for
+  - (x) what was fetched before, from another folder or further back, is kept: >-
+      among(old.emails.emails, emails.emails)
+  - (x) its address, its name, and that it is shared or not, do not change: >-
+      let b = old.mailbox(input.id), a = mailbox(input.id)
+      in a.kind == b.kind && a.email == b.email && a.displayName == b.displayName && a.shared == b.shared && a.canManage == b.canManage
+  - (+) its credentials do not change: >-
+      withId(db.accounts, input.id).config_enc == withId(old.db.accounts, input.id).config_enc
+  - (x) every member who may use it is told what it watches, and nobody else: >-
+      let a = mailbox(input.id), told = seenBy.member.mailbox(input.id)
+      in a != null
+        && seenBy.member.onlyUses(input.id) && told.folder == a.folder && told.fetchDays == a.fetchDays && told.unreadOnly == a.unreadOnly
+        && seenBy.coadmin.manages(input.id) && seenBy.coadmin.mailbox(input.id).folder == a.folder
+        && !seenBy.outsider.seesMailbox(input.id)
+ReqTrig:
+  - the mailbox is fetched at once
+
+examples:
+  - when: an administrator has the inbox watched a month back, for unread mail only
+    given: test/base, as admin
+    input: { id: 1001, folder: INBOX, days: 30, unreadOnly: true }
+    then: 200
+    and:
+      - the folder is told back with its name: output.folder == 'INBOX' && output.folderName == 'Inbox'
+      - it was watched two weeks back, read or not: >-
+          old.mailbox(1001).fetchDays == 14 && !old.mailbox(1001).unreadOnly
+
+  - when: another administrator names a span that is not offered, and says nothing of unread mail
+    given: test/base, as coadmin
+    input: { id: 1001, folder: INBOX, days: 3 }
+    then: 200
+    and:
+      - how far back is what the server is set up for - seven days on this stack: mailbox(1001).fetchDays == 7
+      - read or not: "!mailbox(1001).unreadOnly"
+
+  - when: only the folder is named
+    given: test/base, as admin
+    input: { id: 1001, folder: INBOX }
+    then: 200
+    and:
+      - how far back is what the server is set up for - seven days on this stack: mailbox(1001).fetchDays == 7
+
+counterexamples:
+  # These three come first, and are told of no mailbox: the fetch an example started
+  # may still be under way, and ends on the mailbox of the Background.
+  - when: the organisation has no mailbox
+    for: the requester may use the mailbox
+    given: test/unconnected, as admin
+    input: { id: 1001, folder: INBOX }
+    then: 404 mailboxes.notFound
+
+  - when: what is given as its number is not one
+    for: the requester may use the mailbox
+    given: test/unconnected, as coadmin
+    input: { id: not-a-number, folder: INBOX }
+    then: 404 mailboxes.notFound
+
+  - when: a member who is not an administrator asks, of a number no mailbox has
+    for: the requester may use the mailbox
+    given: test/unconnected, as member
+    input: { id: 4242, folder: INBOX }
+    then: 404 mailboxes.notFound
+
+  - when: the mailbox has no folder of this name
+    for: the folder is one of its folders
+    given: test/base, as admin
+    input: { id: 1001, folder: Archive }
+    then: 400 mailboxes.unknownFolder
+
+  - when: the folder is named in another case than the mailbox's
+    for: the folder is one of its folders
+    given: test/base, as admin
+    input: { id: 1001, folder: sent }
+    then: 400 mailboxes.unknownFolder
+
+  - when: no folder is named
+    for: the folder is one of its folders
+    given: test/base, as admin
+    input: { id: 1001, days: 7 }
+    then: 400 mailboxes.unknownFolder

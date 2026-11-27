@@ -1,0 +1,49 @@
+name: ReadEmailAsWritten
+agent: Member
+entry: GET /api/emails/:id/html
+description: >-
+  Tells a member the HTML of an email, rebuilt as a document to show in a
+  frame: the answer is a text, not JSON.
+input: EmailNamed
+output: EmailAsWritten
+
+# No Background keeps an email with its HTML: nothing here shows the document.
+# What is shown is how the server says there is none to tell. Past sign-in it
+# says so in a text under the type of the document, which cannot be read as a
+# Refusal: so these are examples answered 404, where they would be
+# counterexamples, and the two preconditions they violate are told only.
+DomPre:
+  - ( ) the email was kept with its HTML
+DomPost:
+  - ( ) its HTML is told, rebuilt as a document
+ReqPre:
+  - (x) the requester is signed in
+  - ( ) the requester may use the mailbox of the email
+ReqPost:
+  - ( ) the document may run nothing and ask nothing of any host, and only a page of ours may frame it
+
+examples:
+  - when: a member asks for an email kept as text only
+    given: test/base, as member
+    input: { id: 1001 }
+    then: 404
+    and:
+      - they may use its mailbox: old.seesEmail(1001)
+      - it is said not found, in a text: >-
+          contains(output, '"code":"emails.notFound"')
+
+  - when: somebody of another organisation asks for it
+    given: test/base, as outsider
+    input: { id: 1001 }
+    then: 404
+    and:
+      - it is said not found, in the same text: >-
+          contains(output, '"code":"emails.notFound"')
+
+  - when: a member asks for an email that does not exist
+    given: test/base, as member
+    input: { id: 9999 }
+    then: 404
+    and:
+      - it is said not found, in the same text: >-
+          contains(output, '"code":"emails.notFound"')

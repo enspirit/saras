@@ -1,0 +1,12 @@
+# Replying: the help asked of the AI, and a reply handed to the mailbox.
+
+# The help asked for an email: the action sent says which of the three it is.
+# What is answered is a Proposal (emails/types.elo).
+HelpAsked = { id: Int, action :? String, html :? String, promptId :? Int }
+
+# A reply as a member hands it over: what they wrote, to whom, the proposal
+# it started from and why they changed it.
+ReplyGiven = { id: Int, html :? String, to :? [String], cc :? [String], proposalId :? Int, changeReason :? String }
+
+# What handing a reply over tells back.
+HandedOver = { ok: Bool, wasEdited: Bool }

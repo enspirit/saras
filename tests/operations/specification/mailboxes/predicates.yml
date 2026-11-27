@@ -1,0 +1,29 @@
+# What is true or false of the mailboxes, as somebody sees them at one moment:
+# one they may not use does not exist for them.
+
+- name: seesMailbox(id)
+  description: There is a mailbox of this number, for who looks.
+  formaldef: any(mailboxes | [], m ~> m.id == id)
+
+- name: manages(id)
+  description: Who looks manages the mailbox of this number.
+  formaldef: seesMailbox(id) && mailbox(id).canManage
+
+- name: onlyUses(id)
+  description: Who looks may use the mailbox of this number, and no more.
+  formaldef: seesMailbox(id) && !mailbox(id).canManage
+
+- name: sharedMailbox(id)
+  description: The mailbox of this number is shared with the organisation.
+  formaldef: seesMailbox(id) && mailbox(id).shared
+
+- name: personalMailbox(id)
+  description: The mailbox of this number is the own of the one who connected it.
+  formaldef: seesMailbox(id) && !mailbox(id).shared
+
+- name: sameWatch(a, b)
+  description: >-
+    A mailbox told twice watches the same: the folder, how far back, unread only
+    or not.
+  formaldef: >-
+    a.folder == b.folder && a.folderName == b.folderName && a.fetchDays == b.fetchDays && a.unreadOnly == b.unreadOnly

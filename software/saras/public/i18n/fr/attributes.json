@@ -28,6 +28,7 @@
   "status": "Se trouve dans",
   "noValue": "Aucune valeur",
   "valueSet": "{name} : enregistré.",
+  "valueNotAdded": "{name} a déjà toutes les valeurs possibles : celle-ci n'a pas été ajoutée.",
   "sourceRule": "Décidé par une règle",
   "sourceUser": "Fixé à la main",
   "sortAgain": "Enregistrer et appliquer aux emails déjà conservés",

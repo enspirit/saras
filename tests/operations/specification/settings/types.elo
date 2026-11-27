@@ -1,0 +1,50 @@
+# A member's own settings, their organisation's, and what a member is told of both.
+
+# When the AI writes a proposal: on demand, at fetch, or at fetch and filed in the mailbox's drafts.
+Writing = String(w | w == 'none' || w == 'draft' || w == 'mailbox')
+
+# The organisation as one of its members sees it: its model and whether it has
+# a key are told to its administrators only.
+Organization = { name: String, writing: Writing, skipAutomated: Bool, model :? String, hasKey :? Bool }
+
+# What a signed-in member is told about themselves, their organisation and this server.
+Profile = {
+  email: String,
+  name: String,
+  organization: Organization,
+  role: Role,
+  language: String,
+  signature: String,
+  model: String,
+  hasKey: Bool,
+  oauth: { google: Bool, microsoft: Bool },
+  privacy: .,
+  retentionDays: Int
+}
+
+# PUT /api/settings and PUT /api/organization carry one operation per field:
+# what each is given is its own field, and no other.
+
+# The name a member gives themselves, or an administrator their organisation.
+NameGiven = { name: String }
+
+# The language a member chooses.
+LanguageGiven = { language: String }
+
+# The signature a member sets.
+SignatureGiven = { signature: String }
+
+# When the AI writes a proposal, as an administrator chooses it.
+WritingGiven = { writing: Writing }
+
+# Whether automated emails are set aside first.
+AutomatedSetAside = { skipAutomated: Bool }
+
+# The model the organisation's AI uses.
+ModelGiven = { model: String }
+
+# The organisation's own key: not blank.
+KeyGiven = { openrouterKey: String(k | !isBlank(k)) }
+
+# A blank key, which removes the organisation's own.
+KeyRemoved = { openrouterKey: String(k | isBlank(k)) }

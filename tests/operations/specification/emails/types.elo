@@ -1,0 +1,127 @@
+# Emails: the boxes, one email with its proposal and its reply, and what
+# sorting several at once exchanges.
+
+# Where an email stands: to handle, needing no reply, ignored, replied.
+EmailStatus = String(s | s == 'needs_reply' || s == 'no_reply' || s == 'ignored' || s == 'sent')
+
+# How a reply was handed to the mailbox: sent, or left in its drafts.
+ReplyMode = String(m | m == 'sent' || m == 'draft')
+
+# An email as a line of a box. Its values for the attributes are by the
+# attribute's key: a record of ValueOfEmail.
+EmailSummary = {
+  id: Int,
+  fromName: String,
+  fromAddr: String,
+  subject: String,
+  date: String,
+  status: EmailStatus,
+  triageSource: String|Null,
+  snippet: String,
+  mailbox: String,
+  shared: Bool,
+  replyMode: ReplyMode|Null,
+  attributes: .
+}
+
+# How many emails each box holds.
+BoxCounts = { todo: Int, none: Int, sent: Int, ignored: Int }
+
+# The box asked for, or every box, and what is searched in it.
+EmailsAsked = { box :? String, search :? String }
+
+# The emails of a box, and how many each box holds.
+EmailsOfBox = { emails: [EmailSummary], counts: BoxCounts }
+
+# An email, named by its number.
+EmailNamed = { id: Int }
+
+# Who wrote an email, or received it: a name and an address.
+Correspondent = { name: String, address: String }
+
+# A file attached to an email: its name, its type and its size.
+AttachedFile = { name: String, type: String, size: Int }
+
+# Who a reply goes to.
+Recipients = { to: [String], cc: [String] }
+
+# The kinds of help the AI gives: checking typos, improving the style, writing
+# with a prompt.
+Assistance = String(a | a == 'typos' || a == 'style' || a == 'prompt')
+
+# A proposal: what one kind of help wrote. Who served the model is told when it
+# was just written.
+Proposal = { id: Int, action: Assistance, promptId: Int|Null, model: String, html: String, provider :? String|Null }
+
+# What was handed to the mailbox for an email, and by whom.
+Reply = {
+  finalText: String,
+  finalHtml: String,
+  wasEdited: Bool,
+  changeReason: String,
+  mode: ReplyMode,
+  to: [String],
+  cc: [String],
+  sentAt: String,
+  by: String|Null,
+  byName: String|Null
+}
+
+# One email as its reader sees it. The server tells more than shared/email.ts
+# declares: accountId, folder, providerId, messageId, threadId, refs, replyTo.
+EmailWithItsReply = {
+  id: Int,
+  accountId: Int,
+  folder: String,
+  providerId: String,
+  messageId: String|Null,
+  threadId: String|Null,
+  refs: String,
+  mailbox: String,
+  shared: Bool,
+  fromName: String,
+  fromAddr: String,
+  replyTo: String,
+  to: [Correspondent],
+  cc: [Correspondent],
+  subject: String,
+  date: String,
+  bodyText: String,
+  hasHtml: Bool,
+  hostedImagesHeld: Bool,
+  attachments: [AttachedFile],
+  attachmentsOpen: Bool,
+  status: EmailStatus,
+  triageSource: String|Null,
+  triageReason: String,
+  triageReasonCode: String|Null,
+  suggestedPromptId: Int|Null,
+  attributes: .,
+  recipients: Recipients,
+  recipientsAll: Recipients,
+  proposal: Proposal|Null,
+  reply: Reply|Null
+}
+
+# An email as it was written: a document, told as a text.
+EmailAsWritten = String
+
+# A member says an email needs no reply. Of the three corrections, the status
+# sent says which it is.
+NoReplyNeeded = { id: Int, status: String(s | s == 'no_reply') }
+
+# A member ignores an email.
+Ignored = { id: Int, status: String(s | s == 'ignored') }
+
+# A member moves an email back to handle.
+BackToHandle = { id: Int, status: String(s | s == 'needs_reply') }
+
+# A view of emails, named: a box or a board, as searched.
+ViewNamed = { box :? String, board :? Int, search :? String }
+
+# The emails a correction of several is for, those ticked or all of a view, and
+# where they are said to stand.
+SelectionSorted = { selection: { ids :? [Int], all :? ViewNamed }, status: String }
+
+# How many emails an action on several changed.
+SelectionDone = { changed: Int }

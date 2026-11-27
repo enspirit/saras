@@ -70,7 +70,8 @@ function AttributeProp(entry: AttributeEntry): HTMLSpanElement {
     !value && Icon('plus', { size: 'small' }), h('span', { class: 'attribute-prop__name' }, name), value);
   const wrap = h('span', { class: 'attribute-prop' }, button);
   button.addEventListener('click', popover(wrap, button, (close) => ValueMenu(entry, close)));
-  if (entry.open) requestAnimationFrame(() => button.click());
+  // Drawn again with its menu open: the focus the old bar had is put back on the button first.
+  if (entry.open) requestAnimationFrame(() => (button.focus(), button.click()));
   return wrap;
 }
 

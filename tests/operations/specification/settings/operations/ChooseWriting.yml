@@ -1,0 +1,54 @@
+name: ChooseWriting
+agent: Administrator
+entry: PUT /api/organization
+description: >-
+  An administrator chooses when proposals are written for the emails to
+  handle: the second of the two steps an email goes through.
+input: WritingGiven
+output: Done
+
+DomPost:
+  - (x) proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts: me.organization.writing == input.writing
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) it is one of those three - nothing sends by itself: contains(['none', 'draft', 'mailbox'], input.writing | '')
+ReqPost:
+  - (x) every member of the organisation is told: seenBy.member.me.organization.writing == input.writing
+  - (x) nothing else of the organisation changes: >-
+      me == merge(old.me, {
+        organization: merge(old.me.organization, { writing: me.organization.writing })
+      })
+  - (x) nothing of another organisation changes
+  - (x) no email is touched by choosing: emails == old.emails
+
+examples:
+  - when: an administrator has proposals written at fetch
+    given: test/base, as admin
+    input: { writing: draft }
+    then: 200
+    and:
+      - they were written on demand: old.me.organization.writing == 'none'
+
+  - when: an administrator has them written at fetch and filed in the mailbox's drafts
+    given: test/base, as coadmin
+    input: { writing: mailbox }
+    then: 200
+
+  - when: an administrator chooses what is already so, on demand
+    given: test/base, as admin
+    input: { writing: none }
+    then: 200
+
+counterexamples:
+  - when: what is asked is to send by itself
+    for: it is one of those three - nothing sends by itself
+    given: test/base, as admin
+    input: { writing: send }
+    then: 400 organization.invalidWriting
+
+  - when: what is given says nothing
+    for: it is one of those three - nothing sends by itself
+    given: test/base, as admin
+    input: { writing: ~ }
+    then: 400 organization.invalidWriting

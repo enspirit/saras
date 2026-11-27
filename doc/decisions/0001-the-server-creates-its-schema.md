@@ -21,7 +21,7 @@ The server creates its schema when it starts: `software/saras/src/tooling/db/sch
 
 - The schema only ever grows by statements that are safe to run on a database that already has them. A change that is not (renaming a column, moving data) has no place to live yet.
 - A seed is held to the schema by nothing but being loaded: CI applies the demo seed to the stack it started.
-- A black-box suite can name the state it starts from, but installing a seed empties the database, which on a laptop is the development one. `tests/webspicy` therefore still specifies only what reads and what refuses; the tests that need a known state start their own application, in `software/saras/test/integration/`.
+- A black-box suite can name the state it starts from, but installing a seed empties the database, which on a laptop is the development one. `tests/webspicy` therefore still specifies only what reads and what refuses; the tests that need a known state start their own application, in `software/saras/test/integration/`. (No longer so: since [decision 0017](0017-the-operations-are-specified-by-predicates.md) the black-box suite is `tests/operations`, which runs on a stack whose database is its own and specifies what changes the state too.)
 - The server needs the right to create tables in production.
 
 ## What would reverse this

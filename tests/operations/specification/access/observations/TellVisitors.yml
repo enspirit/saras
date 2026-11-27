@@ -1,0 +1,23 @@
+name: TellVisitors
+agent: Visitor
+entry: GET /api/public
+description: >-
+  Tells anyone, signed in or not, what the sign-in pages need to know of this
+  installation: whether an organisation may be created, how a lost password is
+  replaced, and how long the content of emails is kept.
+output: WhatVisitorsAreTold
+
+DomPost:
+  - (x) sign-up is said open when the operator allows it: output.allowSignup
+  - (x) an account exists, and it says so: "!output.firstAccount && old.seenBy.admin.signedIn"
+ReqPost:
+  - ( ) nothing of any organisation is told
+
+examples:
+  - when: a visitor asks
+    given: test/base, as visitor
+    then: 200
+
+  - when: a member asks
+    given: test/base, as member
+    then: 200

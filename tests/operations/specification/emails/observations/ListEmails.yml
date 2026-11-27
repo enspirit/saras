@@ -1,0 +1,186 @@
+name: ListEmails
+agent: Member
+entry: GET /api/emails
+description: >-
+  Tells a member the emails of a box, or of every box, most recent first, as
+  searched, with how many emails each box holds.
+input: EmailsAsked
+output: EmailsOfBox
+
+DomPost:
+  - (x) each email told stands in the box asked for, among the emails to handle when none we know is: >-
+      ofBox(output.emails, input.box | 'todo') == output.emails
+  - (x) nothing searched, every email of the box is told, as every box tells it: >-
+      !isBlank(input.search | '') || output.emails == ofBox(old.emails.emails, input.box | 'todo')
+  - ( ) with a search, those that hold every word in who sent them, their subject or their text, in any case
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) the most recent comes first: mostRecentFirst(output.emails)
+  - (x) under a search, an email is told as every box tells it, but for its snippet: >-
+      all(output.emails, e ~> let kept = old.email(e.id) in kept == merge(e, {snippet: kept.snippet}))
+  - ( ) the snippet is the start of its text, or with a search its text from a little before the first word searched
+  - (x) how many emails each box holds is told, whatever is asked or searched: output.counts == old.emails.counts
+  - (x) each box counts the emails that stand in it: >-
+      let kept = old.emails.emails
+      in output.counts == {
+        todo: count(standing(kept, 'needs_reply')),
+        none: count(standing(kept, 'no_reply')),
+        sent: count(standing(kept, 'sent')),
+        ignored: count(standing(kept, 'ignored'))
+      }
+  - ( ) only the emails of mailboxes the requester may use are told and counted
+  - (x) at most the 200 most recent are told: count(output.emails) <= 200
+
+examples:
+  - when: a member asks, naming no box
+    given: test/base, as member
+    input: {}
+    then: 200
+    and:
+      - the ten emails to handle are told: ids(output.emails) == [1014, 1013, 1011, 1010, 1008, 1007, 1005, 1003, 1002, 1001]
+      - every box is counted: "output.counts == {todo: 10, none: 7, sent: 2, ignored: 1}"
+      - each arrived in the shared mailbox: all(output.emails, e ~> e.mailbox == 'me@corp.example' && e.shared)
+      - a rule gave a topic to three of them: >-
+          map(filter(output.emails, e ~> fetch(e.attributes, '1002') != null), e ~> [e.id, fetch(e.attributes, '1002').value, fetch(e.attributes, '1002').source])
+          == [[1010, '1', 'rule'], [1008, '2', 'rule'], [1001, '1', 'rule']]
+      - the snippet is the start of the text: startsWith(first(output.emails).snippet, 'Hello,') && all(output.emails, e ~> length(e.snippet) <= 160)
+
+  - when: an administrator asks for the emails that need no reply
+    given: test/base, as admin
+    input: { box: none }
+    then: 200
+    and:
+      - seven are told: ids(output.emails) == [1019, 1018, 1015, 1012, 1009, 1006, 1004]
+      - one by a member's verdict, the others by a rule's: >-
+          all(output.emails, e ~> e.triageSource == (if e.id == 1018 then 'user' else 'rule'))
+
+  - when: a member asks for the emails replied
+    given: test/base, as member
+    input: { box: sent }
+    then: 200
+    and:
+      - the one sent and the one filed as a draft are told, each saying how: >-
+          ids(output.emails) == [1017, 1016] && first(output.emails).replyMode == 'sent' && last(output.emails).replyMode == 'draft'
+
+  - when: an administrator asks for the emails ignored
+    given: test/base, as coadmin
+    input: { box: ignored }
+    then: 200
+    and:
+      - the one a member ignored is told: ids(output.emails) == [1020] && first(output.emails).triageSource == 'user'
+
+  - when: a member asks for every box
+    given: test/base, as member
+    input: { box: all }
+    then: 200
+    and:
+      - the twenty emails are told: count(output.emails) == 20 && first(output.emails).id == 1020
+      - how an email was replied is said of the replied ones only: all(output.emails, e ~> (e.replyMode != null) == (e.status == 'sent'))
+
+  - when: a member asks for a box that does not exist
+    given: test/base, as member
+    input: { box: archive }
+    then: 200
+    and:
+      - the emails to handle are told: count(output.emails) == 10 && notStanding(output.emails, 'needs_reply') == []
+
+  - when: a member searches two words in every box, in another case
+    given: test/base, as member
+    input: { box: all, search: INVOICE northwind }
+    then: 200
+    and:
+      - the two emails that hold both are told: ids(output.emails) == [1018, 1001]
+      - a third holds one of the words only: old.email(1020).fromAddr == 'claire@northwind.example'
+
+  - when: a member searches a word, naming no box
+    given: test/base, as member
+    input: { search: invoice }
+    then: 200
+    and:
+      - the one found among the emails to handle is told: ids(output.emails) == [1001]
+
+  - when: a member searches the name of who sent an email
+    given: test/base, as member
+    input: { box: all, search: okafor }
+    then: 200
+    and:
+      - it is found: ids(output.emails) == [1017] && first(output.emails).fromName == 'Idris Okafor'
+
+  - when: a member searches the address of who sent an email
+    given: test/base, as member
+    input: { box: all, search: lakeside.example }
+    then: 200
+    and:
+      - it is found: ids(output.emails) == [1017] && first(output.emails).fromAddr == 'idris@lakeside.example'
+
+  - when: a member searches a word of the text of an email
+    given: test/base, as member
+    input: { box: all, search: transfer }
+    then: 200
+    and:
+      - it is found: ids(output.emails) == [1001]
+      - the snippet starts forty characters before the word: >-
+          indexOf(first(output.emails).snippet, 'transfer') == 40
+          && startsWith(first(output.emails).snippet, ' 2026-097 was paid this morning by bank transfer.')
+
+  - when: a member searches two words of a text
+    given: test/base, as member
+    input: { box: all, search: signed board }
+    then: 200
+    and:
+      - it is found: ids(output.emails) == [1020]
+      - the snippet is taken around the first word searched, which comes second in the text: >-
+          indexOf(first(output.emails).snippet, 'signed') == 40 && !contains(first(output.emails).snippet, 'board')
+
+  - when: a member searches a word that the subject alone holds
+    given: test/base, as member
+    input: { box: all, search: "%" }
+    then: 200
+    and:
+      - the sign is taken as it is written, and one email holds it: >-
+          ids(output.emails) == [1004] && first(output.emails).subject == 'Winter sale: 20% off paper and ink'
+      - the snippet is the start of the text: startsWith(first(output.emails).snippet, 'Stock up for the new year.')
+
+  - when: a member searches the address of the mailbox
+    given: test/base, as member
+    input: { box: all, search: me@corp.example }
+    then: 200
+    and:
+      - who an email was sent to is not searched: count(output.emails) == 0
+
+  - when: a member searches what no email holds
+    given: test/base, as member
+    input: { box: all, search: nothing-says-this }
+    then: 200
+    and:
+      - no email is told, and every box is counted all the same: "count(output.emails) == 0 && output.counts == {todo: 10, none: 7, sent: 2, ignored: 1}"
+
+  - when: a member searches blanks
+    given: test/base, as member
+    input: { box: all, search: "   " }
+    then: 200
+    and:
+      - nothing is searched: count(output.emails) == 20
+
+  - when: somebody of another organisation asks for every box
+    given: test/base, as outsider
+    input: { box: all }
+    then: 200
+    and:
+      - emails are kept, of which none is told or counted: >-
+          count(old.seenBy.admin.emails.emails) == 20 && count(output.emails) == 0 && output.counts == {todo: 0, none: 0, sent: 0, ignored: 0}
+
+  - when: somebody of another organisation searches a word of an email of this one
+    given: test/base, as outsider
+    input: { box: all, search: invoice }
+    then: 200
+    and:
+      - none is found: count(output.emails) == 0
+
+  - when: a member asks before anything was fetched
+    given: test/unfetched, as member
+    input: { box: all }
+    then: 200
+    and:
+      - no email is told or counted: "count(output.emails) == 0 && output.counts == {todo: 0, none: 0, sent: 0, ignored: 0}"

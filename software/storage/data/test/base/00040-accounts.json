@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1001,
+    "org_id": 1001,
+    "user_id": 1001,
+    "shared": true,
+    "kind": "imap",
+    "email": "me@corp.example",
+    "display_name": "Atelier Nord",
+    "config_enc": "58tiQEWJWEEBYUZnfbGHUX4kD1kqGp4wN6F8/XigoZOkmEwq8t3Cj4yOrUAcG+lwysIn2l+hh7c2RegJ8Pd9agebWklywUE/wf8mFuyROhqAWyUf3nTCDkWbP34gazHZKxGfoOJjGkiFCBHTd+soGKdQwPg7NKhhz6bF8LvQ8/s7YIAD2xr0VrcO7OHjm4DkCjpctZjTCfWHlVD0fHBLTPtybZuhIgxx12+9h+i/wA8BRu/97bwg43Fq/5Bs8JCtj2KCxlNIktW0JONfSC2vDzeDNg==",
+    "folder": "INBOX",
+    "folder_name": "Inbox",
+    "last_sync_at": "2026-11-26 08:07:51 +0000",
+    "last_error": null,
+    "created_at": "2026-11-26 08:07:50 +0000",
+    "fetch_days": 14,
+    "unread_only": false
+  }
+]

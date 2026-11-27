@@ -1,0 +1,50 @@
+name: CreateBoard
+agent: Member
+entry: POST /api/boards
+description: >-
+  A member makes a board: a named view of emails, defined by a filter on their
+  attributes and on the facts of an email.
+input: BoardGiven
+output: Board
+
+DomPost:
+  - (x) the member has one more board, with this name and this filter: >-
+      count(boards) == count(old.boards) + 1
+      && board(output.id).name == input.name && board(output.id).filter == input.filter
+ReqPre:
+  - (x) the requester is signed in
+  - (x) it has a name
+  - (x) only an administrator makes it shared
+ReqPost:
+  - (x) the boards there were are as they were: among(old.boards, boards)
+  - ( ) the filter is kept reduced to the attributes we know
+  - ( ) a board shows each member only the emails of mailboxes they may use
+
+examples:
+  - when: a member makes a personal board
+    given: test/base, as member
+    input: { name: Invoices, shared: false, filter: { keywords: invoice } }
+    then: 201
+    and:
+      - it is theirs alone: "!output.shared && output.canManage && !seenBy.admin.seesBoard(output.id)"
+
+  - when: an administrator makes a shared board
+    given: test/base, as admin
+    input: { name: Urgent, shared: true, filter: { received: 2 } }
+    then: 201
+    and:
+      - every member of the organisation sees it: seenBy.member.seesBoard(output.id)
+      - nobody of another organisation does: "!seenBy.outsider.seesBoard(output.id)"
+
+counterexamples:
+  - when: the name is blank
+    for: it has a name
+    given: test/base, as member
+    input: { name: "  ", shared: false, filter: {} }
+    then: 400 boards.nameRequired
+
+  - when: a member asks for a shared board
+    for: only an administrator makes it shared
+    given: test/base, as member
+    input: { name: For all, shared: true, filter: {} }
+    then: 403 boards.sharedByAdministrators

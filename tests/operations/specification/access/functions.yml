@@ -1,0 +1,30 @@
+# What is read of who gets in, and of the invitations of the organisation, as
+# an administrator sees them at one moment.
+
+- name: invitation(id)
+  description: The invitation of this number.
+  formaldef: find(invitations | [], i ~> i.id == id)
+
+- name: invitationTo(address)
+  description: >-
+    The invitation to this address: an organisation has one at most.
+  formaldef: find(invitations | [], i ~> i.email == address)
+
+# What only the database shows of who gets in: whatever the organisation, and
+# through nobody's eyes.
+
+- name: account(address)
+  description: The account that signs in with this address.
+  formaldef: find(db.users, u ~> u.email == address)
+
+- name: sessionsOf(id)
+  description: The sessions open for the member of this number.
+  formaldef: filter(db.sessions, s ~> s.user_id == id)
+
+- name: resetLinksOf(id)
+  description: The links to choose a new password of the member of this number.
+  formaldef: filter(db.password_resets, r ~> r.user_id == id)
+
+- name: resetLinksOfOthers(id)
+  description: The links to choose a new password of everybody but the member of this number.
+  formaldef: filter(db.password_resets, r ~> r.user_id != id)

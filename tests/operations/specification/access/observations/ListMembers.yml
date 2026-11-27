@@ -1,0 +1,42 @@
+name: ListMembers
+agent: Administrator
+entry: GET /api/members
+description: >-
+  Tells an administrator who the members of their organisation are.
+output: Members
+
+DomPost:
+  - (x) the members of the requester's organisation are told, the requester among them: >-
+      any(output, m ~> m.email == old.me.email && m.name == old.me.name && m.role == old.me.role)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (x) they are told in the order of their numbers: ids(output) == sort(ids(output))
+  - ( ) each with the number of personal mailboxes they connected, and whether they set a second factor up
+  - ( ) nothing of a password is told
+
+examples:
+  - when: an administrator of Atelier Nord asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - they are ada, ines and milo: >-
+          ids(output) == [1001, 1002, 1003]
+          && addresses(output) == ['ada@atelier.example', 'ines@atelier.example', 'milo@atelier.example']
+          && names(output) == ['Ada Admin', 'Ines Admin', 'Milo Member']
+      - two administrators and a user: roles(output) == ['admin', 'admin', 'user']
+      - a shared mailbox is nobody's personal one, and nobody set a second factor up: all(output, m ~> m.mailboxes == 0 && !m.secondFactor)
+      - nobody of another organisation is told: >-
+          noneAmong(ids(output), ids(old.seenBy.outsider.members))
+          && noneAmong(addresses(output), addresses(old.seenBy.outsider.members))
+      - the other administrator is told the same: old.seenBy.coadmin.members == output
+
+  - when: the administrator of Bureau Sud asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - he is alone: addresses(output) == ['otto@bureau.example'] && roles(output) == ['admin']
+      - nobody of Atelier Nord is told: >-
+          noneAmong(ids(output), ids(old.seenBy.admin.members))
+          && noneAmong(addresses(output), addresses(old.seenBy.admin.members))

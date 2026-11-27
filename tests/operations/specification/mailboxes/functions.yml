@@ -1,0 +1,6 @@
+# What is read of the mailboxes, as somebody sees them at one moment: one they
+# may not use does not exist for them.
+
+- name: mailbox(id)
+  description: The mailbox of this number.
+  formaldef: find(mailboxes | [], m ~> m.id == id)

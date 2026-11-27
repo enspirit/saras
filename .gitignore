@@ -8,3 +8,5 @@ node_modules/
 software/saras/public/js/
 # What emb remembers of its builds, and its logs
 .emb/
+# The report of the operations runner, and the explorer written from it
+/tests/operations/.report/

@@ -1,0 +1,216 @@
+name: EditAttribute
+agent: Administrator
+entry: PUT /api/attributes/:key
+description: >-
+  An administrator changes an attribute. Of the pre-configured one ("Stands in")
+  only how it is decided and the colours of its values change: its name and its
+  values are fixed, because the application relies on them.
+input: AttributeChanged
+output: Attribute
+
+DomPre:
+  - (x) an attribute of the organisation
+DomPost:
+  - (x) it is decided this way: >-
+      output.key == input.key
+      && attribute(output.key) == output
+      && output.decidedBy == (input.decidedBy | 'nobody')
+      && (output.elo == trim(input.elo | '') || (output.system && isBlank(input.elo | '')))
+  - (x) one of the organisation's own also has this name and these values: >-
+      output.system || (
+        output.name == substring(trim(input.name), 0, 60)
+        && output.kind == (if input.kind == 'member' then 'member' else 'choice')
+        && (output.kind == 'member' || labels(output.values) == labelsKept(input.values))
+      )
+  - (x) the pre-configured one has its values in the colours given, each at its place: >-
+      !output.system || all([0, 1, 2, 3], place ~>
+        colourGiven(input.values, place) == null || at(output.values, place).color == colourGiven(input.values, place))
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - "(x) it is decided in a way we know: by a rule, or by nobody"
+  - (x) decided by a rule, it has one
+  - ( ) its rule is one Elo can read
+  - (x) one of the organisation's own has a name: input.key == 'status' || !isBlank(input.name | '')
+  - (x) one of the organisation's own that is a choice has at least two values: >-
+      input.key == 'status' || input.kind == 'member'
+      || count(labelsKept(labelled(input.values))) >= 2
+ReqPost:
+  - '(x) "Stands in": whether its rule decides it is the organisation''s setting (automated mail set aside first)': >-
+      input.key != 'status' || me.organization.skipAutomated == (output.decidedBy == 'elo')
+  - (x) the pre-configured one keeps its name and its values, whatever is given: >-
+      !output.system || (
+        output.name == 'Stands in' && output.kind == 'choice'
+        && keys(output.values) == keys(old.preconfigured.values) && labels(output.values) == labels(old.preconfigured.values)
+      )
+  - (x) the pre-configured one, given no colour for a value or none we know, keeps the one it has: >-
+      !output.system || all([0, 1, 2, 3], place ~>
+        colourGiven(input.values, place) != null || at(output.values, place).color == at(old.preconfigured.values, place).color)
+  - '(x) "Stands in", given no rule, tells the automated-mail rule again': >-
+      !output.system || !isBlank(input.elo | '') || !isBlank(output.elo)
+  - (x) the organisation has the same attributes, in the same order: keys(attributes) == keys(old.attributes)
+  - (x) the other attributes are as they were: among(withoutKey(old.attributes, input.key), attributes)
+  - (x) emails already kept stay as they were sorted: emails == old.emails
+  - '(x) only "Stands in" changes what a member is told of their organisation': >-
+      input.key == 'status' || me == old.me
+
+examples:
+  - when: an administrator renames the priority and gives it other values
+    given: test/base, as admin
+    input: { key: "1001", name: Urgency, kind: choice, values: [{ label: Now, color: red }, { label: Later, color: green }], decidedBy: nobody, elo: "" }
+    then: 200
+    and:
+      - it is told as changed: >-
+          output == {
+            key: '1001', name: 'Urgency', kind: 'choice', decidedBy: 'nobody', elo: '', system: false,
+            values: [{key: '1', label: 'Now', color: 'red'}, {key: '2', label: 'Later', color: 'green'}]
+          }
+      - every member sees the change: seenBy.member.attribute(output.key) == output
+      - Bureau Sud is told what it was: seenBy.outsider.attributes == old.seenBy.outsider.attributes
+
+  - when: an administrator gives the priority a rule
+    given: test/base, as coadmin
+    input:
+      key: "1001"
+      name: Priority
+      kind: choice
+      values: [{ label: High, color: red }, { label: Normal, color: grey }, { label: Low, color: blue }]
+      decidedBy: elo
+      elo: |-
+        if contains(lower(_.subject), 'urgent') then 'High' else null
+    then: 200
+    and:
+      - it is decided by this rule: output.decidedBy == 'elo' && output.elo == input.elo
+      - no email already kept is given a priority: count(valued(emails.emails, '1001')) == 0
+
+  - when: an administrator leaves the topic to nobody, and renames a value
+    given: test/base, as admin
+    input: { key: "1002", name: Topic, kind: choice, values: [{ label: Invoices, color: orange }, { label: Sales, color: blue }], decidedBy: nobody, elo: "" }
+    then: 200
+    and:
+      - its rule is gone: output.decidedBy == 'nobody' && output.elo == ''
+      - the six emails its rule had decided keep their value, by its key: >-
+          count(filter(emails.emails, e ~> valueFor(e, '1002').source == 'rule')) == 6
+
+  - when: an administrator makes Who a choice
+    given: test/base, as admin
+    input: { key: "1003", name: Team, kind: choice, values: [{ label: Front, color: yellow }, { label: Back, color: purple }] }
+    then: 200
+    and:
+      - its values are those given, and no longer the members: >-
+          output.kind == 'choice' && output.values == [{key: '1', label: 'Front', color: 'yellow'}, {key: '2', label: 'Back', color: 'purple'}]
+
+  - when: an administrator leaves "Stands in" to nobody
+    given: test/base, as admin
+    input: { key: status, decidedBy: nobody }
+    then: 200
+    and:
+      - automated mail is no longer set aside first: old.me.organization.skipAutomated && !me.organization.skipAutomated
+      - every member is told so: "!seenBy.member.me.organization.skipAutomated"
+      - its rule is still there to read: output.elo == old.preconfigured.elo
+      - its values keep their colours: output.values == old.preconfigured.values
+      - Bureau Sud keeps its own setting: >-
+          seenBy.outsider.me.organization.skipAutomated
+          && seenBy.outsider.attributes == old.seenBy.outsider.attributes
+
+  - when: an administrator gives "Stands in" another rule, and colours to some of its values
+    given: test/base, as admin
+    input:
+      key: status
+      decidedBy: elo
+      elo: |-
+        if contains(lower(_.from.address), 'newsletter') then {value: 'ignored', reason: 'a newsletter'} else null
+      values: [{ color: red }, { color: pink }, {}, { color: blue }]
+    then: 200
+    and:
+      - it is decided by this rule: output.decidedBy == 'elo' && output.elo == input.elo && me.organization.skipAutomated
+      - "To handle is red and Ignored blue; No reply needed, given pink, and Replied, given none, keep theirs": >-
+          map(output.values, v ~> v.color) == ['red', 'grey', 'green', 'blue']
+
+  - when: an administrator gives "Stands in" another name, another kind and other values
+    given: test/base, as admin
+    input: { key: status, name: Where, kind: member, values: [{ label: Open, color: yellow }, { label: Closed, color: yellow }], decidedBy: nobody }
+    then: 200
+    and:
+      - only the colours given at the first two places are taken: >-
+          output.name == 'Stands in' && output.kind == 'choice'
+          && output.values == [
+            {key: 'todo', label: 'To handle', color: 'yellow'}, {key: 'none', label: 'No reply needed', color: 'yellow'},
+            {key: 'sent', label: 'Replied', color: 'green'}, {key: 'ignored', label: 'Ignored', color: 'grey'}
+          ]
+
+  - when: the administrator of Bureau Sud leaves its own "Stands in" to nobody
+    given: test/base, as outsider
+    input: { key: status, decidedBy: nobody }
+    then: 200
+    and:
+      - Atelier Nord keeps its own setting: >-
+          seenBy.admin.me.organization.skipAutomated
+          && seenBy.admin.attributes == old.seenBy.admin.attributes
+
+counterexamples:
+  - when: nobody has an attribute of this key
+    for: an attribute of the organisation
+    given: test/base, as admin
+    input: { key: "9999", name: Urgency, kind: choice, values: [{ label: Now, color: red }, { label: Later, color: green }], decidedBy: nobody }
+    then: 404 attributes.notFound
+
+  - when: the key is the one of Bureau Sud's priority
+    for: an attribute of the organisation
+    given: test/base, as admin
+    input: { key: "1004", name: Urgency, kind: choice, values: [{ label: Now, color: red }, { label: Later, color: green }], decidedBy: nobody }
+    then: 404 attributes.notFound
+
+  - when: the administrator of Bureau Sud names the topic of Atelier Nord
+    for: an attribute of the organisation
+    given: test/base, as outsider
+    input: { key: "1002", name: Taken, kind: choice, values: [{ label: Now, color: red }, { label: Later, color: green }], decidedBy: nobody }
+    then: 404 attributes.notFound
+
+  - when: the priority is left to the AI
+    for: "it is decided in a way we know: by a rule, or by nobody"
+    given: test/base, as admin
+    input: { key: "1001", name: Priority, kind: choice, values: [{ label: High, color: red }, { label: Low, color: blue }], decidedBy: ai }
+    then: 400 attributes.deciderUnknown
+
+  - when: '"Stands in" is left to the AI'
+    for: "it is decided in a way we know: by a rule, or by nobody"
+    given: test/base, as admin
+    input: { key: status, decidedBy: ai }
+    then: 400 attributes.deciderUnknown
+
+  - when: the priority is decided by a rule, and none is given
+    for: decided by a rule, it has one
+    given: test/base, as admin
+    input: { key: "1001", name: Priority, kind: choice, values: [{ label: High, color: red }, { label: Low, color: blue }], decidedBy: elo, elo: "" }
+    then: 400 attributes.ruleRequired
+
+  - when: '"Stands in" is decided by a rule, and none is given'
+    for: decided by a rule, it has one
+    given: test/base, as admin
+    input: { key: status, decidedBy: elo }
+    then: 400 attributes.ruleRequired
+
+  - when: the rule given to the priority names a field an email does not have
+    for: its rule is one Elo can read
+    given: test/base, as admin
+    input: { key: "1001", name: Priority, kind: choice, values: [{ label: High, color: red }, { label: Low, color: blue }], decidedBy: elo, elo: "if contains(_.subjet, 'x') then 'High' else null" }
+    then: 400 attributes.ruleInvalid
+
+  - when: the rule given to "Stands in" is not an expression of Elo
+    for: its rule is one Elo can read
+    given: test/base, as admin
+    input: { key: status, decidedBy: elo, elo: "if then" }
+    then: 400 attributes.ruleInvalid
+
+  - when: the priority is given a blank name
+    for: one of the organisation's own has a name
+    given: test/base, as admin
+    input: { key: "1001", name: " ", kind: choice, values: [{ label: High, color: red }, { label: Low, color: blue }], decidedBy: nobody }
+    then: 400 attributes.nameRequired
+
+  - when: the priority is given one value
+    for: one of the organisation's own that is a choice has at least two values
+    given: test/base, as admin
+    input: { key: "1001", name: Priority, kind: choice, values: [{ label: High, color: red }], decidedBy: nobody }
+    then: 400 attributes.valuesRequired

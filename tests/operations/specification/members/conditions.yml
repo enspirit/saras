@@ -1,0 +1,7 @@
+# What the operations on members say in the same words.
+
+- description: the member named is a member of the requester's organisation
+  formaldef: seesMember(input.id)
+
+- description: the role sent is administrator or user
+  formaldef: input.role == 'admin' || input.role == 'user'

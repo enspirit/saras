@@ -1,0 +1,19 @@
+# What several areas say is true or false of the state, or of what they are
+# given: said once, and read by name. Those of one area are in its
+# predicates.yml.
+
+- name: signedIn
+  description: Who looks is signed in.
+  formaldef: me != null
+
+- name: administrator
+  description: Who looks is an administrator of their organisation.
+  formaldef: me.role == 'admin'
+
+- name: among(these, those)
+  description: Each of these is among those, as it is.
+  formaldef: all(these, one ~> any(those, other ~> other == one))
+
+- name: noneAmong(these, those)
+  description: None of these is among those.
+  formaldef: "!any(these, one ~> any(those, other ~> other == one))"

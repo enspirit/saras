@@ -1,0 +1,207 @@
+name: SetAttributeOfSelection
+agent: Member
+entry: POST /api/emails/selection/attributes/:key
+description: >-
+  A member gives several emails, at once, a value for an attribute by hand, or
+  takes it away from them.
+input: ValueSetOnSelection
+output: SelectionDone
+
+DomPre:
+  - (x) an attribute of the organisation
+  - (x) a board they are all of is one the member sees: >-
+      input.selection.all.board == null || seesBoard(input.selection.all.board)
+DomPost:
+  # Where an email stands is not among its values: for `status` it reads as none. Of those ticked it is said
+  # of each; of all of a view, that an email is as it was or has the value: each example says which.
+  - (x) each of them has this value for the attribute, as the member's, or none: >-
+      let ticked = input.selection.ids,
+          wanted = if isBlank(input.value | '') then null else {value: input.value, source: 'user'},
+          now = fn(e ~> valueFor(e, input.key))
+      in all(old.emails.emails, b ~>
+        let a = email(b.id)
+        in if ticked == null then a == b || now(a) == wanted
+          else if contains(ticked, b.id) then now(a) == wanted
+          else a == b)
+ReqPre:
+  - (x) the requester is signed in
+  - "(x) the emails are said: those ticked, each by its number, or all of a box or a board": >-
+      if input.selection.ids == null then input.selection.all != null
+      else count(input.selection.ids) > 0 && all(input.selection.ids, id ~> id > 0)
+  - (x) at most 500 emails are ticked: count(input.selection.ids | []) <= 500
+  - (x) the value is one of the attribute's
+  - (x) not "Stands in", unless the value is taken away
+ReqPost:
+  - (x) their other values are kept: >-
+      all(old.emails.emails, b ~>
+        let a = email(b.id)
+        in (input.key == '1001' || valueFor(a, '1001') == valueFor(b, '1001'))
+          && (input.key == '1002' || valueFor(a, '1002') == valueFor(b, '1002'))
+          && (input.key == '1003' || valueFor(a, '1003') == valueFor(b, '1003')))
+  - (x) where each email stands is as it was: standings(emails.emails) == standings(old.emails.emails)
+  - "(x) it tells how many emails it was for: of those ticked, the ones the member may see": >-
+      output.changed >= count(filter(old.emails.emails, b ~> email(b.id) != b))
+      && (input.selection.ids == null || output.changed == count(only(old.emails.emails, input.selection.ids)))
+  - (x) the attributes are as they were
+  - ( ) one statement for all of them, whatever their number
+
+examples:
+  - when: a member ticks three emails and gives them a priority
+    given: test/base, as member
+    input: { key: "1001", selection: { ids: [1001, 1002, 1003] }, value: "1" }
+    then: 200
+    and:
+      - the three are High, as a member's: >-
+          output.changed == 3
+          && among(only(emails.emails, [1001, 1002, 1003]), valuedAs(emails.emails, '1001', {value: '1', source: 'user'}))
+      - no other email has a priority: count(valued(emails.emails, '1001')) == 3
+      - the first keeps the topic its rule gave: valueFor(email(1001), '1002').source == 'rule'
+      - the other members see it: seenBy.admin.emails.emails == emails.emails
+
+  - when: one of the emails ticked does not exist, and one is ticked twice
+    given: test/base, as member
+    input: { key: "1001", selection: { ids: [1002, 9999, 1002] }, value: "2" }
+    then: 200
+    and:
+      - it is for the one that does: output.changed == 1
+
+  - when: an administrator says who takes care of all the emails that need no reply
+    given: test/base, as admin
+    input: { key: "1003", selection: { all: { box: none } }, value: "1002" }
+    then: 200
+    and:
+      - the seven of them are ines's, and no other: >-
+          output.changed == 7
+          && valuedAs(emails.emails, '1003', {value: '1002', source: 'user'}) == standing(emails.emails, 'no_reply')
+
+  - when: no box is said
+    given: test/base, as member
+    input: { key: "1001", selection: { all: {} }, value: "3" }
+    then: 200
+    and:
+      - they are the ten emails to handle: >-
+          output.changed == 10
+          && valuedAs(emails.emails, '1001', {value: '3', source: 'user'}) == standing(emails.emails, 'needs_reply')
+
+  - when: a member gives a priority to all the emails of a shared board
+    given: test/base, as member
+    input: { key: "1001", selection: { all: { board: 1001 } }, value: "1" }
+    then: 200
+    and:
+      - they are the three emails whose topic is Billing: >-
+          output.changed == 3
+          && valuedAs(emails.emails, '1001', {value: '1', source: 'user'}) == filter(emails.emails, e ~> valueFor(e, '1002').value == '1')
+
+  - when: a member gives a priority to all the emails of every box that hold a word
+    given: test/base, as member
+    input: { key: "1001", selection: { all: { box: all, search: INVOICE } }, value: "1" }
+    then: 200
+    and:
+      - those whose subject holds it, in any case, are among them: >-
+          output.changed == count(valued(emails.emails, '1001'))
+          && among(filter(emails.emails, e ~> contains(lower(e.subject), 'invoice')), valuedAs(emails.emails, '1001', {value: '1', source: 'user'}))
+      - they are emails 1001 and 1018: >-
+          sort(ids(valued(emails.emails, '1001'))) == [1001, 1018]
+
+  - when: a member takes the topic away from all the emails of every box
+    given: test/base, as member
+    input: { key: "1002", selection: { all: { box: all } }, value: null }
+    then: 200
+    and:
+      - six had one, by its rule: count(valued(old.emails.emails, '1002')) == 6
+      - none has one: count(valued(emails.emails, '1002')) == 0
+      - "it says the twenty, those that had none among them": output.changed == 20
+
+  - when: a member takes the value of "Stands in" away from two emails
+    given: test/base, as member
+    input: { key: status, selection: { ids: [1001, 1004] }, value: null }
+    then: 200
+    and:
+      - nothing a member is told changes: emails == old.emails && seenBy.admin.emails == old.seenBy.admin.emails
+      - it says the two: output.changed == 2
+
+  - when: the administrator of Bureau Sud ticks emails of Atelier Nord, and gives them its own priority
+    given: test/base, as outsider
+    input: { key: "1004", selection: { ids: [1001, 1002, 1003] }, value: "1" }
+    then: 200
+    and:
+      - it is for none: output.changed == 0
+      - the emails of Atelier Nord are as they were: seenBy.admin.emails == old.seenBy.admin.emails
+      - (+) nothing kept of an email changes, for anybody: db.emails == old.db.emails
+
+  - when: the administrator of Bureau Sud gives its own priority to all the emails of every box
+    given: test/base, as outsider
+    input: { key: "1004", selection: { all: { box: all } }, value: "1" }
+    then: 200
+    and:
+      - it is for none: output.changed == 0
+      - the emails of Atelier Nord are as they were: seenBy.admin.emails == old.seenBy.admin.emails
+      - (+) nothing kept of an email changes, for anybody: db.emails == old.db.emails
+
+counterexamples:
+  - when: nobody has an attribute of this key
+    for: an attribute of the organisation
+    given: test/base, as member
+    input: { key: "9999", selection: { ids: [1001] }, value: "1" }
+    then: 404 attributes.notFound
+
+  - when: the key is the one of Bureau Sud's priority
+    for: an attribute of the organisation
+    given: test/base, as member
+    input: { key: "1004", selection: { ids: [1001] }, value: "1" }
+    then: 404 attributes.notFound
+
+  - when: the administrator of Bureau Sud names the topic of Atelier Nord
+    for: an attribute of the organisation
+    given: test/base, as outsider
+    input: { key: "1002", selection: { ids: [1001] }, value: "1" }
+    then: 404 attributes.notFound
+
+  - when: the board is another member's own
+    for: a board they are all of is one the member sees
+    given: test/base, as member
+    input: { key: "1001", selection: { all: { board: 1002 } }, value: "1" }
+    then: 404 boards.notFound
+
+  - when: the board is one of Bureau Sud
+    for: a board they are all of is one the member sees
+    given: test/base, as member
+    input: { key: "1001", selection: { all: { board: 1004 } }, value: "1" }
+    then: 404 boards.notFound
+
+  - when: no email is said
+    for: "the emails are said: those ticked, each by its number, or all of a box or a board"
+    given: test/base, as member
+    input: { key: "1001", selection: {}, value: "1" }
+    then: 400 emails.selectionInvalid
+
+  - when: none is ticked
+    for: "the emails are said: those ticked, each by its number, or all of a box or a board"
+    given: test/base, as member
+    input: { key: "1001", selection: { ids: [] }, value: "1" }
+    then: 400 emails.selectionInvalid
+
+  - when: one of those ticked is not the number of an email
+    for: "the emails are said: those ticked, each by its number, or all of a box or a board"
+    given: test/base, as member
+    input: { key: "1001", selection: { ids: [1001, 0] }, value: "1" }
+    then: 400 emails.selectionInvalid
+
+  - when: 501 emails are ticked
+    for: at most 500 emails are ticked
+    given: test/base, as member
+    input: >-
+      {key: '1001', value: '1', selection: {ids: map(split(padStart('', 500, ','), ','), each ~> 1001)}}
+    then: 400 emails.selectionInvalid
+
+  - when: the priority has no such value
+    for: the value is one of the attribute's
+    given: test/base, as member
+    input: { key: "1001", selection: { ids: [1001] }, value: "4" }
+    then: 400 attributes.valueUnknown
+
+  - when: a member says through it that emails need no reply
+    for: not "Stands in", unless the value is taken away
+    given: test/base, as member
+    input: { key: status, selection: { ids: [1001] }, value: none }
+    then: 400 attributes.valueUnknown

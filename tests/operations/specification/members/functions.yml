@@ -1,0 +1,28 @@
+# What is read of the members of the organisation, as somebody sees them at
+# one moment.
+
+- name: member(id)
+  description: The member of this number.
+  formaldef: find(members | [], m ~> m.id == id)
+
+- name: addresses(people)
+  description: >-
+    Of any list of people: their addresses.
+  formaldef: map(people, one ~> one.email)
+
+- name: roles(people)
+  description: >-
+    Of any list of people: what each is, `admin` or `user`.
+  formaldef: map(people, one ~> one.role)
+
+- name: memberWith(address)
+  description: The member who has this address.
+  formaldef: find(members | [], m ~> m.email == address)
+
+- name: membersBut(address)
+  description: The members but the one who has this address.
+  formaldef: filter(members | [], m ~> m.email != address)
+
+- name: administrators
+  description: Those who are administrators.
+  formaldef: filter(members | [], m ~> m.role == 'admin')

@@ -1,0 +1,93 @@
+name: CreatePrompt
+agent: Administrator
+entry: POST /api/prompts
+description: >-
+  An administrator adds a way of replying to the organisation's: a name, when
+  to use it, the instructions, and the emails it suits.
+input: PromptGiven
+output: PromptAdded
+
+DomPost:
+  - (x) the organisation has one more prompt, with this name, description and instructions: >-
+      let made = prompt(output.id)
+      in count(prompts) == count(old.prompts) + 1 && !old.seesPrompt(output.id) && made != null
+         && made.name == trim(input.name) && made.description == trim(input.description | '')
+         && made.systemPrompt == trim(input.systemPrompt)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) the prompt has a name and instructions
+ReqPost:
+  - (x) the prompts there were are as they were: among(old.prompts, prompts)
+  - (x) it comes last, and wrote no reply yet: >-
+      last(prompts).id == output.id && last(prompts).used == 0 && last(prompts).edited == 0
+  - (x) every member is offered it, by its name and description, without its instructions: >-
+      let theirs = seenBy.member.prompt(output.id)
+      in theirs != null && theirs.name == trim(input.name)
+         && theirs.description == trim(input.description | '') && theirs.systemPrompt == null
+  - (x) nobody of another organisation is told it: seenBy.outsider.prompts == old.seenBy.outsider.prompts
+  - ( ) what it suits is kept reduced to the attributes we know, each with a value
+
+examples:
+  - when: an administrator adds a prompt that suits the emails with a value
+    given: test/base, as admin
+    input: { name: Late payment, description: When an invoice is overdue, systemPrompt: Remind the amount and the due date. Stay courteous., affinity: { "1002": ["1"] } }
+    then: 201
+    and:
+      - it suits the emails with this value: prompt(output.id).affinity == input.affinity
+      - a member is told what it suits: seenBy.member.prompt(output.id).affinity == input.affinity
+
+  - when: another administrator adds one, with a name and instructions only
+    given: test/base, as coadmin
+    input: { name: Short, systemPrompt: Three sentences at most. }
+    then: 201
+    and:
+      - it has no description and suits no email in particular: >-
+          prompt(output.id).description == '' && prompt(output.id).affinity == {}
+
+  - when: what is given has spaces around it
+    given: test/base, as admin
+    input: { name: "  Padded  ", description: "  When in doubt  ", systemPrompt: "  Be brief.  " }
+    then: 201
+    and:
+      - it is kept without them: >-
+          let made = prompt(output.id)
+          in made.name == 'Padded' && made.description == 'When in doubt' && made.systemPrompt == 'Be brief.'
+
+  - when: what it suits names what is no attribute, an attribute without a value, and a value twice
+    given: test/base, as admin
+    input: { name: Sales, systemPrompt: Offer a call., affinity: { "1002": ["2", "2"], status: [todo], colour: [red], "1001": [], "1003": "1003" } }
+    then: 201
+    and:
+      - only what names an attribute with a value is kept, each value once: >-
+          let kept = prompt(output.id).affinity in
+            fetch(kept, '1002') == ['2'] && kept.status == ['todo']
+            && kept.colour == null && fetch(kept, '1001') == null && fetch(kept, '1003') == null
+
+  - when: what it suits names attributes by a number no attribute of the organisation has
+    given: test/base, as admin
+    input: { name: Elsewhere, systemPrompt: Be brief., affinity: { "9999": ["1"], "1004": ["1"] } }
+    then: 201
+    and:
+      # 1004 is an attribute of Bureau Sud, 9999 of nobody: "the attributes we know" are those a number names.
+      - they are kept as given: prompt(output.id).affinity == input.affinity
+
+  - when: a prompt is added under a name the organisation already has
+    given: test/base, as admin
+    input: { name: Quote, systemPrompt: Another way to quote. }
+    then: 201
+    and:
+      - the organisation has two prompts of this name: count(promptsNamed('Quote')) == 2
+
+counterexamples:
+  - when: the name is blank
+    for: the prompt has a name and instructions
+    given: test/base, as admin
+    input: { name: "  ", description: Nameless, systemPrompt: Be brief. }
+    then: 400 prompts.incomplete
+
+  - when: no instructions are given
+    for: the prompt has a name and instructions
+    given: test/base, as admin
+    input: { name: Empty, description: Says nothing }
+    then: 400 prompts.incomplete

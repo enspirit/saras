@@ -1,0 +1,76 @@
+name: MarkNoReplyNeeded
+agent: Member
+entry: POST /api/emails/:id/status
+description: >-
+  A member says that an email needs no reply. The status sent, `no_reply`,
+  says which of the three corrections of the sorting it is.
+input: NoReplyNeeded
+output: Done
+
+DomPre:
+  - (x) the email is not replied
+DomPost:
+  - (x) the email needs no reply: stands(input.id, 'no_reply')
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+  - (x) the status asked for is one of the three corrections
+ReqPost:
+  - (x) the verdict is recorded as the member's
+  - (x) nothing else of the email changes
+  - (+) the reason it was sorted for stays
+  - (x) every other email is as it was
+  - (x) another organisation is told nothing of it
+
+examples:
+  - when: a member says that an email to handle needs no reply
+    given: test/base, as member
+    input: { id: 1001, status: no_reply }
+    then: 200
+    and:
+      - it was to handle, as nobody's verdict: old.sorted(1001, 'needs_reply', 'none')
+      - the boxes count it where it stands: >-
+          emails.counts == merge(old.emails.counts, {todo: old.emails.counts.todo - 1, none: old.emails.counts.none + 1})
+      - a colleague sees it so: seenBy.admin.emails == emails
+
+  - when: an administrator says that an email a colleague ignored needs no reply
+    given: test/base, as admin
+    input: { id: 1020, status: no_reply }
+    then: 200
+    and:
+      - it was ignored: old.stands(1020, 'ignored')
+      - the boxes count it where it stands: emails.counts.ignored == 0 && emails.counts.none == 8
+
+  # Deviation 5 of doc/2-operations.md: where the email stands is not checked.
+  - when: a member says so of an email a rule had already set aside
+    given: test/base, as member
+    input: { id: 1004, status: no_reply }
+    then: 200
+    and:
+      - it needed no reply already, by a rule: old.sorted(1004, 'no_reply', 'rule')
+      - the boxes count what they counted: emails.counts == old.emails.counts
+
+counterexamples:
+  - when: the email was replied
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1017, status: no_reply }
+    then: 409 emails.alreadySent
+
+  - when: the email was replied as a draft
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1016, status: no_reply }
+    then: 409 emails.alreadySent
+
+  - when: no email has this number
+    for: the requester may use its mailbox
+    given: test/base, as member
+    input: { id: 9999, status: no_reply }
+    then: 404 emails.notFound
+
+  - when: a member says of an email that it is replied
+    for: the status asked for is one of the three corrections
+    given: test/base, as member
+    input: { id: 1001, status: sent }
+    then: 400 emails.invalidStatus

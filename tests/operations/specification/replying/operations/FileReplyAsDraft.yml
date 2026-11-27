@@ -1,0 +1,102 @@
+name: FileReplyAsDraft
+agent: Member
+entry: POST /api/emails/:id/file-as-draft
+description: >-
+  A member files their reply in the Drafts folder of the mailbox, to finish
+  and send it from their mail client.
+input: ReplyGiven
+output: HandedOver
+
+DomPre:
+  - (x) the email is not replied
+  - ( ) no reply to it is on its way
+DomPost:
+  - (x) the email is replied, as a draft: stands(input.id, 'sent') && email(input.id).replyMode == 'draft'
+  - ( ) the reply is in the Drafts folder of the mailbox
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+  - (x) the reply is not empty
+  - (x) it has at least one recipient
+  - (x) every recipient is an address
+ReqPost:
+  - ( ) nothing is sent
+  - (x) one reply is recorded for the email, and no other changes
+  - (+) it is recorded once, the way the email tells, and every reply recorded before is as it was
+  - (x) it is recorded as a draft: email(input.id).replyMode == 'draft'
+  - (+) whether the proposal was edited is recorded
+  - ( ) who filed it is recorded with it
+  - (x) a reply that started from no proposal is not edited
+  - (+) nor is one that started from a proposal the email does not have
+  - (+) the reason for the change is kept only if the proposal was edited
+  - (x) of the email, only where it stands and how it was replied change
+  - (x) every other email is as it was
+  - (x) another organisation is told nothing of it
+
+examples:
+  - when: a member files a reply to an email to handle
+    given: test/base, as member
+    input: { id: 1003, html: "<p>Bien reçu, nous regardons vos deux remarques.</p>", to: [olivier@renard-avocats.example], cc: [] }
+    then: 200
+    and:
+      - it was to handle: old.stands(1003, 'needs_reply')
+      - it is told handed over, and not edited: output.ok && !output.wasEdited
+      - the boxes count it among the replied: >-
+          emails.counts == merge(old.emails.counts, {todo: old.emails.counts.todo - 1, sent: old.emails.counts.sent + 1})
+      - a colleague sees it replied as a draft: seenBy.admin.emails == emails
+
+  - when: an administrator files a reply, with somebody in copy, to an email a member said needs no reply
+    given: test/base, as coadmin
+    input: { id: 1018, html: "<p>Line 3 bills the two extra days.</p>", to: [accounts@northwind.example], cc: [claire@northwind.example] }
+    then: 200
+    and:
+      - it needed no reply, as a member's verdict: old.sorted(1018, 'no_reply', 'user')
+      - the boxes count it among the replied: >-
+          emails.counts == merge(old.emails.counts, {none: old.emails.counts.none - 1, sent: old.emails.counts.sent + 1})
+
+  - when: a member gives a reason for a change, and a proposal the email does not have
+    given: test/base, as member
+    input: { id: 1007, html: "<p>Nous regardons cela ce matin.</p>", to: [julien@morel-industrie.example], proposalId: 4242, changeReason: Plus court }
+    then: 200
+    and:
+      - (+) the email has no proposal: count(old.db.drafts) == 0
+      - it is not edited: "!output.wasEdited"
+      - (+) the reason is not kept: >-
+          any(db.replies, r ~> r.email_id == 1007 && !r.was_edited && r.change_reason == '')
+
+counterexamples:
+  - when: the email was replied
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1017, html: "<p>Once more.</p>", to: [idris@lakeside.example], cc: [] }
+    then: 409 emails.alreadyHandled
+
+  - when: a reply to the email was already filed as a draft
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1016, html: "<p>Voici le devis.</p>", to: [tomas@atelier-vidal.example], cc: [] }
+    then: 409 emails.alreadyHandled
+
+  - when: no email has this number
+    for: the requester may use its mailbox
+    given: test/base, as member
+    input: { id: 9999, html: "<p>Yes.</p>", to: [sam@whitfield.example], cc: [] }
+    then: 404 emails.notFound
+
+  - when: the reply area was left empty
+    for: the reply is not empty
+    given: test/base, as member
+    input: { id: 1003, html: "<p> </p>", to: [olivier@renard-avocats.example], cc: [] }
+    then: 400 reply.empty
+
+  - when: it goes to nobody
+    for: it has at least one recipient
+    given: test/base, as member
+    input: { id: 1003, html: "<p>Bien reçu.</p>", cc: [] }
+    then: 400 reply.noRecipient
+
+  - when: a recipient is not an address
+    for: every recipient is an address
+    given: test/base, as member
+    input: { id: 1003, html: "<p>Bien reçu.</p>", to: [olivier@renard-avocats.example, "olivier renard"], cc: [] }
+    then: 400 reply.invalidAddress

@@ -1,0 +1,34 @@
+name: RemoveOrganizationKey
+agent: Administrator
+entry: PUT /api/organization
+description: >-
+  An administrator takes back the organisation's own key for the AI: the
+  server's then applies. It is SetOrganizationKey with an empty key.
+input: KeyRemoved
+output: Done
+
+DomPost:
+  - (x) the organisation has no key: "!me.organization.hasKey"
+  - (x) the server's then applies: me.hasKey == seenBy.outsider.me.hasKey
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (x) nothing else of the organisation changes: >-
+      me == merge(old.me, {
+        hasKey: me.hasKey, organization: merge(old.me.organization, { hasKey: false })
+      })
+  - (x) nothing of another organisation changes
+
+examples:
+  - when: an administrator takes back the key of the organisation, which has none
+    given: test/base, as admin
+    input: { openrouterKey: "" }
+    then: 200
+    and:
+      - nothing changes: nothingChanged
+
+  - when: the key given is nothing but spaces
+    given: test/base, as coadmin
+    input: { openrouterKey: "  " }
+    then: 200

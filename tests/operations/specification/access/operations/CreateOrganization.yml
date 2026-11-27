@@ -1,0 +1,52 @@
+name: CreateOrganization
+agent: Visitor
+entry: POST /api/auth/signup
+description: >-
+  A visitor signs up: their team gets its own space, and they administer it.
+input: SignUp
+output: Admitted
+
+DomPre:
+  - (+) nobody has this address: "!hasAccount(lower(trim(input.email)))"
+DomPost:
+  - (x) an organisation exists, with this person as its administrator: >-
+      me.email == lower(trim(input.email)) && me.role == 'admin'
+      && addresses(members | []) == [me.email] && roles(members | []) == ['admin']
+      && seenBy.admin.members == old.seenBy.admin.members
+      && seenBy.outsider.members == old.seenBy.outsider.members
+  - (+) there is one organisation more: count(db.organizations) == count(old.db.organizations) + 1
+ReqPre:
+  - (x) sign-up is open - the operator allows it, or nobody has an account yet: public.allowSignup || public.firstAccount
+  - (x) the address is one: contains(input.email, '@') && contains(input.email, '.')
+  - (x) the password has ten characters or more: length(input.password) >= 10
+  - ( ) the origin is not locked out
+ReqPost:
+  - (x) a session is opened: old.me == null && me != null
+  - (x) it is named as asked: me.organization.name == input.organization
+  - (x) it starts with one prompt, and with one attribute of its own beside where an email stands: >-
+      count(prompts) == 1 && count(attributes) == 2
+
+examples:
+  - when: a visitor signs up, giving a name to their organisation
+    given: test/base, as visitor
+    input: { email: Zoe@Studio.example, password: a-long-enough-password, organization: Studio Zoe }
+    then: 201
+
+counterexamples:
+  - when: the address is already ada's
+    for: nobody has this address
+    given: test/base, as visitor
+    input: { email: ada@atelier.example, password: a-long-enough-password, organization: Another }
+    then: 409 auth.emailTaken
+
+  - when: what is given as an address is not one
+    for: the address is one
+    given: test/base, as visitor
+    input: { email: not-an-address, password: a-long-enough-password }
+    then: 400 auth.invalidEmail
+
+  - when: the password has nine characters
+    for: the password has ten characters or more
+    given: test/base, as visitor
+    input: { email: someone@studio.example, password: "123456789" }
+    then: 400 auth.passwordTooShort

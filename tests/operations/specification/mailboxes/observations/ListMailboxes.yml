@@ -1,0 +1,60 @@
+name: ListMailboxes
+agent: Member
+entry: GET /api/mailboxes
+description: >-
+  Tells a member the mailboxes they may use, with what each watches, how its
+  last fetch went and how many of its emails are to handle.
+output: Mailboxes
+
+DomPost:
+  - (x) each says how many of its emails are to handle: >-
+      all(output, m ~> m.todo == count(standing(old.emailsOf(m.email), 'needs_reply')))
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) only the mailboxes the member may use are told - those of their organisation, theirs or shared: all(output, m ~> m.shared || m.canManage)
+  - ( ) the shared ones come first
+  - ( ) nothing of its credentials is told
+
+examples:
+  - when: an administrator asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - the shared mailbox of the organisation is told, as one they manage: >-
+          count(output) == 1 && first(output).id == 1001 && first(output).shared && first(output).canManage
+      - it says how it is reached, what it shows and what it watches: >-
+          first(output).kind == 'imap' && first(output).email == 'me@corp.example' && first(output).displayName == 'Atelier Nord'
+          && first(output).folder == 'INBOX' && first(output).folderName == 'Inbox'
+          && first(output).fetchDays == 14 && !first(output).unreadOnly
+      - it says how its last fetch went: first(output).lastSyncAt != null && first(output).lastError == null
+      - ten of its emails are to handle: first(output).todo == 10
+
+  - when: a member who is not an administrator asks
+    given: test/base, as member
+    then: 200
+    and:
+      - the shared mailbox is told, as one they do not manage: >-
+          count(output) == 1 && first(output).id == 1001 && first(output).shared && !first(output).canManage
+      - the rest is what an administrator is told: >-
+          first(output).email == first(old.seenBy.admin.mailboxes).email
+          && first(output).folder == first(old.seenBy.admin.mailboxes).folder
+          && first(output).todo == first(old.seenBy.admin.mailboxes).todo
+
+  - when: a member of another organisation asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - no mailbox is told: count(output) == 0
+
+  - when: nothing was fetched yet
+    given: test/unfetched, as admin
+    then: 200
+    and:
+      - the mailbox has no email to handle: count(output) == 1 && first(output).todo == 0
+
+  - when: the organisation has no mailbox
+    given: test/unconnected, as admin
+    then: 200
+    and:
+      - no mailbox is told: count(output) == 0

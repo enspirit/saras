@@ -13,7 +13,7 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | [`world/mailbox/`](world/mailbox/) | A member's mailbox, as the stack meets it: sample emails, and replies that go nowhere. |
 | [`world/fakesmtp/`](world/fakesmtp/) | The outgoing mail server of the stack: it delivers nothing, and shows what it was given. |
 | [`world/chart/`](world/chart/) | The Helm chart: saras on Kubernetes, for an operator. Nothing of the stack. |
-| [`tests/webspicy/`](tests/webspicy/) | The black-box specification of the API, run through the front door of the stack. |
+| [`tests/operations/`](tests/operations/) | The black-box specification of the operations, clause by clause, run through the front door of a stack. What reads and runs it is [opspicy](https://github.com/enspirit/opspicy), a project of its own, taken as the image [`.env.commons`](.env.commons) names. |
 | [`tests/harness/`](tests/harness/) | The checks on the repository itself: links, and who may import whom. |
 | [`doc/`](doc/) | The [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), the [decisions](doc/decisions/). |
 | [`bin/`](bin/) | The few commands of the repository itself. |
@@ -33,7 +33,7 @@ emb run test            # unit and integration tests: needs a checkout, not a st
 emb up                  # the stack, in Docker
 emb run demo            # the demo organisation and its mailbox, on the stack
 emb run test:postgres   # the integration tests on the stack's PostgreSQL
-emb run test:webspicy   # the API's contract, from a container of its own
+emb run test:operations # the operations' specification: on the stack under the suites, not on this one
 emb down
 ```
 
@@ -45,20 +45,27 @@ In `software/saras`, each task is the npm script of the same name (`npm test`, `
 
 | Service | Is | On a laptop |
 | --- | --- | --- |
-| `saras` | The server, restarted and rebundled on change | http://localhost:3000 (`emb logs saras` shows its log, one JSON object per line: [decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)) |
-| `postgres` | The database | `localhost:5432`, user and database `saras` |
+| `saras` | The server, restarted and rebundled on change | http://localhost:7230 (`emb logs saras` shows its log, one JSON object per line: [decision 0012](doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md)) |
+| `postgres` | The database | `localhost:7254`, user and database `saras` |
 | `storage` | `dbagent`, for the seeds and the pages of the schema | — |
 | `mailbox` | The mailbox of sample emails, in the network of `saras` | — (`emb logs mailbox` shows what it was given to send) |
-| `fakesmtp` | Where saras's own mail goes (the link of a lost password) | http://localhost:1080 |
-| `webspicy` | The black-box suite; it sleeps until run | — |
+| `fakesmtp` | Where saras's own mail goes (the link of a lost password) | http://localhost:7210 |
+| `operations` | The black-box suite; it sleeps, and refuses to run on this stack: every case empties the database | — |
+
+The ports are saras's own, so that the stack starts beside another project's: **72, then the two digits the usual port starts with** (3000 is 7230, 5432 is 7254, 1080 is 7210). They are numbered in [`.env.commons`](.env.commons), and `SARAS_PORT=3000 emb up` takes another for once ([decision 0018](doc/decisions/0018-the-stack-takes-the-ports-72xx-of-a-laptop.md)).
 
 It needs no `.env`. With one at the root of the repository, the server is given what [`software/saras/env/devel.env`](software/saras/env/devel.env) names of it, and nothing else: `APP_SECRET`, `BASE_URL`, `LOG_LEVEL`, the OpenRouter key, model and address, the OAuth applications, the outgoing mail. `SARAS_BRAND=klaro` in it picks a folder of `software/saras/brands/`.
 
-Three compose files, two stacks: `docker-compose.base.yml` says what each service is; `devel` adds ports and mounts; `test` is what CI runs, with no published port and no secret. To try something without touching the development database, run a second stack beside the first:
+Three compose files, two stacks: `docker-compose.base.yml` says what each service is; `devel` adds ports and mounts; `test` is what CI runs, with no published port and no secret. To try something without touching the development database, and to run the operations suite, which empties the database it runs on, run that second stack beside the first:
 
 ```sh
-COMPOSE_PROJECT_NAME=saras-try COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up
+export COMPOSE_PROJECT_NAME=saras-try COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml
+emb run report:prepare      # once: the folder the suite writes its report to, yours and not root's
+emb up
+emb run test:operations
 ```
+
+The database of that stack is a volume of its own (`postgres-suites`), whatever the project is called: the suites empty it, and the development database is never under them.
 
 ## The demo and the seeds
 
@@ -86,7 +93,7 @@ Several servers on one database: `ROLES` says what a process takes on (`migrate`
 | --- | --- | --- | --- |
 | unit | The computations, as pure functions; and the checks that read the sources (sizes, shared types, design system, translations, configuration) | `software/saras/test/unit/` | `emb run test` |
 | integration | The operations over HTTP, in an application each test starts itself, against a real local IMAP server, a real local SMTP server and a stand-in for OpenRouter that records what it is sent | `software/saras/test/integration/` | `emb run test`; `emb run test:postgres` on a PostgreSQL server |
-| api | An operation as a client sees it, black box | `tests/webspicy/formaldoc/` | `emb run test:webspicy` |
+| operations | An operation as its clauses say it, black box: every precondition violated alone, every postcondition observed | `tests/operations/specification/<area>/operations/` | `emb run test:operations`, on the stack under the suites |
 | repository | Links, import boundaries | `tests/harness/` | `emb run lint` |
 | chart | What the Helm chart renders and refuses, and that it knows every variable of `env/base.env` | `world/chart/` | `emb run lint`, `emb run test` |
 

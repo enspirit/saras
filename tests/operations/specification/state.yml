@@ -1,0 +1,145 @@
+# The state of saras, as the suite observes it: through the front door, and
+# behind it. What is said of it is by area: _shared/ for every area.
+#
+# How a formaldef reads all this (`boards`, `old.boards`, `seenBy.admin.boards`,
+# `db.users`) is in https://github.com/enspirit/opspicy/blob/main/doc/suite.md.
+
+# What a requester can observe, through the front door: the route that tells
+# it, and the type of what is told, so that a formaldef that misspells a member
+# of it is not read.
+state:
+  - name: public
+    description: What anyone is told before signing in.
+    formaldef: GET /api/public -> WhatVisitorsAreTold
+
+  - name: me
+    description: >-
+      What who looks is told about themselves, their organisation and this
+      server; nothing when they are not signed in.
+    formaldef: GET /api/me -> Profile
+
+  - name: members
+    description: The members of the organisation, as its administrators are told them.
+    formaldef: GET /api/members -> Members
+
+  - name: invitations
+    description: >-
+      The pending invitations of the organisation, as its administrators are
+      told them: nothing of their link.
+    formaldef: GET /api/invitations -> Invitations
+
+  - name: mailboxes
+    description: The mailboxes who looks may use.
+    formaldef: GET /api/mailboxes -> Mailboxes
+
+  - name: prompts
+    description: The prompts of the organisation.
+    formaldef: GET /api/prompts -> Prompts
+
+  - name: attributes
+    description: The attributes of the organisation.
+    formaldef: GET /api/attributes -> Attributes
+
+  - name: boards
+    description: >-
+      The boards who looks sees: their own, and those shared.
+    formaldef: GET /api/boards -> Boards
+
+  - name: emails
+    description: >-
+      The emails of the mailboxes who looks may use, in every box, and how many
+      each box holds.
+    formaldef: GET /api/emails?box=all -> EmailsOfBox
+
+# What only the database shows: each table by its key, with the attributes a
+# formaldef may read. Behind the API, so this is what moves when the schema
+# does: a relation names as little as the clauses need, and nothing of who
+# belongs to which organisation, which the API tells.
+relations:
+  - name: organizations
+    description: >-
+      The organisations, each with how it works: that one is made, or gone.
+    table: organizations
+    key: [id]
+    attributes: [name, automation, skip_automated, model]
+
+  - name: users
+    description: >-
+      The accounts, in every organisation: that an address is free, and that of
+      a password only its hash is kept.
+    table: users
+    key: [email]
+    attributes: [name, language, signature, password_hash]
+
+  - name: sessions
+    description: >-
+      The sessions open, by whose they are: that one is opened or closed, and no
+      other.
+    table: sessions
+    key: [id]
+    attributes: [user_id]
+
+  - name: invitations
+    description: >-
+      The invitations, in every organisation: that of a link only its hash is
+      kept, and that an earlier one opens nothing any more.
+    table: invitations
+    key: [id]
+    attributes: [email, role, token_hash]
+
+  - name: password_resets
+    description: >-
+      The links to choose a new password, by their hash: that one is spent, and
+      those of the others are as they were.
+    table: password_resets
+    key: [token_hash]
+    attributes: [user_id]
+
+  - name: accounts
+    description: >-
+      The mailboxes as they are kept: what is watched, the last error, and the
+      credentials, sealed.
+    table: accounts
+    key: [id]
+    attributes: [email, kind, shared, display_name, folder, fetch_days, unread_only, config_enc, last_error]
+
+  - name: prompts
+    description: The prompts as they are kept, in every organisation.
+    table: prompts
+    key: [id]
+    attributes: [name, description, system_prompt, affinity_json]
+
+  - name: attributes
+    description: The attributes as they are kept, in every organisation.
+    table: attributes
+    key: [id]
+    attributes: [key, name, kind, values_json, decided_by, elo]
+
+  - name: boards
+    description: >-
+      The boards as they are kept, whoever sees them: that no other is touched.
+    table: boards
+    key: [id]
+    attributes: [name, shared, filter_json]
+
+  - name: emails
+    description: >-
+      What is kept of an email: where it stands, whose verdict that is and the
+      reason, which no route tells.
+    table: emails
+    key: [id]
+    attributes: [status, triage_source, triage_reason, attributes_json]
+
+  - name: drafts
+    description: The proposals the AI wrote, by email.
+    table: drafts
+    key: [id]
+    attributes: [email_id, action, prompt_id]
+
+  - name: replies
+    description: >-
+      The record of the replies handed over, by email: how, and whether the
+      proposal was edited.
+    table: replies
+    key: [id]
+    attributes: [email_id, mode, was_edited, change_reason]

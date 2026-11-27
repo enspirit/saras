@@ -1,0 +1,39 @@
+# The world the suite runs in, as the runner knows it: who may call, and what
+# they hold that no route tells. A formaldef reads it as `world`: `world.actors`,
+# `world.invitation.token`, and `world.requester` for who calls in the case.
+
+# The people of the Background test/base (backgrounds/base.ts): who each is,
+# the agent they are, and what they sign in with. One password for all, and it
+# opens nothing but a seed. `world.actors.<name>` is what one signs in with.
+actors:
+  - name: admin
+    description: Ada, an administrator of Atelier Nord.
+    is: Administrator
+    with: { email: ada@atelier.example, password: a-password-for-the-tests }
+
+  - name: coadmin
+    description: Ines, the other administrator of Atelier Nord.
+    is: Administrator
+    with: { email: ines@atelier.example, password: a-password-for-the-tests }
+
+  - name: member
+    description: Milo, a member of Atelier Nord who is not an administrator.
+    is: Member
+    with: { email: milo@atelier.example, password: a-password-for-the-tests }
+
+  - name: outsider
+    description: >-
+      Otto, the only member of Bureau Sud, and so its administrator: he is
+      nothing to Atelier Nord.
+    is: Administrator
+    with: { email: otto@bureau.example, password: a-password-for-the-tests }
+
+  - name: visitor
+    description: Nobody is signed in.
+    is: Visitor
+
+# What the server tells once and keeps as a hash: the hook of the seed
+# (software/storage/data/test/base/after_seeding.sql) gives it these.
+password: a-password-for-the-tests
+invitation: { token: the-invitation-of-nora, email: nora@atelier.example, organization: Atelier Nord }
+passwordReset: { token: the-link-of-milo, email: milo@atelier.example }

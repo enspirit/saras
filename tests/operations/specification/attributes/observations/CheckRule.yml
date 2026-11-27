@@ -1,0 +1,95 @@
+name: CheckRule
+agent: Administrator
+entry: POST /api/attributes/check
+description: >-
+  Tells an administrator what is wrong in a rule as it is being written, each
+  problem with its place; nothing when it fits the email.
+input: RuleToCheck
+output: RuleProblems
+
+DomPost:
+  - (x) what is wrong in the rule is told, each problem with its line, its column and how many characters it is about: >-
+      all(output, problem ~> problem.line >= 1 && problem.column >= 1 && problem.length >= 1 && !isBlank(problem.message))
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (x) an empty rule has nothing wrong yet: "!isBlank(input.elo | '') || output == []"
+  - (x) five problems at most are told: count(output) <= 5
+  - ( ) a field that does not exist is told with the one probably meant, when one is close
+  - (x) nothing is kept: nothingChanged
+
+examples:
+  - when: the rule fits the email
+    given: test/base, as admin
+    input:
+      elo: |-
+        let words = lower(_.subject + ' ' + _.text)
+        in if contains(words, 'invoice') then {value: 'Billing', reason: 'an invoice'} else null
+    then: 200
+    and:
+      - nothing is wrong: output == []
+
+  - when: the rule is still empty
+    given: test/base, as admin
+    input: { elo: "   " }
+    then: 200
+
+  - when: no rule is given
+    given: test/base, as coadmin
+    input: {}
+    then: 200
+
+  - when: the rule names a field an email does not have, close to one it has
+    given: test/base, as admin
+    input: { elo: "if contains(_.subjet, 'x') then 'a' else null" }
+    then: 200
+    and:
+      - "the one problem is on the word, with the field probably meant": >-
+          count(output) == 1
+          && first(output).line == 1 && first(output).column == 15 && first(output).length == 6
+          && first(output).suggestion == 'subject'
+          && startsWith(first(output).message, '\'subjet\' is not a field. Declared: from, to, cc, subject,')
+
+  - when: the field named, on the second line, is close to none
+    given: test/base, as admin
+    input:
+      elo: |-
+        let sender = _.from.address
+        in if _.zzzzzzzz == sender then 'a' else null
+    then: 200
+    and:
+      - "it is told where it is, and no field is suggested": >-
+          count(output) == 1
+          && first(output).line == 2 && first(output).column == 9 && first(output).length == 8
+          && first(output).suggestion == null
+
+  - when: the rule is not an expression of Elo
+    given: test/base, as admin
+    input: { elo: "if then" }
+    then: 200
+    and:
+      - "it is one problem, where the reading stopped": >-
+          output == [{line: 1, column: 4, length: 1, message: 'Unexpected token THEN', suggestion: null}]
+
+  - when: the rule uses a text as a condition
+    given: test/base, as admin
+    input: { elo: "if _.subject then 'a' else null" }
+    then: 200
+    and:
+      - it is told so: >-
+          output == [{line: 1, column: 6, length: 1, message: 'if condition must be Bool, got String', suggestion: null}]
+
+  - when: six things are wrong
+    given: test/base, as admin
+    input: { elo: "[_.aaaa, _.bbbb, _.cccc, _.dddd, _.eeee, _.ffff]" }
+    then: 200
+    and:
+      - the first five are told: map(output, problem ~> problem.column) == [4, 12, 20, 28, 36]
+
+  - when: the administrator of Bureau Sud has a rule checked
+    given: test/base, as outsider
+    input: { elo: "_.sujet" }
+    then: 200
+    and:
+      - it is told the same of it: count(output) == 1 && first(output).length == 5

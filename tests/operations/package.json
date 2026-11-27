@@ -1,0 +1,6 @@
+{
+  "name": "operations",
+  "private": true,
+  "description": "The black-box specification of saras's operations. No dependency: opspicy runs it, from its image",
+  "type": "module"
+}

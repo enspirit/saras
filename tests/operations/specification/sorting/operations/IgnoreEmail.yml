@@ -1,0 +1,71 @@
+name: IgnoreEmail
+agent: Member
+entry: POST /api/emails/:id/status
+description: >-
+  A member sets an email aside for good. The status sent, `ignored`, says
+  which of the three corrections of the sorting it is.
+input: Ignored
+output: Done
+
+DomPre:
+  - (x) the email is not replied
+DomPost:
+  - (x) the email is ignored: stands(input.id, 'ignored')
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+  - (x) the status asked for is one of the three corrections
+ReqPost:
+  - (x) the verdict is recorded as the member's
+  - (x) nothing else of the email changes
+  - (+) the reason it was sorted for stays
+  - (x) every other email is as it was
+  - (x) another organisation is told nothing of it
+
+examples:
+  - when: a member ignores an email to handle
+    given: test/base, as member
+    input: { id: 1002, status: ignored }
+    then: 200
+    and:
+      - it was to handle, as nobody's verdict: old.sorted(1002, 'needs_reply', 'none')
+      - the boxes count it where it stands: >-
+          emails.counts == merge(old.emails.counts, {todo: old.emails.counts.todo - 1, ignored: old.emails.counts.ignored + 1})
+      - a colleague sees it so: seenBy.admin.emails == emails
+
+  - when: an administrator ignores an email a rule said needs no reply
+    given: test/base, as coadmin
+    input: { id: 1019, status: ignored }
+    then: 200
+    and:
+      - it needed no reply, by a rule: old.sorted(1019, 'no_reply', 'rule')
+      - (+) the rule had said why: "!isBlank(withId(db.emails, 1019).triage_reason)"
+      - the boxes count it where it stands: emails.counts.none == 6 && emails.counts.ignored == 2
+
+  # Deviation 5 of doc/2-operations.md: where the email stands is not checked.
+  - when: an administrator ignores an email a member had already ignored
+    given: test/base, as admin
+    input: { id: 1020, status: ignored }
+    then: 200
+    and:
+      - it was ignored already, as a member's verdict: old.sorted(1020, 'ignored', 'user')
+      - no email is told otherwise than it was: emails == old.emails
+
+counterexamples:
+  - when: the email was replied
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1017, status: ignored }
+    then: 409 emails.alreadySent
+
+  - when: the email was replied as a draft
+    for: the email is not replied
+    given: test/base, as admin
+    input: { id: 1016, status: ignored }
+    then: 409 emails.alreadySent
+
+  - when: the status is none we know
+    for: the status asked for is one of the three corrections
+    given: test/base, as member
+    input: { id: 1002, status: archived }
+    then: 400 emails.invalidStatus

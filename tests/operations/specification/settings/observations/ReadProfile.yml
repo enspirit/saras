@@ -1,0 +1,58 @@
+name: ReadProfile
+agent: Member
+entry: GET /api/me
+description: >-
+  Tells a signed-in member about themselves, their organisation and this
+  server.
+output: Profile
+
+DomPost:
+  - (x) they are told who they are: output.email == world.requester.email
+  - (x) the organisation's model and whether it has a key are told to its administrators only: >-
+      (output.role == 'admin') == (output.organization.model != null)
+      && (output.role == 'admin') == (output.organization.hasKey != null)
+  - (x) the model in force is the organisation's, else the server's: >-
+      !isBlank(output.model)
+      && (isBlank(output.organization.model | '') || output.model == output.organization.model)
+  - (x) a key is in force when the organisation has one: "!(output.organization.hasKey | false) || output.hasKey"
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) the retention clause every request to the AI carries is told, and it is zero retention: >-
+      output.privacy == { zdr: true, data_collection: 'deny' }
+  - (x) content is kept for the days visitors are told: output.retentionDays == old.public.retentionDays
+  - ( ) nothing of another organisation is told
+  - ( ) no key is told, and no password
+
+examples:
+  - when: an administrator asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - she is Ada Admin, administrator of Atelier Nord: >-
+          output.name == 'Ada Admin' && output.role == 'admin' && output.organization.name == 'Atelier Nord'
+      - her language and her signature are told: output.language == 'en' && startsWith(output.signature, 'Kind regards,')
+      - the organisation writes on demand, and sets automated mail aside first: >-
+          output.organization.writing == 'none' && output.organization.skipAutomated
+      - the organisation chose no model and has no key, the server's apply: >-
+          output.organization.model == '' && !output.organization.hasKey
+          && output.model == old.seenBy.outsider.me.model
+
+  - when: a member asks
+    given: test/base, as member
+    then: 200
+    and:
+      - he is Milo Member, a member of Atelier Nord: >-
+          output.name == 'Milo Member' && output.role == 'user' && output.organization.name == 'Atelier Nord'
+      - he is told the model in force, as an administrator is: >-
+          output.model == old.seenBy.admin.me.model && output.hasKey == old.seenBy.admin.me.hasKey
+      - he is told when the organisation writes, as an administrator is: >-
+          output.organization.writing == old.seenBy.admin.me.organization.writing
+          && output.organization.skipAutomated == old.seenBy.admin.me.organization.skipAutomated
+
+  - when: the only member of another organisation asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - he is Otto Outsider, administrator of Bureau Sud: >-
+          output.name == 'Otto Outsider' && output.role == 'admin' && output.organization.name == 'Bureau Sud'

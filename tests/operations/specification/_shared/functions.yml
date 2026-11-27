@@ -1,0 +1,41 @@
+# What several areas read of what they are given: said once, and read by name.
+# Those of one area are in its functions.yml.
+
+- name: ids(things)
+  description: >-
+    The numbers of these things: of any list of things that have a number.
+  formaldef: map(things, thing ~> thing.id)
+
+- name: withId(things, id)
+  description: Of things that have a number, the one of this number.
+  formaldef: find(things, thing ~> thing.id == id)
+
+- name: without(things, id)
+  description: Of things that have a number, all but the one of this number.
+  formaldef: filter(things, thing ~> thing.id != id)
+
+- name: only(things, numbers)
+  description: Of things that have a number, those of these numbers.
+  formaldef: filter(things, thing ~> contains(numbers, thing.id))
+
+- name: except(things, numbers)
+  description: Of things that have a number, those of none of these numbers.
+  formaldef: filter(things, thing ~> !contains(numbers, thing.id))
+
+- name: keys(things)
+  description: >-
+    The keys of these things: of any list of things that have a key.
+  formaldef: map(things, thing ~> thing.key)
+
+- name: withKey(things, key)
+  description: Of things that have a key, the one of this key.
+  formaldef: find(things, thing ~> thing.key == key)
+
+- name: withoutKey(things, key)
+  description: Of things that have a key, all but the one of this key.
+  formaldef: filter(things, thing ~> thing.key != key)
+
+- name: names(things)
+  description: >-
+    The names of these things: of any list of things that have a name.
+  formaldef: map(things, thing ~> thing.name)

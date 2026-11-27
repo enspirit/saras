@@ -1,0 +1,76 @@
+name: WriteWithPrompt
+agent: Member
+entry: POST /api/emails/:id/assist
+description: >-
+  A member asks the AI to write the reply the way one of the organisation's
+  prompts describes, from the email received and from what they wrote, which
+  may be nothing. The action sent, `prompt`, says which of the three kinds of
+  help it is.
+input: HelpAsked
+output: Proposal
+
+# The stack has no LLM and no key in force: nothing here shows a proposal
+# written, and every call that would ask the LLM is refused for want of a key.
+# What is shown is each refusal that comes before the LLM is asked. That a key
+# is in force is told and not decided, `me.hasKey` being false in
+# every Background: decided, each other counterexample would violate it too.
+# No Background holds an email whose content was erased either.
+DomPre:
+  - ( ) the content of the email is still kept
+DomPost:
+  - ( ) a proposal for the email, written with the prompt
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+  - (x) the help asked for is one of the three
+  - (x) the prompt asked for is one of the organisation's: seesPrompt(input.promptId)
+  - ( ) a key is in force
+  - ( ) the model has a provider that keeps nothing
+ReqPost:
+  - ( ) it is written as the mailbox's address, in the language of the email, and ends with the member's signature
+  - ( ) the member's past corrections on this prompt are taken into account
+  - ( ) only what a reply may contain is kept of the answer
+
+counterexamples:
+  - when: somebody of another organisation asks, of an email of this one, with a prompt of their own
+    for: the requester may use its mailbox
+    given: test/base, as outsider
+    input: { id: 1008, action: prompt, promptId: 1003 }
+    then: 404 emails.notFound
+
+  - when: the help asked for is none we know
+    for: the help asked for is one of the three
+    given: test/base, as member
+    input: { id: 1008, action: write, promptId: 1002 }
+    then: 400 assist.invalidAction
+
+  - when: the prompt is one of another organisation
+    for: the prompt asked for is one of the organisation's
+    given: test/base, as member
+    input: { id: 1008, action: prompt, promptId: 1003 }
+    then: 404 prompts.notFound
+
+  - when: no prompt is named
+    for: the prompt asked for is one of the organisation's
+    given: test/base, as member
+    input: { id: 1008, action: prompt, html: "<p>Offer them the yearly price.</p>" }
+    then: 404 prompts.notFound
+
+  - when: a member asks with a prompt and notes, on a stack where no key is in force
+    for: a key is in force
+    given: test/base, as member
+    input: { id: 1008, action: prompt, promptId: 1002, html: "<p>Offer them the yearly price.</p>" }
+    then: 502 llm.noKey
+
+  - when: an administrator asks with a prompt and nothing written, which is not refused for that
+    for: a key is in force
+    given: test/base, as admin
+    input: { id: 1008, action: prompt, promptId: 1001 }
+    then: 502 llm.noKey
+
+  # Deviation 6 of doc/2-operations.md: where the email stands is not checked.
+  - when: a member asks of an email already replied, which is not refused for that
+    for: a key is in force
+    given: test/base, as member
+    input: { id: 1017, action: prompt, promptId: 1001 }
+    then: 502 llm.noKey

@@ -1,0 +1,54 @@
+name: RevokeInvitation
+agent: Administrator
+entry: DELETE /api/invitations/:id
+description: >-
+  An administrator withdraws an invitation before it is accepted.
+input: InvitationToRevoke
+output: Done
+
+# The inventory's DomPre, "a pending invitation of the organisation", is not
+# said: the server refuses nothing for it, as the last two examples show.
+DomPost:
+  - (x) the organisation has no invitation of this number: "!seesInvitation(input.id)"
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (+) its link opens nothing any more - nothing is kept of it: >-
+      !old.seesInvitation(input.id) || withId(db.invitations, input.id) == null
+  - (x) the other invitations of the organisation are as they were: >-
+      invitations == without(old.invitations, input.id)
+  - (x) nothing else is revoked - no invitation of another organisation: >-
+      seenBy.coadmin.invitations == (if old.seesInvitation(input.id)
+        then without(old.seenBy.coadmin.invitations, input.id) else old.seenBy.coadmin.invitations)
+  - (+) of all the invitations there are, that one at most is gone, and the others are as they were: >-
+      count(old.db.invitations) - count(db.invitations) == (if old.seesInvitation(input.id) then 1 else 0)
+      && among(db.invitations, old.db.invitations)
+  - (x) nobody stops being a member: members == old.members
+
+examples:
+  - when: an administrator revokes the invitation of nora
+    given: test/base, as admin
+    input: { id: 1003 }
+    then: 200
+    and:
+      - it was pending: old.invitation(input.id).email == world.invitation.email
+      - the organisation has no invitation left: count(invitations) == 0
+      - (+) no invitation is left, of any organisation: count(db.invitations) == 0
+      - the other administrator sees it gone: count(seenBy.coadmin.invitations) == 0
+
+  - when: the invitation is another organisation's
+    given: test/base, as outsider
+    input: { id: 1003 }
+    then: 200
+    and:
+      - it is answered as done, and nothing is revoked: >-
+          output.ok && seenBy.admin.invitations == old.seenBy.admin.invitations
+      - (+) every invitation there was is kept, with its link: db.invitations == old.db.invitations
+
+  - when: no invitation has this number
+    given: test/base, as admin
+    input: { id: 9999 }
+    then: 200
+    and:
+      - it is answered as done, and nothing is revoked: output.ok && nothingChanged

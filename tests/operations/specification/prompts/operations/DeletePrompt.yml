@@ -1,0 +1,68 @@
+name: DeletePrompt
+agent: Administrator
+entry: DELETE /api/prompts/:id
+description: >-
+  An administrator removes a prompt from the organisation's. What was written
+  with it remains, without it.
+input: PromptNamed
+output: Done
+
+DomPre:
+  - (x) the prompt is one of the organisation's
+DomPost:
+  - (x) the prompt is gone, and no other, of either organisation: >-
+      prompts == without(old.prompts, input.id)
+      && seenBy.admin.prompts == without(old.seenBy.admin.prompts, input.id)
+      && seenBy.outsider.prompts == without(old.seenBy.outsider.prompts, input.id)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (x) the emails remain: emails == old.emails
+  - (+) so do the proposals and the replies written with it: >-
+      db.emails == old.db.emails && ids(db.drafts) == ids(old.db.drafts) && db.replies == old.db.replies
+  - ( ) a proposal or a reply written with it no longer names it
+  - (x) no member is offered it any more: "!seenBy.member.seesPrompt(input.id)"
+
+examples:
+  - when: an administrator deletes a prompt
+    given: test/base, as admin
+    input: { id: 1002 }
+    then: 200
+    and:
+      - the organisation keeps the other: ids(prompts) == [1001]
+      - another organisation keeps its own: seenBy.outsider.prompts == old.seenBy.outsider.prompts
+
+  - when: another administrator deletes the prompt the organisation started with
+    given: test/base, as coadmin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - the organisation keeps the other: ids(prompts) == [1002]
+
+  - when: an administrator deletes the only prompt of their organisation
+    given: test/base, as outsider
+    input: { id: 1003 }
+    then: 200
+    and:
+      - the organisation has no prompt left: prompts == []
+      - another organisation keeps its own: seenBy.admin.prompts == old.seenBy.admin.prompts
+
+counterexamples:
+  - when: the prompt is of another organisation
+    for: the prompt is one of the organisation's
+    given: test/base, as outsider
+    input: { id: 1002 }
+    then: 404 prompts.notFound
+
+  - when: no prompt has this number
+    for: the prompt is one of the organisation's
+    given: test/base, as admin
+    input: { id: 9999 }
+    then: 404 prompts.notFound
+
+  - when: what is given is not a number
+    for: the prompt is one of the organisation's
+    given: test/base, as admin
+    input: { id: first }
+    then: 404 prompts.notFound

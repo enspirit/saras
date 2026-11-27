@@ -1,0 +1,38 @@
+name: SetAsideAutomatedFirst
+agent: Administrator
+entry: PUT /api/organization
+description: >-
+  An administrator says whether plainly automated mail is set aside by rule,
+  before anything else looks at it.
+input: AutomatedSetAside
+output: Done
+
+DomPost:
+  - (x) it is, or it is not: me.organization.skipAutomated == input.skipAutomated
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (x) it is the same as choosing who decides where an email stands - its rule, or nobody: >-
+      attribute('status').decidedBy == (if input.skipAutomated then 'elo' else 'nobody')
+  - (x) every member of the organisation is told: seenBy.member.me.organization.skipAutomated == input.skipAutomated
+  - (x) nothing else of the organisation changes: >-
+      me == merge(old.me, {
+        organization: merge(old.me.organization, { skipAutomated: me.organization.skipAutomated })
+      })
+  - (x) nothing of another organisation changes
+  - (x) the emails already fetched stay where they stand: emails == old.emails
+
+examples:
+  - when: an administrator has automated mail no longer set aside
+    given: test/base, as admin
+    input: { skipAutomated: false }
+    then: 200
+    and:
+      - it was set aside by the rule: old.me.organization.skipAutomated && old.attribute('status').decidedBy == 'elo'
+      - the other attributes are decided as they were: among(withoutKey(old.attributes, 'status'), attributes)
+
+  - when: an administrator says what is already so
+    given: test/base, as coadmin
+    input: { skipAutomated: true }
+    then: 200

@@ -1,0 +1,71 @@
+name: RemoveAdministratorRole
+agent: Administrator
+entry: PUT /api/members/:id
+description: >-
+  An administrator takes the administrator role away from a member. The role
+  sent says which operation it is: `user` here, `admin` for AppointAdministrator.
+input: RoleGiven
+output: Done
+
+DomPre:
+  - (x) the member named is a member of the requester's organisation
+# As an administrator is told after the call: the requester, or the other
+# administrator of Atelier Nord when the requester is one no more.
+DomPost:
+  - (x) the member is a user: withId(members | seenBy.coadmin.members, input.id).role == 'user'
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) the role sent is administrator or user
+  - (x) the organisation keeps at least one administrator: count(without(administrators, input.id)) > 0
+ReqPost:
+  - (x) nothing else of the member changes: >-
+      sameButRole(withId(members | seenBy.coadmin.members, input.id), old.member(input.id))
+  - (x) the other members are as they were: >-
+      without(members | seenBy.coadmin.members, input.id) == without(old.members, input.id)
+  - (x) nobody of another organisation changes: seenBy.outsider.members == old.seenBy.outsider.members
+
+examples:
+  - when: an administrator removes the role of the other one
+    given: test/base, as admin
+    input: { id: 1002, role: user }
+    then: 200
+    and:
+      - ines was an administrator: old.member(input.id).role == 'admin'
+      - ines is a user in the session she had - she is not told who the members are any more: >-
+          old.seenBy.coadmin.members == old.members && seenBy.coadmin.me.role == 'user'
+          && seenBy.coadmin.members == null
+
+  - when: an administrator removes their own role, another one remaining
+    given: test/base, as admin
+    input: { id: 1001, role: user }
+    then: 200
+    and:
+      - ada is a user from then on: me.role == 'user' && members == null && invitations == null
+      - ines is the only administrator left: count(seenBy.coadmin.administrators) == 1
+
+  - when: who loses the role is a user already
+    given: test/base, as admin
+    input: { id: 1003, role: user }
+    then: 200
+    and:
+      - nothing changes: nothingChanged
+
+counterexamples:
+  - when: the member is another organisation's
+    for: the member named is a member of the requester's organisation
+    given: test/base, as admin
+    input: { id: 1004, role: user }
+    then: 404 members.notFound
+
+  - when: no role is sent
+    for: the role sent is administrator or user
+    given: test/base, as admin
+    input: { id: 1002 }
+    then: 400 members.invalidRole
+
+  - when: the only administrator of Bureau Sud removes their own role
+    for: the organisation keeps at least one administrator
+    given: test/base, as outsider
+    input: { id: 1004, role: user }
+    then: 409 members.lastAdmin

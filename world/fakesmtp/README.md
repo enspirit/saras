@@ -7,7 +7,7 @@
 ## Public interface
 
 - **SMTP on `fakesmtp:25`**, on the compose network, without authentication. saras is pointed at it by `SMTP_URL` in [`software/saras/env/devel.env`](../../software/saras/env/devel.env), and again under the suites.
-- **What it was given**, on port 1080: a page on a laptop, [http://localhost:1080](http://localhost:1080) (`FAKESMTP_PORT`), and an API on the compose network, `GET` and `DELETE http://fakesmtp:1080/api/emails`.
+- **What it was given**, on port 1080: a page on a laptop, [http://localhost:7210](http://localhost:7210) (`FAKESMTP_PORT`), and an API on the compose network, `GET` and `DELETE http://fakesmtp:1080/api/emails`.
 - Its tasks:
 
 ```sh
@@ -39,4 +39,4 @@ None of its own. That saras reaches it is seen by asking for a lost password in 
 
 - It offers an upgrade to TLS with a certificate that expired long ago, so the address saras is given says not to take it: `smtp://fakesmtp:25?ignoreTLS=true`.
 - `fake-smtp-server` is unmaintained; `package.json` overrides its `mailparser`, whose version 2 fails every message on Node 18 and later.
-- No suite reads what it was given yet: `tests/webspicy` could specify RequestPasswordReset with it, once it can start from a seed.
+- No suite reads what it was given yet: [`tests/operations`](../../tests/operations/) could say what RequestPasswordReset sends, with it as a part of the world it observes.

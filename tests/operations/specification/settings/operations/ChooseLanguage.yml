@@ -1,0 +1,47 @@
+name: ChooseLanguage
+agent: Member
+entry: PUT /api/settings
+description: >-
+  A member, or the interface on their behalf, says which language they use.
+input: LanguageGiven
+output: Done
+
+DomPost:
+  - (x) the member's language is this one, or English: me.language == input.language || me.language == 'en'
+  - ( ) what the server writes for them follows it
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - ( ) a tag we do not recognise is taken as English
+  - (x) nothing else of theirs changes: "me == merge(old.me, { language: me.language })"
+  - (x) every other member is told of themselves what they were
+  - (+) nothing of another member changes
+
+examples:
+  - when: a member chooses French
+    given: test/base, as member
+    input: { language: fr }
+    then: 200
+    and:
+      - it is their language: me.language == 'fr'
+
+  - when: the interface says a language with its region
+    given: test/base, as admin
+    input: { language: nl-BE }
+    then: 200
+    and:
+      - it is kept as said: me.language == 'nl-BE'
+
+  - when: a tag has the shape of one, in no language the interface speaks
+    given: test/base, as member
+    input: { language: zz }
+    then: 200
+    and:
+      - it is kept as said: me.language == 'zz'
+
+  - when: what is given is not a tag
+    given: test/base, as member
+    input: { language: Français }
+    then: 200
+    and:
+      - it is taken as English: me.language == 'en'

@@ -1,0 +1,12 @@
+# What every area says in the same words.
+
+- description: the requester is signed in
+  formaldef: signedIn
+  violated: as visitor -> 401 auth.signedOut
+
+- description: the requester is an administrator
+  formaldef: administrator
+  violated: as member -> 403 auth.adminOnly
+
+- description: it has a name
+  formaldef: "!isBlank(input.name | '')"

@@ -1,0 +1,42 @@
+name: ListReadyMadePrompts
+agent: Administrator
+entry: GET /api/prompts/ready-made
+description: >-
+  Tells an administrator the ready-made prompts their organisation does not
+  have yet, in their language: what AddReadyMadePrompt adds.
+output: ReadyMadePrompts
+
+DomPost:
+  - (x) the ready-made prompts the organisation has none of, by name, are told: >-
+      noneAmong(names(output), names(old.prompts))
+  - (x) each with a name, when to use it, and instructions: >-
+      all(output, made ~> !isBlank(made.name) && !isBlank(made.description) && !isBlank(made.systemPrompt))
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - ( ) in the language of the administrator, in English when we have none for it
+  - ( ) one is told again once the organisation no longer has a prompt of its name, the one it started with included
+
+examples:
+  - when: an administrator asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - the four the organisation did not add, in English: >-
+          names(output) == ['Appointment scheduling', 'Polite refusal', 'Customer support', 'Acknowledgement of receipt']
+      - the one it started with, which it has, is not among them: >-
+          contains(names(old.prompts), 'Standard professional reply')
+          && !contains(names(output), 'Standard professional reply')
+
+  - when: another administrator asks
+    given: test/base, as coadmin
+    then: 200
+    and:
+      - they are told the same: count(output) == 4 && first(output).name == 'Appointment scheduling'
+
+  - when: an administrator of another organisation asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - the four their own organisation did not add: names(output) == ['Appointment scheduling', 'Polite refusal', 'Customer support', 'Acknowledgement of receipt']

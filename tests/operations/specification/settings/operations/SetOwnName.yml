@@ -1,0 +1,39 @@
+name: SetOwnName
+agent: Member
+entry: PUT /api/settings
+description: >-
+  A member says how the other members should see them.
+input: NameGiven
+output: Done
+
+DomPost:
+  - (x) the member's name is this one, trimmed and cut at 120 characters: me.name == substring(trim(input.name), 0, 120)
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) nothing else of theirs changes: "me == merge(old.me, { name: me.name })"
+  - (x) every other member is told of themselves what they were
+  - (+) nothing of another member changes
+
+examples:
+  - when: a member gives their name
+    given: test/base, as member
+    input: { name: "  Milo M. " }
+    then: 200
+    and:
+      - it is the one given, without the spaces around: me.name == 'Milo M.'
+      - the administrators see it: seenBy.admin.memberWith(old.me.email).name == 'Milo M.'
+
+  - when: a member gives a name of 130 characters
+    given: test/base, as member
+    input: "{ name: padEnd('M', 130, 'o') }"
+    then: 200
+    and:
+      - its first 120 characters are kept: length(me.name) == 120
+
+  - when: a member takes their name back
+    given: test/base, as member
+    input: { name: "" }
+    then: 200
+    and:
+      - they have none: me.name == ''

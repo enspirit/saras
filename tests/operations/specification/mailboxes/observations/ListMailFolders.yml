@@ -1,0 +1,38 @@
+name: ListMailFolders
+agent: Member
+entry: GET /api/mailboxes/:id/folders
+description: >-
+  Asks a mailbox for its folders, for the member to choose the one to watch.
+input: MailboxNamed
+output: MailFolders
+
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - ( ) the mailbox answers
+ReqPost:
+  - (x) the inbox comes first, then the others by name: >-
+      first(output).id == 'INBOX' && first(output).name == 'Inbox'
+
+examples:
+  - when: an administrator asks for the folders of the shared mailbox
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - the folders of the stack's mailbox are told: >-
+          output == [{ id: 'INBOX', name: 'Inbox' }, { id: 'Drafts', name: 'Drafts' }, { id: 'Sent', name: 'Sent' }]
+
+  - when: a member who does not manage the mailbox asks
+    given: test/base, as member
+    input: { id: 1001 }
+    then: 200
+    and:
+      - they are told the same: count(output) == 3
+
+counterexamples:
+  - when: no mailbox has this number
+    for: the requester may use the mailbox
+    given: test/base, as admin
+    input: { id: 4242 }
+    then: 404 mailboxes.notFound

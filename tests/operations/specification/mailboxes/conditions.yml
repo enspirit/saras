@@ -1,0 +1,15 @@
+# What the operations on mailboxes say in the same words.
+#
+# A mailbox that the requester may not use does not exist for them: managing
+# it, how it is reached and what it watches are said of one they may use.
+
+- description: the requester may use the mailbox
+  formaldef: seesMailbox(input.id)
+  violated: as outsider -> 404 mailboxes.notFound
+
+- description: the requester manages the mailbox
+  formaldef: "!seesMailbox(input.id) || manages(input.id)"
+  violated: as member -> 403 mailboxes.adminOnly
+
+- description: the mailbox is reached by its servers
+  formaldef: "!seesMailbox(input.id) || mailbox(input.id).kind == 'imap'"

@@ -60,6 +60,7 @@ tasks:
     description: The static checks, every component
     pre:
       - saras:lint
+      - operations:lint
       - harness:lint
       - chart:lint
 

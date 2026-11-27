@@ -1,0 +1,20 @@
+{
+  // What of the suite is code: how it meets saras, and how its Background is arrived at. Node
+  // runs these files directly, so nothing is emitted: this only type-checks them, in the image
+  // of opspicy, with the compiler and the types it has (`emb run operations:lint`).
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "lib": ["ES2023"],
+    "typeRoots": ["/opt/opspicy/node_modules/@types"],
+    "types": ["node"]
+  },
+  "include": ["config.ts", "backgrounds"]
+}

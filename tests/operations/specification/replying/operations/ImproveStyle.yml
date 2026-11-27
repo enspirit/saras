@@ -1,0 +1,59 @@
+name: ImproveStyle
+agent: Member
+entry: POST /api/emails/:id/assist
+description: >-
+  A member asks the AI to reword what they wrote, keeping its meaning. The
+  action sent, `style`, says which of the three kinds of help it is.
+input: HelpAsked
+output: Proposal
+
+# The stack has no LLM and no key in force: nothing here shows a proposal
+# written, and every call that would ask the LLM is refused for want of a key.
+# What is shown is each refusal that comes before the LLM is asked. That a key
+# is in force is told and not decided, `me.hasKey` being false in
+# every Background: decided, each other counterexample would violate it too.
+DomPre:
+  - (x) something is written
+DomPost:
+  - ( ) a proposal for the email, the same text, reworded
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+  - (x) the help asked for is one of the three
+  - ( ) a key is in force
+  - ( ) the model has a provider that keeps nothing
+ReqPost:
+  - ( ) the email received is not sent to the LLM, only the member's text is
+  - ( ) only what a reply may contain is kept of the answer
+
+counterexamples:
+  - when: somebody of another organisation asks, of an email of this one
+    for: the requester may use its mailbox
+    given: test/base, as outsider
+    input: { id: 1002, action: style, html: "<p>We can do the 12th.</p>" }
+    then: 404 emails.notFound
+
+  - when: the help asked for is not said
+    for: the help asked for is one of the three
+    given: test/base, as member
+    input: { id: 1002, html: "<p>We can do the 12th.</p>" }
+    then: 400 assist.invalidAction
+
+  - when: the reply area holds blanks only
+    for: something is written
+    given: test/base, as member
+    input: { id: 1002, action: style, html: "<p>   </p>" }
+    then: 400 assist.nothingWritten
+
+  - when: an administrator asks, on a stack where no key is in force
+    for: a key is in force
+    given: test/base, as admin
+    input: { id: 1002, action: style, html: "<p>We can do the 12th.</p>" }
+    then: 502 llm.noKey
+
+  # Deviation 6 of doc/2-operations.md: where the email stands is not checked.
+  - when: a member asks of an email already replied as a draft, which is not refused for that
+    for: a key is in force
+    given: test/base, as member
+    input: { id: 1016, action: style, html: "<p>We can do the 12th.</p>" }
+    then: 502 llm.noKey

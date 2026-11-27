@@ -1,0 +1,134 @@
+name: ReadEmail
+agent: Member
+entry: GET /api/emails/:id
+description: >-
+  Tells a member one email as its reader sees it: its content, why it was
+  sorted so, who a reply would go to, its latest proposal and its reply. Its
+  HTML is not part of the answer: ReadEmailAsWritten tells it.
+input: EmailNamed
+output: EmailWithItsReply
+
+DomPost:
+  - (x) the email is told as its box tells it, with its whole text: >-
+      let line = old.email(input.id), told = output
+      in told.id == line.id && told.fromName == line.fromName && told.fromAddr == line.fromAddr && told.subject == line.subject
+         && told.date == line.date && told.status == line.status && told.triageSource == line.triageSource
+         && told.mailbox == line.mailbox && told.shared == line.shared && told.attributes == line.attributes
+         && startsWith(told.bodyText, line.snippet)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+ReqPost:
+  - ( ) why it was sorted so is told, with a code when the reason is one of the server's own
+  - (x) a reply would go to who asked to be replied to, else to who sent it: >-
+      output.recipients == {to: [lower(if isBlank(output.replyTo) then output.fromAddr else output.replyTo)], cc: []}
+  - (x) a reply to all goes to the same, with in copy every other correspondent but the mailbox itself: >-
+      let others = map(flat([output.to, output.cc]), c ~> lower(c.address)), wide = output.recipientsAll
+      in wide.to == output.recipients.to
+         && among(wide.cc, others) && !contains(wide.cc, lower(output.mailbox)) && noneAmong(wide.cc, wide.to)
+         && among(others, flat([[lower(output.mailbox)], wide.to, wide.cc]))
+  - ( ) the prompt that suits it best by its attributes is suggested, none when no prompt names a value it has
+  - (+) its proposal is the latest written for it, none when there is none: >-
+      let written = ids(filter(old.db.drafts, d ~> d.email_id == input.id))
+      in if count(written) == 0 then output.proposal == null else output.proposal.id == max(written)
+  - (x) its reply is what was last handed to the mailbox for it, none when it is not replied: >-
+      let line = old.email(input.id)
+      in if line.replyMode == null then output.reply == null else output.reply.mode == line.replyMode
+  - (+) the reply is told as it was recorded - whether the proposal was edited, and why: >-
+      output.reply == null
+      || any(old.db.replies, r ~> r.email_id == input.id && r.mode == output.reply.mode
+           && r.was_edited == output.reply.wasEdited && r.change_reason == output.reply.changeReason)
+  - ( ) whether it can be shown as it was written, and whether its files can be opened, are told
+
+examples:
+  - when: a member reads an email to handle
+    given: test/base, as member
+    input: { id: 1001 }
+    then: 200
+    and:
+      - its text is told: startsWith(output.bodyText, 'Good afternoon,') && endsWith(output.bodyText, 'Northwind Accounts')
+      - who it was sent to is told: "output.to == [{name: '', address: 'me@corp.example'}] && output.cc == []"
+      - nobody sorted it, and no reason is told: output.triageSource == 'none' && output.triageReason == '' && output.triageReasonCode == null
+      - a rule gave it a topic, and said why: >-
+          fetch(output.attributes, '1002') == {value: '1', source: 'rule', reason: 'it speaks of an invoice'}
+      - no prompt names that topic, so none is suggested: output.suggestedPromptId == null
+      - a reply would go to who sent it: "output.recipients == {to: ['accounts@northwind.example'], cc: []}"
+      - it has no proposal and no reply: output.proposal == null && output.reply == null
+      - it was kept as text only, with no file: "!output.hasHtml && !output.hostedImagesHeld && output.attachments == []"
+      - where the mailbox keeps it is told too: >-
+          output.accountId == 1001 && output.folder == 'INBOX' && output.providerId == '1:1'
+          && startsWith(output.messageId, '<') && output.threadId == null && output.refs == '' && output.replyTo == ''
+
+  - when: an administrator reads an email a member ignored
+    given: test/base, as admin
+    input: { id: 1020 }
+    then: 200
+    and:
+      - its text is told whole, where its box tells the start: >-
+          length(output.bodyText) > 160 && endsWith(output.bodyText, 'Claire Fontaine')
+          && length(old.email(1020).snippet) == 160
+      - the verdict is told as a member's, who gave no reason: >-
+          output.status == 'ignored' && output.triageSource == 'user' && output.triageReason == '' && output.triageReasonCode == null
+
+  - when: a member reads an email a rule set aside
+    given: test/base, as member
+    input: { id: 1012 }
+    then: 200
+    and:
+      - the rule's reason is told, with its code: >-
+          output.status == 'no_reply' && output.triageSource == 'rule'
+          && output.triageReason == 'Automated message (Auto-Submitted).' && output.triageReasonCode == 'triage.autoSubmitted'
+
+  - when: an administrator reads an email that has a file
+    given: test/base, as admin
+    input: { id: 1003 }
+    then: 200
+    and:
+      - the file is described, and can be opened: >-
+          output.attachments == [{name: 'contrat-annote.pdf', type: 'application/pdf', size: 22}] && output.attachmentsOpen
+
+  - when: a member reads an email whose topic a prompt names
+    given: test/base, as member
+    input: { id: 1008 }
+    then: 200
+    and:
+      - its topic is Sales: fetch(output.attributes, '1002').value == '2'
+      - the prompt for that topic is suggested: output.suggestedPromptId == 1002 && old.prompt(1002).name == 'Quote'
+
+  - when: a member reads an email an administrator replied to
+    given: test/base, as member
+    input: { id: 1017 }
+    then: 200
+    and:
+      - the reply is told, with who sent it: >-
+          output.status == 'sent' && output.reply.mode == 'sent'
+          && output.reply.by == 'ada@atelier.example' && output.reply.byName == 'Ada Admin'
+      - what was sent and to whom are told: >-
+          output.reply.finalHtml == '<p>Thank you, we will come back to you this week.</p>'
+          && output.reply.finalText == 'Thank you, we will come back to you this week.'
+          && output.reply.to == ['idris@lakeside.example'] && output.reply.cc == []
+      - no proposal was edited: "!output.reply.wasEdited && output.reply.changeReason == ''"
+
+  - when: an administrator reads an email a member replied to as a draft
+    given: test/base, as admin
+    input: { id: 1016 }
+    then: 200
+    and:
+      - the reply is told as a draft, with who filed it: >-
+          output.status == 'sent' && output.reply.mode == 'draft'
+          && output.reply.by == 'milo@atelier.example' && output.reply.byName == 'Milo Member'
+          && output.reply.finalText == 'A reply still to finish.'
+      - the prompt for its topic is suggested all the same: output.suggestedPromptId == 1002
+
+counterexamples:
+  - when: no email has this number
+    for: the requester may use its mailbox
+    given: test/base, as member
+    input: { id: 9999 }
+    then: 404 emails.notFound
+
+  - when: what is asked for is not a number
+    for: the requester may use its mailbox
+    given: test/base, as member
+    input: { id: first }
+    then: 404 emails.notFound

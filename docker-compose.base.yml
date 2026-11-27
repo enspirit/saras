@@ -5,7 +5,7 @@
 # every stack. The overlays add their own files after it, and later files win.
 #
 #   emb up                                                      base + devel
-#   COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up
+#   COMPOSE_PROJECT_NAME=saras-try COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up
 #
 # Images are named, never built here: `emb` builds them from each component's
 # Embfile.yml, so the target is chosen in one place.
@@ -131,15 +131,24 @@ services:
       retries: 10
 
   # -------------------------------------------------------------------------
-  # webspicy — the black-box specification of the API. It sleeps, and the
-  # suite is `exec`ed into it. Not published to any registry.
+  # operations — the black-box specification of the operations, on the image
+  # of what runs it (opspicy, at the version .env.commons names). It sleeps,
+  # and the suite is `exec`ed into it. Not published to any registry.
+  #
+  # It calls saras through the front door, asks storage for the seed a case
+  # starts from, and reads the database: never writes it.
   # -------------------------------------------------------------------------
-  webspicy:
-    image: saras/webspicy:${DOCKER_TAG:-latest}
+  operations:
+    image: saras/operations:${DOCKER_TAG:-latest}
     env_file:
-      - ./tests/webspicy/env/base.env
+      - ./tests/operations/env/base.env
+    environment:
+      # Interpolated, never retyped: the same variables postgres reads.
+      DATABASE_URL: postgres://${POSTGRES_USER:-saras}:${POSTGRES_PASSWORD:-saras}@postgres:5432/${POSTGRES_DB:-saras}
     depends_on:
       saras:
+        condition: service_healthy
+      storage:
         condition: service_healthy
 
 volumes:

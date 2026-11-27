@@ -1,0 +1,130 @@
+name: SendReply
+agent: Member
+entry: POST /api/emails/:id/send
+description: >-
+  A member sends their reply from the mailbox the email arrived in.
+input: ReplyGiven
+output: HandedOver
+
+DomPre:
+  - (x) the email is not replied
+  - ( ) no reply to it is on its way
+DomPost:
+  - (x) the email is replied: stands(input.id, 'sent') && email(input.id).replyMode == 'sent'
+  - ( ) the reply left from the mailbox, to the recipients given
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+  - (x) the reply is not empty
+  - (x) it has at least one recipient
+  - (x) every recipient is an address
+  - ( ) the member confirmed, which the interface asks and the server does not check
+ReqPost:
+  - ( ) the reply quotes the original and is attached to its thread, as HTML with a text alternative
+  - ( ) the original is flagged answered in the mailbox
+  - (x) one reply is recorded for the email, and no other changes
+  - (+) it is recorded once, the way the email tells, and every reply recorded before is as it was
+  - (x) it is recorded as sent: email(input.id).replyMode == 'sent'
+  - (+) whether the proposal was edited is recorded
+  - ( ) who replied is recorded with it
+  - (x) a reply that started from no proposal is not edited
+  - (+) nor is one that started from a proposal the email does not have
+  - (+) the reason for the change is kept only if the proposal was edited
+  - (x) of the email, only where it stands and how it was replied change
+  - (x) every other email is as it was
+  - (x) another organisation is told nothing of it
+
+examples:
+  - when: a member sends a reply to an email to handle
+    given: test/base, as member
+    input: { id: 1002, html: "<p>Yes, the 12th and 13th of March are free.</p>", to: [sam@whitfield.example], cc: [] }
+    then: 200
+    and:
+      - it was to handle: old.stands(1002, 'needs_reply')
+      - it is told handed over, and not edited: output.ok && !output.wasEdited
+      - the boxes count it where it stands: >-
+          emails.counts == merge(old.emails.counts, {todo: old.emails.counts.todo - 1, sent: old.emails.counts.sent + 1})
+      - a colleague sees it replied: seenBy.admin.emails == emails
+
+  - when: an administrator sends a reply, with somebody in copy, to an email a rule had set aside
+    given: test/base, as admin
+    input: { id: 1012, html: "<p>Bon retour !</p>", to: [paul@girard.example], cc: [bureau@girard.example] }
+    then: 200
+    and:
+      - it needed no reply, by a rule: old.sorted(1012, 'no_reply', 'rule')
+      - the verdict is still told as the rule's: email(1012).triageSource == 'rule'
+      - the boxes count it where it stands: >-
+          emails.counts == merge(old.emails.counts, {none: old.emails.counts.none - 1, sent: old.emails.counts.sent + 1})
+
+  - when: an administrator sends a reply to an email a member ignored
+    given: test/base, as coadmin
+    input: { id: 1020, html: "<p>Here is the signed quote.</p>", to: [claire@northwind.example] }
+    then: 200
+    and:
+      - it was ignored: old.stands(1020, 'ignored')
+      - no email is ignored any more: emails.counts.ignored == 0
+
+  - when: a member gives a reason for a change, and a proposal the email does not have
+    given: test/base, as member
+    input: { id: 1005, html: "<p>Next week suits us.</p>", to: [elena@costa-studio.example], cc: [], proposalId: 4242, changeReason: Shorter }
+    then: 200
+    and:
+      - (+) the email has no proposal: count(old.db.drafts) == 0
+      - it is not edited: "!output.wasEdited"
+      - (+) the reason is not kept: >-
+          any(db.replies, r ~> r.email_id == 1005 && !r.was_edited && r.change_reason == '')
+
+counterexamples:
+  - when: the email was replied
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1017, html: "<p>Once more.</p>", to: [idris@lakeside.example], cc: [] }
+    then: 409 emails.alreadyHandled
+
+  - when: the email was replied as a draft
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1016, html: "<p>Voici le devis.</p>", to: [tomas@atelier-vidal.example], cc: [] }
+    then: 409 emails.alreadyHandled
+
+  - when: no email has this number
+    for: the requester may use its mailbox
+    given: test/base, as member
+    input: { id: 9999, html: "<p>Yes.</p>", to: [sam@whitfield.example], cc: [] }
+    then: 404 emails.notFound
+
+  - when: the reply area was left empty
+    for: the reply is not empty
+    given: test/base, as member
+    input: { id: 1002, html: "<p></p>", to: [sam@whitfield.example], cc: [] }
+    then: 400 reply.empty
+
+  - when: no reply is given
+    for: the reply is not empty
+    given: test/base, as member
+    input: { id: 1002, to: [sam@whitfield.example], cc: [] }
+    then: 400 reply.empty
+
+  - when: it goes to nobody
+    for: it has at least one recipient
+    given: test/base, as member
+    input: { id: 1002, html: "<p>Yes.</p>", to: [], cc: [] }
+    then: 400 reply.noRecipient
+
+  - when: it goes to somebody in copy only
+    for: it has at least one recipient
+    given: test/base, as member
+    input: { id: 1002, html: "<p>Yes.</p>", to: [], cc: [sam@whitfield.example] }
+    then: 400 reply.noRecipient
+
+  - when: a recipient is not an address
+    for: every recipient is an address
+    given: test/base, as member
+    input: { id: 1002, html: "<p>Yes.</p>", to: [sam], cc: [] }
+    then: 400 reply.invalidAddress
+
+  - when: somebody in copy is not an address
+    for: every recipient is an address
+    given: test/base, as member
+    input: { id: 1002, html: "<p>Yes.</p>", to: [sam@whitfield.example], cc: [sam@whitfield] }
+    then: 400 reply.invalidAddress

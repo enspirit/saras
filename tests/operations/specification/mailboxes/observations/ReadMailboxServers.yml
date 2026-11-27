@@ -1,0 +1,39 @@
+name: ReadMailboxServers
+agent: Member
+entry: GET /api/mailboxes/:id/servers
+description: >-
+  Tells the one who manages a mailbox reached by its servers how saras reaches
+  it: both servers, their ports, whether each starts in TLS, and the user name.
+input: MailboxNamed
+output: MailboxServers
+
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - (x) the requester manages the mailbox
+  - (x) the mailbox is reached by its servers
+ReqPost:
+  - ( ) the password is never told
+
+examples:
+  - when: the administrator who connected the mailbox asks
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - the servers of the stack's mailbox are told, and its user name: >-
+          output == { imapHost: '127.0.0.1', imapPort: 1143, imapSecure: false, smtpHost: '127.0.0.1', smtpPort: 1025, smtpSecure: false, username: 'testuser' }
+
+  - when: another administrator asks, of a shared mailbox
+    given: test/base, as coadmin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - they are told the same: output.imapHost == '127.0.0.1' && output.username == 'testuser'
+
+counterexamples:
+  - when: no mailbox has this number
+    for: the requester may use the mailbox
+    given: test/base, as admin
+    input: { id: 4242 }
+    then: 404 mailboxes.notFound

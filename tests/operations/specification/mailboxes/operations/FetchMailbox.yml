@@ -1,0 +1,74 @@
+name: FetchMailbox
+agent: Member
+entry: POST /api/mailboxes/:id/fetch
+description: >-
+  A member has saras bring in what arrived in the watched folder of a mailbox,
+  each email sorted by the organisation's rules. The same happens on the
+  server's own clock.
+input: MailboxNamed
+output: FetchResult
+
+DomPre:
+  - (x) the mailbox watches a folder: "!seesMailbox(input.id) || mailbox(input.id).folder != null"
+DomPost:
+  - (x) the emails that arrived in that folder since the last fetch are kept: >-
+      count(emails.emails) == count(old.emails.emails) + output.fetched
+  - (+) no other email is kept, for anybody: count(db.emails) == count(old.db.emails) + output.fetched
+  - (x) each where the rules put it - to handle, unless one sets it aside: >-
+      all(emails.emails, e ~> old.seesEmail(e.id)
+        || (e.status == 'needs_reply' && e.triageSource == 'none')
+        || (e.status != 'needs_reply' && e.status != 'sent' && e.triageSource == 'rule'))
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+ReqPost:
+  - (x) an email already kept is left as it is: among(old.emails.emails, emails.emails)
+  - ( ) no further back than the days chosen for the mailbox, and only what is unread when the mailbox says so
+  - ( ) no more at a time than the number the server is set up for, the most recent first
+  - (x) how many that leaves for later fetches is told: output.toCome >= 0
+  - (x) what went wrong, fetching or preparing, is told and kept as the mailbox's last error: >-
+      mailbox(input.id).lastError == output.error
+  - (x) when it was fetched is kept: >-
+      mailbox(input.id).lastSyncAt != null
+      && mailbox(input.id).lastSyncAt != old.mailbox(input.id).lastSyncAt
+  - (x) the mailbox says how many of its emails are to handle: >-
+      mailbox(input.id).todo == count(standing(emails.emails, 'needs_reply'))
+  - (x) nothing else of the mailbox changes: >-
+      let b = old.mailbox(input.id), a = mailbox(input.id)
+      in a.kind == b.kind && a.email == b.email && a.displayName == b.displayName && a.shared == b.shared && a.canManage == b.canManage
+        && sameWatch(a, b)
+  - (+) nothing of its credentials changes, and nothing kept of any other mailbox: db.accounts == old.db.accounts
+  - ( ) one fetch at a time per mailbox - whoever asks meanwhile shares the one under way
+  - ( ) a mailbox that watches no folder is not fetched, and says so
+ReqTrig:
+  - on the server's clock, for every mailbox that watches a folder
+  - when a member asks, when a folder is chosen, when a mailbox is reconnected
+
+examples:
+  - when: a member who does not manage the mailbox has it fetched for the first time
+    given: test/unfetched, as member
+    input: { id: 1001 }
+    then: 200
+    and:
+      - the twenty emails of the stack's inbox are brought in, and none is left for later: >-
+          output.fetched == 20 && output.toCome == 0 && output.error == null
+      - nothing was kept before: count(old.emails.emails) == 0
+      - every member who may use the mailbox reads them: count(seenBy.admin.emails.emails) == 20
+      - nobody of another organisation does: count(seenBy.outsider.emails.emails) == 0
+
+  - when: an administrator has it fetched again, and nothing arrived since
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - nothing is brought in: output.fetched == 0 && output.toCome == 0 && output.error == null
+      - what was kept is as it was: emails == old.emails
+      - (+) nothing kept of an email changes, for anybody, nor the record of a reply: >-
+          db.emails == old.db.emails && db.replies == old.db.replies
+
+counterexamples:
+  - when: no mailbox has this number
+    for: the requester may use the mailbox
+    given: test/base, as admin
+    input: { id: 4242 }
+    then: 404 mailboxes.notFound

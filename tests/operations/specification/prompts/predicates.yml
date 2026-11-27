@@ -1,0 +1,6 @@
+# What is true or false of the prompts of the organisation, as somebody sees
+# them at one moment.
+
+- name: seesPrompt(id)
+  description: There is a prompt of this number, for who looks.
+  formaldef: any(prompts | [], p ~> p.id == id)

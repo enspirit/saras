@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1001,
+    "org_id": 1001,
+    "user_id": 1001,
+    "name": "Standard professional reply",
+    "description": "General case: a request for information, a question from a colleague, client or partner.",
+    "system_prompt": "You write professional, clear and courteous replies. Get to the point: answer each question asked, in order, in short sentences. Polite without being obsequious, no empty phrases.",
+    "created_at": "2026-11-26 08:07:50 +0000",
+    "affinity_json": "{}"
+  },
+  {
+    "id": 1002,
+    "org_id": 1001,
+    "user_id": 1001,
+    "name": "Quote",
+    "description": "When somebody asks for a price",
+    "system_prompt": "Answer with our price list and offer a call.",
+    "created_at": "2026-11-26 08:07:50 +0000",
+    "affinity_json": "{\"1002\":[\"2\"]}"
+  },
+  {
+    "id": 1003,
+    "org_id": 1002,
+    "user_id": 1004,
+    "name": "Standard professional reply",
+    "description": "General case: a request for information, a question from a colleague, client or partner.",
+    "system_prompt": "You write professional, clear and courteous replies. Get to the point: answer each question asked, in order, in short sentences. Polite without being obsequious, no empty phrases.",
+    "created_at": "2026-11-26 08:07:52 +0000",
+    "affinity_json": "{}"
+  }
+]

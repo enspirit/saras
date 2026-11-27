@@ -1,0 +1,106 @@
+# What the operations on emails say in the same words.
+#
+# An email whose mailbox the requester may not use does not exist for them.
+# That it is not replied is said of an email they see, so that it holds of one
+# they do not.
+
+- description: the requester may use its mailbox
+  formaldef: seesEmail(input.id)
+  violated: as outsider -> 404 emails.notFound
+
+- description: the email is not replied
+  formaldef: "!stands(input.id, 'sent')"
+
+# Sorting
+
+- description: the status asked for is one of the three corrections
+  formaldef: contains(['needs_reply', 'no_reply', 'ignored'], input.status)
+
+- description: the verdict is recorded as the member's
+  formaldef: email(input.id).triageSource == 'user'
+
+- description: nothing else of the email changes
+  formaldef: >-
+    let was = old.email(input.id),
+        now = email(input.id)
+    in merge(now, {status: was.status, triageSource: was.triageSource}) == was
+
+# No route of the state tells the reason: the relation does.
+- description: the reason it was sorted for stays
+  formaldef: >-
+    withId(db.emails, input.id).triage_reason
+    == withId(old.db.emails, input.id).triage_reason
+
+# Sorting and replying
+
+- description: every other email is as it was
+  formaldef: >-
+    count(emails.emails) == count(old.emails.emails)
+    && among(without(old.emails.emails, input.id), emails.emails)
+
+- description: another organisation is told nothing of it
+  formaldef: seenBy.outsider.emails == old.seenBy.outsider.emails
+
+# Replying
+#
+# The server sets every mark of the HTML aside before it looks for a text:
+# Elo cannot, so these set aside the marks of a paragraph, which is what an
+# editor left empty sends.
+
+- description: the reply is not empty
+  formaldef: "!isBlank(replaceAll(replaceAll(input.html | '', '<p>', ''), '</p>', ''))"
+
+- description: something is written
+  formaldef: "!isBlank(replaceAll(replaceAll(input.html | '', '<p>', ''), '</p>', ''))"
+
+- description: it has at least one recipient
+  formaldef: count(input.to | []) > 0
+
+- description: every recipient is an address
+  formaldef: >-
+    all(flat([input.to | [], input.cc | []]), a ~>
+      let parts = split(a, '@') in count(parts) == 2 && !isBlank(first(parts)) && contains(at(parts, 1), '.') && !contains(a, ' '))
+
+- description: the help asked for is one of the three
+  formaldef: contains(['typos', 'style', 'prompt'], input.action)
+
+- description: of the email, only where it stands and how it was replied change
+  formaldef: >-
+    let was = old.email(input.id),
+        now = email(input.id)
+    in merge(now, {status: was.status, replyMode: was.replyMode}) == was
+
+# What a hand-over records: an email tells that it was replied, and how, and
+# the answer whether the proposal was edited. The rest is told by ReadEmail,
+# which is no route of the state: the relation shows it.
+- description: one reply is recorded for the email, and no other changes
+  formaldef: >-
+    let was = replied(old.emails.emails),
+        now = replied(emails.emails)
+    in old.email(input.id).replyMode == null && email(input.id).replyMode != null
+       && count(now) == count(was) + 1 && among(was, now)
+
+- description: it is recorded once, the way the email tells, and every reply recorded before is as it was
+  formaldef: >-
+    let made = filter(db.replies, r ~> !any(old.db.replies, b ~> b.id == r.id))
+    in count(made) == 1 && first(made).email_id == input.id
+       && first(made).mode == email(input.id).replyMode
+       && among(old.db.replies, db.replies)
+
+- description: whether the proposal was edited is recorded
+  formaldef: >-
+    any(db.replies, r ~> r.email_id == input.id && !any(old.db.replies, b ~> b.id == r.id)
+      && r.was_edited == output.wasEdited)
+
+# No route of the state tells the proposals of an email: one that names none
+# is decided by what is given, one that names another's by the relation.
+- description: a reply that started from no proposal is not edited
+  formaldef: input.proposalId != null || !output.wasEdited
+
+- description: nor is one that started from a proposal the email does not have
+  formaldef: any(old.db.drafts, d ~> d.id == input.proposalId && d.email_id == input.id) || !output.wasEdited
+
+- description: the reason for the change is kept only if the proposal was edited
+  formaldef: >-
+    any(db.replies, r ~> r.email_id == input.id && !any(old.db.replies, b ~> b.id == r.id)
+      && r.change_reason == (if r.was_edited then trim(input.changeReason | '') else ''))

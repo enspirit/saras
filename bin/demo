@@ -21,7 +21,7 @@ docker compose exec -T saras node scripts/demo-mailbox.ts http://127.0.0.1:3000
 
 cat <<TXT
 
-saras demo — ${BASE_URL:-http://localhost:${SARAS_PORT:-3000}}
+saras demo — ${BASE_URL:-http://localhost:${SARAS_PORT:-7230}}
 
   Sign in with   demo@saras.example
   Password       saras-demo-password
