@@ -82,13 +82,6 @@ examples:
           !output.canManage && !seesBoard(1001)
       - no other member sees it: "!seenBy.member.seesBoard(1001)"
 
-  - when: the filter given names an attribute by what is no number
-    given: test/base, as member
-    input: { id: 1003, name: Northwind, shared: false, filter: { from: northwind, attributes: { colour: [red] } } }
-    then: 200
-    and:
-      - the filter is kept reduced to what we know: "output.filter == { from: 'northwind' } && output.count == 3"
-
   - when: a shared board is given no condition, and is made personal
     given: test/base, as admin
     input: { id: 1001, name: All of it, shared: false, filter: {} }

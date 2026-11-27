@@ -158,7 +158,7 @@ test('deleting a board leaves its emails where they were', async () => {
 test('a filter is tried before any board keeps it: how many emails it would show, and the most recent', async () => {
   const before = (await alice('GET', '/boards')).body.length;
   assert.deepEqual((await alice('POST', '/boards/try', { filter: { keywords: 'devis', unknown: 'x' } })).body.params, { at: '.filter.unknown' }, 'a filter says only what one filters on');
-  const tried = (await alice('POST', '/boards/try', { filter: { keywords: 'devis' } })).body;
+  const tried = (await alice('POST', '/boards/try', { filter: { keywords: 'devis', attributes: { colour: ['red'] } } })).body;
   assert.deepEqual([tried.count, tried.emails.map((e: { subject: string }) => e.subject)], [1, ['Demande de devis pour 20 licences']]);
   assert.equal((await alice('POST', '/boards/try', { filter: {} })).body.count, 4, 'no condition keeps every email');
   assert.equal((await bruno('POST', '/boards/try', { filter: {} })).body.count, 0, 'each through the mailboxes they may use');
