@@ -1,6 +1,6 @@
 {
   "configuration": "Configuration",
-  "mailboxes": "Comptes mail",
+  "mailboxes": "Comptes connectés",
   "settings": "Réglages",
   "prompts": "Rédaction",
   "members": "Utilisateurs",
@@ -8,5 +8,6 @@
   "more": "Plus",
   "boards": "Tableaux",
   "newBoard": "Nouveau tableau",
-  "attributes": "Tri"
+  "attributes": "Tri",
+  "inbox": "Boîte de réception"
 }

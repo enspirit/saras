@@ -68,7 +68,7 @@ export function shell(content: Child): void {
   showScreen(
     AppShell({
       brand: session.brand,
-      boxes: BOXES_ON_SCREEN.map((b) => item(b.path, t(b.label), b.icon, session.counts[b.id])),
+      boxes: { title: t('nav.inbox'), items: BOXES_ON_SCREEN.map((b) => item(b.path, t(b.label), b.icon, session.counts[b.id])) },
       boards: { title: t('nav.boards'), items: boardEntries() },
       pages: { title: t('nav.configuration'), items: pages.map((p) => item(p.path, t(p.label), p.icon)) },
       // On a phone the boxes fill the bar: this entry leads to everything else.

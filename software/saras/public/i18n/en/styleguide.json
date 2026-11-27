@@ -111,7 +111,7 @@
   "recipients": "Recipients",
   "to": "To",
   "removeRecipient": "Remove {address}",
-  "emptyTitle": "Nothing to handle",
+  "emptyTitle": "Nothing to reply to",
   "emptyAction": "Fetch new mail",
   "proposal": "Proposal of the AI",
   "aiNote": "Written by the AI with a prompt. Read it before you send.",

@@ -11,12 +11,12 @@
   "finish": "Appliquer et ouvrir un premier email",
   "tryIt": "Voici votre premier email ici. Écrivez quelques mots sur ce qu’il faut répondre, ou rien du tout, puis « Rédiger avec ». Rien n’est envoyé sans votre confirmation.",
   "tryPrepared": "Voici votre premier email ici, avec la proposition préparée pour lui. Lisez-la, modifiez ce que vous voulez, puis Envoyer. Rien n’est envoyé sans votre confirmation.",
-  "writingIntro": "Pour un email à traiter, quand l’IA rédige-t-elle une proposition de réponse ?",
+  "writingIntro": "Pour un email en attente de réponse, quand l’IA rédige-t-elle une proposition de réponse ?",
   "writingLegend": "Quand l’IA rédige",
   "writingNone": "Quand je le demande",
   "writingNoneHint": "J’ouvre l’email et je demande une proposition, ou j’écris moi-même. Le contenu d’un email n’est envoyé à l’IA qu’à ce moment-là.",
   "writingDraft": "Au relevé, à relire ici",
-  "writingDraftHint": "Une proposition m’attend dans chaque email à traiter. Leur contenu est envoyé à l’IA sans que personne ne le demande.",
+  "writingDraftHint": "Une proposition m’attend dans chaque email en attente de réponse. Leur contenu est envoyé à l’IA sans que personne ne le demande.",
   "writingMailbox": "Au relevé, en brouillon dans la boîte",
   "writingMailboxHint": "De même, et chaque proposition est rangée dans le dossier Brouillons de la boîte, à finir et envoyer depuis mon logiciel de messagerie."
 }

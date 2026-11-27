@@ -1,22 +1,22 @@
 {
   "todo": {
-    "label": "À traiter",
-    "empty": "Rien à traiter. Relevez vos boîtes, ou connectez-en une dans Comptes mail."
+    "label": "À répondre",
+    "empty": "Rien à répondre. Relevez vos boîtes, ou connectez-en une dans Comptes connectés."
   },
   "none": {
-    "label": "Réponse inutile",
-    "empty": "Aucun email écarté par le tri."
+    "label": "Résolu",
+    "empty": "Aucun email résolu."
   },
   "sent": {
-    "label": "Répondus",
+    "label": "Répondu",
     "empty": "Aucune réponse envoyée ni mise en brouillon pour l’instant."
   },
   "ignored": {
-    "label": "Ignorés",
-    "empty": "Aucun email ignoré."
+    "label": "Archivé",
+    "empty": "Aucun email archivé."
   },
   "all": {
-    "label": "Toutes les boîtes",
+    "label": "Tout",
     "empty": "Aucun email."
   }
 }

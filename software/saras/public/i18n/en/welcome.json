@@ -11,12 +11,12 @@
   "finish": "Apply and open a first email",
   "tryIt": "This is your first email here. Write a few words on what to answer, or nothing at all, then “Write with”. Nothing is sent until you confirm.",
   "tryPrepared": "This is your first email here, with the proposal prepared for it. Read it, change what you want, then Send. Nothing is sent until you confirm.",
-  "writingIntro": "For an email to handle, when does the AI write a proposal of reply?",
+  "writingIntro": "For an email to reply to, when does the AI write a proposal of reply?",
   "writingLegend": "When the AI writes",
   "writingNone": "When I ask",
   "writingNoneHint": "I open the email and ask for a proposal, or write myself. The content of an email is sent to the AI only then.",
   "writingDraft": "At fetch, to review here",
-  "writingDraftHint": "A proposal waits for me in each email to handle. Their content is sent to the AI without anyone asking.",
+  "writingDraftHint": "A proposal waits for me in each email to reply to. Their content is sent to the AI without anyone asking.",
   "writingMailbox": "At fetch, as drafts in the mailbox",
   "writingMailboxHint": "The same, and each proposal is filed in the Drafts folder of the mailbox, to finish and send from my mail client."
 }

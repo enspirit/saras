@@ -76,7 +76,7 @@ Accidental state, left out: fetches in flight (`running` in `fetch-mailbox.ts`),
 | --- | --- | --- |
 | May use a mailbox | It is in the member's organisation, and is theirs or shared. | `mayUse` (a SQL condition), `mailboxFor`, `emailFor` in `state/` |
 | Manages a mailbox | Shared: the member is an administrator. Personal: it is theirs. | `manages` in `computations/mailboxes.ts` |
-| Box | To handle = `needs_reply`; No reply needed = `no_reply`; Replied = `sent`; Ignored = `ignored`. | `BOXES` in `shared/email.ts`; `computations/boxes.ts` counts by it |
+| Box | To reply = `needs_reply`; Solved = `no_reply`; Answered = `sent`; Archive = `ignored`. | `BOXES` in `shared/email.ts`; `computations/boxes.ts` counts by it |
 | Sign-up is open | The operator allows it, or no account exists yet. | `signUpIsOpen` in `computations/access.ts` |
 | Key in force | The organisation's, else the server's. Same order for the model. | `computations/key-in-force.ts` |
 | Locked out | Ten wrong guesses from one origin within fifteen minutes. | `isLockedOut` in `computations/access.ts` |
@@ -146,9 +146,9 @@ Named after what they bring about. "Entry" gives the button and the route; the c
 
 | Operation | Agent | DomPre → DomPost | ReqPre | ReqPost | Entry |
 | --- | --- | --- | --- | --- | --- |
-| **MarkNoReplyNeeded** | Member | An email not replied → no reply needed | May use its mailbox | The verdict becomes the member's | "No reply needed" · `POST /emails/:id/status` |
-| **IgnoreEmail** | Member | An email not replied → ignored | same | same | "Ignore" · same route |
-| **MoveBackToHandle** | Member | An email not replied → to handle | same | same | "Move back to 'To handle'" · same route |
+| **MarkNoReplyNeeded** | Member | An email not replied → no reply needed | May use its mailbox | The verdict becomes the member's | "Mark solved" · `POST /emails/:id/status` |
+| **IgnoreEmail** | Member | An email not replied → ignored | same | same | "Archive" · same route |
+| **MoveBackToHandle** | Member | An email not replied → to handle | same | same | "Move back to 'To reply'" · same route |
 | **CorrectSortingOfSelection** | Member | Emails ticked, or all of a box or a board as searched → each not replied stands where the member says | One of the three statuses above · at most 500 ticked · only what the member may see is touched; a board must be one they see | One statement whatever their number; "all" is named by its view, never email by email · a replied email is left as it is | the bar above a list once an email is ticked · `POST /emails/selection/status` (the selection in the body) |
 
 An email is sorted when it is fetched, by the rules of the attributes (**SortByRules**, under Attributes), and afterwards by members. The AI sorts nothing ([decision 0011](decisions/0011-the-ai-does-not-sort.md)).

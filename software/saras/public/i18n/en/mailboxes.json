@@ -1,6 +1,6 @@
 {
-  "title": "Mailboxes",
-  "todo": "{count} to handle",
+  "title": "Connected accounts",
+  "todo": "{count} to reply",
   "neverSynced": "Never fetched",
   "syncNow": "Fetch now",
   "disconnect": "Disconnect",
