@@ -1,19 +1,23 @@
 {
   "todo": {
     "label": "To reply",
-    "empty": "Nothing to reply to. Fetch your mailboxes, or connect one in Connected accounts."
+    "empty": "Nothing to reply to. Fetch your mailboxes, or connect one in Connected accounts.",
+    "about": "New emails that wait for your answer. Reply, or mark one solved if it needs none."
   },
   "none": {
     "label": "Solved",
-    "empty": "No solved email."
+    "empty": "No solved email.",
+    "about": "Emails that no longer need a reply. Mark them solved yourself, or let a rule do it."
   },
   "sent": {
     "label": "Answered",
-    "empty": "No reply sent or saved as a draft yet."
+    "empty": "No reply sent or saved as a draft yet.",
+    "about": "Emails you replied to. A reply saved as a draft counts too."
   },
   "ignored": {
     "label": "Archive",
-    "empty": "No archived email."
+    "empty": "No archived email.",
+    "about": "Emails not worth handling: spam, newsletters, unwanted mail. Archive them yourself, or let a rule do it."
   },
   "all": {
     "label": "All",

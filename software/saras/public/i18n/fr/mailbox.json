@@ -29,5 +29,6 @@
     "pane": "Choisissez quoi en faire, ou ouvrez-en un pour le lire.",
     "done": "{count, plural, =0 {Rien n’a changé : un email répondu reste tel quel.} one {# email modifié.} other {# emails modifiés.}}"
   },
-  "searchedIn": "Expéditeur, objet et texte, dans {list}."
+  "searchedIn": "Expéditeur, objet et texte, dans {list}.",
+  "whatIs": "À quoi sert « {name} » ?"
 }
