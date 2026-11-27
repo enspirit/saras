@@ -29,8 +29,8 @@ export const keepBoardOrder = async (db: Db, memberId: number, boardIds: number[
   void (await db.run('UPDATE users SET board_order_json = $1 WHERE id = $2', [JSON.stringify(boardIds), memberId]));
 
 /** The board with this number, if the member sees it. Refused as not found otherwise: what one may not see does not exist. */
-export async function boardFor(db: Db, { member, organization }: Actor, id: unknown): Promise<BoardRow> {
-  const board = await db.one<BoardRow>(`SELECT * FROM boards WHERE ${SEEN} AND id = $3`, [organization.id, member.id, Number(id) || 0]);
+export async function boardFor(db: Db, { member, organization }: Actor, id: number): Promise<BoardRow> {
+  const board = await db.one<BoardRow>(`SELECT * FROM boards WHERE ${SEEN} AND id = $3`, [organization.id, member.id, id]);
   if (!board) throw new Refusal('notFound', 'boards.notFound');
   return board;
 }

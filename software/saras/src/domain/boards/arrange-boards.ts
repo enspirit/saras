@@ -10,7 +10,7 @@ import { boardsArranged } from '../computations/boards.ts';
 import { boardsSeenBy, keepBoardOrder } from '../state/boards.ts';
 import type { Actor, World } from '../world.ts';
 
-export async function arrangeBoards({ db }: World, actor: Actor, boardIds: unknown): Promise<void> {
+export async function arrangeBoards({ db }: World, actor: Actor, boardIds: number[]): Promise<void> {
   const seen = await boardsSeenBy(db, actor);
   await keepBoardOrder(db, actor.member.id, boardsArranged(seen.map((board) => board.id), boardIds));
 }

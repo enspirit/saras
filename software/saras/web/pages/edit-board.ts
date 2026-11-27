@@ -88,7 +88,7 @@ export const editBoardPage = guard(async (boardId: number | null) => {
   const name = Input({ required: true, maxLength: 80, value: board?.name ?? '' });
   const shared = Checkbox({ checked: board?.shared ?? false });
   const conditions = boardConditions(board?.filter ?? {}, attributes, mailboxes, () => beside.show(conditions.filter()));
-  const given = (): BoardGiven => ({ name: name.value, shared: shared.checked, filter: conditions.filter() });
+  const given = (): BoardGiven => ({ name: name.value.trim(), shared: shared.checked, filter: conditions.filter() });
   shell(Page(
     PageHeader({ title: board ? t('boards.editTitle', { name: board.name }) : t('boards.newTitle'), intro: t('boards.intro') }),
     SplitPanel(boardForm(board, name, conditions.element, given, shared), beside.element),

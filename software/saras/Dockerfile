@@ -1,9 +1,11 @@
 # saras. One file for development and for production, so that the development
 # image is not a different thing that happens to work.
 #
-# Built from this directory:
+# Built from the root of the repository, which .dockerignore narrows to this directory and
+# to the specification of the operations, whose types the server checks its inputs against
+# (decision 0021):
 #
-#   docker build --target saras-production -t saras/saras .
+#   docker build -f software/saras/Dockerfile --target saras-production -t saras/saras .
 #
 # `emb` does this; the target is chosen in Embfile.yml.
 #
@@ -18,19 +20,20 @@ WORKDIR /app
 
 # --- dependencies: manifests first, so a source change does not reinstall ----
 FROM base AS dependencies
-COPY package.json package-lock.json ./
+COPY software/saras/package.json software/saras/package-lock.json ./
 RUN npm ci
 
 # --- sources -----------------------------------------------------------------
 FROM dependencies AS sources
-COPY tsconfig.base.json tsconfig.json tsconfig.web.json ./
-COPY scripts ./scripts
-COPY shared ./shared
-COPY src ./src
-COPY web ./web
-COPY public ./public
-COPY brands ./brands
-COPY test ./test
+COPY software/saras/tsconfig.base.json software/saras/tsconfig.json software/saras/tsconfig.web.json ./
+COPY software/saras/scripts ./scripts
+COPY software/saras/shared ./shared
+COPY software/saras/src ./src
+COPY software/saras/web ./web
+COPY software/saras/public ./public
+COPY software/saras/brands ./brands
+COPY software/saras/test ./test
+COPY tests/operations/specification ./specification
 
 # --- build: bundle what the browser loads (web/, shared/, the style sheets and
 # the translations -> public/js/), once ---------------------------------------
@@ -49,11 +52,12 @@ CMD ["npm", "run", "dev"]
 # compiler is shipped
 FROM base AS saras-production
 ENV NODE_ENV=production
-COPY package.json package-lock.json ./
+COPY software/saras/package.json software/saras/package-lock.json ./
 RUN npm ci --omit=dev
-COPY src ./src
-COPY shared ./shared
-COPY public ./public
+COPY software/saras/src ./src
+COPY software/saras/shared ./shared
+COPY software/saras/public ./public
+COPY tests/operations/specification ./specification
 COPY --from=build /app/public/js ./public/js
 # Only used by the embedded database, when no DATABASE_URL is given.
 ENV DATA_DIR=/data

@@ -204,6 +204,8 @@ The rule "Stands in" starts with is in `computations/default-rules.ts`: what use
 
 Observations: `GET /boards` (the boards a member sees, each with how many emails it shows them), `GET /boards/:id/emails` (searched as `/emails` is), `POST /boards/try` (what a filter being written would show: how many emails, and the five most recent; nothing is kept).
 
+What each is given is checked against the type of its input in [`specification/boards/types.elo`](../tests/operations/specification/boards/types.elo), and refused `400` when it does not fit ([decision 0021](decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)): a board is given whole, a list says something and names each board once.
+
 ### Retention
 
 | Operation | Agent | DomPre → DomPost | ReqTrig | Entry |
@@ -237,7 +239,7 @@ Pure, in `src/domain/computations/` unless said otherwise.
 | `replying.ts` | The proposal as HTML; is something written; is the email's content kept; may the reply be handed over (recipients, text, status, none in flight); what a hand-over records (edited or not, the reason kept or dropped); which prompt a prepared proposal uses. |
 | `reply.ts` | Who to reply to, the subject, the threading headers, the quoted body; whether the proposal was edited. |
 | `prompts.ts` | What a prompt must contain. |
-| `given.ts` | What a client gives, reduced: clipped text, addresses, a language tag. |
+| `given.ts` | What a client gives, reduced: clipped text, addresses, a language tag. For the areas whose inputs are not yet checked against their types ([decision 0021](decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)). |
 | `emails.ts` | A stored row as an email. |
 | `key-in-force.ts` | Member, organisation, configuration → the key and model in force. |
 | `llm-prompts.ts` | An email, a prompt, a text → what is sent to the LLM. |

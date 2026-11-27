@@ -95,7 +95,7 @@ test('emails fetched afterwards get its value from the rule; a board filters on 
   assert.deepEqual(valueOf(/devis/), { value: '1', source: 'rule' });
   assert.deepEqual(valueOf(/rendez-vous/), { value: '2', source: 'rule' });
   assert.equal(valueOf(/Merci/), undefined, 'the rule said nothing');
-  const board = await alice('POST', '/boards', { name: 'Sales', filter: { attributes: { [topic]: ['1'] } } });
+  const board = await alice('POST', '/boards', { name: 'Sales', shared: false, filter: { attributes: { [topic]: ['1'] } } });
   assert.equal(board.body.count, 1);
 });
 

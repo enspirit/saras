@@ -9,7 +9,7 @@ import { accepted } from '../refusal.ts';
 import { boardFor, forgetBoard } from '../state/boards.ts';
 import type { Actor, World } from '../world.ts';
 
-export async function deleteBoard({ db }: World, actor: Actor, boardId: unknown): Promise<void> {
+export async function deleteBoard({ db }: World, actor: Actor, boardId: number): Promise<void> {
   const board = await boardFor(db, actor, boardId);
   accepted(mayManageBoard(actor, board));
   await forgetBoard(db, board.id);

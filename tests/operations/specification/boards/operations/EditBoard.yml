@@ -11,10 +11,11 @@ DomPre:
   - (x) it is a board the member sees
 DomPost:
   - (x) the board has this name, and is shared or not: >-
-      output.id == input.id && output.name == trim(input.name) && output.shared == (input.shared | false)
+      output.id == input.id && output.name == input.name && output.shared == input.shared
   - (x) it has this filter, for the conditions we know: sameFilter(output.filter, input.filter)
 ReqPre:
   - (x) the requester is signed in
+  - ( ) what is given is of the type of its input
   - (x) the member manages it, as its owner or, for a shared one, as an administrator
   - (x) it has a name
   - (x) only an administrator makes it shared
@@ -82,16 +83,16 @@ examples:
           !output.canManage && !seesBoard(1001)
       - no other member sees it: "!seenBy.member.seesBoard(1001)"
 
-  - when: the filter given holds what we do not know
+  - when: the filter given names an attribute by what is no number
     given: test/base, as member
-    input: { id: 1003, name: Northwind, filter: { from: northwind, colour: red } }
+    input: { id: 1003, name: Northwind, shared: false, filter: { from: northwind, attributes: { colour: [red] } } }
     then: 200
     and:
       - the filter is kept reduced to what we know: "output.filter == { from: 'northwind' } && output.count == 3"
 
-  - when: a name alone is given for a shared board
+  - when: a shared board is given no condition, and is made personal
     given: test/base, as admin
-    input: { id: 1001, name: All of it }
+    input: { id: 1001, name: All of it, shared: false, filter: {} }
     then: 200
     and:
       - it has no condition any more, and shows every email they may see: output.filter == {} && output.count == 20
@@ -99,13 +100,25 @@ examples:
 
   - when: the filter names attributes by a number no attribute of the organisation has
     given: test/base, as member
-    input: { id: 1003, name: Elsewhere, filter: { attributes: { "9999": ["1"], "1004": ["1"] } } }
+    input: { id: 1003, name: Elsewhere, shared: false, filter: { attributes: { "9999": ["1"], "1004": ["1"] } } }
     then: 200
     and:
       # 1004 is an attribute of Bureau Sud, 9999 of nobody: "the attributes we know" are those a number names.
       - they are kept as given, and show nothing: output.filter == input.filter && output.count == 0
 
 counterexamples:
+  - when: the filter given holds what is no condition
+    for: what is given is of the type of its input
+    given: test/base, as member
+    input: { id: 1003, name: Northwind, shared: false, filter: { from: northwind, colour: red } }
+    then: 400 request.invalid
+
+  - when: a name alone is given, for a change is said whole
+    for: what is given is of the type of its input
+    given: test/base, as admin
+    input: { id: 1001, name: All of it }
+    then: 400 request.invalid
+
   - when: the board is of another organisation
     for: it is a board the member sees
     given: test/base, as outsider

@@ -1,7 +1,8 @@
 // Boards: named views of emails, defined by a filter on their attributes.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { boardGiven, boardsArranged, conditionsOf, filterGiven, managesBoard, mayShare } from '../../src/domain/computations/boards.ts';
+import type { BoardFilter } from '../../shared/board.ts';
+import { boardsArranged, conditionsOf, filterKept, managesBoard, mayShare } from '../../src/domain/computations/boards.ts';
 import type { Verdict } from '../../src/domain/refusal.ts';
 import type { Actor } from '../../src/domain/world.ts';
 import { createClient, join } from '../support/client.ts';
@@ -12,24 +13,14 @@ import type { Stack } from '../support/stack.ts';
 const outcome = (verdict: Verdict<unknown>): string => (verdict.ok ? 'ok' : `${verdict.refusal.kind}: ${verdict.refusal.problem.code}`);
 const actorWith = (id: number, role: 'admin' | 'user') => ({ member: { id, role }, organization: { id: 1 } }) as Actor;
 
-test('a filter is kept reduced to the attributes we know, and to the conditions that say something', () => {
-  const given = { mailbox: [3, '4', 'x', 3], attributes: { status: ['todo'], 12: ['2', '2'], colour: ['red'], priority: [] }, received: '7', from: '  claire ', keywords: ' devis ', attachment: true, colour: 'red' };
-  assert.deepEqual(filterGiven(given), { attributes: { 12: ['2'], status: ['todo'] }, mailbox: [3, 4], received: 7, from: 'claire', keywords: 'devis', attachment: true });
-  assert.deepEqual(filterGiven({ box: ['todo'], priority: ['high'], attributes: { priority: ['high'] } }), { attributes: { status: ['todo'] } }, 'a filter made before attributes existed named the box itself; the priority is named by its number, like any attribute of the organisation');
-  assert.deepEqual(filterGiven({ mailbox: [], attributes: { status: 'todo' }, received: -2, from: ' ', attachment: 'yes' }), {});
-  assert.deepEqual(filterGiven(null), {});
+test('a filter is kept reduced to the attributes we know; what it is otherwise is the type of its input', () => {
+  const filter = { mailbox: [3, 4], attributes: { status: ['todo'], 12: ['2'], colour: ['red'] }, received: 7, from: 'claire', attachment: true } as BoardFilter;
+  assert.deepEqual(filterKept(filter), { mailbox: [3, 4], attributes: { status: ['todo'], 12: ['2'] }, received: 7, from: 'claire', attachment: true });
+  assert.deepEqual(filterKept({ attributes: { colour: ['red'] } } as BoardFilter), {}, 'a condition on no attribute we know says nothing');
+  assert.deepEqual(filterKept({ from: 'client.example', except: { attributes: { 12: ['1'], colour: ['red'] }, keywords: 'promo' } } as BoardFilter), { from: 'client.example', except: { attributes: { 12: ['1'] }, keywords: 'promo' } });
 });
 
-test('what an email must not be is kept the same way, for the conditions that can be said both ways', () => {
-  const except = { attributes: { 12: ['1', '1'], colour: ['red'] }, mailbox: ['4', 'x'], from: ' noreply ', keywords: ' promo ', received: 7, attachment: true, except: { from: 'x' } };
-  assert.deepEqual(filterGiven({ from: 'client.example', except }), { from: 'client.example', except: { attributes: { 12: ['1'] }, mailbox: [4], from: 'noreply', keywords: 'promo' } });
-  assert.deepEqual(filterGiven({ except: { from: ' ', mailbox: [], attributes: {} } }), {}, 'an exclusion that says nothing is not kept');
-  assert.deepEqual(filterGiven({ except: 'noreply' }), {});
-});
-
-test('a board needs a name; only administrators share one; its owner manages it, administrators when it is shared', () => {
-  assert.equal(outcome(boardGiven({ name: ' ' })), 'invalid: boards.nameRequired');
-  assert.deepEqual(boardGiven({ name: ' Quotes ', filter: { attributes: { status: ['todo'] } } }), { ok: true, value: { name: 'Quotes', shared: false, filter: { attributes: { status: ['todo'] } } } });
+test('only administrators share a board; its owner manages it, administrators when it is shared', () => {
   assert.equal(outcome(mayShare(actorWith(1, 'user'), true)), 'forbidden: boards.sharedByAdministrators');
   assert.deepEqual([outcome(mayShare(actorWith(1, 'user'), false)), outcome(mayShare(actorWith(1, 'admin'), true))], ['ok', 'ok']);
   assert.equal(managesBoard(actorWith(7, 'user'), { shared: false, user_id: 7 }), true);
@@ -70,8 +61,7 @@ test('what an email must not be is the same condition, not true: after the other
 test('boards come in the order given; those not named after, as they were; what one does not see has no place', () => {
   assert.deepEqual(boardsArranged([1, 2, 3], [3, 1, 2]), [3, 1, 2]);
   assert.deepEqual(boardsArranged([1, 2, 3], [3]), [3, 1, 2]);
-  assert.deepEqual(boardsArranged([1, 2, 3], ['2', 9, 2, 'x', null]), [2, 1, 3]);
-  assert.deepEqual(boardsArranged([1, 2], 'first'), [1, 2]);
+  assert.deepEqual(boardsArranged([1, 2, 3], [2, 9]), [2, 1, 3]);
   assert.deepEqual(boardsArranged([], [4]), []);
 });
 
@@ -88,8 +78,9 @@ let quotes: number;
 test('a member makes a board; it shows the emails its filter keeps, and says how many', async () => {
   assert.equal((await alice('POST', '/auth/signup', { email: 'alice@acme.example', password: 'un-bon-mot-de-passe', organization: 'Acme' })).status, 201);
   await connectInbox(alice, stack.imapAccount);
-  assert.equal((await alice('POST', '/boards', { name: '' })).body.code, 'boards.nameRequired');
-  const made = await alice('POST', '/boards', { name: 'Devis', filter: { keywords: 'devis', attributes: { status: ['todo'] } } });
+  assert.equal((await alice('POST', '/boards', { name: ' ', shared: false, filter: {} })).body.code, 'boards.nameRequired');
+  assert.deepEqual((await alice('POST', '/boards', { name: 'Devis', filter: {} })).body.params, { at: '.shared' }, 'a board is given whole, as its type says');
+  const made = await alice('POST', '/boards', { name: 'Devis', shared: false, filter: { keywords: 'devis', attributes: { status: ['todo'] } } });
   assert.equal(made.status, 201);
   assert.deepEqual([made.body.name, made.body.shared, made.body.canManage, made.body.count], ['Devis', false, true, 1]);
   quotes = made.body.id;
@@ -97,7 +88,7 @@ test('a member makes a board; it shows the emails its filter keeps, and says how
 });
 
 test('the attributes combine: sender, how recent, attachments, where the email stands', async () => {
-  const board = async (filter: unknown): Promise<number> => (await alice('POST', '/boards', { name: 'x', filter })).body.count;
+  const board = async (filter: unknown): Promise<number> => (await alice('POST', '/boards', { name: 'x', shared: false, filter })).body.count;
   assert.equal(await board({}), 4, 'no condition: every email kept from the mailbox, the newsletter set aside included');
   assert.equal(await board({ from: 'client.example' }), 2);
   assert.equal(await board({ from: 'client.example', keywords: 'rendez-vous' }), 1);
@@ -109,7 +100,7 @@ test('the attributes combine: sender, how recent, attachments, where the email s
 });
 
 test('a condition is said the other way round: the sender is not, the keywords do not appear, the attribute is not', async () => {
-  const board = async (filter: unknown): Promise<number> => (await alice('POST', '/boards', { name: 'x', filter })).body.count;
+  const board = async (filter: unknown): Promise<number> => (await alice('POST', '/boards', { name: 'x', shared: false, filter })).body.count;
   assert.equal(await board({ except: { from: 'client.example' } }), 2, 'the newsletter and the thank-you note');
   assert.equal(await board({ except: { from: 'CLAIRE MARTIN' } }), 3, 'by the name as by the address, whatever the case');
   assert.equal(await board({ from: 'client.example', except: { from: 'sophie' } }), 1, 'a sender, but not this one');
@@ -128,28 +119,29 @@ test('a personal board is its owner\'s alone; an administrator shares one with e
   await join(alice, bruno, 'bruno@acme.example');
   assert.deepEqual((await bruno('GET', '/boards')).body, []);
   assert.equal((await bruno('GET', `/boards/${quotes}/emails`)).status, 404);
-  assert.equal((await bruno('POST', '/boards', { name: 'À moi', shared: true })).body.code, 'boards.sharedByAdministrators');
+  assert.equal((await bruno('POST', '/boards', { name: 'À moi', shared: true, filter: {} })).body.code, 'boards.sharedByAdministrators');
   assert.equal((await alice('PUT', `/boards/${quotes}`, { name: 'Devis', shared: true, filter: { keywords: 'devis' } })).status, 200);
   const [seen] = (await bruno('GET', '/boards')).body;
   assert.deepEqual([seen.name, seen.shared, seen.canManage, seen.count], ['Devis', true, false, 0], 'he sees the board, not the emails of a mailbox that is not his');
   assert.deepEqual(await subjectsOf(bruno, quotes), []);
-  assert.equal((await bruno('PUT', `/boards/${quotes}`, { name: 'Pris' })).body.code, 'boards.notYours');
+  assert.equal((await bruno('PUT', `/boards/${quotes}`, { name: 'Pris', shared: false, filter: {} })).body.code, 'boards.notYours');
   assert.equal((await bruno('DELETE', `/boards/${quotes}`)).status, 403);
 });
 
 test('a member puts the boards of their menu in the order they want; it is theirs alone, and a new board comes last', async () => {
   const names = async (as: typeof alice): Promise<string[]> => (await as('GET', '/boards')).body.map((b: { name: string }) => b.name);
-  const mine = (await bruno('POST', '/boards', { name: 'À moi' })).body.id;
+  const mine = (await bruno('POST', '/boards', { name: 'À moi', shared: false, filter: {} })).body.id;
   assert.deepEqual(await names(bruno), ['Devis', 'À moi'], 'until arranged: the shared ones first');
   assert.equal((await bruno('PUT', '/boards/order', { boards: [mine, quotes] })).status, 200);
   assert.deepEqual(await names(bruno), ['À moi', 'Devis']);
   assert.equal((await alice('GET', '/boards')).body[0].id, quotes, 'the menu of another member is as it was');
   const before = (await alice('GET', '/boards')).body.map((b: { id: number }) => b.id);
-  assert.equal((await alice('PUT', '/boards/order', { boards: [before.at(-1), mine, 'x'] })).status, 200, 'a board one does not see is left out');
+  assert.equal((await alice('PUT', '/boards/order', { boards: [before.at(-1), 'x'] })).status, 400, 'a board is named by its number');
+  assert.equal((await alice('PUT', '/boards/order', { boards: [before.at(-1), mine] })).status, 200, 'a board one does not see is left out');
   assert.deepEqual((await alice('GET', '/boards')).body.map((b: { id: number }) => b.id), [before.at(-1), ...before.slice(0, -1)]);
-  await bruno('POST', '/boards', { name: 'Plus tard' });
+  await bruno('POST', '/boards', { name: 'Plus tard', shared: false, filter: {} });
   assert.deepEqual(await names(bruno), ['À moi', 'Devis', 'Plus tard']);
-  assert.equal((await bruno('PUT', '/boards/order', {})).status, 200);
+  assert.equal((await bruno('PUT', '/boards/order', { boards: [] })).status, 200);
   assert.deepEqual(await names(bruno), ['À moi', 'Devis', 'Plus tard'], 'nothing named: nothing moves');
 });
 
@@ -161,9 +153,10 @@ test('deleting a board leaves its emails where they were', async () => {
 
 test('a filter is tried before any board keeps it: how many emails it would show, and the most recent', async () => {
   const before = (await alice('GET', '/boards')).body.length;
-  const tried = (await alice('POST', '/boards/try', { filter: { keywords: 'devis', unknown: 'x' } })).body;
+  assert.deepEqual((await alice('POST', '/boards/try', { filter: { keywords: 'devis', unknown: 'x' } })).body.params, { at: '.filter.unknown' }, 'a filter says only what one filters on');
+  const tried = (await alice('POST', '/boards/try', { filter: { keywords: 'devis' } })).body;
   assert.deepEqual([tried.count, tried.emails.map((e: { subject: string }) => e.subject)], [1, ['Demande de devis pour 20 licences']]);
-  assert.equal((await alice('POST', '/boards/try', {})).body.count, 4, 'no condition keeps every email');
+  assert.equal((await alice('POST', '/boards/try', { filter: {} })).body.count, 4, 'no condition keeps every email');
   assert.equal((await bruno('POST', '/boards/try', { filter: {} })).body.count, 0, 'each through the mailboxes they may use');
   assert.equal((await alice('GET', '/boards')).body.length, before, 'nothing is kept');
 });

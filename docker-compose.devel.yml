@@ -39,6 +39,8 @@ services:
       - ./software/saras/test:/app/test
       - ./software/saras/brands:/app/brands
       - ./software/saras/public:/app/public
+      # The types of the specification, which the server checks what it is given against.
+      - ./tests/operations/specification:/app/specification:ro
       # public/js is deliberately not the host's: the container bundles into
       # its own, so two builds never fight over one directory.
       - /app/public/js

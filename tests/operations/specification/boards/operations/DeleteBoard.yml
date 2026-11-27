@@ -14,6 +14,7 @@ DomPost:
   - (+) and no other, whoever sees it: ids(db.boards) == ids(without(old.db.boards, input.id))
 ReqPre:
   - (x) the requester is signed in
+  - ( ) what is given is of the type of its input
   - (x) the member manages it, as its owner or, for a shared one, as an administrator
 ReqPost:
   - (x) the emails it showed are untouched: emails == old.emails
@@ -75,10 +76,10 @@ counterexamples:
     then: 404 boards.notFound
 
   - when: what is given is not a number
-    for: it is a board the member sees
+    for: what is given is of the type of its input
     given: test/base, as admin
     input: { id: first }
-    then: 404 boards.notFound
+    then: 400 request.invalid
 
   - when: a member deletes a shared board
     for: the member manages it, as its owner or, for a shared one, as an administrator

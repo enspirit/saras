@@ -8,11 +8,11 @@ input: BoardsArranged
 output: Done
 
 DomPost:
-  # The boards named are numbers here: the server also takes a number written as a text.
   - (x) the boards the member sees come in the order given, those not named after, in the order they had: >-
-      ids(boards) == arranged(ids(old.boards), if typeOf(input.boards) == 'List' then input.boards else [])
+      ids(boards) == arranged(ids(old.boards), input.boards)
 ReqPre:
   - (x) the requester is signed in
+  - ( ) what is given is of the type of its input
 ReqPost:
   - (x) the boards are the same, each as it was: count(boards) == count(old.boards) && among(old.boards, boards)
   - (+) no board is touched, whoever sees it: db.boards == old.db.boards
@@ -47,23 +47,34 @@ examples:
       - whose they are see them as they did: >-
           seenBy.admin.boards == old.seenBy.admin.boards && seenBy.outsider.boards == old.seenBy.outsider.boards
 
-  - when: a board is named twice, and something that is no board
-    given: test/base, as admin
-    input: { boards: [1002, nothing, 1002, 1001, 9999] }
-    then: 200
-    and:
-      - each has one place: ids(boards) == [1002, 1001]
-
   - when: nothing is named
     given: test/base, as member
-    input: {}
+    input: { boards: [] }
     then: 200
     and:
       - nothing moves: boards == old.boards
 
+counterexamples:
+  - when: a board is named twice
+    for: what is given is of the type of its input
+    given: test/base, as admin
+    input: { boards: [1002, 1002, 1001] }
+    then: 400 request.invalid
+
+  - when: something that is no board is named
+    for: what is given is of the type of its input
+    given: test/base, as admin
+    input: { boards: [1002, nothing] }
+    then: 400 request.invalid
+
+  - when: no list is given
+    for: what is given is of the type of its input
+    given: test/base, as member
+    input: {}
+    then: 400 request.invalid
+
   - when: what is given is not a list
+    for: what is given is of the type of its input
     given: test/base, as member
     input: { boards: first }
-    then: 200
-    and:
-      - nothing moves: boards == old.boards
+    then: 400 request.invalid

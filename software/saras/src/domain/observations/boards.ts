@@ -1,11 +1,10 @@
 // Observation: the boards a member sees, and the emails a board shows them.
 import type { Board, BoardFilter, EmailsOfBoard, FilterTried } from '../../../shared/board.ts';
 import type { Db } from '../../tooling/db.ts';
-import { conditionsOf, filterGiven, managesBoard } from '../computations/boards.ts';
+import { conditionsOf, managesBoard } from '../computations/boards.ts';
 import { boardFor, boardsSeenBy } from '../state/boards.ts';
 import type { BoardRow } from '../state/boards.ts';
 import type { Actor } from '../world.ts';
-import { searchGiven } from '../computations/search.ts';
 import { SEEN_BY_MEMBER, emailSummaries, emailsOfView } from './emails.ts';
 
 /** How many of the emails a member may see a filter keeps. */
@@ -29,17 +28,16 @@ export async function boardsFor(db: Db, actor: Actor): Promise<Board[]> {
 }
 
 /** A board, with the 200 most recent emails it shows this member, as searched: only those of mailboxes they may use. */
-export async function emailsOfBoard(db: Db, actor: Actor, boardId: unknown, search: unknown): Promise<EmailsOfBoard> {
+export async function emailsOfBoard(db: Db, actor: Actor, boardId: number, search = ''): Promise<EmailsOfBoard> {
   const board = await boardSeenBy(db, actor, await boardFor(db, actor, boardId));
-  return { board, emails: await emailsOfView(db, actor, { board: board.id, search: searchGiven(search) }) };
+  return { board, emails: await emailsOfView(db, actor, { board: board.id, search }) };
 }
 
 /** How many of the most recent matches are told when a filter is tried. */
 const SHOWN_WHEN_TRIED = 5;
 
 /** What a filter would show this member, before any board keeps it: how many emails, and the most recent ones. Nothing is kept. */
-export async function tryFilter(db: Db, actor: Actor, given: unknown): Promise<FilterTried> {
-  const filter = filterGiven(given);
+export async function tryFilter(db: Db, actor: Actor, filter: BoardFilter): Promise<FilterTried> {
   const emails = await emailSummaries(db, actor, conditionsOf(filter, 3));
   return { count: await countOf(db, actor, filter), emails: emails.slice(0, SHOWN_WHEN_TRIED) };
 }
