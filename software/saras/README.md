@@ -7,11 +7,12 @@ The server and the interface it serves: the **Backend** and the **Frontend** of 
 Nothing else is public.
 
 - **The operations, over HTTP**, under `/api`: one route per operation or observation, requests and answers in JSON. Their inventory, with the clauses of each, is [`doc/2-operations.md`](../../doc/2-operations.md), by area: access, settings, mailboxes, sorting, replying, prompts, attributes, boards. A route is open to visitors, to members (the default) or to administrators only; a write that is not JSON is answered `415`.
+- **What an operation takes** is the type of its input in [`tests/operations/specification`](../../tests/operations/specification/): the parameters of its path, with its body, or its query for a `GET`. What is not of that type is refused `400`, with the code its constraint names or `request.invalid` and where ([decision 0021](../../doc/decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)). The areas move to it one by one: boards so far; a route that names no operation of the specification checks nothing yet.
 - **A refusal** is a status and a message code the interface translates: invalid `400`, unauthenticated `401`, forbidden `403`, not found `404`, conflict `409`, gone `410`, too many attempts `429`, a mail host or the LLM failing `502`.
 - **The interface**: `/` and `/styleguide.html`, with the files they load. `/brand/*` is the brand folder when there is one, file by file, over the default brand.
 - **Its configuration**: the environment variables of [`env/base.env`](env/base.env), each described there with its default, and nothing else. `APP_SECRET` is the only one it refuses to start without.
 - **The brand folder** named by `BRAND_DIR`: `theme.css`, `brand.json`, a logo, a favicon. [`brands/example/`](brands/example/) is a complete one.
-- **The image** `saras/saras`, built from this directory and published as [`enspirit/saras`](https://hub.docker.com/r/enspirit/saras): it listens on `PORT` (3000), keeps the embedded database under `/data`, and is healthy when `GET /api/public` answers.
+- **The image** `saras/saras`, built from the root of the repository (this directory and the specification of the operations) and published as [`enspirit/saras`](https://hub.docker.com/r/enspirit/saras): it listens on `PORT` (3000), keeps the embedded database under `/data`, and is healthy when `GET /api/public` answers.
 - **Its log**, on the standard output: one JSON object per line, with `time`, `level` (`debug`, `info`, `warn`, `error`) and `msg`, then fields. `LOG_LEVEL` says from which level up. Every line of a request carries its id as `req`: the `x-request-id` it came with, or one the server gives it, said back in the answer. A request is logged when it is answered, and as *left unanswered* when whoever asked gave up first; reaching a mail server, step by step, with what it answered when it did not let us in. What is logged and what never is: [decision 0012](../../doc/decisions/0012-the-server-logs-json-lines-and-never-what-it-protects.md).
 - **What it does on its own**: ExpireSessions and ErasePastRetention hourly; FetchMailbox for every mailbox each `SYNC_INTERVAL_MINUTES`.
 - **Its roles**, `ROLES`: `migrate` (bringing the database to what this version expects, at start), `web` (the two first items above) and `clock` (the one just above). A process takes all three unless told otherwise, and is then a whole installation. Several may run on one PostgreSQL server, with all three or sharing them out; `migrate` alone ends once the database is migrated, with status 0.
@@ -20,7 +21,7 @@ Nothing else is public.
 
 ## Depends on
 
-No other component of ours. Third parties, each reached through one place:
+Of ours, the specification of the operations, [`tests/operations/specification`](../../tests/operations/specification/): its types are what the server checks its inputs against, read when it starts through the link `specification/` (a copy in the image). Third parties, each reached through one place:
 
 | | Reached through | What is expected of it |
 | --- | --- | --- |
@@ -69,7 +70,7 @@ Green means: `lint` clean, and every test passing on both databases.
 
 ## Status
 
-> **In flight:** nothing.
+> **In flight:** what an operation is given is checked against its type ([decision 0021](../../doc/decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)): boards are. Where a checked input does not yet secure the code downstream is listed there, [where the code falls short of it](../../doc/decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md#where-the-code-falls-short-of-it).
 
 - Every operation of the inventory exists. Where the code does not do what the documents say is listed there, under Deviations.
 - The operations are specified from outside in [`tests/operations`](../../tests/operations/), which says what it leaves to the tests of `test/integration/`, inside this component: what needs the LLM, a second factor, the lock-out, and what the server does on its own.
@@ -82,7 +83,7 @@ Green means: `lint` clean, and every test passing on both databases.
 - `src/domain/`: what saras does, by area. Each operation has its file, named after it and headed by its clauses (`replying/send-reply.ts`…); `computations/` holds the pure decisions; `state/` reads and writes the state; `observations/` holds what members read; `model/` what is kept. [`doc/2-operations.md`](../../doc/2-operations.md) is the inventory.
 - `src/domain/sorting/`: sorting by the rules of the organisation's attributes, when an email is fetched and again when a rule changes; the corrections a member makes.
 - `src/domain/mailboxes/fetch-mailbox.ts`: fetch, sorted by the rules, then prepare proposals.
-- `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, and one file of routes per area), `db.ts` and `db/` (the two drivers, the migrations and what applies them), `clock.ts` (the tasks the server runs on its own, due in the database), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `log.ts` (the one place that writes the log) and `redaction.ts` (what no line may hold), `mail/log/` (what is repeated of a conversation with a mail server), `http/access-log.ts` (what is logged of a request), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
+- `src/tooling/`: how it is done, with no business rule: `http/` (the HTTP API: `server.ts`, one file of routes per area, and `inputs.ts`, the check of what an operation is given), `specification.ts` (what the server reads of the specification: its types, and the entry and input of each operation), `db.ts` and `db/` (the two drivers, the migrations and what applies them), `clock.ts` (the tasks the server runs on its own, due in the database), `mail/` (one provider per kind of mailbox, same interface), `llm/openrouter.ts` (the OpenRouter client, privacy policy enforced), `log.ts` (the one place that writes the log) and `redaction.ts` (what no line may hold), `mail/log/` (what is repeated of a conversation with a mail server), `http/access-log.ts` (what is logged of a request), `crypto.ts`, `config.ts`, `html.ts`, `messages.ts`.
 - `web/`: the interface's TypeScript, one page file per subject under `pages/` and one function per operation under `api/` (see "Design system"); `public/`: its static files (HTML, CSS, default brand, translations).
 - Data: PostgreSQL, a server or the embedded one (`src/tooling/db.ts`).
 

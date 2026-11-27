@@ -29,13 +29,6 @@ examples:
           output.count == count(old.emails.emails) && output.count == 20
           && ids(output.emails) == [1020, 1019, 1018, 1017, 1016]
 
-  - when: no filter is given
-    given: test/base, as member
-    input: {}
-    then: 200
-    and:
-      - every email of the shared mailbox: output.count == 20
-
   - when: a value of an attribute is asked for
     given: test/base, as admin
     input: { filter: { attributes: { "1002": ["2"] } } }
@@ -158,9 +151,9 @@ examples:
     and:
       - the others: output.count == 18
 
-  - when: the filter holds what we do not know
+  - when: the filter names an attribute by what is no number
     given: test/base, as admin
-    input: { filter: { keywords: invoice, colour: red, attributes: { colour: [red] } } }
+    input: { filter: { keywords: invoice, attributes: { colour: [red] } } }
     then: 200
     and:
       - it shows what the conditions we know keep: output.count == 2 && ids(output.emails) == [1018, 1001]

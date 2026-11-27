@@ -12,7 +12,7 @@ world/fakesmtp/     the outgoing mail server of the stack (delivers nothing)
 world/chart/        the Helm chart, for an operator on Kubernetes
 tests/operations/   the black-box specification of the operations, one file each; opspicy, a project of its own, runs it from its image
 tests/harness/      checks on the repository: links, import boundaries
-doc/                user stories, operations, architecture, design, decisions/
+doc/                user stories, operations, architecture, design, decisions/, upstream/
 bin/demo            what `emb run demo` runs
 ```
 
@@ -80,4 +80,5 @@ Each is held by a test, which will tell you:
 | Seeds, the demo | [`software/storage/README.md`](software/storage/README.md) |
 | The Helm chart | [`world/chart/README.md`](world/chart/README.md) |
 | What is specified of the operations, the Backgrounds, how the suite meets saras | [`tests/operations/README.md`](tests/operations/README.md) |
+| Something Elo, opspicy or emb lacks: an idea, a requirement, an issue to file there | [`doc/upstream/`](doc/upstream/README.md), one file per project |
 | The notation of a specification: its citizens (a name, a description, a formaldef), clauses, predicates, functions, conditions, cases | [`doc/suite.md` of opspicy](https://github.com/enspirit/opspicy/blob/main/doc/suite.md), which is not in this repository: [decision 0020](doc/decisions/0020-opspicy-is-a-project-of-its-own.md) |

@@ -2,7 +2,8 @@
   "request": {
     "jsonRequired": "Content-Type application/json is required.",
     "unknownRoute": "Unknown route.",
-    "tooManyAttempts": "Too many attempts, try again in a few minutes."
+    "tooManyAttempts": "Too many attempts, try again in a few minutes.",
+    "invalid": "This request is not what the operation takes, at {at}."
   },
   "error": {
     "internal": "Internal server error."

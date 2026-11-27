@@ -2,7 +2,8 @@
 // the facts of an email. Only those the board has are there; the others are offered.
 
 import type { Attribute } from '../../shared/attribute.ts';
-import type { BoardFilter, ReversibleConditions } from '../../shared/board.ts';
+import { someOf } from '../../shared/board.ts';
+import type { BoardFilter, ReversibleConditions, SomeOf } from '../../shared/board.ts';
 import type { Mailbox } from '../../shared/mailbox.ts';
 import { t } from '../i18n.ts';
 import { attributeCondition, pickedCondition } from './attribute-conditions.ts';
@@ -39,14 +40,14 @@ function twoWay<T>(filter: BoardFilter, read: (side: ReversibleConditions) => T 
 function onAttribute(attribute: Attribute, filter: BoardFilter, changed: () => void): BoardCondition {
   const way = twoWay(filter, (side) => side.attributes?.[attribute.key], [t('boards.is'), t('boards.isNot')], changed);
   const picked = attributeCondition(attribute, way.given ?? [], changed);
-  const write = (side: ReversibleConditions): void => void (side.attributes = { ...side.attributes, [attribute.key]: picked.values() });
-  return { ...picked, verb: way.verb, write: (written) => void (picked.values().length && write(way.side(written))) };
+  const write = (side: ReversibleConditions, values: SomeOf<string>): void => void (side.attributes = { ...side.attributes, [attribute.key]: values });
+  return { ...picked, verb: way.verb, write: (written) => void ((values) => values && write(way.side(written), values))(someOf(picked.values())) };
 }
 
 function onMailbox(mailboxes: Mailbox[], filter: BoardFilter, changed: () => void): BoardCondition {
   const way = twoWay(filter, (side) => side.mailbox, [t('boards.is'), t('boards.isNot')], changed);
   const picked = pickedCondition('mailbox', t('boards.mailbox'), t('boards.groupEmail'), mailboxes.map((m) => ({ key: String(m.id), label: m.email })), (way.given ?? []).map(String), changed);
-  return { ...picked, verb: way.verb, write: (written) => void (picked.values().length && (way.side(written).mailbox = picked.values().map(Number))) };
+  return { ...picked, verb: way.verb, write: (written) => void ((ids) => ids && (way.side(written).mailbox = ids))(someOf(picked.values().map(Number))) };
 }
 
 function onReceived(filter: BoardFilter, changed: () => void): BoardCondition {
@@ -62,8 +63,8 @@ function onAttachment(filter: BoardFilter, changed: () => void): BoardCondition 
 /** A condition on a text the email holds: its sender, or words of its subject and text. */
 function onText(key: 'from' | 'keywords', name: string, placeholder: string, filter: BoardFilter, changed: () => void): BoardCondition {
   const way = twoWay(filter, (side) => side[key], [t('boards.contains'), t('boards.containsNot')], changed);
-  const text = Input({ value: way.given ?? '', placeholder, oninput: changed });
-  return { key, name, group: t('boards.groupEmail'), verb: way.verb, control: text, has: Boolean(way.given), write: (written) => void (text.value.trim() && (way.side(written)[key] = text.value)) };
+  const text = Input({ value: way.given ?? '', placeholder, maxLength: 200, oninput: changed });
+  return { key, name, group: t('boards.groupEmail'), verb: way.verb, control: text, has: Boolean(way.given), write: (written) => void (text.value.trim() && (way.side(written)[key] = text.value.trim())) };
 }
 
 export interface BoardConditions {

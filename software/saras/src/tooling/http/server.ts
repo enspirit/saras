@@ -20,14 +20,31 @@ import { MAILBOXES } from './mailboxes.ts';
 import { MEMBERS } from './members.ts';
 import { HEADERS, nonced, page } from './pages.ts';
 import { PROMPTS } from './prompts.ts';
+import { checkOf } from './inputs.ts';
+import type { Check } from './inputs.ts';
 import { HttpError, tellRefusal, unknownRoute } from './refusals.ts';
 import { REPLYING } from './replying.ts';
 import type { Http, Route } from './route.ts';
 import { administratorsOnly, membersOnly } from './session.ts';
 import { SETTINGS } from './settings.ts';
+import { readSpecification } from '../specification.ts';
+import type { Specification, Specified } from '../specification.ts';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../../public', import.meta.url));
-const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES];
+export const ROUTES: Route[] = [...ACCESS, ...SETTINGS, ...MAILBOXES, ...PROMPTS, ...MEMBERS, ...EMAILS, ...REPLYING, ...BOARDS, ...ATTRIBUTES];
+
+/** A route where it is mounted: its method and path, and the check of what it is given, for an operation of the specification. */
+type Mounted = Route & Pick<Specified, 'method' | 'path'> & { check?: Check };
+
+function mounted(route: Route, specification: Specification): Mounted {
+  if (!('operation' in route)) return route;
+  const specified = specification.operations.get(route.operation);
+  if (!specified) throw new Error(`A route serves ${route.operation}, which the specification does not name`);
+  return { ...route, method: specified.method, path: specified.path, check: specified.input ? checkOf(specification, specified.input) : undefined };
+}
+
+/** Read once, when the server starts: a route of an operation the specification does not name, or of a type it does not declare, keeps it from starting. */
+const MOUNTED = ((specification) => ROUTES.map((route) => mounted(route, specification)))(readSpecification());
 
 /** Cross-site forms cannot send JSON: requiring it on writes is our CSRF barrier, with SameSite=Lax. */
 const jsonOnly: RequestHandler = (req, res, next) => {
@@ -55,7 +72,7 @@ function guardsOf(route: Route, http: Http): RequestHandler[] {
 function serveApi(app: Express, http: Http): void {
   app.use('/api', jsonOnly);
   app.use(express.json({ limit: '1mb' }));
-  for (const route of ROUTES) app[route.method](`/api${route.path}`, ...guardsOf(route, http), (req, res) => route.handle(http, req, res));
+  for (const route of MOUNTED) app[route.method](`/api${route.path}`, ...guardsOf(route, http), async (req, res) => route.handle(http, req, res, route.check?.(req) as never));
   app.use('/api', unknownRoute);
 }
 

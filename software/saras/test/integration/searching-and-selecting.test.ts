@@ -62,7 +62,7 @@ test('what an email says is shown from a little before the word searched', async
 });
 
 test('a board is searched among what it shows', async () => {
-  const board = (await alice('POST', '/boards', { name: 'Clients', filter: { from: 'client.example' } })).body.id;
+  const board = (await alice('POST', '/boards', { name: 'Clients', shared: false, filter: { from: 'client.example' } })).body.id;
   assert.deepEqual(await subjects(`/boards/${board}/emails?search=rendez-vous`), ['Report de notre rendez-vous']);
   assert.deepEqual(await subjects(`/boards/${board}/emails?search=actus`), []);
 });
@@ -98,7 +98,7 @@ test('what a member may not see is not acted on, whether ticked or in a board th
   await join(alice, bruno, 'bruno@acme.example');
   const ids = (await box('todo')).map((e) => e.id);
   assert.deepEqual((await bruno('POST', '/emails/selection/status', { selection: { ids }, status: 'ignored' })).body, { changed: 0 }, "alice's mailbox is her own");
-  const board = (await alice('POST', '/boards', { name: 'Mine', filter: {} })).body.id;
+  const board = (await alice('POST', '/boards', { name: 'Mine', shared: false, filter: {} })).body.id;
   assert.equal((await bruno('POST', '/emails/selection/status', { selection: { all: { board } }, status: 'ignored' })).status, 404);
   assert.equal((await box('todo')).length, 3);
 });

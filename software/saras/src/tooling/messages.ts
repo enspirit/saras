@@ -8,6 +8,7 @@ export const MESSAGES = {
   'request.jsonRequired': 'Content-Type application/json is required.',
   'request.unknownRoute': 'Unknown route.',
   'request.tooManyAttempts': 'Too many attempts, try again in a few minutes.',
+  'request.invalid': 'This request is not what the operation takes, at {at}.',
   'error.internal': 'Internal server error.',
 
   // Accounts of the application

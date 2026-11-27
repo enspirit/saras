@@ -48,6 +48,7 @@ tests/harness  ──reads the files of──► everything         (imports not
 tests/operations ──HTTP, through the front door──► software/saras   (knows nothing else of it)
 tests/operations ──asks for a seed──► software/storage ; ──reads──► PostgreSQL   (never writes it)
 tests/operations ──is run by──► opspicy, from its image   (a project of its own: decision 0020)
+software/saras ──reads the types and entries of──► tests/operations/specification   (decision 0021)
 software/saras ──► PostgreSQL, the mail providers, the LLM
 ```
 

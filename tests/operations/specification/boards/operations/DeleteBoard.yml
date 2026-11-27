@@ -74,12 +74,6 @@ counterexamples:
     input: { id: 9999 }
     then: 404 boards.notFound
 
-  - when: what is given is not a number
-    for: it is a board the member sees
-    given: test/base, as admin
-    input: { id: first }
-    then: 404 boards.notFound
-
   - when: a member deletes a shared board
     for: the member manages it, as its owner or, for a shared one, as an administrator
     given: test/base, as member

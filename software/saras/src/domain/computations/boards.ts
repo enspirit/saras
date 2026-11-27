@@ -1,4 +1,4 @@
-// Pure: boards — what a filter given is reduced to, the conditions it puts on emails, who manages a board.
+// Pure: boards — the attributes a filter keeps, the conditions it puts on emails, who manages a board.
 import { STATUS } from '../../../shared/attribute.ts';
 import type { BoardFilter, BoardGiven, ReversibleConditions } from '../../../shared/board.ts';
 import { BOXES } from '../../../shared/email.ts';
@@ -8,55 +8,28 @@ import type { Verdict } from '../refusal.ts';
 import type { Actor } from '../world.ts';
 import { clipped } from './given.ts';
 
-const numbers = (value: unknown): number[] => (Array.isArray(value) ? [...new Set(value.map(Number).filter((n) => Number.isInteger(n) && n > 0))] : []);
-const days = (value: unknown): number => (Number.isInteger(Number(value)) && Number(value) > 0 ? Math.min(Number(value), 3650) : 0);
-const texts = (value: unknown): string[] => (Array.isArray(value) ? [...new Set(value.map((v) => clipped(v, 60)).filter(Boolean))] : []);
-
 /** The key of an attribute as a filter may name it: where an email stands, or the number of one of the organisation's own. */
 const isAttributeKey = (key: string): boolean => key === STATUS || /^[0-9]+$/.test(key);
 
 /** Values by attribute, as they are kept: only attributes we know how to name, only those with a value. */
 export function attributeValuesGiven(named: Record<string, unknown>): Record<string, string[]> {
+  const texts = (value: unknown): string[] => (Array.isArray(value) ? [...new Set(value.map((v) => clipped(v, 60)).filter(Boolean))] : []);
   const kept = Object.entries(named).filter(([key, values]) => isAttributeKey(key) && texts(values).length);
   return Object.fromEntries(kept.map(([key, values]) => [key, texts(values)]));
 }
 
-/** The conditions on attributes: by key, the values kept. A filter made before attributes existed named the box itself. */
-function attributesGiven(given: Record<string, unknown>): Record<string, string[]> {
-  const named: Record<string, unknown> = given.attributes && typeof given.attributes === 'object' ? { ...given.attributes } : {};
-  named[STATUS] ??= given.box;
-  return attributeValuesGiven(named);
+/** The conditions on attributes a filter keeps: those of attributes we know how to name. */
+function reduced<C extends ReversibleConditions>(conditions: C): C {
+  const { attributes, ...others } = conditions;
+  const known = Object.entries(attributes ?? {}).filter(([key]) => isAttributeKey(key));
+  return (known.length ? { ...others, attributes: Object.fromEntries(known) } : others) as C;
 }
 
-const record = (value: unknown): Record<string, unknown> => (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+/** ReqPost of CreateBoard and EditBoard: the filter is kept reduced to the attributes we know. */
+export const filterKept = (filter: BoardFilter): BoardFilter => (filter.except ? { ...reduced(filter), except: reduced(filter.except) } : reduced(filter));
 
-/** The conditions that can be said both ways, as they are kept. */
-function reversibleGiven(given: Record<string, unknown>): ReversibleConditions {
-  const kept: ReversibleConditions = {};
-  if (Object.keys(attributesGiven(given)).length) kept.attributes = attributesGiven(given);
-  if (numbers(given.mailbox).length) kept.mailbox = numbers(given.mailbox);
-  if (clipped(given.from, 200)) kept.from = clipped(given.from, 200);
-  if (clipped(given.keywords, 200)) kept.keywords = clipped(given.keywords, 200);
-  return kept;
-}
-
-/** A filter as it is kept: only what we know how to filter on, only the conditions that say something. */
-export function filterGiven(value: unknown): BoardFilter {
-  const given = record(value);
-  const filter: BoardFilter = reversibleGiven(given);
-  if (days(given.received)) filter.received = days(given.received);
-  if (typeof given.attachment === 'boolean') filter.attachment = given.attachment;
-  const except = reversibleGiven(record(given.except));
-  if (Object.keys(except).length) filter.except = except;
-  return filter;
-}
-
-/** ReqPre of CreateBoard and EditBoard: a name. */
-export function boardGiven(given: { name?: unknown; shared?: unknown; filter?: unknown }): Verdict<BoardGiven> {
-  const name = clipped(given.name, 80);
-  if (!name) return refuse('invalid', 'boards.nameRequired');
-  return accept({ name, shared: given.shared === true, filter: filterGiven(given.filter) });
-}
+/** A board as it is kept: as given, its filter reduced. */
+export const boardKept = (given: BoardGiven): BoardGiven => ({ ...given, filter: filterKept(given.filter) });
 
 type Owned = { shared: boolean; user_id: number };
 
@@ -69,11 +42,11 @@ export const managesBoard = ({ member }: Actor, board: Owned): boolean => (board
 export const mayManageBoard = (actor: Actor, board: Owned): Verdict<true> => (managesBoard(actor, board) ? accept(true) : refuse('forbidden', 'boards.notYours'));
 
 /**
- * The order of ArrangeBoards: the boards given, each once and only those the member sees, then
- * the ones they did not name, in the order they had. Whatever is given, every board seen has a place.
+ * The order of ArrangeBoards: the boards given that the member sees, then the ones they did not
+ * name, in the order they had. Whatever is given, every board seen has a place.
  */
-export function boardsArranged(seen: number[], given: unknown): number[] {
-  const named = (Array.isArray(given) ? given : []).map(Number).filter((id) => seen.includes(id));
+export function boardsArranged(seen: number[], given: number[]): number[] {
+  const named = given.filter((id) => seen.includes(id));
   return [...new Set([...named, ...seen])];
 }
 

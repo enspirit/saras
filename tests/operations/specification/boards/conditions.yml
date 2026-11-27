@@ -10,4 +10,4 @@
   formaldef: "!seesBoard(input.id) || board(input.id).canManage"
 
 - description: only an administrator makes it shared
-  formaldef: "!(input.shared | false) || administrator"
+  formaldef: "!input.shared || administrator"

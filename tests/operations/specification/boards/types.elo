@@ -1,47 +1,71 @@
 # Boards.
 
-# The conditions of a filter that can be said both ways: an email is this, or is
-# not. `attributes` is, by the key of an attribute, the values kept.
-ReversibleConditions = { attributes :? ., mailbox :? [Int], from :? String, keywords :? String }
+# A text a filter looks for, in the name or the address of a sender or in the words of an
+# email: something, as it is meant, and not a page of it.
+Sought = String(s | !isBlank(s) && trim(s) == s && length(s) <= 200)
 
-# A filter as it is kept: only the conditions we know, only those that say something.
+# The values a filter names for one attribute, by their labels: one at least, none blank.
+AttributeLabels = [String(v | !isBlank(v) && length(v) <= 60)]
+
+# By the key of an attribute, the values a filter names: `status`, where an email stands, or
+# the number of one of the organisation's own.
+AttributeValues = { ...: AttributeLabels(l | count(l) > 0) }
+
+# Mailboxes, by their numbers.
+MailboxNumbers = [Id]
+
+# The mailboxes a filter names: one at least, each once.
+MailboxesNamed = MailboxNumbers(l | count(l) > 0 && count(unique(l)) == count(l))
+
+# How recently an email arrived, in days: ten years at most.
+Days = Int(d | d > 0 && d <= 3650)
+
+# The conditions of a filter that can be said both ways: an email is this, or is not.
+ReversibleConditions = { attributes :? AttributeValues, mailbox :? MailboxesNamed, from :? Sought, keywords :? Sought }
+
+# A filter: every condition it says must hold. A condition that says nothing is not said.
 BoardFilter = {
-  attributes :? .,
-  mailbox :? [Int],
-  from :? String,
-  keywords :? String,
-  received :? Int,
+  attributes :? AttributeValues,
+  mailbox :? MailboxesNamed,
+  from :? Sought,
+  keywords :? Sought,
+  received :? Days,
   attachment :? Bool,
   except :? ReversibleConditions
 }
 
+# The name of a board: something, as it is meant, as short as a menu holds.
+BoardName = String(n | 'boards.nameRequired': !isBlank(n), trim(n) == n && length(n) <= 80)
+
 # A board as a member sees it: whether they manage it, how many emails it shows them.
-Board = { id: Int, name: String, shared: Bool, canManage: Bool, filter: BoardFilter, count: Int }
+Board = { id: Id, name: BoardName, shared: Bool, canManage: Bool, filter: BoardFilter, count: Int(c | c >= 0) }
 
 # The boards a member sees.
 Boards = [Board]
 
-# What a member gives to make a board: a filter may hold anything, and is
-# reduced.
-BoardGiven = { name :? String, shared :? Bool, filter :? . }
+# What a member gives to make a board.
+BoardGiven = { name: BoardName, shared: Bool, filter: BoardFilter }
 
 # The same, to change the board of this number.
-BoardChanged = { id: Int, name :? String, shared :? Bool, filter :? . }
+BoardChanged = { id: Id, name: BoardName, shared: Bool, filter: BoardFilter }
 
 # A board, named by its number.
-BoardNamed = { id: Int }
+BoardNamed = { id: Id }
 
-# The order a member gives to their boards: their numbers, first to last.
-BoardsArranged = { boards :? . }
+# Boards, by their numbers.
+BoardList = [Id]
+
+# The order a member gives to their boards: their numbers, first to last, each once.
+BoardsArranged = { boards: BoardList(l | count(unique(l)) == count(l)) }
 
 # A board asked for its emails, as searched.
-BoardAsked = { id: Int, search :? String }
+BoardAsked = { id: Id, search :? String(s | length(s) <= 200) }
 
 # The emails a board shows who asks. An email is typed where emails are.
 EmailsOfBoard = { board: Board, emails: [.] }
 
 # A filter being written.
-FilterGiven = { filter :? . }
+FilterGiven = { filter: BoardFilter }
 
 # What a filter being written would show.
 FilterTried = { count: Int, emails: [.] }

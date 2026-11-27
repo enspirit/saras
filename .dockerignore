@@ -1,0 +1,20 @@
+# What a build from the root of the repository takes: the image of saras, which needs
+# software/saras and the specification of its operations (decision 0021). Nothing else
+# reaches it, and no secret: .env and the env files are left out.
+**
+!software/saras/**
+!tests/operations/specification/**
+
+# What is installed or built in software/saras is installed and built again inside the image.
+software/saras/node_modules
+software/saras/public/js
+software/saras/data
+software/saras/specification
+
+# Secrets never enter an image, and neither do the stack's env files.
+**/.env
+**/.env.*
+software/saras/env
+
+software/saras/**/*.md
+software/saras/Embfile.yml

@@ -74,7 +74,7 @@ Or as a Docker image, with the same variables in a `.env`. [`enspirit/saras`](ht
 docker run -d --name saras -p 127.0.0.1:3000:3000 --env-file .env -v saras-data:/data enspirit/saras
 ```
 
-To build it yourself, from the root of a checkout: `docker build --target saras-production -t saras software/saras`.
+To build it yourself, from the root of a checkout: `docker build -f software/saras/Dockerfile --target saras-production -t saras .`.
 
 Or on Kubernetes, with the Helm chart of [`world/chart`](world/chart/), whose README gives the commands.
 

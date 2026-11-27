@@ -2,7 +2,8 @@
   "request": {
     "jsonRequired": "Content-Type application/json requis.",
     "unknownRoute": "Route inconnue.",
-    "tooManyAttempts": "Trop de tentatives, réessayez dans quelques minutes."
+    "tooManyAttempts": "Trop de tentatives, réessayez dans quelques minutes.",
+    "invalid": "Cette requête n’est pas ce que l’opération attend, en {at}."
   },
   "error": {
     "internal": "Erreur interne du serveur."
