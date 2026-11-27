@@ -49,7 +49,10 @@ async function addValue(email: EmailWithItsReply, attribute: Attribute, label: s
   try {
     const values = [...attribute.values.map((v) => ({ label: v.label, color: v.color ?? 'grey' })), { label, color: nextColor(attribute) }];
     Object.assign(attribute, await editAttribute(attribute.key, { name: attribute.name, kind: attribute.kind, values, decidedBy: attribute.decidedBy, elo: attribute.elo }));
-    await setByHand(email, attribute, attribute.values[attribute.values.length - 1]!.key, shown);
+    // The server keeps so many values and no more: the one typed may not be among those it answers.
+    const added = attribute.values.find((v) => v.label === label);
+    if (!added) return toast(t('attributes.valueNotAdded', { name: attributeName(attribute) }), true);
+    await setByHand(email, attribute, added.key, shown);
   } catch (e) {
     toast(messageOf(e), true);
   }
@@ -76,11 +79,21 @@ function entryOf(email: EmailWithItsReply, attribute: Attribute, shown: (open?: 
   };
 }
 
-/** Every attribute but where the email stands, which is changed by acting on it; `open` names the one whose menu is open. */
-export function attributesOfEmail(email: EmailWithItsReply, attributes: Attribute[], open?: string): Child {
+/**
+ * Every attribute but where the email stands, which is changed by acting on it. The bar is drawn
+ * again after each value set, with the menu of the attribute named open. Whatever answer comes
+ * back, and from whichever drawing its menu was, it is the bar on screen that is replaced: a
+ * value chosen while a clearing was under way is not shown on a bar that is gone.
+ */
+export function attributesOfEmail(email: EmailWithItsReply, attributes: Attribute[]): Child {
   const others = attributes.filter((a) => a.key !== STATUS);
   if (!others.length) return null;
-  const shown = (reopen?: string): void => bar.replaceWith(attributesOfEmail(email, attributes, reopen) as Node);
-  const bar: HTMLElement = AttributeBar(others.map((attribute) => entryOf(email, attribute, shown, open)), t('attributes.ofEmail'));
+  const draw = (open?: string): HTMLElement => AttributeBar(others.map((attribute) => entryOf(email, attribute, shown, open)), t('attributes.ofEmail'));
+  const shown = (reopen?: string): void => {
+    const next = draw(reopen);
+    bar.replaceWith(next);
+    bar = next;
+  };
+  let bar = draw();
   return bar;
 }
