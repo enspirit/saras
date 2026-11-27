@@ -1,0 +1,78 @@
+name: MoveBackToHandle
+agent: Member
+entry: POST /api/emails/:id/status
+description: >-
+  A member puts an email back among those to handle. The status sent,
+  `needs_reply`, says which of the three corrections of the sorting it is.
+input: BackToHandle
+output: Done
+
+DomPre:
+  - (x) the email is not replied
+DomPost:
+  - (x) the email is to handle: stands(input.id, 'needs_reply')
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+  - (x) the status asked for is one of the three corrections
+ReqPost:
+  - (x) the verdict is recorded as the member's
+  - (x) nothing else of the email changes
+  - (+) the reason it was sorted for stays
+  - (x) every other email is as it was
+  - (x) another organisation is told nothing of it
+
+examples:
+  - when: a member puts back an email a rule had set aside
+    given: test/base, as member
+    input: { id: 1012, status: needs_reply }
+    then: 200
+    and:
+      - it needed no reply, by a rule: old.sorted(1012, 'no_reply', 'rule')
+      - (+) the rule had said why: "!isBlank(withId(db.emails, 1012).triage_reason)"
+      - the boxes count it where it stands: >-
+          emails.counts == merge(old.emails.counts, {todo: old.emails.counts.todo + 1, none: old.emails.counts.none - 1})
+      - a colleague sees it so: seenBy.admin.emails == emails
+
+  - when: an administrator puts back an email a member ignored
+    given: test/base, as admin
+    input: { id: 1020, status: needs_reply }
+    then: 200
+    and:
+      - it was ignored: old.stands(1020, 'ignored')
+      - the boxes count it where it stands: emails.counts.ignored == 0 && emails.counts.todo == 11
+
+  - when: a member puts back an email an administrator said needs no reply
+    given: test/base, as member
+    input: { id: 1018, status: needs_reply }
+    then: 200
+    and:
+      - it needed no reply, as a member's verdict: old.sorted(1018, 'no_reply', 'user')
+
+  # Deviation 5 of doc/2-operations.md: where the email stands is not checked.
+  - when: a member puts back an email that is to handle
+    given: test/base, as member
+    input: { id: 1001, status: needs_reply }
+    then: 200
+    and:
+      - it was to handle, as nobody's verdict: old.sorted(1001, 'needs_reply', 'none')
+      - the boxes count what they counted: emails.counts == old.emails.counts
+
+counterexamples:
+  - when: the email was replied
+    for: the email is not replied
+    given: test/base, as member
+    input: { id: 1017, status: needs_reply }
+    then: 409 emails.alreadySent
+
+  - when: the email was replied as a draft
+    for: the email is not replied
+    given: test/base, as coadmin
+    input: { id: 1016, status: needs_reply }
+    then: 409 emails.alreadySent
+
+  - when: no status is said
+    for: the status asked for is one of the three corrections
+    given: test/base, as member
+    input: { id: 1012 }
+    then: 400 emails.invalidStatus

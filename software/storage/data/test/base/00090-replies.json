@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1001,
+    "email_id": 1017,
+    "user_id": 1001,
+    "prompt_id": null,
+    "ai_text": null,
+    "final_text": "Thank you, we will come back to you this week.",
+    "final_html": "<p>Thank you, we will come back to you this week.</p>",
+    "was_edited": false,
+    "change_reason": "",
+    "mode": "sent",
+    "to_json": "[\"idris@lakeside.example\"]",
+    "cc_json": "[]",
+    "sent_at": "2026-11-26 08:07:52 +0000"
+  },
+  {
+    "id": 1002,
+    "email_id": 1016,
+    "user_id": 1003,
+    "prompt_id": null,
+    "ai_text": null,
+    "final_text": "A reply still to finish.",
+    "final_html": "<p>A reply still to finish.</p>",
+    "was_edited": false,
+    "change_reason": "",
+    "mode": "draft",
+    "to_json": "[\"tomas@atelier-vidal.example\"]",
+    "cc_json": "[]",
+    "sent_at": "2026-11-26 08:07:52 +0000"
+  }
+]

@@ -1,0 +1,22 @@
+name: SignOut
+agent: Member
+entry: POST /api/auth/logout
+description: >-
+  A member ends their session.
+output: Done
+
+DomPre:
+  - (x) the requester is signed in
+DomPost:
+  - (x) the session is gone: me == null
+  - (+) one session is closed, and no other: count(db.sessions) == count(old.db.sessions) - 1
+ReqPost:
+  - ( ) the cookie is cleared
+
+examples:
+  - when: a member signs out, signed in on another browser too
+    given: test/base, as member
+    then: 200
+    and:
+      - their other browser stays signed in: seenBy.member.me.email == old.me.email
+      - nobody else is signed out: seenBy.admin.me != null

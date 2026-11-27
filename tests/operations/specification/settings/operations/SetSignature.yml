@@ -1,0 +1,40 @@
+name: SetSignature
+agent: Member
+entry: PUT /api/settings
+description: >-
+  A member gives the signature their proposals end with.
+input: SignatureGiven
+output: Done
+
+DomPost:
+  - (x) the member's signature is this one, trimmed and cut at 2000 characters: me.signature == substring(trim(input.signature), 0, 2000)
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) nothing else of theirs changes: "me == merge(old.me, { signature: me.signature })"
+  - (x) every other member is told of themselves what they were
+  - (+) nothing of another member changes
+
+examples:
+  - when: a member gives their signature, on two lines
+    given: test/base, as member
+    input: { signature: "Best,\nMilo\n" }
+    then: 200
+    and:
+      - it is the one given, its lines kept, without the one left empty at the end: >-
+          startsWith(me.signature, 'Best,') && endsWith(me.signature, 'Milo')
+          && length(me.signature) == 10
+
+  - when: a member takes their signature back
+    given: test/base, as admin
+    input: { signature: "" }
+    then: 200
+    and:
+      - they had one and have none: "!isBlank(old.me.signature) && me.signature == ''"
+
+  - when: a member gives a signature of 2010 characters
+    given: test/base, as member
+    input: "{ signature: padEnd('M', 2010, 'o') }"
+    then: 200
+    and:
+      - its first 2000 characters are kept: length(me.signature) == 2000

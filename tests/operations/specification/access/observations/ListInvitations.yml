@@ -1,0 +1,34 @@
+name: ListInvitations
+agent: Administrator
+entry: GET /api/invitations
+description: >-
+  Tells an administrator the invitations of their organisation that nobody
+  accepted yet.
+output: Invitations
+
+DomPost:
+  - ( ) the pending invitations of the requester's organisation are told
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (x) the most recent first: ids(output) == reverse(sort(ids(output)))
+  - ( ) nothing of a link is told - it was told once, when the invitation was made
+  - ( ) an expired one says so until it is revoked
+  - (+) each is one that is kept, with its address: all(output, o ~> any(old.db.invitations, i ~> i.id == o.id && i.email == o.email))
+
+examples:
+  - when: an administrator of Atelier Nord asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - nora is invited as a user, and the invitation has not expired: >-
+          ids(output) == [1003]
+          && first(output).email == world.invitation.email && first(output).role == 'user' && !first(output).expired
+      - the other administrator is told the same: old.seenBy.coadmin.invitations == output
+
+  - when: the administrator of Bureau Sud asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - nothing of Atelier Nord is told: count(output) == 0

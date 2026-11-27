@@ -1,0 +1,31 @@
+# What the operations on attributes say in the same words.
+#
+# An attribute is named by its key, `input.key`: its number as a text, or
+# `status`. One of another organisation does not exist for the requester.
+
+- description: an attribute of the organisation
+  formaldef: hasAttribute(input.key)
+
+# Making and changing one
+
+- description: "it is decided in a way we know: by a rule, or by nobody"
+  formaldef: contains(['nobody', 'elo'], input.decidedBy | 'nobody')
+
+- description: decided by a rule, it has one
+  formaldef: input.decidedBy != 'elo' || !isBlank(input.elo | '')
+
+# Setting a value by hand: nothing, or the key of a value. Said of an attribute
+# there is, so that it holds of one there is not.
+
+- description: the value is one of the attribute's
+  formaldef: >-
+    isBlank(input.value | '')
+    || !hasAttribute(input.key)
+    || contains(keys(attribute(input.key).values), input.value)
+
+# The inventory says: not "Stands in". Taking its value away is accepted, and changes nothing.
+- description: not "Stands in", unless the value is taken away
+  formaldef: input.key != 'status' || isBlank(input.value | '')
+
+- description: the attributes are as they were
+  formaldef: attributes == old.attributes

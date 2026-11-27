@@ -1,0 +1,21 @@
+# Who performs the operations: the agents of the inventory (doc/2-operations.md)
+# that call the front door. An agent may be another: whatever the other
+# performs, it performs too.
+
+- name: Visitor
+  description: >-
+    Someone who reaches the front door without having signed in: creates an
+    organisation, signs in, accepts an invitation.
+
+# What a visitor may ask, a member may ask too: to sign in again, say.
+- name: Member
+  description: >-
+    Answers email: reads, writes, asks the AI, sends or files; connects and
+    manages their own mailboxes; sets their own settings.
+  is: Visitor
+
+- name: Administrator
+  description: >-
+    A member who also invites and removes members, connects shared mailboxes,
+    maintains the prompts, sets how the organisation works.
+  is: Member

@@ -1,0 +1,58 @@
+name: NameMailbox
+agent: Member
+entry: PUT /api/mailboxes/:id/name
+description: >-
+  The one who manages a mailbox changes the name its replies show to
+  recipients.
+input: MailboxName
+output: Done
+
+DomPost:
+  - (x) the mailbox shows this name, or none: >-
+      mailbox(input.id).displayName == trim(input.displayName | '')
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - (x) the requester manages the mailbox
+ReqPost:
+  - ( ) with no name, replies show its address alone
+  - ( ) replies already sent are not changed
+  - (x) every member who may use it is told the new name: >-
+      seenBy.member.mailbox(input.id).displayName == trim(input.displayName | '')
+  - (x) nothing else of the mailbox changes: >-
+      let b = old.mailbox(input.id), a = mailbox(input.id)
+      in a.kind == b.kind && a.email == b.email && a.shared == b.shared && a.canManage == b.canManage
+        && sameWatch(a, b)
+        && a.lastSyncAt == b.lastSyncAt && a.lastError == b.lastError && a.todo == b.todo
+  - (+) nothing of its credentials changes: >-
+      withId(db.accounts, input.id).config_enc == withId(old.db.accounts, input.id).config_enc
+  - (x) the emails kept are as they were: emails == old.emails
+
+examples:
+  - when: an administrator renames the shared mailbox
+    given: test/base, as admin
+    input: { id: 1001, displayName: "  The workshop  " }
+    then: 200
+    and:
+      - it is kept without the spaces around it: mailbox(1001).displayName == 'The workshop'
+
+  - when: another administrator takes its name away
+    given: test/base, as coadmin
+    input: { id: 1001, displayName: "" }
+    then: 200
+    and:
+      - it shows none: mailbox(1001).displayName == ''
+
+  - when: no name is given at all
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - it shows none: mailbox(1001).displayName == ''
+
+counterexamples:
+  - when: no mailbox has this number
+    for: the requester may use the mailbox
+    given: test/base, as admin
+    input: { id: 4242, displayName: The workshop }
+    then: 404 mailboxes.notFound

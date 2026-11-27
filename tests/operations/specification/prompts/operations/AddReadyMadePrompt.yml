@@ -1,0 +1,66 @@
+name: AddReadyMadePrompt
+agent: Administrator
+entry: POST /api/prompts
+description: >-
+  An administrator adds one of the ready-made prompts to the organisation's: it
+  is CreatePrompt, given the content of a template as ListReadyMadePrompts
+  tells it.
+input: ReadyMadePrompt
+output: PromptAdded
+
+DomPre:
+  # Deviation 8 of the inventory: the server does not check it, as the last example shows.
+  - ( ) a template the organisation does not have
+DomPost:
+  - (x) the organisation has one more prompt, with the content of the template: >-
+      let made = prompt(output.id)
+      in count(prompts) == count(old.prompts) + 1 && made != null && made.name == input.name
+         && made.description == input.description && made.systemPrompt == input.systemPrompt
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) the prompt has a name and instructions
+ReqPost:
+  - (x) the prompts there were are as they were: among(old.prompts, prompts)
+  - (x) it suits no email in particular: prompt(output.id).affinity == {}
+  - (x) every member is offered it, by its name and description: >-
+      let theirs = seenBy.member.prompt(output.id)
+      in theirs != null && theirs.name == input.name && theirs.description == input.description
+  - ( ) it is no longer told as ready-made
+
+examples:
+  - when: an administrator adds a template the organisation does not have
+    given: test/base, as admin
+    input:
+      name: Polite refusal
+      description: Declining a sales pitch, an invitation or a request.
+      systemPrompt: >-
+        You decline politely and firmly. Thank briefly, state the refusal
+        unambiguously in one sentence, without lengthy justification and
+        without leaving an artificial door open. Three to five sentences at
+        most.
+    then: 201
+    and:
+      - the organisation did not have it: count(old.promptsNamed(input.name)) == 0
+
+  - when: an administrator adds the template the organisation started with, which it still has
+    given: test/base, as admin
+    input:
+      name: Standard professional reply
+      description: "General case: a request for information, a question from a colleague, client or partner."
+      systemPrompt: >-
+        You write professional, clear and courteous replies. Get to the point:
+        answer each question asked, in order, in short sentences. Polite
+        without being obsequious, no empty phrases.
+    then: 201
+    and:
+      - the organisation has it twice: >-
+          count(filter(old.promptsNamed(input.name), p ~> p.systemPrompt == input.systemPrompt)) > 0
+          && count(filter(promptsNamed(input.name), p ~> p.systemPrompt == input.systemPrompt)) == 2
+
+counterexamples:
+  - when: what is given of a template lacks its instructions
+    for: the prompt has a name and instructions
+    given: test/base, as admin
+    input: { name: Polite refusal, description: "Declining a sales pitch, an invitation or a request." }
+    then: 400 prompts.incomplete

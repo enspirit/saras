@@ -1,0 +1,72 @@
+# Attributes of emails: what an organisation wants to know of each one, the
+# value an email has for one, and the rules that decide it.
+
+# What an attribute is: a choice among its values, or a member of the
+# organisation.
+AttributeKind = String(k | k == 'choice' || k == 'member')
+
+# Who decides the value an email has for an attribute: nobody but a member, or a
+# rule in Elo.
+Decider = String(d | d == 'nobody' || d == 'elo')
+
+# The colour of a value of a choice: one of the seven we know.
+ValueColor = String(c | contains(['grey', 'red', 'orange', 'yellow', 'green', 'blue', 'purple'], c))
+
+# A value of an attribute, by its key. Of a choice, with its colour; a member has none.
+AttributeValue = { key: String, label: String, color :? ValueColor }
+
+# An attribute of the organisation, as a member is told it. `system` is the one
+# every organisation starts with and cannot remove.
+Attribute = {
+  key: String,
+  name: String,
+  kind: AttributeKind,
+  values: [AttributeValue],
+  decidedBy: Decider,
+  elo: String,
+  system: Bool
+}
+
+# The attributes of the organisation.
+Attributes = [Attribute]
+
+# What an administrator gives to make an attribute. Anything may arrive: the server reduces it.
+AttributeGiven = { name :? String, kind :? String, values :? [.], decidedBy :? String, elo :? String }
+
+# The same, to change the attribute of this key.
+AttributeChanged = { key: String, name :? String, kind :? String, values :? [.], decidedBy :? String, elo :? String }
+
+# An attribute, named by its key: its number as a text, or `status`.
+AttributeNamed = { key: String }
+
+# The value an email has for an attribute, and who decided it.
+ValueOfEmail = { value: String, source: String(s | s == 'rule' || s == 'user' || s == 'nobody'), reason :? String }
+
+# A value given to one email by hand: the key of a value, or nothing to take it away.
+ValueSet = { id: Int, key: String, value: String|Null }
+
+# The same for several emails: those ticked `{ids}`, or all of a view `{all: {box|board, search}}`.
+# What is answered is the `SelectionDone` of emails/types.elo.
+ValueSetOnSelection = { key: String, selection: ., value: String|Null }
+
+# A rule to try on recent emails: for the attribute of this key, or with the values being typed.
+RuleToTry = { elo :? String, key :? String, values :? [.] }
+
+# A recent email a rule was tried on: what the rule would give it, and what it
+# has now.
+RuleTried = { subject: String, from: String, value: String|Null, now: ValueOfEmail|Null }
+
+# The recent emails a rule was tried on.
+RulesTried = [RuleTried]
+
+# A rule being written, to check.
+RuleToCheck = { elo :? String }
+
+# What is wrong in a rule, with its place.
+RuleProblem = { line: Int, column: Int, length: Int, message: String, suggestion: String|Null }
+
+# What is wrong in a rule being written: nothing when it reads.
+RuleProblems = [RuleProblem]
+
+# What applying a rule again to the emails already kept did.
+SortedAgain = { examined: Int, changed: Int }

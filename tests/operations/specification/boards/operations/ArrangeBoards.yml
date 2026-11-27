@@ -1,0 +1,69 @@
+name: ArrangeBoards
+agent: Member
+entry: PUT /api/boards/order
+description: >-
+  A member puts the boards of their menu in the order they want. The order is
+  kept with the member, and is theirs alone (decision 0016).
+input: BoardsArranged
+output: Done
+
+DomPost:
+  # The boards named are numbers here: the server also takes a number written as a text.
+  - (x) the boards the member sees come in the order given, those not named after, in the order they had: >-
+      ids(boards) == arranged(ids(old.boards), if typeOf(input.boards) == 'List' then input.boards else [])
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) the boards are the same, each as it was: count(boards) == count(old.boards) && among(old.boards, boards)
+  - (+) no board is touched, whoever sees it: db.boards == old.db.boards
+  - (x) the order is the member's alone, nobody else's menu changes, not even for a shared board: >-
+      seenBy.coadmin.boards == old.seenBy.coadmin.boards
+  - ( ) a board the member does not see is left out, as if it was not named
+  - ( ) a board made later comes last
+
+examples:
+  - when: a member puts their own board before a shared one
+    given: test/base, as member
+    input: { boards: [1003, 1001] }
+    then: 200
+    and:
+      - their board comes first: ids(boards) == [1003, 1001]
+      - an administrator still sees the shared board first: ids(seenBy.admin.boards) == [1001, 1002]
+
+  - when: an administrator names one board only
+    given: test/base, as admin
+    input: { boards: [1002] }
+    then: 200
+    and:
+      - it comes first, the other after: ids(boards) == [1002, 1001]
+      - a member still sees the shared board first: ids(seenBy.member.boards) == [1001, 1003]
+
+  - when: a member names boards they do not see, another member's own and another organisation's
+    given: test/base, as member
+    input: { boards: [1004, 1003, 1002] }
+    then: 200
+    and:
+      - those are left out: ids(boards) == [1003, 1001]
+      - whose they are see them as they did: >-
+          seenBy.admin.boards == old.seenBy.admin.boards && seenBy.outsider.boards == old.seenBy.outsider.boards
+
+  - when: a board is named twice, and something that is no board
+    given: test/base, as admin
+    input: { boards: [1002, nothing, 1002, 1001, 9999] }
+    then: 200
+    and:
+      - each has one place: ids(boards) == [1002, 1001]
+
+  - when: nothing is named
+    given: test/base, as member
+    input: {}
+    then: 200
+    and:
+      - nothing moves: boards == old.boards
+
+  - when: what is given is not a list
+    given: test/base, as member
+    input: { boards: first }
+    then: 200
+    and:
+      - nothing moves: boards == old.boards

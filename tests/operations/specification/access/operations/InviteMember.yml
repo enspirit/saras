@@ -1,0 +1,91 @@
+name: InviteMember
+agent: Administrator
+entry: POST /api/invitations
+description: >-
+  An administrator creates a link that lets one person join the organisation.
+  saras has no mailbox of its own: the administrator passes the link on.
+input: InvitationGiven
+output: NewInvitation
+
+DomPost:
+  - (x) a pending invitation for this address, with a role and an expiry: >-
+      let made = invitation(output.id)
+      in made != null && made.email == lower(trim(input.email))
+        && made.role == (if input.role == 'admin' then 'admin' else 'user') && !made.expired
+        && output.email == lower(trim(input.email)) && output.validDays > 0
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) the address is one: contains(input.email, '@') && contains(input.email, '.')
+  - (x) no member has this address: memberWith(lower(trim(input.email))) == null
+  - (+) nobody has the address, in any organisation: "!hasAccount(lower(trim(input.email)))"
+ReqPost:
+  - (x) the link is told once, here: contains(output.link, '/#/invitation/')
+  - (+) only the hash of its token is kept: >-
+      all(db.invitations, i ~> !isBlank(i.token_hash) && !contains(output.link, i.token_hash))
+  - (x) an earlier invitation to the same address is replaced: >-
+      count(filter(invitations, i ~> i.email == lower(trim(input.email)))) == 1
+  - (+) the link of the earlier one opens nothing any more: >-
+      !any(old.db.invitations, b ~> b.token_hash == withId(db.invitations, output.id).token_hash)
+  - (x) the other invitations of the organisation are as they were: >-
+      without(invitations, output.id) == filter(old.invitations, i ~> i.email != lower(trim(input.email)))
+  - (x) nobody is a member yet: members == old.members && seenBy.coadmin.members == old.seenBy.coadmin.members
+  - (+) no account is made, in any organisation: db.users == old.db.users
+
+examples:
+  - when: an administrator invites somebody as a user
+    given: test/base, as admin
+    input: { email: pia@atelier.example, role: user }
+    then: 201
+    and:
+      - the organisation has one more invitation: count(invitations) == count(old.invitations) + 1
+      - the other administrator sees it: seenBy.coadmin.seesInvitation(output.id)
+      - nobody of another organisation is told of it: seenBy.outsider.invitations == old.seenBy.outsider.invitations
+
+  - when: an administrator invites somebody as an administrator, the address written their way
+    given: test/base, as admin
+    input: { email: "  Pia@Atelier.Example ", role: admin }
+    then: 201
+    and:
+      - the address is kept trimmed, in lower case: output.email == 'pia@atelier.example'
+      - the invitation grants the administrator role: invitation(output.id).role == 'admin'
+
+  - when: no role is asked for
+    given: test/base, as admin
+    input: { email: pia@atelier.example }
+    then: 201
+    and:
+      - the invitation grants the role of a user: invitation(output.id).role == 'user'
+
+  - when: the role asked for is not one
+    given: test/base, as admin
+    input: { email: pia@atelier.example, role: owner }
+    then: 201
+    and:
+      - the invitation grants the role of a user: invitation(output.id).role == 'user'
+
+  - when: nora, who is invited already, is invited again, as an administrator
+    given: test/base, as admin
+    input: { email: nora@atelier.example, role: admin }
+    then: 201
+    and:
+      - the organisation has as many invitations, and hers keeps its number: >-
+          count(invitations) == count(old.invitations)
+          && old.invitation(output.id).email == input.email
+      - it grants what is asked now: invitation(output.id).role == 'admin'
+
+  - when: another organisation invites the address Atelier Nord invited
+    given: test/base, as outsider
+    input: { email: nora@atelier.example, role: user }
+    then: 201
+    and:
+      - it is another invitation: "!old.seenBy.admin.seesInvitation(output.id)"
+      - the one of Atelier Nord is as it was: seenBy.admin.invitations == old.seenBy.admin.invitations
+      - (+) the link of Atelier Nord's opens what it did: among(old.db.invitations, db.invitations)
+
+counterexamples:
+  - when: what is given as an address is not one
+    for: the address is one
+    given: test/base, as admin
+    input: { email: not-an-address, role: user }
+    then: 400 auth.invalidEmail

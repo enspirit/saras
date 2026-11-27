@@ -1,0 +1,49 @@
+name: DeleteMember
+agent: Administrator
+entry: DELETE /api/members/:id
+description: >-
+  An administrator removes a member from the organisation.
+input: MemberNamed
+output: Done
+
+DomPre:
+  - (x) the member named is a member of the requester's organisation
+DomPost:
+  - (x) the member is gone: "!seesMember(input.id) && !seenBy.coadmin.seesMember(input.id)"
+  - (+) no account is left for their address, in any organisation, and no other is deleted: >-
+      !hasAccount(old.member(input.id).email)
+      && count(db.users) == count(old.db.users) - 1
+  - (x) with their sessions: >-
+      let theirs = old.member(input.id).email in
+      !seenBy.coadmin.signedInAs(theirs) && !seenBy.member.signedInAs(theirs)
+  - (+) no session of theirs is left, on any browser: count(sessionsOf(input.id)) == 0
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) not oneself - that is DeleteOwnAccount: memberWith(me.email).id != input.id
+ReqPost:
+  - ( ) their prompts, shared mailboxes and shared boards pass to the administrator who deletes them
+  - ( ) their personal mailboxes go with them, with what was stored from them
+  - (x) the other members are as they were: members == without(old.members, input.id)
+
+examples:
+  - when: an administrator deletes milo
+    given: test/base, as admin
+    input: { id: 1003 }
+    then: 200
+    and:
+      - milo, who was signed in, is no more: old.seenBy.member.me != null && seenBy.member.me == null
+      - (+) nobody has his address any more: "!hasAccount(world.actors.member.email)"
+
+counterexamples:
+  - when: an administrator names themself
+    for: not oneself - that is DeleteOwnAccount
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 409 members.cannotDeleteSelf
+
+  - when: the member is another organisation's
+    for: the member named is a member of the requester's organisation
+    given: test/base, as admin
+    input: { id: 1004 }
+    then: 404 members.notFound

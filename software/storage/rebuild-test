@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Rebuilds data/test/base: `emb run storage:test.rebuild`.
+#
+# A seed is written by arriving at the state and flushing it. The state is the
+# one tests/operations/backgrounds/base.ts arrives at, through the front door
+# of a server; the server is one of a stack of its own, started for this and
+# removed afterwards, so that the database of the development stack is never
+# touched.
+#
+# What is authored by hand stays as it is: data/test/base/metadata.json and the
+# hook. Only the rows are replaced. Review the diff before committing.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+# The first id of everything the seed holds, in every table: a case of the
+# suite names a board or an email by a number that does not move.
+FIRST_ID=1001
+
+overlay=$(mktemp)
+# Whatever happens, nothing is left behind: neither the stack, nor what was flushed beside the seed.
+trap 'compose down -v >/dev/null 2>&1 || true; rm -rf "$overlay" software/storage/data/tmp' EXIT INT TERM
+# The stack under the suites (no published port, no secret of a laptop, the
+# APP_SECRET of env/test.env, which is what seals the access to the mailbox),
+# with the seeds writable and the script as the checkout has it.
+cat > "$overlay" <<'YAML'
+services:
+  storage:
+    volumes:
+      - ./software/storage/data:/home/app/data
+  operations:
+    volumes:
+      - ./tests/operations/backgrounds:/suite/backgrounds:ro
+YAML
+
+compose() {
+  docker compose -p saras-test-rebuild --project-directory . --env-file .env.commons \
+    -f docker-compose.base.yml -f docker-compose.test.yml -f "$overlay" "$@"
+}
+sql() { compose exec -T postgres psql -v ON_ERROR_STOP=1 -U saras -d saras -At "$@"; }
+# What rake says is filtered, and whether it failed is kept: a flush or a seed that fails stops
+# the script before a row of the seed is touched, and before it is said rebuilt.
+rake() { compose exec -T storage bundle exec rake "$@" 2>&1 | { grep -v 'warning:\|Gemfile' || true; }; }
+
+# The stack under the suites mounts the folder of the runner's report: made here, it is yours,
+# and not root's as Docker would make it.
+mkdir -p tests/operations/.report
+compose up -d --wait postgres saras mailbox storage operations
+
+# Every id starts at the same number.
+sql -c "SELECT format('ALTER SEQUENCE %I RESTART WITH $FIRST_ID;', sequencename) FROM pg_sequences WHERE schemaname = 'public'" | sql -q
+
+# Arrive at the state, then flush it — beside the seed, because a flush
+# deletes its target, hooks included.
+compose exec -T operations node backgrounds/base.ts
+rake "db:flush[tmp/test,empty]"
+
+# A session is a credential, and whoever calls in a case signs in: none is kept.
+rm -f software/storage/data/tmp/test/*-sessions.json
+# The rows are replaced only when there are rows to put in their place.
+ls software/storage/data/tmp/test/[0-9]*.json >/dev/null
+find software/storage/data/test/base -name '[0-9]*.json' -delete
+cp software/storage/data/tmp/test/[0-9]*.json software/storage/data/test/base/
+rm -rf software/storage/data/tmp
+
+# The seeds are ones that install, those that inherit it too.
+rake "db:seed[test/base]"
+rake "db:seed[test/unconnected]"
+rake "db:seed[test/unfetched]"
+rake "db:seed[test/base]"
+echo "data/test/base is rebuilt: $(sql -c 'SELECT count(*) FROM users') members, $(sql -c 'SELECT count(*) FROM emails') emails, $(sql -c 'SELECT count(*) FROM boards') boards. Review the diff."

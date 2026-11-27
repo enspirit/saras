@@ -1,0 +1,84 @@
+name: DeleteAttribute
+agent: Administrator
+entry: DELETE /api/attributes/:key
+description: >-
+  An administrator removes one of the organisation's own attributes: one it
+  made, or the priority it started with.
+input: AttributeNamed
+output: Done
+
+DomPre:
+  - (x) an attribute of the organisation
+DomPost:
+  - (x) it is gone: >-
+      output.ok
+      && !hasAttribute(input.key)
+      && count(attributes) == count(old.attributes) - 1
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) not the pre-configured attribute, "Stands in": input.key != 'status'
+ReqPost:
+  - (x) the other attributes are as they were: among(withoutKey(old.attributes, input.key), attributes)
+  - (x) the values emails had for it are left behind: emails == old.emails
+  # Its header says "boards that filtered on it no longer do": they still do, and count the same emails.
+  - (x) boards and prompts that named it are left as they were: boards == old.boards && prompts == old.prompts
+
+examples:
+  - when: an administrator deletes the topic, which a board and a prompt name
+    given: test/base, as admin
+    input: { key: "1002" }
+    then: 200
+    and:
+      - Stands in, Priority and Who are left: keys(attributes) == ['status', '1001', '1003']
+      - no member sees it any more: "!seenBy.member.hasAttribute('1002')"
+      - the six emails that had a topic are still told with it: >-
+          count(valued(emails.emails, '1002')) == 6
+      - the board Billing still filters on it, and shows the same three emails: >-
+          board(1001).count == 3 && fetch(board(1001).filter.attributes, '1002') == ['1']
+      - the prompt Quote still says it suits its second value: >-
+          fetch(prompt(1002).affinity, '1002') == ['2']
+      - Bureau Sud is told what it was: seenBy.outsider.attributes == old.seenBy.outsider.attributes
+
+  - when: an administrator deletes the priority the organisation started with
+    given: test/base, as coadmin
+    input: { key: "1001" }
+    then: 200
+
+  - when: an administrator deletes an attribute whose values are the members
+    given: test/base, as admin
+    input: { key: "1003" }
+    then: 200
+
+  - when: the administrator of Bureau Sud deletes its priority
+    given: test/base, as outsider
+    input: { key: "1004" }
+    then: 200
+    and:
+      - only "Stands in" is left to it: keys(attributes) == ['status']
+      - Atelier Nord keeps its own: seenBy.admin.attributes == old.seenBy.admin.attributes
+
+counterexamples:
+  - when: nobody has an attribute of this key
+    for: an attribute of the organisation
+    given: test/base, as admin
+    input: { key: "9999" }
+    then: 404 attributes.notFound
+
+  - when: the key is the one of Bureau Sud's priority
+    for: an attribute of the organisation
+    given: test/base, as admin
+    input: { key: "1004" }
+    then: 404 attributes.notFound
+
+  - when: the administrator of Bureau Sud names the topic of Atelier Nord
+    for: an attribute of the organisation
+    given: test/base, as outsider
+    input: { key: "1002" }
+    then: 404 attributes.notFound
+
+  - when: the key is the one of "Stands in"
+    for: not the pre-configured attribute, "Stands in"
+    given: test/base, as admin
+    input: { key: status }
+    then: 409 attributes.systemFixed

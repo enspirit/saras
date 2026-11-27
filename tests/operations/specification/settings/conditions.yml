@@ -1,0 +1,17 @@
+# What the operations on settings say in the same words.
+
+# What a member is told of themselves, by those the Background has eyes of: a
+# second browser of the requester's own is set aside, since it is told the change.
+- description: every other member is told of themselves what they were
+  formaldef: >-
+    (world.requester.name == 'admin' || seenBy.admin.me == old.seenBy.admin.me)
+    && (world.requester.name == 'coadmin' || seenBy.coadmin.me == old.seenBy.coadmin.me)
+    && (world.requester.name == 'member' || seenBy.member.me == old.seenBy.member.me)
+    && (world.requester.name == 'outsider' || seenBy.outsider.me == old.seenBy.outsider.me)
+
+# The same of everybody, whoever looks: what is kept of each.
+- description: nothing of another member changes
+  formaldef: all(old.db.users, u ~> u.email == old.me.email || any(db.users, a ~> a == u))
+
+- description: nothing of another organisation changes
+  formaldef: old.seenBy.outsider.me != null && seenBy.outsider.me.organization == old.seenBy.outsider.me.organization

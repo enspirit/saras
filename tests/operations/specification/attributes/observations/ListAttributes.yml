@@ -1,0 +1,63 @@
+name: ListAttributes
+agent: Member
+entry: GET /api/attributes
+description: >-
+  Tells a member the attributes their organisation gives its emails, each with
+  its values and how it is decided.
+output: Attributes
+
+DomPost:
+  - (x) where an email stands comes first, then the organisation's own, in the order they were made: >-
+      first(output).key == 'status'
+      && count(filter(output, a ~> a.system)) == 1
+      && all(output, a ~> a.system == (a.key == 'status'))
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - '(x) "Stands in" has its fixed name and its four values': >-
+      first(output).name == 'Stands in' && first(output).kind == 'choice'
+      && keys(first(output).values) == ['todo', 'none', 'sent', 'ignored']
+  - (x) whether its rule decides "Stands in" is the organisation's setting: >-
+      (first(output).decidedBy == 'elo') == old.me.organization.skipAutomated
+  - '(x) "Stands in" always tells a rule: the one kept for it, the automated-mail rule by default': "!isBlank(first(output).elo)"
+  - "(x) the values of a member attribute are the members of the organisation: their number, and their address": >-
+      let people = old.members | old.seenBy.admin.members
+      in all(filter(output, a ~> a.kind == 'member'), a ~> a.values == map(people, m ~> {key: String(m.id), label: m.email}))
+  - (x) nothing of another organisation is told: >-
+      let theirs = if world.requester.name == 'outsider' then old.seenBy.admin.attributes else old.seenBy.outsider.attributes
+      in noneAmong(keys(filter(output, a ~> !a.system)), keys(theirs))
+
+examples:
+  - when: a member of Atelier Nord asks
+    given: test/base, as member
+    then: 200
+    and:
+      - they are Stands in, Priority, Topic and Who: keys(output) == ['status', '1001', '1002', '1003']
+      - the priority is a choice set by hand, each value with its colour: >-
+          withKey(output, '1001') == {
+            key: '1001', name: 'Priority', kind: 'choice', decidedBy: 'nobody', elo: '', system: false,
+            values: [{key: '1', label: 'High', color: 'red'}, {key: '2', label: 'Normal', color: 'grey'}, {key: '3', label: 'Low', color: 'blue'}]
+          }
+      - the topic is decided by its rule: >-
+          let topic = withKey(output, '1002')
+          in topic.name == 'Topic' && topic.decidedBy == 'elo' && contains(topic.elo, 'invoice')
+            && topic.values == [{key: '1', label: 'Billing', color: 'orange'}, {key: '2', label: 'Sales', color: 'blue'}]
+      - the values of Who are ada, ines and milo, with no colour: >-
+          withKey(output, '1003').values == [
+            {key: '1001', label: 'ada@atelier.example'}, {key: '1002', label: 'ines@atelier.example'}, {key: '1003', label: 'milo@atelier.example'}
+          ]
+      - the values of "Stands in" are in the colours they start with: >-
+          map(first(output).values, v ~> v.color) == ['purple', 'grey', 'green', 'grey']
+
+  - when: an administrator of Atelier Nord asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - they are told what a member is: output == old.seenBy.member.attributes
+
+  - when: the administrator of Bureau Sud asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - they are Stands in and its own priority: keys(output) == ['status', '1004']
+      - nothing of Atelier Nord is told: noneAmong(keys(output), ['1001', '1002', '1003'])

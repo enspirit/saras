@@ -1,0 +1,70 @@
+name: DeleteOwnAccount
+agent: Member
+entry: DELETE /api/me
+description: >-
+  A member leaves saras: their account is deleted, by themselves.
+input: Leaving
+output: Done
+
+# The other administrator of Atelier Nord, who stays, tells who its members are.
+DomPost:
+  - (x) the member is gone: >-
+      me == null
+      && seenBy.coadmin.memberWith(world.requester.email) == null
+  - (+) no account is left for their address, in any organisation, and no other is deleted: >-
+      !hasAccount(world.requester.email)
+      && count(db.users) == count(old.db.users) - 1
+  - (x) with their sessions: >-
+      !seenBy.admin.signedInAs(world.requester.email) && !seenBy.member.signedInAs(world.requester.email)
+  - (+) no session of theirs is left, on any browser: >-
+      let theirs = old.seenBy.coadmin.memberWith(world.requester.email).id in
+        count(old.sessionsOf(theirs)) > 0 && count(sessionsOf(theirs)) == 0
+ReqPre:
+  - (x) the requester is signed in
+  - ( ) the origin is not locked out
+  - (x) the member gives their current password: input.password == world.requester.password
+  - (x) not the last administrator of the organisation: >-
+      !administrator || count(administrators) > 1
+ReqPost:
+  - ( ) a wrong password counts as a wrong guess
+  - ( ) their prompts, shared mailboxes and shared boards pass to the longest-standing other administrator
+  - ( ) their personal mailboxes go with them, with what was stored from them
+  - (x) the other members are as they were, and stay signed in: >-
+      seenBy.coadmin.members == filter(old.seenBy.coadmin.members, m ~> m.email != world.requester.email)
+      && seenBy.coadmin.me == old.seenBy.coadmin.me
+  - (x) what another organisation is told is as it was: seenBy.outsider == old.seenBy.outsider
+
+examples:
+  - when: a user leaves
+    given: test/base, as member
+    input: "{ password: world.password }"
+    then: 200
+    and:
+      - what the organisation shares is as it was: >-
+          seenBy.coadmin.prompts == old.seenBy.coadmin.prompts
+          && seenBy.coadmin.mailboxes == old.seenBy.coadmin.mailboxes
+          && seenBy.coadmin.boards == old.seenBy.coadmin.boards
+
+  - when: an administrator leaves, another one remaining
+    given: test/base, as admin
+    input: "{ password: world.password }"
+    then: 200
+    and:
+      - the prompts, the shared mailbox and the shared board she made are still the organisation's: >-
+          ids(seenBy.coadmin.prompts) == [1001, 1002]
+          && ids(seenBy.coadmin.mailboxes) == [1001]
+          && ids(seenBy.coadmin.boards) == [1001]
+      - the emails kept from the shared mailbox are still there: seenBy.coadmin.emails == old.seenBy.coadmin.emails
+
+counterexamples:
+  - when: the password given is not theirs
+    for: the member gives their current password
+    given: test/base, as member
+    input: { password: not-the-password-of-milo }
+    then: 401 auth.wrongPassword
+
+  - when: the only administrator of Bureau Sud wants to leave
+    for: not the last administrator of the organisation
+    given: test/base, as outsider
+    input: "{ password: world.password }"
+    then: 409 members.lastAdmin

@@ -1,0 +1,70 @@
+name: ListBoards
+agent: Member
+entry: GET /api/boards
+description: >-
+  Tells a member the boards they see: their own and the shared ones of their
+  organisation, in the order they gave them, each with how many emails it
+  shows them.
+output: Boards
+
+DomPost:
+  - (x) the boards the member sees are told, those of their organisation that are theirs or shared: output == old.boards
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) a shared board is managed by the administrators, a personal one by its owner, who alone sees it: >-
+      all(output, b ~> b.canManage == (!b.shared || old.administrator))
+  - (x) each says how many emails it shows the member, of the mailboxes they may use: >-
+      all(output, b ~> b.count >= 0 && b.count <= count(old.emails.emails))
+  - (x) a personal board is told to its owner alone, of the four people of the Background: >-
+      all(filter(output, b ~> !b.shared), b ~>
+        count(filter([old.seenBy.admin.seesBoard(b.id), old.seenBy.coadmin.seesBoard(b.id),
+          old.seenBy.member.seesBoard(b.id), old.seenBy.outsider.seesBoard(b.id)], sees ~> sees)) == 1)
+  - (x) a shared board is told to every member of its organisation, and to nobody of another: >-
+      all(filter(output, b ~> b.shared), b ~>
+        let elsewhere = old.seenBy.outsider.seesBoard(b.id) in
+          [old.seenBy.admin.seesBoard(b.id), old.seenBy.coadmin.seesBoard(b.id), old.seenBy.member.seesBoard(b.id)]
+            == [!elsewhere, !elsewhere, !elsewhere])
+  - ( ) until the member arranges them, the shared ones come first, then their own, each as it was made
+
+examples:
+  - when: an administrator asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - the shared board, then their own, and not another member's: ids(output) == [1001, 1002]
+      - they manage both: all(output, b ~> b.canManage)
+      - Billing shows the emails whose Topic is Billing: >-
+          withId(output, 1001).count == 3
+          && count(filter(old.emails.emails, e ~> fetch(e.attributes, '1002').value == '1')) == 3
+      - From customers shows every email, each from an address that holds what its filter says: >-
+          withId(output, 1002).count == 20
+          && all(old.emails.emails, e ~> contains(e.fromAddr, 'example'))
+
+  - when: another administrator asks
+    given: test/base, as coadmin
+    then: 200
+    and:
+      - the shared board alone, which they manage: ids(output) == [1001] && first(output).canManage
+
+  - when: a member asks
+    given: test/base, as member
+    then: 200
+    and:
+      - the shared board, then their own, and not an administrator's own: ids(output) == [1001, 1003]
+      - they manage their own, not the shared one: map(output, b ~> b.canManage) == [false, true]
+      - the shared board shows them the emails of the shared mailbox: first(output).count == 3
+      - their own shows them the emails to handle: withId(output, 1003).count == 10
+
+  - when: nothing was fetched yet
+    given: test/unfetched, as admin
+    then: 200
+    and:
+      - the boards are told, each showing nothing: ids(output) == [1001, 1002] && all(output, b ~> b.count == 0)
+
+  - when: somebody of another organisation asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - the board of their organisation alone: ids(output) == [1004]
+      - it has no condition, and shows nothing to who has no mailbox: first(output).filter == {} && first(output).count == 0

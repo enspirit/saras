@@ -39,4 +39,4 @@ None of its own. `emb run demo` fails when saras cannot connect it or fetches no
 
 - **Why it shares the network of saras** rather than being a service beside it is [decision 0005](../../doc/decisions/0005-the-mailbox-of-the-stack-is-local-to-saras.md). One consequence to know: when the saras container alone is made anew (`emb up saras`), the mailbox is left in the network of the old one, until the next `emb up` or `emb run demo`.
 - The server is a second copy of what `software/saras/test/support/mailbox.ts` sets up for the tests, which need a mailbox of their own per test.
-- No suite uses it yet: `tests/webspicy` could specify ConnectMailbox and FetchMailbox against it.
+- [`tests/operations`](../../tests/operations/) specifies the operations on mailboxes against it. A seed does not put it back: what a case hands it stays until the container is made anew.

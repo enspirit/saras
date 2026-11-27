@@ -1,0 +1,5 @@
+# What the operations of getting in say in the same words.
+
+# The one live link the runner knows is the one the seed's hook planted.
+- description: the link is live - not used, not replaced, less than an hour old
+  formaldef: input.token == world.passwordReset.token && count(db.password_resets) > 0

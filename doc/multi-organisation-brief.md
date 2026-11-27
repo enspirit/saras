@@ -84,7 +84,7 @@ No route is added, removed or renamed. No answer changes shape or status:
 - `GET /me` keeps one `organization` and one `role`: those of the organisation acted in.
 - Every route that says nothing of an organisation keeps meaning "in mine", which becomes "in the one my session is in".
 
-So the integration suite and every webspicy specification written before this work must pass unchanged after it. That is the test of the work.
+So the integration suite and every specification of [`tests/operations`](../tests/operations/) written before this work must pass unchanged after it. That is the test of the work.
 
 One cost is hidden from the API: while an upgrade is under way, a server of the previous version still writes `users.org_id` and `users.role` and opens sessions without an organisation. The new version must tolerate both until a later migration removes the old columns: a session without an organisation falls back to the person's only membership, and a trigger on `users` keeps `memberships` in step. This is covered by a migration test, not by the API.
 
@@ -126,7 +126,7 @@ Until the contest of section 3 exists, a mailbox held by the wrong organisation 
 
 The same split holds for end-to-end tests of the interface: the Users screen, the invitation page and the header naming the organisation will move; the boxes, the boards, the reply area, the mailboxes and the settings will not.
 
-The black-box suite cannot yet specify anything that writes: it has no start state of its own. That comes first, whatever is specified after: see the status of [`tests/webspicy`](../tests/webspicy/README.md).
+The black-box suite needed a start state of its own before it could specify anything that writes. It has one: see [`tests/operations`](../tests/operations/README.md).
 
 ## 3. How the feature is built afterwards
 

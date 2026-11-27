@@ -1,0 +1,33 @@
+# Getting in, members, invitations, leaving.
+
+# What anyone is told before signing in.
+WhatVisitorsAreTold = {
+  allowSignup: Bool,
+  passwordResetByEmail: Bool,
+  firstAccount: Bool,
+  retentionDays: Int
+}
+
+# A new member's account, as a visitor asks for it.
+SignUp = { email: String, password: String, organization :? String, name :? String, language :? String }
+
+# Signed in, or one step short of it: a second factor is asked for.
+Admitted = { ok: Bool, secondFactor :? ., recoveryCodes :? [String] }
+
+# Who signs in says who they are.
+Credentials = { email: String, password: String }
+
+# A member's password, replaced by them: the one they have, and the next.
+PasswordChanged = { current: String, next: String }
+
+# The address somebody asks a link to a new password for.
+PasswordResetAsked = { email: String }
+
+# A link to a new password, as its holder shows it.
+PasswordResetShown = { token: String }
+
+# Whose password a link to a new password opens.
+PasswordResetOpened = { email: String }
+
+# The password chosen with a link.
+PasswordChosen = { token: String, password: String }

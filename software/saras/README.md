@@ -56,7 +56,7 @@ emb run saras:test               # unit + integration, on a checkout
 emb run saras:test:unit          # the computations and the checks on the sources: no server started
 emb run saras:test:integration   # the operations over HTTP
 emb run test:postgres            # the integration tests on the stack's PostgreSQL server; needs `emb up`
-emb run test:webspicy            # its contract over HTTP, from outside; needs `emb up`
+emb run test:operations          # its operations as their clauses say them, from outside; on the stack under the suites
 ```
 
 Each task calls the npm script of the same name, so `npm test` in this directory is the same run.
@@ -72,7 +72,7 @@ Green means: `lint` clean, and every test passing on both databases.
 > **In flight:** nothing.
 
 - Every operation of the inventory exists. Where the code does not do what the documents say is listed there, under Deviations.
-- The black-box specification of the operations has begun in [`tests/webspicy`](../../tests/webspicy/), with what reads and what refuses. For everything else the tests of `test/integration/` still play that part, inside this component.
+- The operations are specified from outside in [`tests/operations`](../../tests/operations/), which says what it leaves to the tests of `test/integration/`, inside this component: what needs the LLM, a second factor, the lock-out, and what the server does on its own.
 - The image is published on Docker Hub by CI, from `main` and from version tags ([decision 0006](../../doc/decisions/0006-the-image-is-published-on-docker-hub.md)); the repository describes no deployment ([decision 0004](../../doc/decisions/0004-saras-ships-as-an-image.md)), and holds a Helm chart for operators, [`world/chart`](../../world/chart/).
 - The pure functions live in `src/domain/computations/` and `shared/`, inside this component, not in a library of their own.
 

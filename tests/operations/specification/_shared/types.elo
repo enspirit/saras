@@ -1,0 +1,19 @@
+# The data saras exchanges, as a client sees it: a deliberate restatement of
+# software/saras/shared/ in the client's own types (Elo, elo-lang.org). Every
+# answer is checked against them, so a divergence is a finding.
+#
+# One file per area, read after this one, in the order of the areas' names: a
+# type is declared before it is used, so one that two areas use is declared here.
+#
+# A schema is closed: an attribute it does not name is refused. `:?` is an
+# attribute that may be absent, `.` anything.
+
+# What saras says when it refuses: a sentence in English, and the code and
+# parameters the interface translates it from.
+Refusal = { error: String, code: String, params: . }
+
+# The answer of an operation that tells nothing back.
+Done = { ok: Bool }
+
+# What a member is in their organisation: an administrator, or not.
+Role = String(r | r == 'admin' || r == 'user')

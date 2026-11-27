@@ -1,0 +1,7 @@
+# What the operations on prompts say in the same words.
+
+- description: the prompt has a name and instructions
+  formaldef: "!isBlank(input.name | '') && !isBlank(input.systemPrompt | '')"
+
+- description: the prompt is one of the organisation's
+  formaldef: seesPrompt(input.id)

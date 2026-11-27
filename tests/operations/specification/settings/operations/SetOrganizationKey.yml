@@ -1,0 +1,33 @@
+name: SetOrganizationKey
+agent: Administrator
+entry: PUT /api/organization
+description: >-
+  An administrator gives the organisation its own key for the AI. With an
+  empty one it is RemoveOrganizationKey.
+input: KeyGiven
+output: Done
+
+DomPost:
+  - (x) the organisation has this key: me.organization.hasKey
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - ( ) the key is kept sealed
+  - ( ) the key is told to nobody afterwards
+  - (x) a key is in force for every member of the organisation: me.hasKey && seenBy.member.me.hasKey
+  - (x) members who are not administrators are not told whether the organisation has one: seenBy.member.me.organization.hasKey == null
+  - (x) nothing else of the organisation changes: >-
+      me == merge(old.me, {
+        hasKey: true, organization: merge(old.me.organization, { hasKey: true })
+      })
+  - (x) nothing of another organisation changes
+  - (x) no key is in force for another organisation because of it: seenBy.outsider.me.hasKey == old.seenBy.outsider.me.hasKey
+
+examples:
+  - when: an administrator gives a key to the organisation, which had none
+    given: test/base, as admin
+    input: { openrouterKey: a-key-that-opens-nothing }
+    then: 200
+    and:
+      - it had none, and none was in force: "!old.me.organization.hasKey && !old.me.hasKey && !old.seenBy.member.me.hasKey"

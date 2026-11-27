@@ -1,0 +1,152 @@
+name: CreateAttribute
+agent: Administrator
+entry: POST /api/attributes
+description: >-
+  An administrator gives the organisation's emails one more attribute: a choice
+  among values they define, or a member of the organisation.
+input: AttributeGiven
+output: Attribute
+
+DomPost:
+  - (x) the organisation has one more attribute, with this name, these values and this way of being decided: >-
+      count(attributes) == count(old.attributes) + 1
+      && attribute(output.key) == output
+      && !old.hasAttribute(output.key)
+      && output.name == substring(trim(input.name), 0, 60)
+      && output.kind == (if input.kind == 'member' then 'member' else 'choice')
+      && (output.kind == 'member' || labels(output.values) == labelsKept(input.values))
+      && output.decidedBy == (input.decidedBy | 'nobody')
+      && output.elo == trim(input.elo | '')
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) it has a name
+  - (x) a choice has at least two values: >-
+      input.kind == 'member' || count(labelsKept(labelled(input.values))) >= 2
+  - "(x) it is decided in a way we know: by a rule, or by nobody"
+  - (x) decided by a rule, it has one
+  - ( ) its rule is one Elo can read
+ReqPost:
+  - (x) it is one of the organisation's own, named by its number: "!output.system && output.key != 'status'"
+  - (x) the values of a choice are numbered from 1, in the order given: >-
+      output.kind == 'member' || keys(output.values) == numbered(output.values)
+  - (x) the attributes there were are as they were: among(old.attributes, attributes)
+  - (x) the emails already kept have no value for it, and are as they were: emails == old.emails
+  - (x) every member of the organisation sees it: >-
+      world.requester.name == 'outsider' || seenBy.member.attribute(output.key) == output
+  - (x) nobody of another organisation does: >-
+      if world.requester.name == 'outsider' then !seenBy.admin.hasAttribute(output.key)
+      else !seenBy.outsider.hasAttribute(output.key)
+  - ( ) emails fetched from now on get its value from its rule
+  - ( ) a name and a label are kept to 60 characters, a rule to 4000, and 30 values at most
+
+examples:
+  - when: an administrator makes a choice set by hand
+    given: test/base, as admin
+    input: { name: Language, kind: choice, values: [{ label: French, color: blue }, { label: English, color: green }], decidedBy: nobody, elo: "" }
+    then: 201
+    and:
+      - it is the first thing the case makes: output.key == '5001'
+      - its values keep their colours: >-
+          output.values == [{key: '1', label: 'French', color: 'blue'}, {key: '2', label: 'English', color: 'green'}]
+      - it comes last: keys(attributes) == ['status', '1001', '1002', '1003', '5001']
+      - Bureau Sud is told what it was: seenBy.outsider.attributes == old.seenBy.outsider.attributes
+
+  - when: an administrator makes a choice decided by a rule
+    given: test/base, as coadmin
+    input:
+      name: Urgency
+      kind: choice
+      values: [{ label: Urgent, color: red }, { label: Calm, color: grey }]
+      decidedBy: elo
+      elo: |-
+        if contains(lower(_.subject), 'urgent') then {value: 'Urgent', reason: 'the subject says so'} else null
+    then: 201
+    and:
+      - its rule is kept as written: output.elo == input.elo && output.decidedBy == 'elo'
+      - no email already kept has a value for it: count(valued(emails.emails, '5001')) == 0
+
+  - when: an administrator makes an attribute whose values are the members
+    given: test/base, as admin
+    input: { name: Reviewer, kind: member, decidedBy: nobody }
+    then: 201
+    and:
+      - its values are ada, ines and milo, by their numbers, with no colour: >-
+          output.values == [
+            {key: '1001', label: 'ada@atelier.example'}, {key: '1002', label: 'ines@atelier.example'}, {key: '1003', label: 'milo@atelier.example'}
+          ]
+
+  - when: values are given to an attribute whose values are the members
+    given: test/base, as admin
+    input: { name: Reviewer, kind: member, values: [{ label: Somebody, color: red }] }
+    then: 201
+    and:
+      - they are not kept: keys(output.values) == ['1001', '1002', '1003']
+
+  - when: an administrator says neither its kind, nor how it is decided, nor a colour we know
+    given: test/base, as admin
+    input: { name: "  Mood  ", values: [{ label: " Happy " }, { label: Sad, color: pink }, { label: Happy, color: red }] }
+    then: 201
+    and:
+      - it is a choice, decided by nobody: output.kind == 'choice' && output.decidedBy == 'nobody' && output.elo == ''
+      - its name and its labels are trimmed: output.name == 'Mood'
+      - a label counts once, and a value without a colour we know is grey: >-
+          output.values == [{key: '1', label: 'Happy', color: 'grey'}, {key: '2', label: 'Sad', color: 'grey'}]
+
+  - when: the name given has 70 characters
+    given: test/base, as admin
+    input: >-
+      {name: padStart('', 70, 'n'), kind: 'member'}
+    then: 201
+    and:
+      - its first 60 are kept: length(input.name) == 70 && length(output.name) == 60
+
+  - when: the administrator of Bureau Sud makes one
+    given: test/base, as outsider
+    input: { name: Topic, kind: choice, values: [{ label: One, color: grey }, { label: Two, color: grey }] }
+    then: 201
+    and:
+      - Atelier Nord does not see it: seenBy.admin.attributes == old.seenBy.admin.attributes
+
+counterexamples:
+  - when: the name is blank
+    for: it has a name
+    given: test/base, as admin
+    input: { name: "  ", kind: choice, values: [{ label: Yes, color: green }, { label: No, color: red }], decidedBy: nobody }
+    then: 400 attributes.nameRequired
+
+  - when: a choice is given one value
+    for: a choice has at least two values
+    given: test/base, as admin
+    input: { name: Language, kind: choice, values: [{ label: French, color: blue }], decidedBy: nobody }
+    then: 400 attributes.valuesRequired
+
+  - when: a choice is given the same value twice
+    for: a choice has at least two values
+    given: test/base, as admin
+    input: { name: Language, kind: choice, values: [{ label: French, color: blue }, { label: French, color: red }], decidedBy: nobody }
+    then: 400 attributes.valuesRequired
+
+  - when: it is left to the AI
+    for: "it is decided in a way we know: by a rule, or by nobody"
+    given: test/base, as admin
+    input: { name: Language, kind: choice, values: [{ label: French, color: blue }, { label: English, color: green }], decidedBy: ai }
+    then: 400 attributes.deciderUnknown
+
+  - when: it is decided by a rule, and none is given
+    for: decided by a rule, it has one
+    given: test/base, as admin
+    input: { name: Language, kind: choice, values: [{ label: French, color: blue }, { label: English, color: green }], decidedBy: elo, elo: "  " }
+    then: 400 attributes.ruleRequired
+
+  - when: its rule is not an expression of Elo
+    for: its rule is one Elo can read
+    given: test/base, as admin
+    input: { name: Language, kind: choice, values: [{ label: French, color: blue }, { label: English, color: green }], decidedBy: elo, elo: "if then" }
+    then: 400 attributes.ruleInvalid
+
+  - when: its rule names a field an email does not have
+    for: its rule is one Elo can read
+    given: test/base, as admin
+    input: { name: Language, kind: choice, values: [{ label: French, color: blue }, { label: English, color: green }], decidedBy: elo, elo: "if contains(_.subjet, 'x') then 'French' else null" }
+    then: 400 attributes.ruleInvalid

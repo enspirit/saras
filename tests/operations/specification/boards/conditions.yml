@@ -1,0 +1,13 @@
+# What the operations on boards say in the same words.
+
+# Seen: of the member's organisation, and theirs or shared. What one does not
+# see does not exist for them.
+- description: it is a board the member sees
+  formaldef: seesBoard(input.id)
+
+# Said of a board the member sees, so that it holds of one they do not.
+- description: the member manages it, as its owner or, for a shared one, as an administrator
+  formaldef: "!seesBoard(input.id) || board(input.id).canManage"
+
+- description: only an administrator makes it shared
+  formaldef: "!(input.shared | false) || administrator"

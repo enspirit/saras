@@ -1,0 +1,77 @@
+name: EditPrompt
+agent: Administrator
+entry: PUT /api/prompts/:id
+description: >-
+  An administrator changes the name, the description, the instructions of a
+  prompt, or the emails it suits. What is given replaces what was kept, whole.
+input: PromptChanged
+output: Done
+
+DomPre:
+  - (x) the prompt is one of the organisation's
+DomPost:
+  - (x) the prompt has this name, description and instructions, and suits the emails with these values: >-
+      let now = prompt(input.id)
+      in now != null && now.name == trim(input.name) && now.description == trim(input.description | '')
+         && now.systemPrompt == trim(input.systemPrompt) && now.affinity == (input.affinity | {})
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) the prompt has a name and instructions
+ReqPost:
+  - (x) the other prompts are as they were, and none is added: >-
+      count(prompts) == count(old.prompts)
+      && among(without(old.prompts, input.id), prompts)
+  - (x) how often it was used stays: >-
+      let was = old.prompt(input.id), is = prompt(input.id) in
+        is.used == was.used && is.edited == was.edited
+  - (x) every member is offered it as it is now, without its instructions: >-
+      let theirs = seenBy.member.prompt(input.id)
+      in theirs != null && theirs.name == trim(input.name) && theirs.description == trim(input.description | '')
+         && theirs.affinity == (input.affinity | {}) && theirs.systemPrompt == null
+  - (x) nobody of another organisation is told anything of it: seenBy.outsider.prompts == old.seenBy.outsider.prompts
+
+examples:
+  - when: an administrator changes everything of a prompt
+    given: test/base, as admin
+    input: { id: 1002, name: Quotes and prices, description: When somebody asks what it costs, systemPrompt: Answer with the price list., affinity: { "1002": ["1", "2"], status: [todo] } }
+    then: 200
+
+  - when: another administrator changes the prompt the organisation started with
+    given: test/base, as coadmin
+    input: { id: 1001, name: Standard reply, description: The general case, systemPrompt: Be clear and courteous., affinity: {} }
+    then: 200
+
+  - when: only a name and instructions are given
+    given: test/base, as admin
+    input: { id: 1002, name: Quote, systemPrompt: Answer with our price list and offer a call. }
+    then: 200
+    and:
+      - its description and the emails it suited are forgotten: >-
+          let was = old.prompt(1002), now = prompt(1002)
+          in was != null && was.description != '' && was.affinity != {} && now.description == '' && now.affinity == {}
+
+counterexamples:
+  - when: the prompt is of another organisation
+    for: the prompt is one of the organisation's
+    given: test/base, as outsider
+    input: { id: 1002, name: Taken, description: "", systemPrompt: Now ours. }
+    then: 404 prompts.notFound
+
+  - when: no prompt has this number
+    for: the prompt is one of the organisation's
+    given: test/base, as admin
+    input: { id: 9999, name: Nothing, description: "", systemPrompt: Says nothing. }
+    then: 404 prompts.notFound
+
+  - when: the name is blank
+    for: the prompt has a name and instructions
+    given: test/base, as admin
+    input: { id: 1002, name: "", description: Nameless, systemPrompt: Be brief. }
+    then: 400 prompts.incomplete
+
+  - when: the instructions are blank
+    for: the prompt has a name and instructions
+    given: test/base, as admin
+    input: { id: 1002, name: Quote, description: Says nothing, systemPrompt: "   " }
+    then: 400 prompts.incomplete

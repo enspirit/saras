@@ -14,7 +14,7 @@ emb run harness:test   # the scanners' own cases
 | Scanner | Holds |
 | --- | --- |
 | [`links.ts`](links.ts) | Every relative link of every markdown file leads to a file or a directory that exists. |
-| [`boundaries.ts`](boundaries.ts) | Who may not import whom. The rules are listed in [`check.ts`](check.ts): the domain knows nothing of HTTP; the browser imports nothing of the server; the server ships without the browser code and the tests; `shared/` depends on nothing but itself. |
+| [`boundaries.ts`](boundaries.ts) | Who may not import whom. The rules are listed in [`check.ts`](check.ts): the domain knows nothing of HTTP; the browser imports nothing of the server; the server ships without the browser code and the tests; `shared/` depends on nothing but itself; the operations suite imports nothing of the server. |
 
 ## Depends on
 

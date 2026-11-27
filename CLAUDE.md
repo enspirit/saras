@@ -6,11 +6,11 @@ saras is a self-hosted web tool to answer email with the help of AI. One Node.js
 
 ```
 software/saras/     the server and its interface: src/ (domain, tooling), web/, shared/, public/, test/
-software/storage/   the seeds of the stack's database (dbagent): data/empty, data/demo
+software/storage/   the seeds of the stack's database (dbagent): data/empty, data/demo, data/test
 world/mailbox/      a member's mailbox, as the stack meets it (IMAP + SMTP, sample emails)
 world/fakesmtp/     the outgoing mail server of the stack (delivers nothing)
 world/chart/        the Helm chart, for an operator on Kubernetes
-tests/webspicy/     the black-box specification of the API
+tests/operations/   the black-box specification of the operations, one file each; opspicy, a project of its own, runs it from its image
 tests/harness/      checks on the repository: links, import boundaries
 doc/                user stories, operations, architecture, design, decisions/
 bin/demo            what `emb run demo` runs
@@ -25,9 +25,9 @@ Each component's `README.md` is its contract. Read it before changing the compon
 ```sh
 emb run lint            # type-check, links, import boundaries, helm lint — seconds
 emb run test            # unit + integration, on a checkout (no stack)
-emb up                  # the stack: saras on :7230, postgres, storage, mailbox, fakesmtp, webspicy
+emb up                  # the stack: saras on :7230, postgres, storage, mailbox, fakesmtp, operations
 emb run test:postgres   # integration tests on the stack's PostgreSQL
-emb run test:webspicy   # the API's contract
+emb run test:operations # the operations' specification — on the stack under the suites only (O=boards narrows it)
 emb run demo            # the demo organisation and its mailbox
 ```
 
@@ -37,14 +37,14 @@ In `software/saras`: `npm test`, `npm run test:unit`, `npm run typecheck`, one f
 
 ## What will bite
 
-- **The development database may hold real data.** Never install a seed on it (`storage:db.seed`, `db.check`, `POST /seeds/install`): it empties every table. `emb run demo` and `storage:db.apply` are safe. For anything else, use a stack of its own: `COMPOSE_PROJECT_NAME=saras-try COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up`, and `docker compose -p saras-try down -v` when done.
+- **The development database may hold real data.** Never install a seed on it (`storage:db.seed`, `db.check`, `POST /seeds/install`): it empties every table. `emb run demo` and `storage:db.apply` are safe. The operations suite installs one before every case, and so refuses to run there: it runs on the stack under the suites, which is also what to use for anything else: `COMPOSE_PROJECT_NAME=saras-try COMPOSE_FILE=docker-compose.base.yml:docker-compose.test.yml emb up`, and `docker compose -p saras-try down -v` when done.
 - **`.env` holds real secrets.** Do not read it or print it. `docker compose config` prints the resolved environment: use `config --quiet`. To see what a container got, grep `docker inspect` for the one variable, and say "from .env" rather than the value.
 - **Env files.** `software/saras/env/base.env` describes every variable the server reads; `devel.env` names what it takes from `.env` as `${NAME:-default}`; `test.env` pins every one of those. No compose file lists `.env`. A new variable goes in `src/tooling/config.ts` and `base.env`; `test/unit/configuration.test.ts` holds them together. These files hold no secret, yet a tool may refuse to touch `**/env/*.env`: ask, do not work around it.
 - **Guarantees that are not settings.** Every LLM request carries the zero-retention clause; a mail server gets a password over TLS only, unless it is local (which is why `world/mailbox` runs in the network of the saras container: decision 0005); nothing of an organisation is reachable from another; credentials are sealed with `APP_SECRET`; no log holds a secret or anything of a mail, whatever `LOG_LEVEL`. A change that makes one of these configurable is the wrong change.
 - **`kubectl` may point at a real cluster.** The chart is held by `helm lint` and `helm template`, which reach none. Never `helm install` or `kubectl apply` to see whether it works: ask.
 - **The mailbox container follows saras.** Recreating `saras` alone leaves `mailbox` in the old network; `emb up` or `emb run demo` puts it right.
 - **A migration is applied when it is saved.** The development stack watches the sources: a file added to `software/saras/src/tooling/db/migrations/` and listed is applied to the development database at once, and not again once edited. Write it right first (`npm test`, or a stack of its own), and never edit one that was released: add another.
-- **A seed is flushed, not written.** Change the demo by changing `software/saras/scripts/demo/setup.ts`, then `emb run storage:demo.rebuild`, and review the diff. A mailbox's access is sealed with the server's secret, so no seed carries one.
+- **A seed is flushed, not written.** Change the demo by changing `software/saras/scripts/demo/setup.ts`, then `emb run storage:demo.rebuild`, and review the diff; the Background of the operations suite by changing `tests/operations/backgrounds/base.ts`, then `emb run storage:test.rebuild`. A mailbox's access is sealed with the server's secret: the demo seed carries none, and a seed under `data/test/` carries one that only the secret of `env/test.env` opens.
 
 ## Rules of the code (`software/saras`)
 
@@ -79,4 +79,5 @@ Each is held by a test, which will tell you:
 | The code layout of the server | [`software/saras/README.md`](software/saras/README.md) |
 | Seeds, the demo | [`software/storage/README.md`](software/storage/README.md) |
 | The Helm chart | [`world/chart/README.md`](world/chart/README.md) |
-| A black-box specification | [`tests/webspicy/README.md`](tests/webspicy/README.md) |
+| What is specified of the operations, the Backgrounds, how the suite meets saras | [`tests/operations/README.md`](tests/operations/README.md) |
+| The notation of a specification: its citizens (a name, a description, a formaldef), clauses, predicates, functions, conditions, cases | [`doc/suite.md` of opspicy](https://github.com/enspirit/opspicy/blob/main/doc/suite.md), which is not in this repository: [decision 0020](doc/decisions/0020-opspicy-is-a-project-of-its-own.md) |

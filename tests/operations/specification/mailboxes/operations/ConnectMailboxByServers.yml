@@ -1,0 +1,152 @@
+name: ConnectMailboxByServers
+agent: Member
+entry: POST /api/mailboxes/imap
+description: >-
+  A member connects a mailbox to their organisation by naming its mail servers
+  and giving its password.
+input: MailboxByServers
+output: MailboxConnected
+
+DomPre:
+  - (x) the organisation has no mailbox for this address: >-
+      !any(mailboxes, m ~> m.kind == 'imap' && m.email == lower(trim(input.email)))
+DomPost:
+  - (x) it has one, managed by the member, watching no folder yet: >-
+      let made = mailbox(output.id)
+      in count(mailboxes) == count(old.mailboxes) + 1
+        && made != null && made.kind == 'imap' && made.email == lower(trim(input.email))
+        && made.canManage && made.folder == null && made.folderName == ''
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the address is one: contains(input.email, '@') && contains(input.email, '.')
+  - (x) the incoming and outgoing servers are given, with their ports: >-
+      !isBlank(input.imapHost | '') && !isBlank(input.smtpHost | '')
+      && (input.imapPort | 0) > 0 && (input.imapPort | 0) < 65536
+      && (input.smtpPort | 0) > 0 && (input.smtpPort | 0) < 65536
+  - (x) a password is given: length(input.password | '') > 0
+  # On this stack, what lets us in is the mailbox of world/mailbox. Servers are asked once the rest is given.
+  - (x) the servers let us in with them: >-
+      let i = input,
+          asked = !isBlank(i.imapHost | '') && !isBlank(i.smtpHost | '') && length(i.password | '') > 0
+            && (i.imapPort | 0) > 0 && (i.imapPort | 0) < 65536 && (i.smtpPort | 0) > 0 && (i.smtpPort | 0) < 65536
+      in !asked
+        || (i.imapHost == '127.0.0.1' && i.imapPort == 1143 && !(i.imapSecure | false)
+          && i.smtpHost == '127.0.0.1' && i.smtpPort == 1025 && !(i.smtpSecure | false)
+          && i.username == 'testuser' && i.password == 'testpass')
+ReqPost:
+  - (+) the credentials are kept sealed: >-
+      any(db.accounts, a ~> a.id == output.id && !isBlank(a.config_enc | '') && !contains(a.config_enc, input.password))
+  - (x) only an administrator's mailbox is shared, and only when asked: >-
+      mailbox(output.id).shared == (old.administrator && (input.shared | false))
+  - (x) it shows the name given: >-
+      mailbox(output.id).displayName == trim(input.displayName | '')
+  - (x) nothing is fetched yet: >-
+      let made = mailbox(output.id)
+      in emails == old.emails
+        && made != null && made.lastSyncAt == null && made.lastError == null && made.todo == 0
+  - (x) the mailboxes there were are as they were: among(old.mailboxes, mailboxes)
+
+examples:
+  - when: an administrator connects a mailbox for the organisation
+    given: test/unconnected, as admin
+    input: { email: " Me@Corp.example ", displayName: Atelier Nord, shared: true, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, imapSecure: false, smtpHost: 127.0.0.1, smtpPort: 1025, smtpSecure: false }
+    then: 201
+    and:
+      - every member of the organisation may use it: seenBy.member.sharedMailbox(output.id)
+      - the administrators manage it, and no other member: >-
+          seenBy.coadmin.manages(output.id) && seenBy.member.onlyUses(output.id)
+      - nobody of another organisation sees it: "!seenBy.outsider.seesMailbox(output.id)"
+
+  - when: a member connects a mailbox of their own
+    given: test/unconnected, as member
+    input: { email: me@corp.example, displayName: Milo, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 201
+    and:
+      - it is theirs alone: >-
+          personalMailbox(output.id) && manages(output.id)
+          && count(seenBy.admin.mailboxes) == 0 && count(seenBy.outsider.mailboxes) == 0
+
+  - when: an administrator connects a mailbox of their own
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, shared: false, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 201
+    and:
+      - no other administrator sees it, and no member: count(seenBy.coadmin.mailboxes) == 0 && count(seenBy.member.mailboxes) == 0
+
+  - when: a member who is not an administrator asks for a shared mailbox
+    given: test/unconnected, as member
+    input: { email: me@corp.example, shared: true, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 201
+    and:
+      - it is not refused - a personal one is connected instead: >-
+          personalMailbox(output.id) && count(seenBy.admin.mailboxes) == 0
+
+  - when: the administrator of another organisation connects it for theirs
+    given: test/unconnected, as outsider
+    input: { email: me@corp.example, shared: true, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 201
+    and:
+      - it is their organisation's, and nobody else's: >-
+          sharedMailbox(output.id) && manages(output.id)
+          && count(seenBy.admin.mailboxes) == 0 && count(seenBy.member.mailboxes) == 0
+
+counterexamples:
+  - when: the address is already connected in the organisation, by its servers
+    for: the organisation has no mailbox for this address
+    given: test/base, as admin
+    input: { email: me@corp.example, shared: true, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 409 mailboxes.alreadyConnected
+
+  - when: a member asks for one of their own at the address of the shared mailbox, written in capitals
+    for: the organisation has no mailbox for this address
+    given: test/base, as member
+    input: { email: ME@CORP.EXAMPLE, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 409 mailboxes.alreadyConnected
+
+  - when: what is given as an address is not one
+    for: the address is one
+    given: test/unconnected, as admin
+    input: { email: not-an-address, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 auth.invalidEmail
+
+  - when: the outgoing server is not named
+    for: the incoming and outgoing servers are given, with their ports
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpPort: 1025 }
+    then: 400 mailboxes.serversRequired
+
+  - when: a port is not one
+    for: the incoming and outgoing servers are given, with their ports
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 70000, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.serversRequired
+
+  - when: no password is given
+    for: a password is given
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, username: testuser, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.passwordRequired
+
+  - when: the password is not the mailbox's
+    for: the servers let us in with them
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, username: testuser, password: not-the-password, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.connectionFailed
+
+  - when: no user name is given, and the address is not what the server knows the mailbox by
+    for: the servers let us in with them
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.connectionFailed
+
+  - when: nothing listens where the outgoing server is said to be
+    for: the servers let us in with them
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1026 }
+    then: 400 mailboxes.connectionFailed
+
+  - when: direct TLS is asked of a server that does not start in TLS
+    for: the servers let us in with them
+    given: test/unconnected, as admin
+    input: { email: me@corp.example, username: testuser, password: testpass, imapHost: 127.0.0.1, imapPort: 1143, imapSecure: true, smtpHost: 127.0.0.1, smtpPort: 1025 }
+    then: 400 mailboxes.notDirectTls

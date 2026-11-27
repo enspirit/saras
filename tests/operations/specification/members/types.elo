@@ -1,0 +1,54 @@
+# Members, invitations, leaving.
+
+# A member, as the administrators of their organisation see them.
+Member = {
+  id: Int,
+  email: String,
+  name: String,
+  role: Role,
+  createdAt: String,
+  mailboxes: Int,
+  secondFactor: Bool
+}
+
+# The members of an organisation, as its administrators see them.
+Members = [Member]
+
+# A member, named by their number.
+MemberNamed = { id: Int }
+
+# The role asked for a member: which says whether they are appointed, or the role removed.
+RoleGiven = { id: Int, role :? String }
+
+# A pending invitation, as the administrators see it: nothing of its link.
+Invitation = { id: Int, email: String, role: Role, expiresAt: String, expired: Bool }
+
+# The pending invitations of an organisation.
+Invitations = [Invitation]
+
+# An invitation, as an administrator asks for it.
+InvitationGiven = { email: String, role :? String }
+
+# An invitation as it is told once, with its link.
+NewInvitation = { id: Int, email: String, link: String, validDays: Int }
+
+# An invitation, named by its number, to revoke it.
+InvitationToRevoke = { id: Int }
+
+# What an invitation link carries.
+InvitationLink = { token :? String }
+
+# What opening an invitation link tells: who is invited, and where.
+InvitationOpened = { email: String, organization: String }
+
+# What the invited person gives to join.
+InvitationAccepted = { token: String, password: String, name :? String, language :? String }
+
+# A link to choose a new password, as an administrator is given it for a member.
+PasswordResetLink = { link: String, validMinutes: Int }
+
+# What confirms that one leaves: one's password.
+Leaving = { password :? String }
+
+# What confirms that an organisation is deleted: one's password, and its name.
+OrganizationLeft = { password :? String, name :? String }

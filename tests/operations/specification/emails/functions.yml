@@ -1,0 +1,80 @@
+# What is read of the emails, as somebody sees them at one moment: one whose
+# mailbox they may not use does not exist for them.
+
+- name: email(id)
+  description: The email of this number.
+  formaldef: find(emails.emails | [], e ~> e.id == id)
+
+- name: standing(these, status)
+  description: >-
+    Of any list of emails: those that stand there.
+  formaldef: filter(these, e ~> e.status == status)
+
+- name: notStanding(these, status)
+  description: >-
+    Of any list of emails: those that do not stand there.
+  formaldef: filter(these, e ~> e.status != status)
+
+- name: replied(these)
+  description: >-
+    Of any list of emails: those a reply was handed over for, sent or left as a
+    draft.
+  formaldef: filter(these, e ~> e.replyMode != null)
+
+- name: corrected(these, status)
+  description: These emails as a member's correction leaves them.
+  formaldef: >-
+    map(these, e ~> merge(e, {status: status, triageSource: 'user'}))
+
+- name: statusOfBox(box)
+  description: >-
+    Where the emails of a box stand: `todo`, `none`, `sent` or `ignored`, and
+    those to handle for a box that is none of these.
+  formaldef: >-
+    if box == 'none' then 'no_reply' else if box == 'sent' then 'sent' else if box == 'ignored' then 'ignored' else 'needs_reply'
+
+- name: ofBox(these, box)
+  description: >-
+    Of any list of emails: those of a box, and all of them for the box `all`.
+  formaldef: if box == 'all' then these else standing(these, statusOfBox(box))
+
+- name: emailsOf(address)
+  description: The emails that arrived in the mailbox of this address.
+  formaldef: filter(emails.emails | [], e ~> e.mailbox == address)
+
+- name: mostRecent(n)
+  description: The most recent emails, this many at most.
+  formaldef: slice(emails.emails | [], 0, n)
+
+- name: standsIn(e)
+  description: >-
+    Where an email stands, as the attribute `status` tells it: its box, `todo`,
+    `none`, `sent` or `ignored`, and who put it there, a `rule`, the `user` or
+    `nobody`.
+  formaldef: >-
+    {value: if e.status == 'needs_reply' then 'todo' else if e.status == 'no_reply' then 'none' else e.status,
+     source: if e.triageSource == 'rule' || e.triageSource == 'user' then e.triageSource else 'nobody'}
+
+- name: valueFor(e, key)
+  description: >-
+    What an email has for the attribute of this key: a value and who decided it,
+    a `rule` or the `user`; nothing when it has none.
+  formaldef: fetch(e.attributes, [key])
+
+- name: valued(these, key)
+  description: >-
+    Of any list of emails: those that have a value for the attribute of this key.
+  formaldef: filter(these, e ~> valueFor(e, key) != null)
+
+- name: valuedAs(these, key, what)
+  description: >-
+    Of any list of emails: those that have just this for the attribute of this
+    key, as in `{value: '1', source: 'user'}`.
+  formaldef: filter(these, e ~> valueFor(e, key) == what)
+
+- name: standings(these)
+  description: >-
+    Of any list of emails: where each stands, whose verdict that is and how it
+    was replied.
+  formaldef: >-
+    map(these, e ~> {id: e.id, status: e.status, source: e.triageSource, replied: e.replyMode})

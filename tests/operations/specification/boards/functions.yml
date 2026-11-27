@@ -1,0 +1,14 @@
+# What is read of the boards, as somebody sees them at one moment: what they
+# do not see does not exist for them.
+
+- name: board(id)
+  description: The board of this number.
+  formaldef: find(boards, b ~> b.id == id)
+
+- name: arranged(menu, named)
+  description: >-
+    What a menu becomes when its boards are arranged: those named that are in
+    it, each once, in the order given, then the others in the order they had.
+  formaldef: >-
+    let first = unique(filter(named, id ~> contains(menu, id)))
+    in flat([first, filter(menu, id ~> !contains(first, id))])

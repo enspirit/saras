@@ -1,0 +1,60 @@
+name: ShareMailbox
+agent: Administrator
+entry: PUT /api/mailboxes/:id/shared
+description: >-
+  An administrator shares with the organisation a mailbox they connected as
+  their own. There is no way back but disconnecting it.
+input: MailboxNamed
+output: Done
+
+DomPost:
+  - (x) the mailbox is shared: mailbox(input.id).shared
+  - (x) every member may use it: seenBy.member.sharedMailbox(input.id)
+  - (x) the administrators manage it, and no other member: >-
+      seenBy.coadmin.manages(input.id) && seenBy.admin.manages(input.id) && seenBy.member.onlyUses(input.id)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - (x) the requester manages the mailbox
+  - (x) only an administrator shares a mailbox: "!manages(input.id) || administrator"
+ReqPost:
+  - ( ) its owner is unchanged
+  # An email tells whether its mailbox is shared: that is what changes, and is set aside here.
+  - (x) the folder it watches and what was kept from it are unchanged: >-
+      let b = old.mailbox(input.id), a = mailbox(input.id)
+      in a.kind == b.kind && a.email == b.email && a.displayName == b.displayName
+        && sameWatch(a, b)
+        && a.lastSyncAt == b.lastSyncAt && a.lastError == b.lastError && a.todo == b.todo
+        && emails.counts == old.emails.counts
+        && map(emails.emails, e ~> merge(e, {shared: true})) == map(old.emails.emails, e ~> merge(e, {shared: true}))
+  - (+) its credentials are unchanged, and nothing kept of an email changes, for anybody: >-
+      withId(db.accounts, input.id).config_enc == withId(old.db.accounts, input.id).config_enc
+      && db.emails == old.db.emails
+  - ( ) what was fetched before is every member's to read
+  - (x) nobody of another organisation sees it: "!seenBy.outsider.seesMailbox(input.id)"
+
+examples:
+  - when: the mailbox is already shared
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - it stays as it is: >-
+          mailboxes == old.mailboxes
+          && seenBy.member.mailboxes == old.seenBy.member.mailboxes && emails == old.emails
+      - (+) nothing kept of a mailbox changes, for anybody: db.accounts == old.db.accounts
+
+  - when: an administrator who did not connect it shares a mailbox already shared
+    given: test/base, as coadmin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - it stays as it is: mailboxes == old.mailboxes
+      - (+) nothing kept of a mailbox changes, for anybody: db.accounts == old.db.accounts
+
+counterexamples:
+  - when: no mailbox has this number
+    for: the requester may use the mailbox
+    given: test/base, as admin
+    input: { id: 4242 }
+    then: 404 mailboxes.notFound

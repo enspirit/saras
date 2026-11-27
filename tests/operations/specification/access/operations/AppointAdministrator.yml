@@ -1,0 +1,59 @@
+name: AppointAdministrator
+agent: Administrator
+entry: PUT /api/members/:id
+description: >-
+  An administrator gives a member the administrator role. The role sent says
+  which operation it is: `admin` here, `user` for RemoveAdministratorRole.
+input: RoleGiven
+output: Done
+
+DomPre:
+  - (x) the member named is a member of the requester's organisation
+DomPost:
+  - (x) the member is an administrator: member(input.id).role == 'admin'
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - (x) the role sent is administrator or user
+ReqPost:
+  - (x) nothing else of the member changes: sameButRole(member(input.id), old.member(input.id))
+  - (x) the other members are as they were: >-
+      without(members, input.id) == without(old.members, input.id)
+  - (x) nobody of another organisation changes: seenBy.outsider.members == old.seenBy.outsider.members
+
+examples:
+  - when: an administrator appoints milo
+    given: test/base, as admin
+    input: { id: 1003, role: admin }
+    then: 200
+    and:
+      - milo was a user: old.member(input.id).role == 'user'
+      - milo is an administrator in the session he had - he is told who the members are: >-
+          old.seenBy.member.members == null && seenBy.member.me.role == 'admin'
+          && seenBy.member.members == members
+
+  - when: who is appointed is an administrator already
+    given: test/base, as admin
+    input: { id: 1002, role: admin }
+    then: 200
+    and:
+      - nothing changes: nothingChanged
+
+counterexamples:
+  - when: the member is another organisation's
+    for: the member named is a member of the requester's organisation
+    given: test/base, as admin
+    input: { id: 1004, role: admin }
+    then: 404 members.notFound
+
+  - when: nobody has this number
+    for: the member named is a member of the requester's organisation
+    given: test/base, as admin
+    input: { id: 9999, role: admin }
+    then: 404 members.notFound
+
+  - when: the role sent is neither
+    for: the role sent is administrator or user
+    given: test/base, as admin
+    input: { id: 1003, role: owner }
+    then: 400 members.invalidRole

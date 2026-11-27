@@ -1,0 +1,16 @@
+# What is true or false of who gets in, and of the invitations of the
+# organisation, as an administrator sees them at one moment.
+
+- name: signedInAs(address)
+  description: Who looks is signed in, as the member who has this address.
+  formaldef: me != null && me.email == address
+
+- name: seesInvitation(id)
+  description: There is an invitation of this number, for who looks.
+  formaldef: any(invitations | [], i ~> i.id == id)
+
+- name: hasAccount(address)
+  description: >-
+    What only the database shows: an account signs in with this address,
+    whatever the organisation.
+  formaldef: any(db.users, u ~> u.email == address)

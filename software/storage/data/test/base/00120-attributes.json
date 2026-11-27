@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1001,
+    "org_id": 1001,
+    "key": null,
+    "name": "Priority",
+    "kind": "choice",
+    "values_json": "[{\"key\":\"1\",\"label\":\"High\",\"color\":\"red\"},{\"key\":\"2\",\"label\":\"Normal\",\"color\":\"grey\"},{\"key\":\"3\",\"label\":\"Low\",\"color\":\"blue\"}]",
+    "decided_by": "nobody",
+    "elo": ""
+  },
+  {
+    "id": 1002,
+    "org_id": 1001,
+    "key": null,
+    "name": "Topic",
+    "kind": "choice",
+    "values_json": "[{\"key\":\"1\",\"label\":\"Billing\",\"color\":\"orange\"},{\"key\":\"2\",\"label\":\"Sales\",\"color\":\"blue\"}]",
+    "decided_by": "elo",
+    "elo": "let\n  words = lower(_.subject + ' ' + _.text)\nin\n  if contains(words, 'invoice') || contains(words, 'facture') then {value: 'Billing', reason: 'it speaks of an invoice'}\n  else if contains(words, 'quote') || contains(words, 'devis') || contains(words, 'pricing') then {value: 'Sales', reason: 'it asks for a quote or a price'}\n  else null"
+  },
+  {
+    "id": 1003,
+    "org_id": 1001,
+    "key": null,
+    "name": "Who",
+    "kind": "member",
+    "values_json": "[]",
+    "decided_by": "nobody",
+    "elo": ""
+  },
+  {
+    "id": 1004,
+    "org_id": 1002,
+    "key": null,
+    "name": "Priority",
+    "kind": "choice",
+    "values_json": "[{\"key\":\"1\",\"label\":\"High\",\"color\":\"red\"},{\"key\":\"2\",\"label\":\"Normal\",\"color\":\"grey\"},{\"key\":\"3\",\"label\":\"Low\",\"color\":\"blue\"}]",
+    "decided_by": "nobody",
+    "elo": ""
+  }
+]

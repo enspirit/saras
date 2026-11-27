@@ -1,0 +1,133 @@
+name: TryRule
+agent: Administrator
+entry: POST /api/attributes/try
+description: >-
+  Tells an administrator what a rule would say of their recent emails, without
+  changing any: so that a rule is seen at work before it is kept.
+input: RuleToTry
+output: RulesTried
+
+DomPost:
+  - (x) the member's twenty most recent emails are told, most recent first, each by its subject and who sent it: >-
+      map(output, tried ~> {subject: tried.subject, from: tried.from})
+      == map(old.mostRecent(20), e ~> {subject: e.subject, from: if isBlank(e.fromName) then e.fromAddr else e.fromName})
+  # The keys of the Background are named: one given at run time cannot be read.
+  - (x) each with the value it has now for the attribute named, and who decided it: >-
+      map(output, tried ~> tried.now) == map(old.mostRecent(20), e ~>
+        if input.key == 'status' then standsIn(e)
+        else if input.key == '1001' then fetch(e.attributes, '1001')
+        else if input.key == '1002' then fetch(e.attributes, '1002')
+        else if input.key == '1003' then fetch(e.attributes, '1003')
+        else null)
+  - ( ) and with the value the rule would give it, by its key, or none where it says nothing
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - ( ) the rule is one Elo can read
+  - ( ) the rule fails on none of these emails
+ReqPost:
+  - (x) nothing changes: nothingChanged
+  - "( ) the values the rule may give are those of the attribute named when it is \"Stands in\" or a member; otherwise those being typed, numbered from 1"
+
+examples:
+  - when: an administrator tries a rule for an attribute still to make, with the values being typed
+    given: test/base, as admin
+    input:
+      values: [{ label: Urgent }, { label: Calm }]
+      elo: |-
+        if contains(lower(_.subject), 'invoice') then {value: 'urgent', reason: 'an invoice'} else null
+    then: 200
+    and:
+      - the twenty emails are told: count(output) == 20
+      - "the two whose subject speaks of an invoice would get the first value, by its key": >-
+          all(output, tried ~> tried.value == (if contains(lower(tried.subject), 'invoice') then '1' else null))
+          && count(wouldGet(output, '1')) == 2
+      - none has a value now: nowHasAny(output) == []
+
+  - when: an administrator tries the rule of the topic as it is kept, with its values
+    given: test/base, as admin
+    input: >-
+      {key: '1002', elo: attribute('1002').elo, values: [{label: 'Billing'}, {label: 'Sales'}]}
+    then: 200
+    and:
+      - it says of each email what the email has now: all(output, tried ~> tried.value == tried.now.value)
+      - "six have a topic, by the rule, with its reason": >-
+          count(filter(nowBy(output, 'rule'), tried ~> !isBlank(tried.now.reason | ''))) == 6
+          && count(nowHasAny(output)) == 6
+
+  - when: an administrator tries the rule of the topic with its values being typed in another order
+    given: test/base, as coadmin
+    input: >-
+      {key: '1002', elo: attribute('1002').elo, values: [{label: 'Sales'}, {label: 'Billing'}]}
+    then: 200
+    and:
+      - the values are numbered as typed, not as kept: >-
+          all(nowHasAny(output), tried ~> tried.value == (if tried.now.value == '1' then '2' else '1'))
+
+  - when: an administrator tries the rule of the topic and gives no value
+    given: test/base, as admin
+    input: >-
+      {key: '1002', elo: attribute('1002').elo}
+    then: 200
+    and:
+      - the rule gives none: wouldGetAny(output) == []
+
+  - when: an administrator tries another rule for "Stands in"
+    given: test/base, as admin
+    input:
+      key: status
+      elo: |-
+        if contains(lower(_.from.address), 'northwind') then 'ignored' else null
+    then: 200
+    and:
+      - the three emails of that sender would be ignored: >-
+          count(wouldGet(output, 'ignored')) == 3
+          && all(output, tried ~> tried.value == (if tried.from == 'Claire Fontaine' || tried.from == 'Northwind Accounts' then 'ignored' else null))
+      - "each is told where it stands now: ten to handle, seven needing no reply, two replied, one ignored": >-
+          count(nowHas(output, 'todo')) == 10 && count(nowHas(output, 'none')) == 7
+          && count(nowHas(output, 'sent')) == 2 && count(nowHas(output, 'ignored')) == 1
+      - "and who put it there: a rule for six, a member for two, nobody for the others": >-
+          count(nowBy(output, 'rule')) == 6 && count(nowBy(output, 'user')) == 2 && count(nowBy(output, 'nobody')) == 12
+
+  - when: an administrator tries a rule that names a member by their address
+    given: test/base, as admin
+    input:
+      key: "1003"
+      values: [{ label: milo@atelier.example }]
+      elo: |-
+        if contains(lower(_.subject), 'devis') then 'MILO@atelier.example' else null
+    then: 200
+    and:
+      - "the one email that asks for a quote in French would be milo's, by his number": >-
+          let those = wouldGetAny(output)
+          in count(those) == 1 && first(those).subject == 'Devis pour une formation de deux jours' && first(those).value == '1003'
+
+  - when: the administrator of Bureau Sud tries a rule
+    given: test/base, as outsider
+    input:
+      elo: |-
+        upper(_.subject |> split(' ') |> fetch(.7))
+    then: 200
+    and:
+      - "it has no email: nothing is told, and nothing of Atelier Nord": output == []
+
+counterexamples:
+  - when: the rule names a field an email does not have
+    for: the rule is one Elo can read
+    given: test/base, as admin
+    input: { elo: "if contains(_.subjet, 'x') then 'Urgent' else null", values: [{ label: Urgent }, { label: Calm }] }
+    then: 400 attributes.ruleInvalid
+
+  - when: no rule is given
+    for: the rule is one Elo can read
+    given: test/base, as admin
+    input: { elo: "", values: [{ label: Urgent }, { label: Calm }] }
+    then: 400 attributes.ruleInvalid
+
+  - when: the rule reads the eighth word of a subject that has fewer
+    for: the rule fails on none of these emails
+    given: test/base, as admin
+    input:
+      elo: |-
+        upper(_.subject |> split(' ') |> fetch(.7))
+    then: 400 attributes.ruleInvalid

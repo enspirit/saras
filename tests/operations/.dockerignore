@@ -1,0 +1,8 @@
+# The image holds the suite, and nothing else.
+Dockerfile
+Embfile.yml
+README.md
+.dockerignore
+tsconfig.json
+env/
+.report/

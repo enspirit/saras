@@ -1,0 +1,49 @@
+name: ReadCorrections
+agent: Administrator
+entry: GET /api/prompts/:id/corrections
+description: >-
+  Tells an administrator why members changed the proposals written with a
+  prompt: the raw material to improve it.
+input: PromptNamed
+output: Corrections
+
+DomPre:
+  - (x) the prompt is one of the organisation's
+DomPost:
+  - (x) every member's corrections on the prompt are told, each with its reason, who made it and when: >-
+      all(output, c ~> !isBlank(c.reason) && contains(c.user, '@') && !isBlank(c.at))
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - ( ) the most recent first, the last fifty
+  - ( ) a reply sent as it was proposed, or changed without a reason, is no correction
+
+examples:
+  # The Background holds no reply written with a prompt: no example tells a correction.
+  - when: an administrator asks for a prompt no reply was written with
+    given: test/base, as admin
+    input: { id: 1002 }
+    then: 200
+    and:
+      - no correction is told: output == []
+
+  - when: another administrator asks for the prompt the organisation started with
+    given: test/base, as coadmin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - no correction is told: output == []
+
+counterexamples:
+  - when: the prompt is of another organisation
+    for: the prompt is one of the organisation's
+    given: test/base, as outsider
+    input: { id: 1002 }
+    then: 404 prompts.notFound
+
+  - when: no prompt has this number
+    for: the prompt is one of the organisation's
+    given: test/base, as admin
+    input: { id: 9999 }
+    then: 404 prompts.notFound

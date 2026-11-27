@@ -55,15 +55,20 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g @enspirit/emb
+      # The folder the operations suite writes its report to, owned by the runner's user: Docker
+      # would make it root's, and the suite, which is not root, could not write there.
+      - run: emb run report:prepare
       - run: emb up
       - run: emb ps
       # The operations over HTTP once more, against a PostgreSQL server, as in production.
       - run: emb run test:postgres
-      # The API's contract, through the front door, from a container of its own.
-      - run: emb run test:webspicy
       # The demo still stands: its seed fits the schema the server creates, and
       # its mailbox is connected and fetched.
       - run: emb run demo
+      # The operations as their clauses say them, through the front door, from a
+      # container of its own. Last of the suites: every case installs a seed,
+      # which empties the database of this stack.
+      - run: emb run test:operations
       # The image that ships: nothing else in CI builds that target.
       - run: emb resources build --flavor production --publishable
       - if: always()

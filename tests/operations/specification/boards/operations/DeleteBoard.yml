@@ -1,0 +1,87 @@
+name: DeleteBoard
+agent: Member
+entry: DELETE /api/boards/:id
+description: >-
+  The one who manages a board deletes it. A board is only a view: nothing of
+  the emails it showed goes with it.
+input: BoardNamed
+output: Done
+
+DomPre:
+  - (x) it is a board the member sees
+DomPost:
+  - (x) the board is gone: "!seesBoard(input.id)"
+  - (+) and no other, whoever sees it: ids(db.boards) == ids(without(old.db.boards, input.id))
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the member manages it, as its owner or, for a shared one, as an administrator
+ReqPost:
+  - (x) the emails it showed are untouched: emails == old.emails
+  - (+) no email is, of anybody: db.emails == old.db.emails
+  - (x) the other boards are as they were, in the order they had: boards == without(old.boards, input.id)
+
+examples:
+  - when: a member deletes their own board
+    given: test/base, as member
+    input: { id: 1003 }
+    then: 200
+    and:
+      - what the others see is as it was: >-
+          seenBy.admin.boards == old.seenBy.admin.boards && seenBy.outsider.boards == old.seenBy.outsider.boards
+
+  - when: an administrator deletes a shared board
+    given: test/base, as admin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - no member sees it any more, and each keeps their own: >-
+          ids(seenBy.member.boards) == [1003] && ids(boards) == [1002]
+
+  - when: an administrator deletes a shared board another administrator made
+    given: test/base, as coadmin
+    input: { id: 1001 }
+    then: 200
+    and:
+      - who made it no longer sees it: ids(seenBy.admin.boards) == [1002]
+
+  - when: an administrator deletes a board of their own
+    given: test/base, as admin
+    input: { id: 1002 }
+    then: 200
+
+counterexamples:
+  - when: the board is of another organisation
+    for: it is a board the member sees
+    given: test/base, as outsider
+    input: { id: 1001 }
+    then: 404 boards.notFound
+
+  - when: the board is another member's own
+    for: it is a board the member sees
+    given: test/base, as member
+    input: { id: 1002 }
+    then: 404 boards.notFound
+
+  - when: an administrator names a member's own board
+    for: it is a board the member sees
+    given: test/base, as admin
+    input: { id: 1003 }
+    then: 404 boards.notFound
+
+  - when: no board has this number
+    for: it is a board the member sees
+    given: test/base, as admin
+    input: { id: 9999 }
+    then: 404 boards.notFound
+
+  - when: what is given is not a number
+    for: it is a board the member sees
+    given: test/base, as admin
+    input: { id: first }
+    then: 404 boards.notFound
+
+  - when: a member deletes a shared board
+    for: the member manages it, as its owner or, for a shared one, as an administrator
+    given: test/base, as member
+    input: { id: 1001 }
+    then: 403 boards.notYours

@@ -1,0 +1,23 @@
+# What is true or false of the emails, as somebody sees them at one moment:
+# one whose mailbox they may not use does not exist for them.
+
+- name: seesEmail(id)
+  description: There is an email of this number, for who looks.
+  formaldef: any(emails.emails | [], e ~> e.id == id)
+
+- name: stands(id, status)
+  description: >-
+    The email of this number stands there: `needs_reply`, `no_reply`, `ignored` or
+    `sent`.
+  formaldef: email(id).status == status
+
+- name: sorted(id, status, by)
+  description: >-
+    The email of this number stands there, and that is the verdict of this one:
+    `none`, a `rule`, the `user`.
+  formaldef: email(id).status == status && email(id).triageSource == by
+
+- name: mostRecentFirst(these)
+  description: >-
+    Of any list of emails: the most recent comes first.
+  formaldef: let dates = map(these, e ~> e.date) in dates == reverse(sort(dates))

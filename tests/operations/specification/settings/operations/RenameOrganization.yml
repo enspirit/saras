@@ -1,0 +1,44 @@
+name: RenameOrganization
+agent: Administrator
+entry: PUT /api/organization
+description: >-
+  An administrator changes the name of the organisation.
+input: NameGiven
+output: Done
+
+DomPost:
+  - (x) the organisation has this name, trimmed and cut at 120 characters: >-
+      isBlank(input.name) || me.organization.name == substring(trim(input.name), 0, 120)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+ReqPost:
+  - (x) an empty name changes nothing: "!isBlank(input.name) || nothingChanged"
+  - (x) nothing else of the organisation changes: >-
+      me == merge(old.me, {
+        organization: merge(old.me.organization, { name: me.organization.name })
+      })
+  - (x) nothing of another organisation changes
+
+examples:
+  - when: an administrator renames the organisation
+    given: test/base, as admin
+    input: { name: " Atelier du Nord " }
+    then: 200
+    and:
+      - it bears the name given, without the spaces around: me.organization.name == 'Atelier du Nord'
+      - its members see it: seenBy.member.me.organization.name == 'Atelier du Nord'
+
+  - when: the name given is empty
+    given: test/base, as admin
+    input: { name: "  " }
+    then: 200
+    and:
+      - it keeps its name: me.organization.name == 'Atelier Nord'
+
+  - when: the name given has 130 characters
+    given: test/base, as coadmin
+    input: "{ name: padEnd('A', 130, 'n') }"
+    then: 200
+    and:
+      - its first 120 characters are kept: length(me.organization.name) == 120

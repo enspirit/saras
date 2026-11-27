@@ -1,0 +1,55 @@
+name: SetOrganizationModel
+agent: Administrator
+entry: PUT /api/organization
+description: >-
+  An administrator chooses the model that writes for every member, or goes
+  back to the server's.
+input: ModelGiven
+output: Done
+
+DomPost:
+  - (x) the organisation's model is this one, or none: me.organization.model == trim(input.model)
+  - (x) with none, the server's applies: "!isBlank(input.model) || me.model == seenBy.outsider.me.model"
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  # Elo matches no pattern: the server asks for letters, digits and `_ . : -` on both sides of one slash.
+  - (x) it is named "provider/model", or not at all: >-
+      isBlank(input.model)
+      || count(split(trim(input.model), '/')) == 2 && !contains(trim(input.model), ' ')
+         && all(split(trim(input.model), '/'), part ~> !isBlank(part))
+ReqPost:
+  - (x) it is the model in force for every member of the organisation: >-
+      isBlank(input.model)
+      || me.model == trim(input.model) && seenBy.member.me.model == trim(input.model)
+  - (x) members who are not administrators are not told what the organisation chose: seenBy.member.me.organization.model == null
+  - (x) nothing else of the organisation changes: >-
+      me == merge(old.me, {
+        model: me.model, organization: merge(old.me.organization, { model: me.organization.model })
+      })
+  - (x) nothing of another organisation changes
+
+examples:
+  - when: an administrator chooses a model
+    given: test/base, as admin
+    input: { model: " anthropic/claude-sonnet-4.5 " }
+    then: 200
+    and:
+      - it is the one given, without the spaces around: me.organization.model == 'anthropic/claude-sonnet-4.5'
+      - the server's applied before, and still does to another organisation: >-
+          old.me.model == old.seenBy.outsider.me.model
+          && seenBy.outsider.me.model == old.seenBy.outsider.me.model
+
+  - when: an administrator chooses none, the organisation having none
+    given: test/base, as coadmin
+    input: { model: "" }
+    then: 200
+    and:
+      - the server's still applies: me.model == old.me.model
+
+counterexamples:
+  - when: what is given does not name a provider and a model
+    for: it is named "provider/model", or not at all
+    given: test/base, as admin
+    input: { model: not a model }
+    then: 400 settings.invalidModel

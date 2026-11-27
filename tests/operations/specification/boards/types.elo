@@ -1,0 +1,47 @@
+# Boards.
+
+# The conditions of a filter that can be said both ways: an email is this, or is
+# not. `attributes` is, by the key of an attribute, the values kept.
+ReversibleConditions = { attributes :? ., mailbox :? [Int], from :? String, keywords :? String }
+
+# A filter as it is kept: only the conditions we know, only those that say something.
+BoardFilter = {
+  attributes :? .,
+  mailbox :? [Int],
+  from :? String,
+  keywords :? String,
+  received :? Int,
+  attachment :? Bool,
+  except :? ReversibleConditions
+}
+
+# A board as a member sees it: whether they manage it, how many emails it shows them.
+Board = { id: Int, name: String, shared: Bool, canManage: Bool, filter: BoardFilter, count: Int }
+
+# The boards a member sees.
+Boards = [Board]
+
+# What a member gives to make a board: a filter may hold anything, and is
+# reduced.
+BoardGiven = { name :? String, shared :? Bool, filter :? . }
+
+# The same, to change the board of this number.
+BoardChanged = { id: Int, name :? String, shared :? Bool, filter :? . }
+
+# A board, named by its number.
+BoardNamed = { id: Int }
+
+# The order a member gives to their boards: their numbers, first to last.
+BoardsArranged = { boards :? . }
+
+# A board asked for its emails, as searched.
+BoardAsked = { id: Int, search :? String }
+
+# The emails a board shows who asks. An email is typed where emails are.
+EmailsOfBoard = { board: Board, emails: [.] }
+
+# A filter being written.
+FilterGiven = { filter :? . }
+
+# What a filter being written would show.
+FilterTried = { count: Int, emails: [.] }

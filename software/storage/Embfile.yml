@@ -16,6 +16,18 @@ tasks:
       - saras:image
     script: ./rebuild-demo
 
+  test.rebuild:
+    description: Rebuild data/test/base by arriving at the Background of the operations suite through the API, in a stack of its own. Review the diff
+    # On the host: it starts and removes a compose project, and writes the seed.
+    executors:
+      - local
+    # The stack it starts runs what the images hold: they are built first.
+    dependencies:
+      - saras:image
+      - mailbox:image
+      - operations:image
+    script: ./rebuild-test
+
   db.apply:
     description: Add the ${S} seed to the database as a slice — nothing is emptied but what the seed itself replaces
     executors:

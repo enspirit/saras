@@ -1,0 +1,12 @@
+# What is true or false of the boards, as somebody sees them at one moment:
+# what they do not see does not exist for them.
+
+- name: seesBoard(id)
+  description: There is a board of this number, for who looks.
+  formaldef: any(boards, b ~> b.id == id)
+
+- name: sameFilter(a, b)
+  description: Two filters that say the same, for the conditions we know.
+  formaldef: >-
+    a.attributes == b.attributes && a.mailbox == b.mailbox && a.from == b.from && a.keywords == b.keywords
+    && a.received == b.received && a.attachment == b.attachment && a.except == b.except

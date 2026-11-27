@@ -1,0 +1,93 @@
+# Mailboxes.
+
+# How a mailbox is reached: by its servers, or through its host's own API.
+MailboxKind = String(k | k == 'imap' || k == 'google' || k == 'microsoft')
+
+# Something that went wrong with a mailbox: a code, its parameters, its English text.
+MailboxProblem = { code: String, params: ., message: String }
+
+# A mailbox, as a member who may use it sees it.
+Mailbox = {
+  id: Int,
+  kind: MailboxKind,
+  email: String,
+  displayName: String,
+  shared: Bool,
+  canManage: Bool,
+  folder: String|Null,
+  folderName: String,
+  fetchDays: Int,
+  unreadOnly: Bool,
+  lastSyncAt: String|Null,
+  lastError: MailboxProblem|Null,
+  todo: Int
+}
+
+# The mailboxes a member may use.
+Mailboxes = [Mailbox]
+
+# A mailbox, by its number alone.
+MailboxNamed = { id: Int }
+
+# What a member fills in to connect a mailbox by its mail servers.
+MailboxByServers = {
+  email: String,
+  username :? String,
+  password :? String,
+  displayName :? String,
+  shared :? Bool,
+  imapHost :? String,
+  imapPort :? Int,
+  imapSecure :? Bool,
+  smtpHost :? String,
+  smtpPort :? Int,
+  smtpSecure :? Bool
+}
+
+# The mailbox just connected, by its number.
+MailboxConnected = { id: Int }
+
+# A new password for a mailbox reached by its servers.
+MailboxPassword = { id: Int, password :? String }
+
+# The servers a mailbox is reached by, as they are told: never its password.
+MailboxServers = {
+  imapHost: String,
+  imapPort: Int,
+  imapSecure: Bool,
+  smtpHost: String,
+  smtpPort: Int,
+  smtpSecure: Bool,
+  username: String
+}
+
+# The same, as they are corrected: a password left out keeps the one the mailbox has.
+MailboxServersGiven = {
+  id: Int,
+  username :? String,
+  password :? String,
+  imapHost :? String,
+  imapPort :? Int,
+  imapSecure :? Bool,
+  smtpHost :? String,
+  smtpPort :? Int,
+  smtpSecure :? Bool
+}
+
+# The name a member gives a mailbox.
+MailboxName = { id: Int, displayName :? String }
+
+# A folder of a mailbox, as its mail server names it.
+MailFolder = { id: String, name: String }
+
+# The folders of a mailbox.
+MailFolders = [MailFolder]
+
+# The folder to watch, and what is fetched from it.
+FolderToWatch = { id: Int, folder :? String, days :? Int, unreadOnly :? Bool }
+
+# The folder a mailbox now watches.
+FolderWatched = { ok: Bool, folder: String, folderName: String }
+
+# What a fetch brought in, how many it left for later ones, and what went wrong.
+FetchResult = { fetched: Int, toCome: Int, error: MailboxProblem|Null }

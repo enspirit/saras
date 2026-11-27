@@ -1,0 +1,46 @@
+name: CheckInvitation
+agent: Visitor
+entry: POST /api/invitations/check
+description: >-
+  A visitor opens an invitation link and is told what it is for.
+input: InvitationLink
+output: InvitationOpened
+
+DomPost:
+  - (x) the address and the organisation of the invitation are told: >-
+      output.email == world.invitation.email
+      && output.organization == old.seenBy.admin.me.organization.name
+  - (x) nothing changes - the invitation stays pending: nothingChanged
+ReqPre:
+  - ( ) the origin is not locked out
+  - (x) the link opens a pending, unexpired invitation: >-
+      let pending = seenBy.admin.invitationTo(world.invitation.email)
+      in input.token == world.invitation.token && pending != null && !pending.expired
+ReqPost:
+  - ( ) a link that opens nothing counts as a wrong guess
+
+examples:
+  - when: nora opens her link
+    given: test/base, as visitor
+    input: "{ token: world.invitation.token }"
+    then: 200
+    and:
+      - she is invited to Atelier Nord: output.organization == 'Atelier Nord'
+
+  - when: the link is opened in a browser where somebody of another organisation is signed in
+    given: test/base, as outsider
+    input: "{ token: world.invitation.token }"
+    then: 200
+
+counterexamples:
+  - when: the link opens nothing
+    for: the link opens a pending, unexpired invitation
+    given: test/base, as visitor
+    input: { token: not-the-invitation-of-nora }
+    then: 404 invitation.invalid
+
+  - when: no link is given
+    for: the link opens a pending, unexpired invitation
+    given: test/base, as visitor
+    input: {}
+    then: 404 invitation.invalid

@@ -1,0 +1,11 @@
+# What is read of the prompts of the organisation, as somebody sees them at
+# one moment.
+
+- name: prompt(id)
+  description: The prompt of this number.
+  formaldef: find(prompts | [], p ~> p.id == id)
+
+- name: promptsNamed(name)
+  description: >-
+    Those of this name: nothing keeps two prompts from having the same.
+  formaldef: filter(prompts | [], p ~> p.name == name)

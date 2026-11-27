@@ -1,0 +1,41 @@
+# Prompts.
+
+# A prompt as a member is told it. `affinity` is the emails it suits: by the key
+# of an attribute, the values that suit. An administrator is also told the
+# instructions, and how many replies it wrote and how many of those were edited.
+Prompt = {
+  id: Int,
+  name: String,
+  description: String,
+  affinity: .,
+  systemPrompt :? String,
+  used :? Int,
+  edited :? Int
+}
+
+# The prompts of an organisation.
+Prompts = [Prompt]
+
+# What an administrator gives to add a prompt.
+PromptGiven = { name :? String, description :? String, systemPrompt :? String, affinity :? . }
+
+# The same, to change the prompt of this number.
+PromptChanged = { id: Int, name :? String, description :? String, systemPrompt :? String, affinity :? . }
+
+# A prompt, named by its number.
+PromptNamed = { id: Int }
+
+# The prompt just added, by its number.
+PromptAdded = { id: Int }
+
+# A ready-made prompt the organisation does not have yet.
+ReadyMadePrompt = { name: String, description: String, systemPrompt: String }
+
+# The ready-made prompts the organisation does not have yet.
+ReadyMadePrompts = [ReadyMadePrompt]
+
+# Why a member changed a proposal written with a prompt, who and when.
+Correction = { reason: String, user: String, userName: String, at: String }
+
+# The corrections of a prompt: why its proposals were changed.
+Corrections = [Correction]

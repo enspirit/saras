@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1001,
+    "name": "Atelier Nord",
+    "skip_automated": true,
+    "automation": "none",
+    "openrouter_key_enc": null,
+    "model": null,
+    "created_at": "2026-11-26 08:07:50 +0000"
+  },
+  {
+    "id": 1002,
+    "name": "Bureau Sud",
+    "skip_automated": true,
+    "automation": "none",
+    "openrouter_key_enc": null,
+    "model": null,
+    "created_at": "2026-11-26 08:07:52 +0000"
+  }
+]

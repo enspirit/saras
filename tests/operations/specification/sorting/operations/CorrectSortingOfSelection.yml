@@ -1,0 +1,205 @@
+name: CorrectSortingOfSelection
+agent: Member
+entry: POST /api/emails/selection/status
+description: >-
+  A member says where several emails stand, at once: no reply needed, ignored,
+  or to handle again. The selection is in the body: the emails ticked, or all
+  of a box or a board as searched, named by the view and never one by one.
+input: SelectionSorted
+output: SelectionDone
+
+# What "all of a view" names is decided by each example that asks for it: the
+# clauses below are decided for emails ticked.
+DomPre:
+  - (x) emails are named, those ticked, each by its number, or all of a view: >-
+      let s = input.selection
+      in if s.ids != null then count(s.ids) > 0 && all(s.ids, i ~> typeOf(i) == 'Int' && i > 0)
+         else typeOf(s.all) == 'Tuple'
+DomPost:
+  - (x) each of them not replied stands where the member says, as the member's verdict: >-
+      let ticked = input.selection.ids
+      in ticked == null || among(corrected(notStanding(only(old.emails.emails, ticked), 'sent'), input.status), emails.emails)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the status asked for is one of the three corrections
+  - (x) at most 500 emails are ticked: count(input.selection.ids | []) <= 500
+  - (x) a board named is one the requester sees: >-
+      input.selection.all.board == null || seesBoard(input.selection.all.board)
+ReqPost:
+  - (x) a replied email is left as it is: among(standing(old.emails.emails, 'sent'), emails.emails)
+  - (x) an email that is not one of them is as it was: >-
+      let ticked = input.selection.ids
+      in ticked == null || among(except(old.emails.emails, ticked), emails.emails)
+  - (x) it tells how many emails it was for, the replied ones aside: >-
+      let ticked = input.selection.ids
+      in ticked == null || output.changed == count(notStanding(only(old.emails.emails, ticked), 'sent'))
+  - (x) only what the requester may see is touched: >-
+      among(except(old.seenBy.coadmin.emails.emails, ids(old.emails.emails)), seenBy.coadmin.emails.emails)
+  - (+) nothing at all changes of an email the requester may not see: >-
+      all(old.db.emails, b ~> old.seesEmail(b.id) || any(db.emails, a ~> a == b))
+  - (x) no email comes or goes: ids(emails.emails) == ids(old.emails.emails)
+  - ( ) one statement for all of them, whatever their number
+
+examples:
+  - when: a member ticks three emails to handle and says they need no reply
+    given: test/base, as member
+    input: { selection: { ids: [1001, 1002, 1003] }, status: no_reply }
+    then: 200
+    and:
+      - three emails changed: output.changed == 3
+      - the boxes count them where they stand: >-
+          emails.counts == merge(old.emails.counts, {todo: old.emails.counts.todo - 3, none: old.emails.counts.none + 3})
+      - a colleague sees them so: seenBy.admin.emails == emails
+
+  - when: an administrator ignores emails ticked in several boxes, one of them replied
+    given: test/base, as admin
+    input: { selection: { ids: [1005, 1012, 1017, 1020] }, status: ignored }
+    then: 200
+    and:
+      - the replied one aside, three emails changed: output.changed == 3
+      - the boxes count them where they stand: >-
+          emails.counts == {todo: 9, none: 6, sent: 2, ignored: 3}
+
+  # As deviation 5 of doc/2-operations.md: where an email stands is not checked.
+  - when: a member ticks an email twice, with a number no email has, and puts them back to handle
+    given: test/base, as member
+    input: { selection: { ids: [1001, 1001, 9999] }, status: needs_reply }
+    then: 200
+    and:
+      - the one email there is changed, though it was to handle: >-
+          output.changed == 1 && old.sorted(1001, 'needs_reply', 'none')
+
+  - when: an administrator ignores an email ticked that a member had already ignored
+    given: test/base, as admin
+    input: { selection: { ids: [1020] }, status: ignored }
+    then: 200
+    and:
+      - it is counted as changed, though no email is told otherwise than it was: output.changed == 1 && emails == old.emails
+
+  - when: a member ticks five hundred emails
+    given: test/base, as member
+    input: >-
+      let kept = emails.emails
+      in {selection: {ids: slice(flat(map(kept, a ~> flat(map(kept, b ~> ids(kept))))), 0, 500)}, status: 'ignored'}
+    then: 200
+    and:
+      - five hundred were ticked: count(input.selection.ids) == 500
+      - every email not replied is ignored: >-
+          output.changed == 18 && emails.counts == {todo: 0, none: 0, sent: 2, ignored: 18}
+
+  - when: a member puts back to handle all the emails that need no reply
+    given: test/base, as member
+    input: { selection: { all: { box: none } }, status: needs_reply }
+    then: 200
+    and:
+      - seven emails changed: output.changed == 7
+      - each that needed no reply is to handle, as the member's verdict: >-
+          among(corrected(standing(old.emails.emails, 'no_reply'), 'needs_reply'), emails.emails)
+      - no other email changed: among(notStanding(old.emails.emails, 'no_reply'), emails.emails)
+
+  - when: an administrator ignores all the emails of every box
+    given: test/base, as admin
+    input: { selection: { all: { box: all } }, status: ignored }
+    then: 200
+    and:
+      - the two replied aside, eighteen emails changed: output.changed == 18
+      - each not replied is ignored, as the member's verdict: >-
+          among(corrected(notStanding(old.emails.emails, 'sent'), 'ignored'), emails.emails)
+
+  - when: a member says that all the emails found by a search in every box need no reply
+    given: test/base, as member
+    input: { selection: { all: { box: all, search: northwind } }, status: no_reply }
+    then: 200
+    and:
+      - three emails changed: output.changed == 3
+      - each of the three found needs no reply, as the member's verdict: >-
+          among(corrected(only(old.emails.emails, [1001, 1018, 1020]), 'no_reply'), emails.emails)
+      - no other email changed: among(except(old.emails.emails, [1001, 1018, 1020]), emails.emails)
+
+  - when: a member ignores all that a search finds, naming no box, which is the emails to handle
+    given: test/base, as member
+    input: { selection: { all: { search: invoice } }, status: ignored }
+    then: 200
+    and:
+      - one email changed: output.changed == 1
+      - the one found among the emails to handle is ignored: sorted(1001, 'ignored', 'user')
+      - no other email changed: among(without(old.emails.emails, 1001), emails.emails)
+
+  - when: a member ignores all the emails of a shared board
+    given: test/base, as member
+    input: { selection: { all: { board: 1001 } }, status: ignored }
+    then: 200
+    and:
+      - the board showed three emails: old.board(1001).count == 3
+      - three emails changed: output.changed == 3
+      - each of the three is ignored, as the member's verdict: >-
+          among(corrected(only(old.emails.emails, [1001, 1010, 1018]), 'ignored'), emails.emails)
+      - no other email changed: among(except(old.emails.emails, [1001, 1010, 1018]), emails.emails)
+
+  - when: somebody of another organisation ticks emails of this one
+    given: test/base, as outsider
+    input: { selection: { ids: [1001, 1002] }, status: ignored }
+    then: 200
+    and:
+      - no email changed: output.changed == 0 && seenBy.member.emails == old.seenBy.member.emails
+      - (+) nothing that is kept of an email changed: db.emails == old.db.emails
+      - who may use the mailbox sees what they saw: seenBy.admin.emails == old.seenBy.admin.emails
+
+  - when: somebody of another organisation asks for all the emails of every box
+    given: test/base, as outsider
+    input: { selection: { all: { box: all } }, status: ignored }
+    then: 200
+    and:
+      - no email changed: output.changed == 0 && seenBy.member.emails == old.seenBy.member.emails
+      - (+) nothing that is kept of an email changed: db.emails == old.db.emails
+
+counterexamples:
+  - when: nothing is ticked
+    for: emails are named, those ticked, each by its number, or all of a view
+    given: test/base, as member
+    input: { selection: { ids: [] }, status: ignored }
+    then: 400 emails.selectionInvalid
+
+  - when: what is ticked is not the number of an email
+    for: emails are named, those ticked, each by its number, or all of a view
+    given: test/base, as member
+    input: { selection: { ids: [1001, 0] }, status: ignored }
+    then: 400 emails.selectionInvalid
+
+  - when: the selection says neither
+    for: emails are named, those ticked, each by its number, or all of a view
+    given: test/base, as member
+    input: { selection: {}, status: ignored }
+    then: 400 emails.selectionInvalid
+
+  - when: no selection is given
+    for: emails are named, those ticked, each by its number, or all of a view
+    given: test/base, as member
+    input: { status: ignored }
+    then: 400 emails.selectionInvalid
+
+  - when: five hundred and one emails are ticked
+    for: at most 500 emails are ticked
+    given: test/base, as member
+    input: >-
+      let kept = emails.emails
+      in {selection: {ids: slice(flat(map(kept, a ~> flat(map(kept, b ~> ids(kept))))), 0, 501)}, status: 'ignored'}
+    then: 400 emails.selectionInvalid
+
+  - when: a member says of the emails ticked that they are replied
+    for: the status asked for is one of the three corrections
+    given: test/base, as member
+    input: { selection: { ids: [1001, 1002] }, status: sent }
+    then: 400 emails.invalidStatus
+
+  - when: a member names a board that is an administrator's own
+    for: a board named is one the requester sees
+    given: test/base, as member
+    input: { selection: { all: { board: 1002 } }, status: ignored }
+    then: 404 boards.notFound
+
+  - when: somebody of another organisation names a shared board of this one
+    for: a board named is one the requester sees
+    given: test/base, as outsider
+    input: { selection: { all: { board: 1001 } }, status: ignored }
+    then: 404 boards.notFound

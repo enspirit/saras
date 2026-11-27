@@ -1,0 +1,12 @@
+# What is true or false of the members of the organisation, as somebody sees
+# them at one moment.
+
+- name: seesMember(id)
+  description: There is a member of this number, for who looks.
+  formaldef: any(members | [], m ~> m.id == id)
+
+- name: sameButRole(a, b)
+  description: The same member told twice, with nothing but the role that may differ.
+  formaldef: >-
+    a != null && b != null && a.email == b.email && a.name == b.name && a.createdAt == b.createdAt
+    && a.mailboxes == b.mailboxes && a.secondFactor == b.secondFactor

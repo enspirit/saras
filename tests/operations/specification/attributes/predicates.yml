@@ -1,0 +1,7 @@
+# What is true or false of the attributes of the organisation, as somebody
+# sees them at one moment. An attribute is named by its key: its number as a
+# text, or `status`.
+
+- name: hasAttribute(key)
+  description: The organisation has an attribute of this key.
+  formaldef: any(attributes | [], a ~> a.key == key)

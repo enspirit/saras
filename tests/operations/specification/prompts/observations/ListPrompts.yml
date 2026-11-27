@@ -1,0 +1,55 @@
+name: ListPrompts
+agent: Member
+entry: GET /api/prompts
+description: >-
+  Tells a member the prompts of their organisation. Every member is told the
+  name of each, when to use it and the emails it suits; an administrator is
+  also told its instructions and how it is used.
+output: Prompts
+
+DomPost:
+  - (x) the prompts of the organisation are told, in the order they were made: >-
+      output == old.prompts && ids(output) == sort(ids(output))
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
+  - (x) an administrator is also told the instructions of each, and how many replies it wrote and how many of those were edited: >-
+      !old.administrator || all(output, p ~> !isBlank(p.systemPrompt) && p.used >= p.edited && p.edited >= 0)
+  - (x) a member who is not an administrator is told none of that: >-
+      old.administrator || all(output, p ~> p.systemPrompt == null && p.used == null && p.edited == null)
+  - (x) every member of an organisation is told the same prompts, and nobody of another is told any of them: >-
+      let here = ids(old.seenBy.admin.prompts), elsewhere = ids(old.seenBy.outsider.prompts), told = ids(output) in
+        ids(old.seenBy.coadmin.prompts) == here && ids(old.seenBy.member.prompts) == here
+        && noneAmong(here, elsewhere) && (told == here || told == elsewhere)
+
+examples:
+  - when: an administrator asks
+    given: test/base, as admin
+    then: 200
+    and:
+      - the prompt the organisation started with, then the one it added: >-
+          names(output) == ['Standard professional reply', 'Quote'] && ids(output) == [1001, 1002]
+      - the instructions are told as they were given: withId(output, 1002).systemPrompt == 'Answer with our price list and offer a call.'
+      - none wrote a reply yet: all(output, p ~> p.used == 0 && p.edited == 0)
+      - the first suits no email in particular, the second those whose Topic is Sales: >-
+          first(output).affinity == {} && fetch(last(output).affinity, '1002') == ['2']
+
+  - when: another administrator asks
+    given: test/base, as coadmin
+    then: 200
+    and:
+      - they are told what the first is: output == old.seenBy.admin.prompts
+
+  - when: a member asks
+    given: test/base, as member
+    then: 200
+    and:
+      - the prompts an administrator is told, by name, description and the emails each suits, and nothing else of them: >-
+          output == map(old.seenBy.admin.prompts, p ~> {id: p.id, name: p.name, description: p.description, affinity: p.affinity})
+          && count(output) == 2
+
+  - when: an administrator of another organisation asks
+    given: test/base, as outsider
+    then: 200
+    and:
+      - the one prompt of their organisation: ids(output) == [1003]

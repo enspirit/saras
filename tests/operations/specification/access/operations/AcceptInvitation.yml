@@ -1,0 +1,65 @@
+name: AcceptInvitation
+agent: Visitor
+entry: POST /api/invitations/accept
+description: >-
+  An invited person chooses a password and joins the organisation.
+input: InvitationAccepted
+output: Admitted
+
+DomPre:
+  - (x) the link opens a pending, unexpired invitation: >-
+      let pending = seenBy.admin.invitationTo(world.invitation.email)
+      in input.token == world.invitation.token && pending != null && !pending.expired
+DomPost:
+  - (x) a member with the invitation's address and role: >-
+      let joined = seenBy.admin.memberWith(world.invitation.email)
+      in count(seenBy.admin.members) == count(old.seenBy.admin.members) + 1
+        && joined != null && joined.role == old.seenBy.admin.invitationTo(world.invitation.email).role
+  - (x) the invitation is gone: seenBy.admin.invitationTo(world.invitation.email) == null
+ReqPre:
+  - ( ) the origin is not locked out
+  - (x) the password has ten characters or more: length(input.password) >= 10
+  - (x) nobody took the address meanwhile: seenBy.admin.memberWith(world.invitation.email) == null
+  - (+) nobody has the address, in any organisation: "!hasAccount(world.invitation.email)"
+ReqPost:
+  - (x) a session is opened - they are signed in, in the organisation that invited them: >-
+      output.ok && old.me == null && me.email == world.invitation.email
+      && me.organization.name == world.invitation.organization
+      && me.role == old.seenBy.admin.invitationTo(me.email).role
+  - (x) they have the name they gave, none otherwise: me.name == trim(input.name | '')
+  - (+) only a hash of the password is kept: >-
+      let theirs = account(world.invitation.email)
+      in theirs != null && !isBlank(theirs.password_hash) && !contains(theirs.password_hash, input.password)
+  - (x) the members there were are as they were: among(old.seenBy.admin.members, seenBy.admin.members)
+  - (x) nobody of another organisation sees them: seenBy.outsider.members == old.seenBy.outsider.members
+  - ( ) a link that opens nothing counts as a wrong guess
+
+examples:
+  - when: nora accepts, saying her name and her language
+    given: test/base, as visitor
+    input: "{ token: world.invitation.token, password: 'a-long-enough-one', name: ' Nora New ', language: 'fr' }"
+    then: 201
+    and:
+      - she is a user, named and speaking as she said: >-
+          me.role == 'user' && me.name == 'Nora New' && me.language == 'fr'
+      - a user is not told who the members are: members == null
+
+  - when: nora accepts with a password of ten characters, and nothing more
+    given: test/base, as visitor
+    input: "{ token: world.invitation.token, password: '1234567890' }"
+    then: 201
+    and:
+      - she has no name yet, and English: me.name == '' && me.language == 'en'
+
+counterexamples:
+  - when: the link opens nothing
+    for: the link opens a pending, unexpired invitation
+    given: test/base, as visitor
+    input: { token: not-the-invitation-of-nora, password: a-long-enough-one }
+    then: 404 invitation.invalid
+
+  - when: the password has nine characters
+    for: the password has ten characters or more
+    given: test/base, as visitor
+    input: "{ token: world.invitation.token, password: '123456789' }"
+    then: 400 auth.passwordTooShort

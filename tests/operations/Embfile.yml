@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/enspirit/emb/refs/heads/master/src/config/schema.json#/definitions/ComponentConfig
+description: The black-box specification of the operations, run through the front door
+
+resources:
+  image:
+    type: 'docker/image'
+    # Not published. This is a harness, and shipping it would put a test
+    # toolchain in a registry next to the product.
+    publish: false
+    params:
+      buildArgs:
+        # Built on the image of what runs it: opspicy, at the version .env.commons names.
+        OPSPICY: ${env:OPSPICY_IMAGE}
+
+flavors:
+  dev:
+    patches:
+      # The specifications are in the image: one that changed makes it stale.
+      - path: /resources/image/rebuildTrigger
+        op: add
+        value:
+          strategy: watch-paths
+          paths:
+            - tests/operations
+
+# What needs no stack runs opspicy as a tool, from its image, on the suite as the checkout has
+# it: nothing of opspicy is installed here.
+tasks:
+  lint:
+    description: Read every specification, and type-check what of the suite is code — no stack needed, but docker
+    executors:
+      - local
+    vars:
+      OPSPICY: ${env:OPSPICY_IMAGE}
+    script: docker run --rm -v "$(pwd)":/suite:ro ${OPSPICY} sh -c 'opspicy --check && tsc -p .'
+
+  test:operations:
+    description: The specifications, against the stack this is run in — the one under the suites, whose database may be emptied. O, METHOD, CASE and ROBUST narrow it, FAILFAST=yes stops it at the first failure, FAST=yes checks what must hold through the front door alone, LOG_LEVEL=DEBUG shows the wire
+    # Named `test:operations` rather than `test`, deliberately: it needs a
+    # *running stack*, where `emb run test` needs only a checkout.
+    #
+    # It runs inside the container (this component has a compose service), so
+    # it reaches saras by service name.
+    executors:
+      - container
+    vars:
+      O: ${env:O:-}
+      METHOD: ${env:METHOD:-}
+      CASE: ${env:CASE:-}
+      ROBUST: ${env:ROBUST:-}
+      FAILFAST: ${env:FAILFAST:-}
+      FAST: ${env:FAST:-}
+      LOG_LEVEL: ${env:LOG_LEVEL:-}
+    script: O="${O}" METHOD="${METHOD}" CASE="${CASE}" ROBUST="${ROBUST}" FAILFAST="${FAILFAST}" FAST="${FAST}" LOG_LEVEL="${LOG_LEVEL}" opspicy . --report=/report/last.json; status=$?; opspicy explorer . --report=/report/last.json --out=/report/explorer.html --name=saras --runner='emb run test:operations'; exit $status
+
+  report:prepare:
+    description: Create the folder the runner writes its report to, owned by you, before the stack is up — Docker would create it as root
+    executors:
+      - local
+    script: mkdir -p .report && chmod 0777 .report
+
+  explorer:
+    description: Write the explorer of the suite and its last run as one standalone HTML file, to open offline — needs no stack, but a run's report (test:operations) to show the run
+    executors:
+      - local
+    vars:
+      OPSPICY: ${env:OPSPICY_IMAGE}
+    # Its version is the commit of the checkout: a review of the specification says which one it read.
+    # Written as you: the folder is yours, and so is the file.
+    script: mkdir -p .report && docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)":/suite ${OPSPICY} opspicy explorer --report=.report/last.json --out=.report/explorer.html --name=saras --runner='emb run test:operations' --version=$(git rev-parse --short HEAD 2>/dev/null)
+
+  explorer:serve:
+    vars:
+      PORT: ${env:EXPLORER_PORT:-7280}
+      OPSPICY: ${env:OPSPICY_IMAGE}
+    description: Serve the explorer of the suite and its last run on http://127.0.0.1:7280 (EXPLORER_PORT), read-only, re-read when the suite changes
+    executors:
+      - local
+    # The server listens to every address of its container, and the container is published to this
+    # machine alone. --init: so that Ctrl-C stops it.
+    script: docker run --rm --init -p 127.0.0.1:${PORT}:8080 -v "$(pwd)":/suite:ro ${OPSPICY} opspicy serve --report=.report/last.json --host=0.0.0.0 --name=saras --runner='emb run test:operations'

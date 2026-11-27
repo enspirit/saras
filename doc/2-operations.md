@@ -297,4 +297,4 @@ Taken by the product's owner on the questions the inventory raised. Each one tha
 - **A shared mailbox that changes owner changes voice**: its proposals are prepared with its owner's signature and corrections (deviation 12), so DeleteMember and DeleteOwnAccount silently change who writes for it.
 - Deviations 1 to 15 (9 aside), each of which is a rule to confirm or a behaviour to change.
 - The frontend asks for each operation through a function named after it (`web/api/`), and its pages are named after what a person does (`web/pages/`). Its own decisions (`TO_COMPLETE`, `norm`, `pathOf`) could still be brought out as pure functions with unit tests.
-- Black-box specifications of the operations have begun in [`tests/webspicy`](../tests/webspicy/), with what reads and what refuses; the HTTP tests in `test/integration/` play that part for everything else.
+- The operations are specified from outside, clause by clause, in [`tests/operations`](../tests/operations/): one file each, named after it. What needs the LLM, a second factor or the server's own clock is still held by the HTTP tests in `test/integration/` alone.

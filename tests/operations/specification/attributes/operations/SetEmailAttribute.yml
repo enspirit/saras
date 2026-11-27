@@ -1,0 +1,150 @@
+name: SetEmailAttribute
+agent: Member
+entry: PUT /api/emails/:id/attributes/:key
+description: >-
+  A member gives an email a value for an attribute by hand, or takes it away.
+input: ValueSet
+output: Done
+
+DomPre:
+  - (+) an email: withId(db.emails, input.id) != null
+  - (x) an attribute of the organisation
+DomPost:
+  # Where an email stands is not among its values: for `status` it reads as none.
+  - (x) the email has this value for the attribute, as the member's, or none: >-
+      let now = valueFor(email(input.id), input.key)
+      in output.ok && (if isBlank(input.value | '') then now == null else now == {value: input.value, source: 'user'})
+ReqPre:
+  - (x) the requester is signed in
+  - (+) the member may use the email's mailbox: >-
+      withId(db.emails, input.id) == null || seesEmail(input.id)
+  - (x) the value is one of the attribute's
+  - (x) not "Stands in", unless the value is taken away
+ReqPost:
+  - (x) the values the email has for the other attributes are kept: >-
+      let was = old.email(input.id),
+          is = email(input.id)
+      in (input.key == '1001' || valueFor(is, '1001') == valueFor(was, '1001'))
+        && (input.key == '1002' || valueFor(is, '1002') == valueFor(was, '1002'))
+        && (input.key == '1003' || valueFor(is, '1003') == valueFor(was, '1003'))
+  - (x) where the email stands is as it was: >-
+      let was = old.email(input.id),
+          is = email(input.id)
+      in is.status == was.status && is.triageSource == was.triageSource && is.replyMode == was.replyMode
+  - (x) the other emails are as they were: among(without(old.emails.emails, input.id), emails.emails)
+  - (x) the attributes are as they were
+  - ( ) a value set by hand is not overwritten by later sorting
+
+examples:
+  - when: a member gives a priority to an email that had none
+    given: test/base, as member
+    input: { id: 1002, key: "1001", value: "1" }
+    then: 200
+    and:
+      - it is High, as a member's: "valueFor(email(1002), '1001') == {value: '1', source: 'user'}"
+      - the other members see it: "valueFor(seenBy.admin.email(1002), '1001') == {value: '1', source: 'user'}"
+
+  - when: a member corrects the topic a rule gave
+    given: test/base, as member
+    input: { id: 1001, key: "1002", value: "2" }
+    then: 200
+    and:
+      - it was Billing, by the rule, with its reason: >-
+          valueFor(old.email(1001), '1002') == {value: '1', source: 'rule', reason: 'it speaks of an invoice'}
+      - it is Sales, as the member's, and the reason is gone: >-
+          valueFor(email(1001), '1002') == {value: '2', source: 'user'}
+      - the board Billing shows one email less: >-
+          old.board(1001).count == 3 && board(1001).count == 2
+
+  - when: a member takes away the topic a rule gave
+    given: test/base, as admin
+    input: { id: 1008, key: "1002", value: null }
+    then: 200
+    and:
+      - it had one, and has none: >-
+          valueFor(old.email(1008), '1002') != null
+          && valueFor(email(1008), '1002') == null
+
+  - when: the value given is empty
+    given: test/base, as member
+    input: { id: 1010, key: "1002", value: "" }
+    then: 200
+    and:
+      - it is taken away as well: valueFor(email(1010), '1002') == null
+
+  - when: a member takes away a value the email does not have
+    given: test/base, as member
+    input: { id: 1002, key: "1001", value: null }
+    then: 200
+    and:
+      - nothing changes: emails == old.emails
+
+  - when: a member says who takes care of an email
+    given: test/base, as coadmin
+    input: { id: 1005, key: "1003", value: "1003" }
+    then: 200
+    and:
+      - it is milo, by his number: "valueFor(email(1005), '1003') == {value: '1003', source: 'user'}"
+
+  - when: a member gives a priority to an email already replied
+    given: test/base, as member
+    input: { id: 1017, key: "1001", value: "3" }
+    then: 200
+    and:
+      - it stays replied: email(1017).status == 'sent'
+
+  - when: a member takes away the value of "Stands in"
+    given: test/base, as member
+    input: { id: 1001, key: status, value: null }
+    then: 200
+    and:
+      - nothing a member is told changes: emails == old.emails && seenBy.admin.emails == old.seenBy.admin.emails
+
+counterexamples:
+  - when: nobody has an email of this number
+    for: an email
+    given: test/base, as member
+    input: { id: 9999, key: "1001", value: "1" }
+    then: 404 emails.notFound
+
+  - when: the administrator of Bureau Sud names an email of Atelier Nord, and its own priority
+    for: the member may use the email's mailbox
+    given: test/base, as outsider
+    input: { id: 1001, key: "1004", value: "1" }
+    then: 404 emails.notFound
+
+  - when: nobody has an attribute of this key
+    for: an attribute of the organisation
+    given: test/base, as member
+    input: { id: 1001, key: "9999", value: "1" }
+    then: 404 attributes.notFound
+
+  - when: the key is the one of Bureau Sud's priority
+    for: an attribute of the organisation
+    given: test/base, as member
+    input: { id: 1001, key: "1004", value: "1" }
+    then: 404 attributes.notFound
+
+  - when: the priority has no such value
+    for: the value is one of the attribute's
+    given: test/base, as member
+    input: { id: 1001, key: "1001", value: "4" }
+    then: 400 attributes.valueUnknown
+
+  - when: a value is named by its label
+    for: the value is one of the attribute's
+    given: test/base, as member
+    input: { id: 1001, key: "1001", value: High }
+    then: 400 attributes.valueUnknown
+
+  - when: who takes care is somebody of another organisation
+    for: the value is one of the attribute's
+    given: test/base, as member
+    input: { id: 1001, key: "1003", value: "1004" }
+    then: 400 attributes.valueUnknown
+
+  - when: a member says through it that an email needs no reply
+    for: not "Stands in", unless the value is taken away
+    given: test/base, as member
+    input: { id: 1001, key: status, value: none }
+    then: 400 attributes.valueUnknown
