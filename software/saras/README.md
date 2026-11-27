@@ -70,7 +70,7 @@ Green means: `lint` clean, and every test passing on both databases.
 
 ## Status
 
-> **In flight:** what an operation is given is checked against its type ([decision 0021](../../doc/decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)): boards are; the other areas still reduce what they are given, in `src/domain/computations/given.ts` and the like, until their routes name their operations.
+> **In flight:** what an operation is given is checked against its type ([decision 0021](../../doc/decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)): boards are. Where a checked input does not yet secure the code downstream is listed there, [where the code falls short of it](../../doc/decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md#where-the-code-falls-short-of-it).
 
 - Every operation of the inventory exists. Where the code does not do what the documents say is listed there, under Deviations.
 - The operations are specified from outside in [`tests/operations`](../../tests/operations/), which says what it leaves to the tests of `test/integration/`, inside this component: what needs the LLM, a second factor, the lock-out, and what the server does on its own.

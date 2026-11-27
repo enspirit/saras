@@ -34,7 +34,20 @@ The areas move to it one at a time. A route that names no operation yet is mount
 - A change of the specification's types is a change of the server's behaviour, reviewed as such, and the image is rebuilt when the specification changes.
 - [`test/unit/inputs.test.ts`](../../software/saras/test/unit/inputs.test.ts) holds the specification to itself: the input of every example of an operation the server serves is of its type, and a counterexample its type refuses is refused with the code it says.
 - Names of types are one namespace across the areas, as opspicy reads them: two areas cannot both declare a `Mailboxes`.
-- What the reductions of the domain did for an input is gone with them. What remains of them (`attributeValuesGiven`, `clipped`, `searchGiven`, …) is for the areas not moved yet.
+- What the reductions of the domain did for an input is gone with them. What remains of them is listed below, with the other gaps.
+
+## Where the code falls short of it
+
+The ideal: an input that passes its type is safe for all the code downstream, which then checks nothing again and reduces nothing. Each gap below is a place where that promise is not kept yet: what lets it through, and what would close it. A gap that closes is struck from this list.
+
+1. **The areas not moved.** Every route but those of boards names no operation, and takes what it is given: its domain still reduces (`computations/given.ts`, `searchGiven`, `attributeValuesGiven`) and reads a number as `Number(id) || 0` (`state/emails.ts`, `mailboxes.ts`, `members.ts`, `invitations.ts`, `prompts.ts`). Closes area by area: the routes name their operations, the types are tightened, the reductions go.
+2. **The keys of a map.** Elo checks the values of `{ ...: T }`, not its keys, and has no function that reads them. The attributes of a board's filter are keyed by `status` or a number, and the type cannot say so: an attribute named `colour` passes, the domain drops it (`filterKept`), and `conditionsOf` still writes the key as `Number(key)`. EditBoard's postcondition (`sameFilter`) compares attributes as given, so no example of it can show the drop. Closes with a type for the keys of a map in Elo, or a function that lists them for a constraint: the key is then refused `400` and the domain drops nothing.
+3. **One entry, several operations.** `PUT /organization` (six operations), `PUT /settings`, `POST /emails/:id/status`, `POST /emails/:id/assist` (three each), `PUT /members/:id` and `POST /prompts` (two each) serve operations whose inputs have different types, and the interface sends some of them merged. Closes with a route that tries each operation's type and serves the one it fits, the interface sending one operation per request.
+4. **Routes the specification does not name**: `GET /emails/:id/attachments/:index` and `GET /attributes/skill`. Nothing declares their input. Closes when they are specified.
+5. **A field missing is not its constraint failing.** A constraint labelled with a code is refused with it when the field is there and breaks it (`name: "  "` → `boards.nameRequired`); a field left out is refused `request.invalid` at its place. Closes with Elo carrying the label of a missing field's type, or with the code said on the field.
+6. **TypeScript says less than Elo, and nothing holds them together.** `shared/` says a field and its type, and `SomeOf<T>` a list of one at least; a length, a positive number, a list without repeats are Elo's alone, and no test compares the two descriptions of a type. A route's `Handle<Input>` is the TypeScript the check is trusted to give. Closes with the TypeScript of an input derived from its Elo type, or a test that compares them.
+7. **Types declared before they are used.** The areas' types form one prelude, in the order of their names: an output of boards cannot name `EmailSummary`, which emails declares later, and says `[.]`. Closes with imports between the areas' types, or the shared types moved to `_shared/`.
+8. **Ill-typed inputs are not run against the stack.** opspicy runs the examples and the counterexamples written; no one writes one for a type. The refusals are held by the server's tests alone (`test/unit/inputs.test.ts`, `test/integration/boards.test.ts`). Closes when opspicy fuzzes them on demand, from the valid examples.
 
 ## What would reverse it
 
