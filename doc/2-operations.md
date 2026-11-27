@@ -255,7 +255,7 @@ Still buried, in the frontend (`web/pages/`):
 
 ## Deviations and open questions
 
-Recorded, not fixed. Each is a decision for the product's owner.
+Recorded, not fixed. Each is a decision for the product's owner. What specifying the operations found since, and is not in this list yet, is in the [deviation candidates](deviation-candidates.md).
 
 ### Deviations
 

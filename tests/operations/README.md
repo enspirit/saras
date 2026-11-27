@@ -71,7 +71,7 @@ Nothing of saras is in its process: no source, no type.
 1. **Import anything of `software/saras`.** A suite that shares the product's types cannot say they are wrong. Held by [`tests/harness`](../harness/).
 2. **Read through `db` what the API tells.** A relation is behind the API, so it moves when the schema does: it is for what no route shows anybody of the Background (that only a hash is kept, that a link was spent, that nothing at all changed for anybody), and it names no column of who belongs to which organisation. A clause that reads one is marked `(+)`, which opspicy holds, and says in a sentence of its own what only the database shows: what a route tells is said by the clause before it, marked `(x)`.
 3. **Run where the database is somebody's.** Every case installs a seed, which empties it. [`config.ts`](config.ts) says the database may be emptied only where `OPERATIONS_MAY_EMPTY_THE_DATABASE` is set, which `docker-compose.test.yml` alone does: on the development stack nothing runs.
-4. **Be edited to make a mismatch pass.** When the specification and the server disagree, one is wrong, and the suite is how it was found. A behaviour that is the server's and not the inventory's is specified as it is, and told.
+4. **Be edited to make a mismatch pass.** When the specification and the server disagree, one is wrong, and the suite is how it was found. A behaviour that is the server's and not the inventory's is specified as it is, and told: [what was found so far](../../doc/deviation-candidates.md).
 5. **Hold a credential that opens anything real.** The passwords and tokens of `world.yml` open a seed.
 6. **Ship**: `publish: false`.
 
