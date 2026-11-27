@@ -192,17 +192,17 @@ How the screens are designed and built is in [the design document](4-design.md).
 **As** a member, **I want** newsletters, notifications and no-reply senders set aside without any AI, **so that** they neither clutter my list nor cost anything.
 
 - Header rules catch: no-reply and notification addresses, mailing lists, automatic replies, bulk mail, my own messages, and (over IMAP) what I already answered in my mail client.
-- These emails go to **No reply needed** with the rule's reason, and never reach an LLM.
+- These emails go to **Solved** with the rule's reason, and never reach an LLM.
 - An organisation can turn the rule off, or change it: it is the rule of the attribute **Stands in** (US-94).
 
 ### US-21 — The AI does not sort
 **As** a member, **I want** every remaining email of the folder I watch to be "to handle" unless a rule of ours or one of us says otherwise, **so that** no email is read by the AI to be sorted, and I can always tell why an email is where it is.
 
-- Everything that passed the rules is in **To handle**. No LLM decides whether an email needs a reply, nor how urgent it is: rules do (US-94), and members (US-24, US-95).
+- Everything that passed the rules is in **To reply**. No LLM decides whether an email needs a reply, nor how urgent it is: rules do (US-94), and members (US-24, US-95).
 - An email the AI sorted, when it could, stays where it put it, marked **The AI** with its reason.
 
 ### US-23 — Work through four boxes
-**As** a member, **I want** my emails in four lists — To handle, No reply needed, Replied, Ignored — each with its count, **so that** I always know what is left.
+**As** a member, **I want** my emails in four lists — To reply, Solved, Answered, Archive — each with its count, **so that** I always know what is left.
 
 - The navigation shows the four boxes and how many emails each holds.
 - A list row shows the sender, the date (time today, date otherwise), the subject, the first line, the mark Draft, its values for the organisation's own attributes (US-95), and the shared mailbox it came from.

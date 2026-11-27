@@ -1,22 +1,22 @@
 {
   "todo": {
-    "label": "To handle",
-    "empty": "Nothing to handle. Fetch your mailboxes, or connect one in Mailboxes."
+    "label": "To reply",
+    "empty": "Nothing to reply to. Fetch your mailboxes, or connect one in Connected accounts."
   },
   "none": {
-    "label": "No reply needed",
-    "empty": "No email set aside by sorting."
+    "label": "Solved",
+    "empty": "No solved email."
   },
   "sent": {
-    "label": "Replied",
+    "label": "Answered",
     "empty": "No reply sent or saved as a draft yet."
   },
   "ignored": {
-    "label": "Ignored",
-    "empty": "No ignored email."
+    "label": "Archive",
+    "empty": "No archived email."
   },
   "all": {
-    "label": "Every box",
+    "label": "All",
     "empty": "No email."
   }
 }

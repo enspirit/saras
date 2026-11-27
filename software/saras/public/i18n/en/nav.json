@@ -1,6 +1,6 @@
 {
   "configuration": "Configuration",
-  "mailboxes": "Mailboxes",
+  "mailboxes": "Connected accounts",
   "settings": "Settings",
   "prompts": "Writing",
   "members": "Users",
@@ -8,5 +8,6 @@
   "more": "More",
   "boards": "Boards",
   "newBoard": "New board",
-  "attributes": "Sorting"
+  "attributes": "Sorting",
+  "inbox": "Inbox"
 }

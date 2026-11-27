@@ -53,7 +53,7 @@
   "shapeTitle": "La forme d’une règle",
   "shapeGiven": "Une règle reçoit l’email sous le nom <code>_</code> : son expéditeur, son objet, son texte, ses pièces jointes, la boîte où il est arrivé, quelques en-têtes.",
   "shapeAnswers": "Elle répond une valeur de l’attribut, par son nom (<code>'billing'</code>), ou <code>null</code> pour ne rien dire. Pour dire pourquoi, elle répond <code>'{'value: …, reason: …'}'</code> : la raison s’affiche avec la valeur sur l’email. À côté d’une règle en cours d’écriture, chaque valeur est listée comme elle s’écrit.",
-  "shapeNothing": "Quand une règle ne dit rien, l’email n’a pas de valeur pour cet attribut ; quand c’est la règle qui dit où il se trouve, l’email est à traiter. Une valeur fixée à la main par un membre n’est jamais remplacée par une règle.",
+  "shapeNothing": "Quand une règle ne dit rien, l’email n’a pas de valeur pour cet attribut ; quand c’est la règle qui dit où il se trouve, l’email est dans À répondre. Une valeur fixée à la main par un membre n’est jamais remplacée par une règle.",
   "recipesTitle": "Des règles dont partir",
   "recipe": {
     "domain": "Selon le domaine de l’expéditeur",

@@ -53,7 +53,7 @@
   "shapeTitle": "The shape of a rule",
   "shapeGiven": "A rule is given the email as <code>_</code>: who sent it, its subject, its text, its attachments, the mailbox it arrived in, a few headers.",
   "shapeAnswers": "It answers a value of the attribute, by its name (<code>'billing'</code>), or <code>null</code> to say nothing. To say why, it answers <code>'{'value: …, reason: …'}'</code>: the reason is shown with the value on the email. Beside a rule being written, each value is listed as it is written.",
-  "shapeNothing": "When a rule says nothing, the email keeps no value for that attribute; when it is the rule of where the email stands, the email is to handle. A value a member set by hand is never replaced by a rule.",
+  "shapeNothing": "When a rule says nothing, the email keeps no value for that attribute; when it is the rule of where the email stands, the email is in To reply. A value a member set by hand is never replaced by a rule.",
   "recipesTitle": "Rules to start from",
   "recipe": {
     "domain": "By the sender’s domain",

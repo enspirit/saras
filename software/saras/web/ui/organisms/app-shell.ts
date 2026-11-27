@@ -8,8 +8,8 @@ import type { NavEntry } from '../molecules/nav-item.ts';
 
 export interface AppShellOptions {
   brand: Brand;
-  /** The boxes of the mailbox: the main entries. */
-  boxes: NavEntry[];
+  /** The boxes of the mailbox, under their title: the main entries. */
+  boxes: { title: string; items: NavEntry[] };
   /** The member's boards, under their title: their entries (a Sortable, when they can be put in order), with the one that makes a new board. */
   boards: { title: string; items: Child };
   /** Configuration pages: quieter entries, under their title. */
@@ -31,7 +31,7 @@ export function AppShell({ brand, boxes, boards, pages, more, user, logout }: Ap
   return h('div', { class: 'shell' },
     h('nav', { class: 'shell__nav' },
       h('div', { class: 'shell__brand' }, BrandMark(brand)),
-      h('div', { class: 'shell__group' }, boxes.map(NavItem), h('div', { class: 'shell__more' }, NavItem(more))),
+      h('div', { class: 'shell__group' }, h('div', { class: 'shell__section' }, boxes.title), boxes.items.map(NavItem), h('div', { class: 'shell__more' }, NavItem(more))),
       minorGroup(boards),
       minorGroup({ title: pages.title, items: pages.items.map(NavItem) }),
       h('div', { class: 'shell__foot' },

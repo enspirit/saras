@@ -1,6 +1,6 @@
 {
-  "title": "Comptes mail",
-  "todo": "{count} à traiter",
+  "title": "Comptes connectés",
+  "todo": "{count} à répondre",
   "neverSynced": "Jamais relevée",
   "syncNow": "Relever maintenant",
   "disconnect": "Déconnecter",

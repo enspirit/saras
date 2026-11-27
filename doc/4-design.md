@@ -142,7 +142,7 @@ Every page beside the menu starts at the same left edge, the one the reading pan
 
 The reading pane has three parts: a header, the email itself, and the reply area docked at the bottom. The email is one sheet of paper as wide as the pane, as text and as it was written alike (a text keeps a measure of its own, inside), with a bar on top: a small switch between "As written" and "Text only", and, when images hosted elsewhere were held back, a word that says so. One written in HTML is shown as written, its page filling the sheet as tall as the room it has, from the top (an email that centres itself on its height does not float in the middle), on white whatever the theme and in the system's own font where it names none (a frame loads no font of a brand). As text, the sheet is as long as the text: what is quoted is set back and muted, the history at the end folds under "Earlier messages", and a signature or "Sent from my iPhone" steps back; the names of its files, in the header, open them. The email scrolls on its own; when room is short the reply area gives way first and its writing area scrolls, so Send stays in view.
 
-- **Header.** Subject, then the decisions about the email: *No reply needed* and *Ignore* while it waits, *Move back to "To handle"* once set aside. Under it the sender (avatar, name, address), "To … · Cc …", attachments as chips, and a short date with the full date as a tooltip. Last, the triage verdict: who sorted it, and why.
+- **Header.** Subject, then the decisions about the email: *Mark solved* and *Archive* while it waits, *Move back to "To reply"* once set aside. Under it the sender (avatar, name, address), "To … · Cc …", attachments as chips, and a short date with the full date as a tooltip. Last, the triage verdict: who sorted it, and why.
 - **Recipients.** To and Cc as removable chips on one line, with *Reply to all* when the email had other recipients.
 - **Editor.** One writing area, with an icon toolbar.
 - **Proposal.** When the AI wrote the text, a note above it says what was done and with which model, and holds *Put my text back*. The text is tinted until the user edits it; the note then adds that it was edited.
@@ -151,15 +151,17 @@ The reading pane has three parts: a header, the email itself, and the reply area
 - **Help from the AI.** One row: *Check typos*, *Improve style*, and *Write with* joined to the list of prompts. The prompt that suits the email by its attributes is the one selected, and carries a *Suits this email* label. A line with the lock says that typos and style do not send the email received.
 - **Actions.** *Send* and *Save as draft*. Sending opens a dialog that lists From, To and Cc.
 
-An email in **No reply needed** or **Ignored** shows one line in place of the reply area, with *Reply anyway*. An email in **Replied** shows the reply as a panel under the email: sent or filed as a draft, by whom and when, To, Cc, the reason given for an edit, and whether the proposal was edited.
+An email in **Solved** or **Archive** shows one line in place of the reply area, with *Reply anyway*. An email in **Answered** shows the reply as a panel under the email: sent or filed as a draft, by whom and when, To, Cc, the reason given for an edit, and whether the proposal was edited.
 
 ### 6.3 Boxes (US-20 to US-24)
+
+The boxes sit under an **Inbox** heading in the navigation, as the boards and the configuration pages sit under theirs: **To reply**, **Solved**, **Answered**, **Archive**.
 
 The list header gives the box's name, how many emails it holds, when mail was last fetched, and a fetch button. A row has three lines: sender with its tags (*Draft*, and a chip for each value it has for the organisation's own attributes) and the time; the subject, with the short name of the shared mailbox when there is one; the first words.
 
 Opening an email leaves the list where it was scrolled: each list (a box or a board, as searched) is scrolled back to where it was whenever it is shown again.
 
-An empty box says so with an icon and a sentence, and links to Mailboxes when none is connected. With no email open, the reading pane names how many are in the box and what to do.
+An empty box says so with an icon and a sentence, and links to Connected accounts when none is connected. With no email open, the reading pane names how many are in the box and what to do.
 
 ### 6.4 Arriving (US-01 to US-04)
 
@@ -176,9 +178,9 @@ Getting started is a path, shown at the top of each of its screens (US-08). It i
 3. **AI key**, only when no key is available and the person is an administrator: the organisation's OpenRouter key, with a link to where one is created, or *Later*.
 4. **Prompt** (administrators): the organisation's one default prompt, to read and adjust, with the other ready-made prompts beside it to add in one click.
 5. **Writing** (administrators): when the AI writes a proposal of reply, as one choice among three, each saying what the AI is sent. *When I ask*; *At fetch, to review here*; *At fetch, as drafts in the mailbox*. None sends anything. Applying one prepares proposals for what the first fetch brought in, if asked.
-6. **A first email.** The first email to handle, open, with a line in the reply area saying what to try.
+6. **A first email.** The first email to reply to, open, with a line in the reply area saying what to try.
 
-Once connected, **Mailboxes** is a table: mailbox, folder watched, last fetched, to handle. *Fetch now* is labelled; changing the folder and disconnecting are icon buttons. A connection error shows as a callout above the table.
+Once connected, **Connected accounts** is a table: mailbox, folder watched, last fetched, to reply. *Fetch now* is labelled; changing the folder and disconnecting are icon buttons. A connection error shows as a callout above the table.
 
 ### 6.6 Administration (US-05 to US-07, US-50 to US-53)
 

@@ -10,7 +10,7 @@
     background: var(--color-surface);
     overflow: visible;
   }
-  .shell__brand, .shell__group--minor, .shell__foot { display: none; }
+  .shell__brand, .shell__group--minor, .shell__section, .shell__foot { display: none; }
   .shell__group { flex: 1; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; }
   .shell__more { display: contents; }
   .shell__nav .nav-item { flex-direction: column; justify-content: center; gap: 2px; min-height: var(--control-lg); padding: var(--space-1); font-size: var(--text-xs); text-align: center; }

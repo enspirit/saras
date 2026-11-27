@@ -111,7 +111,7 @@
   "recipients": "Destinataires",
   "to": "À",
   "removeRecipient": "Retirer {address}",
-  "emptyTitle": "Rien à traiter",
+  "emptyTitle": "Rien à répondre",
   "emptyAction": "Relever le courrier",
   "proposal": "Proposition de l’IA",
   "aiNote": "Rédigé par l’IA avec un prompt. Relisez avant d’envoyer.",
