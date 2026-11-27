@@ -43,6 +43,8 @@ export interface EmailsShown {
   load(search: string): Promise<EmailSummary[]>;
   /** What the list says when it is empty. */
   emptyText: string;
+  /** What the list is for, said in the reading pane while no email is open. */
+  about?: string;
   /** Controls of this list, before the fetch button. */
   actions?: Child;
   selectedId: number | null;
@@ -85,7 +87,14 @@ function redraw(shown: EmailsShown, places: ReturnType<typeof slots>, mailboxes:
   places.items.show(shown.emails.length ? shown.emails.map((e, index) => TickableEmailListItem(entryOf(e, shown), tick(e, index))) : emptyList(shown, mailboxes));
   places.idle.show(anyTicked(shown.view)
     ? EmptyState(t('mailbox.selection.pane'), { icon: 'check', title: selectedLabel(listed), action: [Actions(selectionActions(listed)), selectAllOffer(listed)] })
-    : shown.emails.length > 0 && EmptyState(t('mailbox.select'), { icon: shown.icon, title: t('mailbox.count', { count: shown.emails.length }) }));
+    : idlePane(shown));
+}
+
+/** The reading pane while no email is open or ticked: how many there are and to open one; further down, what the list is for. */
+function idlePane({ emails, about, icon, title }: EmailsShown): Child {
+  const question = t('mailbox.whatIs', { name: title });
+  if (!emails.length) return about ? EmptyState(about, { title: question }) : null;
+  return EmptyState(t('mailbox.select'), { icon, title: t('mailbox.count', { count: emails.length }), about: about ? { title: question, text: about } : undefined });
 }
 
 /** The last search asked: an answer to an earlier one, come late, is dropped. */
@@ -134,6 +143,6 @@ export const emailsPage = guard(async (box: ListOnScreen, selectedId: number | n
     title: t(box.label), icon: box.icon, view: { box: box.id, search }, emails, total,
     listHref: (text) => boxHref(box, text), hrefOf: (id, text) => boxHref(box, text, id),
     load: async (text) => (await readBox(box.id, text)).emails,
-    emptyText: t(box.empty), selectedId,
+    emptyText: t(box.empty), about: box.about && t(box.about), selectedId,
   }, prompts, mailboxes);
 });

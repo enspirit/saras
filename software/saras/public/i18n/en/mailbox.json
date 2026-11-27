@@ -29,5 +29,6 @@
     "pane": "Choose what to do with them, or open one to read it.",
     "done": "{count, plural, =0 {Nothing changed: an answered email stays as it is.} one {# email changed.} other {# emails changed.}}"
   },
-  "searchedIn": "Sender, subject and text, in {list}."
+  "searchedIn": "Sender, subject and text, in {list}.",
+  "whatIs": "What is “{name}”?"
 }

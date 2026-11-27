@@ -1,19 +1,23 @@
 {
   "todo": {
     "label": "À répondre",
-    "empty": "Rien à répondre. Relevez vos boîtes, ou connectez-en une dans Comptes connectés."
+    "empty": "Rien à répondre. Relevez vos boîtes, ou connectez-en une dans Comptes connectés.",
+    "about": "Les nouveaux emails qui attendent votre réponse. Répondez, ou marquez-les résolus s’ils n’en demandent pas."
   },
   "none": {
     "label": "Résolu",
-    "empty": "Aucun email résolu."
+    "empty": "Aucun email résolu.",
+    "about": "Les emails qui n’ont plus besoin de réponse. Marquez-les résolus vous-même, ou laissez une règle le faire."
   },
   "sent": {
     "label": "Répondu",
-    "empty": "Aucune réponse envoyée ni mise en brouillon pour l’instant."
+    "empty": "Aucune réponse envoyée ni mise en brouillon pour l’instant.",
+    "about": "Les emails auxquels vous avez répondu. Une réponse laissée en brouillon compte aussi."
   },
   "ignored": {
     "label": "Archivé",
-    "empty": "Aucun email archivé."
+    "empty": "Aucun email archivé.",
+    "about": "Les emails qui ne valent pas la peine d’être traités : spam, newsletters, mails inutiles. Archivez-les vous-même, ou laissez une règle le faire."
   },
   "all": {
     "label": "Tout",
