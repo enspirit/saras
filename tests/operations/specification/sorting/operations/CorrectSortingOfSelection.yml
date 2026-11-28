@@ -7,6 +7,8 @@ description: >-
   of a box or a board as searched, named by the view and never one by one.
 input: SelectionSorted
 output: SelectionDone
+# What each mailbox and each board counts of the emails to handle changes with them.
+controls: [mailboxes, boards, emails]
 
 # What "all of a view" names is decided by each example that asks for it: the
 # clauses below are decided for emails ticked.

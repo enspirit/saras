@@ -5,6 +5,8 @@ description: >-
   A member leaves saras: their account is deleted, by themselves.
 input: Leaving
 output: Done
+# The values of a member attribute are the members.
+controls: [me, members, mailboxes, prompts, attributes, boards, emails]
 
 # The other administrator of Atelier Nord, who stays, tells who its members are.
 DomPre:

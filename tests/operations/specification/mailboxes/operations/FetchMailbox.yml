@@ -7,6 +7,8 @@ description: >-
   server's own clock.
 input: MailboxNamed
 output: FetchResult
+# Each board counts the emails it shows.
+controls: [mailboxes, boards, emails]
 
 DomPre:
   - (x) the mailbox watches a folder: "!seesMailbox(input.id) || mailbox(input.id).folder != null"

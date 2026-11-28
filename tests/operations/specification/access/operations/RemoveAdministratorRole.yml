@@ -6,6 +6,8 @@ description: >-
   sent says which operation it is: `user` here, `admin` for AppointAdministrator.
 input: RoleGiven
 output: Done
+# What the member is told of the mailboxes, the prompts and the boards follows their role.
+controls: [me, members, invitations, mailboxes, prompts, boards]
 
 DomPre:
   - (x) the member named is a member of the requester's organisation

@@ -5,6 +5,8 @@ description: >-
   A visitor proves who they are and becomes a signed-in member.
 input: Credentials
 output: Admitted
+# A browser where another member was signed in is told, from then on, what this one sees.
+controls: [me, mailboxes, prompts, attributes, boards, emails]
 
 DomPre:
   - ( ) the session is not opened yet

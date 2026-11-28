@@ -6,6 +6,8 @@ description: >-
   which operation it is: `admin` here, `user` for RemoveAdministratorRole.
 input: RoleGiven
 output: Done
+# What the member is told of the mailboxes, the prompts and the boards follows their role.
+controls: [me, members, mailboxes, prompts, boards]
 
 DomPre:
   - (x) the member named is a member of the requester's organisation

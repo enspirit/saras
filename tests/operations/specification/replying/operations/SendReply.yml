@@ -5,6 +5,8 @@ description: >-
   A member sends their reply from the mailbox the email arrived in.
 input: ReplyGiven
 output: HandedOver
+# What each mailbox and each board counts of the emails to handle changes with them.
+controls: [mailboxes, boards, emails]
 
 DomPre:
   - (x) the email is not replied

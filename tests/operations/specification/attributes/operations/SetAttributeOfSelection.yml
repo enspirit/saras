@@ -6,6 +6,8 @@ description: >-
   takes it away from them.
 input: ValueSetOnSelection
 output: SelectionDone
+# Each board counts the emails it shows, by their values.
+controls: [attributes, boards, emails]
 
 DomPre:
   - (x) an attribute of the organisation

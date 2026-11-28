@@ -5,6 +5,8 @@ description: >-
   An invited person chooses a password and joins the organisation.
 input: InvitationAccepted
 output: Admitted
+# The values of a member attribute are the members.
+controls: [me, members, invitations, attributes]
 
 DomPre:
   - (x) the link opens a pending, unexpired invitation: >-

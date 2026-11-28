@@ -5,6 +5,8 @@ description: >-
   An administrator removes a member from the organisation.
 input: MemberNamed
 output: Done
+# The values of a member attribute are the members.
+controls: [me, members, attributes]
 
 DomPre:
   - (x) the member named is a member of the requester's organisation

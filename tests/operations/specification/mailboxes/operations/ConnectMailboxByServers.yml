@@ -6,6 +6,8 @@ description: >-
   and giving its password.
 input: MailboxByServers
 output: MailboxConnected
+# A member is told with the number of mailboxes they connected.
+controls: [members, mailboxes, emails]
 
 DomPre:
   - (x) the organisation has no mailbox for this address: >-
