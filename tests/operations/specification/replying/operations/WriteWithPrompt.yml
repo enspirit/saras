@@ -16,7 +16,7 @@ output: Proposal
 # every Background: decided, each other counterexample would violate it too.
 # No Background holds an email whose content was erased either.
 DomPre:
-  - ( ) the content of the email is still kept
+  - ( ) the proposal is not written yet
 DomPost:
   - ( ) a proposal for the email, written with the prompt
 ReqPre:
@@ -26,6 +26,7 @@ ReqPre:
   - (x) the prompt asked for is one of the organisation's: seesPrompt(input.promptId)
   - ( ) a key is in force
   - ( ) the model has a provider that keeps nothing
+  - ( ) the content of the email is still kept
 ReqPost:
   - ( ) it is written as the mailbox's address, in the language of the email, and ends with the member's signature
   - ( ) the member's past corrections on this prompt are taken into account

@@ -7,15 +7,13 @@ description: >-
 input: PromptNamed
 output: Corrections
 
-DomPre:
-  - (x) the prompt is one of the organisation's
-DomPost:
-  - (x) every member's corrections on the prompt are told, each with its reason, who made it and when: >-
-      all(output, c ~> !isBlank(c.reason) && contains(c.user, '@') && !isBlank(c.at))
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
+  - (x) the prompt is one of the organisation's
 ReqPost:
+  - (x) every member's corrections on the prompt are told, each with its reason, who made it and when: >-
+      all(output, c ~> !isBlank(c.reason) && contains(c.user, '@') && !isBlank(c.at))
   - ( ) the most recent first, the last fifty
   - ( ) a reply sent as it was proposed, or changed without a reason, is no correction
 

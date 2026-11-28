@@ -7,13 +7,15 @@ description: >-
 input: KeyRemoved
 output: Done
 
+DomPre:
+  - ( ) the organisation has its key, if it has one
 DomPost:
   - (x) the organisation has no key: "!me.organization.hasKey"
-  - (x) the server's then applies: me.hasKey == seenBy.outsider.me.hasKey
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
 ReqPost:
+  - (x) the server's then applies: me.hasKey == seenBy.outsider.me.hasKey
   - (x) nothing else of the organisation changes: >-
       me == merge(old.me, {
         hasKey: me.hasKey, organization: merge(old.me.organization, { hasKey: false })

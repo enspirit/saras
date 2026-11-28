@@ -7,12 +7,11 @@ description: >-
   also told its instructions and how it is used.
 output: Prompts
 
-DomPost:
-  - (x) the prompts of the organisation are told, in the order they were made: >-
-      output == old.prompts && ids(output) == sort(ids(output))
 ReqPre:
   - (x) the requester is signed in
 ReqPost:
+  - (x) the prompts of the organisation are told, in the order they were made: >-
+      output == old.prompts && ids(output) == sort(ids(output))
   - (x) an administrator is also told the instructions of each, and how many replies it wrote and how many of those were edited: >-
       !old.administrator || all(output, p ~> !isBlank(p.systemPrompt) && p.used >= p.edited && p.edited >= 0)
   - (x) a member who is not an administrator is told none of that: >-

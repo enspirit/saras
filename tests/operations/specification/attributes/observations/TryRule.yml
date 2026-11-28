@@ -7,7 +7,12 @@ description: >-
 input: RuleToTry
 output: RulesTried
 
-DomPost:
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - ( ) the rule is one Elo can read
+  - ( ) the rule fails on none of these emails
+ReqPost:
   - (x) the member's twenty most recent emails are told, most recent first, each by its subject and who sent it: >-
       map(output, tried ~> {subject: tried.subject, from: tried.from})
       == map(old.mostRecent(20), e ~> {subject: e.subject, from: if isBlank(e.fromName) then e.fromAddr else e.fromName})
@@ -20,12 +25,6 @@ DomPost:
         else if input.key == '1003' then fetch(e.attributes, '1003')
         else null)
   - ( ) and with the value the rule would give it, by its key, or none where it says nothing
-ReqPre:
-  - (x) the requester is signed in
-  - (x) the requester is an administrator
-  - ( ) the rule is one Elo can read
-  - ( ) the rule fails on none of these emails
-ReqPost:
   - (x) nothing changes: nothingChanged
   - "( ) the values the rule may give are those of the attribute named when it is \"Stands in\" or a member; otherwise those being typed, numbered from 1"
 

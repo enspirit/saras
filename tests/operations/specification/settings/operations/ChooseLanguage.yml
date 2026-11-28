@@ -6,12 +6,14 @@ description: >-
 input: LanguageGiven
 output: Done
 
+DomPre:
+  - ( ) the member's language is the one they had
 DomPost:
   - (x) the member's language is this one, or English: me.language == input.language || me.language == 'en'
-  - ( ) what the server writes for them follows it
 ReqPre:
   - (x) the requester is signed in
 ReqPost:
+  - ( ) what the server writes for them follows it
   - ( ) a tag we do not recognise is taken as English
   - (x) nothing else of theirs changes: "me == merge(old.me, { language: me.language })"
   - (x) every other member is told of themselves what they were

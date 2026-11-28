@@ -7,20 +7,22 @@ input: SignUp
 output: Admitted
 
 DomPre:
-  - (+) nobody has this address: "!hasAccount(lower(trim(input.email)))"
+  - ( ) the organisation does not exist yet
 DomPost:
   - (x) an organisation exists, with this person as its administrator: >-
       me.email == lower(trim(input.email)) && me.role == 'admin'
-      && addresses(members | []) == [me.email] && roles(members | []) == ['admin']
-      && seenBy.admin.members == old.seenBy.admin.members
-      && seenBy.outsider.members == old.seenBy.outsider.members
-  - (+) there is one organisation more: count(db.organizations) == count(old.db.organizations) + 1
 ReqPre:
   - (x) sign-up is open - the operator allows it, or nobody has an account yet: public.allowSignup || public.firstAccount
   - (x) the address is one: contains(input.email, '@') && contains(input.email, '.')
   - (x) the password has ten characters or more: length(input.password) >= 10
   - ( ) the origin is not locked out
+  - (+) nobody has this address: "!hasAccount(lower(trim(input.email)))"
 ReqPost:
+  - (x) they are its only member, and nobody of another organisation is told of them: >-
+      addresses(members | []) == [me.email] && roles(members | []) == ['admin']
+      && seenBy.admin.members == old.seenBy.admin.members
+      && seenBy.outsider.members == old.seenBy.outsider.members
+  - (+) there is one organisation more: count(db.organizations) == count(old.db.organizations) + 1
   - (x) a session is opened: old.me == null && me != null
   - (x) it is named as asked: me.organization.name == input.organization
   - (x) it starts with one prompt, and with one attribute of its own beside where an email stands: >-

@@ -8,10 +8,8 @@ output: HandedOver
 
 DomPre:
   - (x) the email is not replied
-  - ( ) no reply to it is on its way
 DomPost:
   - (x) the email is replied: stands(input.id, 'sent') && email(input.id).replyMode == 'sent'
-  - ( ) the reply left from the mailbox, to the recipients given
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester may use its mailbox
@@ -19,7 +17,9 @@ ReqPre:
   - (x) it has at least one recipient
   - (x) every recipient is an address
   - ( ) the member confirmed, which the interface asks and the server does not check
+  - ( ) no reply to it is on its way
 ReqPost:
+  - ( ) the reply left from the mailbox, to the recipients given
   - ( ) the reply quotes the original and is attached to its thread, as HTML with a text alternative
   - ( ) the original is flagged answered in the mailbox
   - (x) one reply is recorded for the email, and no other changes

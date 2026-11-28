@@ -7,6 +7,8 @@ description: >-
 input: AutomatedSetAside
 output: Done
 
+DomPre:
+  - ( ) automated mail is set aside first, or not, as it was
 DomPost:
   - (x) it is, or it is not: me.organization.skipAutomated == input.skipAutomated
 ReqPre:

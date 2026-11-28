@@ -9,17 +9,17 @@ output: HandedOver
 
 DomPre:
   - (x) the email is not replied
-  - ( ) no reply to it is on its way
 DomPost:
   - (x) the email is replied, as a draft: stands(input.id, 'sent') && email(input.id).replyMode == 'draft'
-  - ( ) the reply is in the Drafts folder of the mailbox
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester may use its mailbox
   - (x) the reply is not empty
   - (x) it has at least one recipient
   - (x) every recipient is an address
+  - ( ) no reply to it is on its way
 ReqPost:
+  - ( ) the reply is in the Drafts folder of the mailbox
   - ( ) nothing is sent
   - (x) one reply is recorded for the email, and no other changes
   - (+) it is recorded once, the way the email tells, and every reply recorded before is as it was

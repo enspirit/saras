@@ -13,7 +13,7 @@ output: Proposal
 # is in force is told and not decided, `me.hasKey` being false in
 # every Background: decided, each other counterexample would violate it too.
 DomPre:
-  - (x) something is written
+  - ( ) the proposal is not written yet
 DomPost:
   - ( ) a proposal for the email, the same text, reworded
 ReqPre:
@@ -22,6 +22,7 @@ ReqPre:
   - (x) the help asked for is one of the three
   - ( ) a key is in force
   - ( ) the model has a provider that keeps nothing
+  - (x) something is written
 ReqPost:
   - ( ) the email received is not sent to the LLM, only the member's text is
   - ( ) only what a reply may contain is kept of the answer

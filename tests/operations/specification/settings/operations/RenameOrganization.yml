@@ -6,6 +6,8 @@ description: >-
 input: NameGiven
 output: Done
 
+DomPre:
+  - ( ) the organisation has the name it had
 DomPost:
   - (x) the organisation has this name, trimmed and cut at 120 characters: >-
       isBlank(input.name) || me.organization.name == substring(trim(input.name), 0, 120)

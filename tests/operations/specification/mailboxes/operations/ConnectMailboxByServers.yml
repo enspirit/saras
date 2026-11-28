@@ -11,11 +11,9 @@ DomPre:
   - (x) the organisation has no mailbox for this address: >-
       !any(mailboxes, m ~> m.kind == 'imap' && m.email == lower(trim(input.email)))
 DomPost:
-  - (x) it has one, managed by the member, watching no folder yet: >-
+  - (x) it has one: >-
       let made = mailbox(output.id)
-      in count(mailboxes) == count(old.mailboxes) + 1
-        && made != null && made.kind == 'imap' && made.email == lower(trim(input.email))
-        && made.canManage && made.folder == null && made.folderName == ''
+      in made != null && made.kind == 'imap' && made.email == lower(trim(input.email))
 ReqPre:
   - (x) the requester is signed in
   - (x) the address is one: contains(input.email, '@') && contains(input.email, '.')
@@ -34,6 +32,9 @@ ReqPre:
           && i.smtpHost == '127.0.0.1' && i.smtpPort == 1025 && !(i.smtpSecure | false)
           && i.username == 'testuser' && i.password == 'testpass')
 ReqPost:
+  - (x) one mailbox more, managed by the member, watching no folder yet: >-
+      let made = mailbox(output.id)
+      in count(mailboxes) == count(old.mailboxes) + 1 && made.canManage && made.folder == null && made.folderName == ''
   - (+) the credentials are kept sealed: >-
       any(db.accounts, a ~> a.id == output.id && !isBlank(a.config_enc | '') && !contains(a.config_enc, input.password))
   - (x) only an administrator's mailbox is shared, and only when asked: >-

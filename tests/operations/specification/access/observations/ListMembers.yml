@@ -5,13 +5,12 @@ description: >-
   Tells an administrator who the members of their organisation are.
 output: Members
 
-DomPost:
-  - (x) the members of the requester's organisation are told, the requester among them: >-
-      any(output, m ~> m.email == old.me.email && m.name == old.me.name && m.role == old.me.role)
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
 ReqPost:
+  - (x) the members of the requester's organisation are told, the requester among them: >-
+      any(output, m ~> m.email == old.me.email && m.name == old.me.name && m.role == old.me.role)
   - (x) they are told in the order of their numbers: ids(output) == sort(ids(output))
   - ( ) each with the number of personal mailboxes they connected, and whether they set a second factor up
   - ( ) nothing of a password is told

@@ -9,8 +9,8 @@ DomPre:
   - (x) the requester is signed in
 DomPost:
   - (x) the session is gone: me == null
-  - (+) one session is closed, and no other: count(db.sessions) == count(old.db.sessions) - 1
 ReqPost:
+  - (+) one session is closed, and no other: count(db.sessions) == count(old.db.sessions) - 1
   - ( ) the cookie is cleared
 
 examples:

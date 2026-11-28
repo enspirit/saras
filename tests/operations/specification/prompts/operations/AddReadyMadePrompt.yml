@@ -12,15 +12,16 @@ DomPre:
   # Deviation 8 of the inventory: the server does not check it, as the last example shows.
   - ( ) a template the organisation does not have
 DomPost:
-  - (x) the organisation has one more prompt, with the content of the template: >-
-      let made = prompt(output.id)
-      in count(prompts) == count(old.prompts) + 1 && made != null && made.name == input.name
-         && made.description == input.description && made.systemPrompt == input.systemPrompt
+  - (x) the organisation has the prompt: prompt(output.id) != null
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
   - (x) the prompt has a name and instructions
 ReqPost:
+  - (x) it is one prompt more, with the content of the template: >-
+      let made = prompt(output.id)
+      in count(prompts) == count(old.prompts) + 1 && made.name == input.name
+         && made.description == input.description && made.systemPrompt == input.systemPrompt
   - (x) the prompts there were are as they were: among(old.prompts, prompts)
   - (x) it suits no email in particular: prompt(output.id).affinity == {}
   - (x) every member is offered it, by its name and description: >-

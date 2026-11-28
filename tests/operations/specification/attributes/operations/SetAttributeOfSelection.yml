@@ -9,8 +9,6 @@ output: SelectionDone
 
 DomPre:
   - (x) an attribute of the organisation
-  - (x) a board they are all of is one the member sees: >-
-      input.selection.all.board == null || seesBoard(input.selection.all.board)
 DomPost:
   # Where an email stands is not among its values: for `status` it reads as none. Of those ticked it is said
   # of each; of all of a view, that an email is as it was or has the value: each example says which.
@@ -31,6 +29,8 @@ ReqPre:
   - (x) at most 500 emails are ticked: count(input.selection.ids | []) <= 500
   - (x) the value is one of the attribute's
   - (x) not "Stands in", unless the value is taken away
+  - (x) a board they are all of is one the member sees: >-
+      input.selection.all.board == null || seesBoard(input.selection.all.board)
 ReqPost:
   - (x) their other values are kept: >-
       all(old.emails.emails, b ~>

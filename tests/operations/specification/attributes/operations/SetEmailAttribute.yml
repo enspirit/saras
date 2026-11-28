@@ -7,7 +7,6 @@ input: ValueSet
 output: Done
 
 DomPre:
-  - (+) an email: withId(db.emails, input.id) != null
   - (x) an attribute of the organisation
 DomPost:
   # Where an email stands is not among its values: for `status` it reads as none.
@@ -20,6 +19,7 @@ ReqPre:
       withId(db.emails, input.id) == null || seesEmail(input.id)
   - (x) the value is one of the attribute's
   - (x) not "Stands in", unless the value is taken away
+  - (+) an email: withId(db.emails, input.id) != null
 ReqPost:
   - (x) the values the email has for the other attributes are kept: >-
       let was = old.email(input.id),

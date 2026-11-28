@@ -10,9 +10,9 @@ output: Board
 DomPre:
   - (x) it is a board the member sees
 DomPost:
-  - (x) the board has this name, and is shared or not: >-
+  - (x) the board has this name and this filter, for the conditions we know, and is shared or not: >-
       output.id == input.id && output.name == input.name && output.shared == input.shared
-  - (x) it has this filter, for the conditions we know: sameFilter(output.filter, input.filter)
+      && sameFilter(output.filter, input.filter)
 ReqPre:
   - (x) the requester is signed in
   - (x) the member manages it, as its owner or, for a shared one, as an administrator

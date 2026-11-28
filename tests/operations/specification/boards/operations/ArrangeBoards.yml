@@ -7,6 +7,8 @@ description: >-
 input: BoardsArranged
 output: Done
 
+DomPre:
+  - ( ) the boards come in the order they had
 DomPost:
   - (x) the boards the member sees come in the order given, those not named after, in the order they had: >-
       ids(boards) == arranged(ids(old.boards), input.boards)

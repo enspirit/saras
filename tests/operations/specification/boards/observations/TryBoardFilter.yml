@@ -7,13 +7,12 @@ description: >-
 input: FilterGiven
 output: FilterTried
 
-DomPost:
-  - (x) how many emails the filter would show the member, and the five most recent of them: >-
-      count(output.emails) == min(output.count, 5) && mostRecentFirst(output.emails)
-      && among(output.emails, old.emails.emails)
 ReqPre:
   - (x) the requester is signed in
 ReqPost:
+  - (x) how many emails the filter would show the member, and the five most recent of them: >-
+      count(output.emails) == min(output.count, 5) && mostRecentFirst(output.emails)
+      && among(output.emails, old.emails.emails)
   - (x) nothing is kept, and nothing changes: nothingChanged
   - ( ) every condition given must hold, and within one made of several values, any of them
   - ( ) the filter is tried reduced to the conditions we know

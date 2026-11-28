@@ -8,17 +8,16 @@ description: >-
 input: EmailNamed
 output: EmailWithItsReply
 
-DomPost:
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use its mailbox
+ReqPost:
   - (x) the email is told as its box tells it, with its whole text: >-
       let line = old.email(input.id), told = output
       in told.id == line.id && told.fromName == line.fromName && told.fromAddr == line.fromAddr && told.subject == line.subject
          && told.date == line.date && told.status == line.status && told.triageSource == line.triageSource
          && told.mailbox == line.mailbox && told.shared == line.shared && told.attributes == line.attributes
          && startsWith(told.bodyText, line.snippet)
-ReqPre:
-  - (x) the requester is signed in
-  - (x) the requester may use its mailbox
-ReqPost:
   - ( ) why it was sorted so is told, with a code when the reason is one of the server's own
   - (x) a reply would go to who asked to be replied to, else to who sent it: >-
       output.recipients == {to: [lower(if isBlank(output.replyTo) then output.fromAddr else output.replyTo)], cc: []}

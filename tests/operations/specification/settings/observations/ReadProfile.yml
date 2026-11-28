@@ -6,7 +6,9 @@ description: >-
   server.
 output: Profile
 
-DomPost:
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
   - (x) they are told who they are: output.email == world.requester.email
   - (x) the organisation's model and whether it has a key are told to its administrators only: >-
       (output.role == 'admin') == (output.organization.model != null)
@@ -15,9 +17,6 @@ DomPost:
       !isBlank(output.model)
       && (isBlank(output.organization.model | '') || output.model == output.organization.model)
   - (x) a key is in force when the organisation has one: "!(output.organization.hasKey | false) || output.hasKey"
-ReqPre:
-  - (x) the requester is signed in
-ReqPost:
   - (x) the retention clause every request to the AI carries is told, and it is zero retention: >-
       output.privacy == { zdr: true, data_collection: 'deny' }
   - (x) content is kept for the days visitors are told: output.retentionDays == old.public.retentionDays

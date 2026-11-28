@@ -6,15 +6,14 @@ description: >-
   have yet, in their language: what AddReadyMadePrompt adds.
 output: ReadyMadePrompts
 
-DomPost:
-  - (x) the ready-made prompts the organisation has none of, by name, are told: >-
-      noneAmong(names(output), names(old.prompts))
-  - (x) each with a name, when to use it, and instructions: >-
-      all(output, made ~> !isBlank(made.name) && !isBlank(made.description) && !isBlank(made.systemPrompt))
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
 ReqPost:
+  - (x) the ready-made prompts the organisation has none of, by name, are told: >-
+      noneAmong(names(output), names(old.prompts))
+  - (x) each with a name, when to use it, and instructions: >-
+      all(output, made ~> !isBlank(made.name) && !isBlank(made.description) && !isBlank(made.systemPrompt))
   - ( ) in the language of the administrator, in English when we have none for it
   - ( ) one is told again once the organisation no longer has a prompt of its name, the one it started with included
 

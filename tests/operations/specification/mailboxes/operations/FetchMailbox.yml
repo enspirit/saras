@@ -13,15 +13,15 @@ DomPre:
 DomPost:
   - (x) the emails that arrived in that folder since the last fetch are kept: >-
       count(emails.emails) == count(old.emails.emails) + output.fetched
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+ReqPost:
   - (+) no other email is kept, for anybody: count(db.emails) == count(old.db.emails) + output.fetched
   - (x) each where the rules put it - to handle, unless one sets it aside: >-
       all(emails.emails, e ~> old.seesEmail(e.id)
         || (e.status == 'needs_reply' && e.triageSource == 'none')
         || (e.status != 'needs_reply' && e.status != 'sent' && e.triageSource == 'rule'))
-ReqPre:
-  - (x) the requester is signed in
-  - (x) the requester may use the mailbox
-ReqPost:
   - (x) an email already kept is left as it is: among(old.emails.emails, emails.emails)
   - ( ) no further back than the days chosen for the mailbox, and only what is unread when the mailbox says so
   - ( ) no more at a time than the number the server is set up for, the most recent first

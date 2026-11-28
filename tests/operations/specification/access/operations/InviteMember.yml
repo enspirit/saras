@@ -7,12 +7,12 @@ description: >-
 input: InvitationGiven
 output: NewInvitation
 
+DomPre:
+  - ( ) the invitation is not made yet
 DomPost:
-  - (x) a pending invitation for this address, with a role and an expiry: >-
+  - (x) a pending invitation for this address: >-
       let made = invitation(output.id)
-      in made != null && made.email == lower(trim(input.email))
-        && made.role == (if input.role == 'admin' then 'admin' else 'user') && !made.expired
-        && output.email == lower(trim(input.email)) && output.validDays > 0
+      in made != null && made.email == lower(trim(input.email)) && !made.expired
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
@@ -20,6 +20,9 @@ ReqPre:
   - (x) no member has this address: memberWith(lower(trim(input.email))) == null
   - (+) nobody has the address, in any organisation: "!hasAccount(lower(trim(input.email)))"
 ReqPost:
+  - (x) with the role given, a member's unless it is an administrator's, and how long it is valid told: >-
+      invitation(output.id).role == (if input.role == 'admin' then 'admin' else 'user')
+      && output.email == lower(trim(input.email)) && output.validDays > 0
   - (x) the link is told once, here: contains(output.link, '/#/invitation/')
   - (+) only the hash of its token is kept: >-
       all(db.invitations, i ~> !isBlank(i.token_hash) && !contains(output.link, i.token_hash))

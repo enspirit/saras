@@ -11,15 +11,16 @@ output: SelectionDone
 # What "all of a view" names is decided by each example that asks for it: the
 # clauses below are decided for emails ticked.
 DomPre:
-  - (x) emails are named, those ticked, each by its number, or all of a view: >-
-      let s = input.selection
-      in if s.ids != null then count(s.ids) > 0 && all(s.ids, i ~> typeOf(i) == 'Int' && i > 0)
-         else typeOf(s.all) == 'Tuple'
+  - ( ) the emails named stand where the sorting put them
 DomPost:
   - (x) each of them not replied stands where the member says, as the member's verdict: >-
       let ticked = input.selection.ids
       in ticked == null || among(corrected(notStanding(only(old.emails.emails, ticked), 'sent'), input.status), emails.emails)
 ReqPre:
+  - (x) emails are named, those ticked, each by its number, or all of a view: >-
+      let s = input.selection
+      in if s.ids != null then count(s.ids) > 0 && all(s.ids, i ~> typeOf(i) == 'Int' && i > 0)
+         else typeOf(s.all) == 'Tuple'
   - (x) the requester is signed in
   - (x) the status asked for is one of the three corrections
   - (x) at most 500 emails are ticked: count(input.selection.ids | []) <= 500

@@ -7,15 +7,13 @@ description: >-
 input: FolderToWatch
 output: FolderWatched
 
+DomPre:
+  - ( ) the mailbox watches another folder, or none
 DomPost:
   - (x) the mailbox watches this folder: >-
       let a = mailbox(input.id)
       in output.ok && output.folder == input.folder
         && a != null && a.folder == input.folder && a.folderName == output.folderName
-  - (x) this far back, when it is one of the spans offered: >-
-      !contains([1, 7, 14, 30], input.days | 0) || mailbox(input.id).fetchDays == input.days
-  - (x) unread only or not: mailbox(input.id).unreadOnly == (input.unreadOnly | false)
-  - (x) its last error is forgotten: mailbox(input.id).lastError == null
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester may use the mailbox
@@ -24,6 +22,10 @@ ReqPre:
   # On this stack, the folders of the mailbox of world/mailbox.
   - (x) the folder is one of its folders: contains(['INBOX', 'Drafts', 'Sent'], input.folder | '')
 ReqPost:
+  - (x) this far back, when it is one of the spans offered: >-
+      !contains([1, 7, 14, 30], input.days | 0) || mailbox(input.id).fetchDays == input.days
+  - (x) unread only or not: mailbox(input.id).unreadOnly == (input.unreadOnly | false)
+  - (x) its last error is forgotten: mailbox(input.id).lastError == null
   - ( ) how far back is otherwise left to what the server is set up for
   - (x) what was fetched before, from another folder or further back, is kept: >-
       among(old.emails.emails, emails.emails)

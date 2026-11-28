@@ -6,16 +6,18 @@ description: >-
 input: Credentials
 output: Admitted
 
+DomPre:
+  - ( ) the session is not opened yet
 DomPost:
   - (x) the member with this address is admitted, a session is opened for them: >-
       signedInAs(lower(trim(input.email)))
-  - (+) one session is opened, and no more: count(db.sessions) == count(old.db.sessions) + 1
 ReqPre:
   - ( ) the origin is not locked out
   - (+) the address and the password are those of a member: >-
       hasAccount(lower(trim(input.email)))
       && input.password == world.password
 ReqPost:
+  - (+) one session is opened, and no more: count(db.sessions) == count(old.db.sessions) + 1
   - ( ) a refusal does not say which of the two was wrong, and counts as a wrong guess
   - ( ) where the installation requires a second factor, no session is opened before it is given
   - (x) the sessions there were stay open: seenBy.admin.me != null && seenBy.outsider.me != null

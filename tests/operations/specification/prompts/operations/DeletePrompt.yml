@@ -10,14 +10,15 @@ output: Done
 DomPre:
   - (x) the prompt is one of the organisation's
 DomPost:
-  - (x) the prompt is gone, and no other, of either organisation: >-
-      prompts == without(old.prompts, input.id)
-      && seenBy.admin.prompts == without(old.seenBy.admin.prompts, input.id)
-      && seenBy.outsider.prompts == without(old.seenBy.outsider.prompts, input.id)
+  - (x) the prompt is gone: "!seesPrompt(input.id)"
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
 ReqPost:
+  - (x) no other prompt is gone, of either organisation: >-
+      prompts == without(old.prompts, input.id)
+      && seenBy.admin.prompts == without(old.seenBy.admin.prompts, input.id)
+      && seenBy.outsider.prompts == without(old.seenBy.outsider.prompts, input.id)
   - (x) the emails remain: emails == old.emails
   - (+) so do the proposals and the replies written with it: >-
       db.emails == old.db.emails && ids(db.drafts) == ids(old.db.drafts) && db.replies == old.db.replies

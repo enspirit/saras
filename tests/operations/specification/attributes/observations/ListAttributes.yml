@@ -6,14 +6,13 @@ description: >-
   its values and how it is decided.
 output: Attributes
 
-DomPost:
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
   - (x) where an email stands comes first, then the organisation's own, in the order they were made: >-
       first(output).key == 'status'
       && count(filter(output, a ~> a.system)) == 1
       && all(output, a ~> a.system == (a.key == 'status'))
-ReqPre:
-  - (x) the requester is signed in
-ReqPost:
   - '(x) "Stands in" has its fixed name and its four values': >-
       first(output).name == 'Stands in' && first(output).kind == 'choice'
       && keys(first(output).values) == ['todo', 'none', 'sent', 'ignored']

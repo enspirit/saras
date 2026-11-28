@@ -11,17 +11,17 @@ DomPre:
       let pending = seenBy.admin.invitationTo(world.invitation.email)
       in input.token == world.invitation.token && pending != null && !pending.expired
 DomPost:
-  - (x) a member with the invitation's address and role: >-
-      let joined = seenBy.admin.memberWith(world.invitation.email)
-      in count(seenBy.admin.members) == count(old.seenBy.admin.members) + 1
-        && joined != null && joined.role == old.seenBy.admin.invitationTo(world.invitation.email).role
-  - (x) the invitation is gone: seenBy.admin.invitationTo(world.invitation.email) == null
+  - (x) a member has the invitation's address: seenBy.admin.memberWith(world.invitation.email) != null
 ReqPre:
   - ( ) the origin is not locked out
   - (x) the password has ten characters or more: length(input.password) >= 10
   - (x) nobody took the address meanwhile: seenBy.admin.memberWith(world.invitation.email) == null
   - (+) nobody has the address, in any organisation: "!hasAccount(world.invitation.email)"
 ReqPost:
+  - (x) one member more, with the invitation's role: >-
+      count(seenBy.admin.members) == count(old.seenBy.admin.members) + 1
+      && seenBy.admin.memberWith(world.invitation.email).role == old.seenBy.admin.invitationTo(world.invitation.email).role
+  - (x) the invitation is gone: seenBy.admin.invitationTo(world.invitation.email) == null
   - (x) a session is opened - they are signed in, in the organisation that invited them: >-
       output.ok && old.me == null && me.email == world.invitation.email
       && me.organization.name == world.invitation.organization

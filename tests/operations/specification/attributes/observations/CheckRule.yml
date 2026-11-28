@@ -7,13 +7,12 @@ description: >-
 input: RuleToCheck
 output: RuleProblems
 
-DomPost:
-  - (x) what is wrong in the rule is told, each problem with its line, its column and how many characters it is about: >-
-      all(output, problem ~> problem.line >= 1 && problem.column >= 1 && problem.length >= 1 && !isBlank(problem.message))
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
 ReqPost:
+  - (x) what is wrong in the rule is told, each problem with its line, its column and how many characters it is about: >-
+      all(output, problem ~> problem.line >= 1 && problem.column >= 1 && problem.length >= 1 && !isBlank(problem.message))
   - (x) an empty rule has nothing wrong yet: "!isBlank(input.elo | '') || output == []"
   - (x) five problems at most are told: count(output) <= 5
   - ( ) a field that does not exist is told with the one probably meant, when one is close

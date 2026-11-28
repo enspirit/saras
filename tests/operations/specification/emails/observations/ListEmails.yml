@@ -7,15 +7,14 @@ description: >-
 input: EmailsAsked
 output: EmailsOfBox
 
-DomPost:
+ReqPre:
+  - (x) the requester is signed in
+ReqPost:
   - (x) each email told stands in the box asked for, among the emails to handle when none we know is: >-
       ofBox(output.emails, input.box | 'todo') == output.emails
   - (x) nothing searched, every email of the box is told, as every box tells it: >-
       !isBlank(input.search | '') || output.emails == ofBox(old.emails.emails, input.box | 'todo')
   - ( ) with a search, those that hold every word in who sent them, their subject or their text, in any case
-ReqPre:
-  - (x) the requester is signed in
-ReqPost:
   - (x) the most recent comes first: mostRecentFirst(output.emails)
   - (x) under a search, an email is told as every box tells it, but for its snippet: >-
       all(output.emails, e ~> let kept = old.email(e.id) in kept == merge(e, {snippet: kept.snippet}))

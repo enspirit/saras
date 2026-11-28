@@ -7,6 +7,8 @@ description: >-
 input: MailboxName
 output: Done
 
+DomPre:
+  - ( ) the mailbox shows another name, or none
 DomPost:
   - (x) the mailbox shows this name, or none: >-
       mailbox(input.id).displayName == trim(input.displayName | '')

@@ -7,15 +7,13 @@ description: >-
 input: BoardAsked
 output: EmailsOfBoard
 
-DomPre:
+ReqPre:
+  - (x) the requester is signed in
   - (x) it is a board the member sees
-DomPost:
+ReqPost:
   - (x) the board is told as the member sees it: among([output.board], old.boards)
   - (x) the emails it shows them are told, the most recent first: >-
       among(ids(output.emails), ids(old.emails.emails | [])) && mostRecentFirst(output.emails)
-ReqPre:
-  - (x) the requester is signed in
-ReqPost:
   - (x) when nothing is searched, as many as the board says, and each as its box lists it: >-
       !isBlank(input.search | '')
       || (count(output.emails) == output.board.count && among(output.emails, old.emails.emails))

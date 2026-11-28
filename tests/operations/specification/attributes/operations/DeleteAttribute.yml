@@ -10,15 +10,13 @@ output: Done
 DomPre:
   - (x) an attribute of the organisation
 DomPost:
-  - (x) it is gone: >-
-      output.ok
-      && !hasAttribute(input.key)
-      && count(attributes) == count(old.attributes) - 1
+  - (x) it is gone: "!hasAttribute(input.key)"
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
   - (x) not the pre-configured attribute, "Stands in": input.key != 'status'
 ReqPost:
+  - (x) no other attribute is gone: output.ok && count(attributes) == count(old.attributes) - 1
   - (x) the other attributes are as they were: among(withoutKey(old.attributes, input.key), attributes)
   - (x) the values emails had for it are left behind: emails == old.emails
   # Its header says "boards that filtered on it no longer do": they still do, and count the same emails.

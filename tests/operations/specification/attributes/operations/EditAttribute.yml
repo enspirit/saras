@@ -16,15 +16,6 @@ DomPost:
       && attribute(output.key) == output
       && output.decidedBy == (input.decidedBy | 'nobody')
       && (output.elo == trim(input.elo | '') || (output.system && isBlank(input.elo | '')))
-  - (x) one of the organisation's own also has this name and these values: >-
-      output.system || (
-        output.name == substring(trim(input.name), 0, 60)
-        && output.kind == (if input.kind == 'member' then 'member' else 'choice')
-        && (output.kind == 'member' || labels(output.values) == labelsKept(input.values))
-      )
-  - (x) the pre-configured one has its values in the colours given, each at its place: >-
-      !output.system || all([0, 1, 2, 3], place ~>
-        colourGiven(input.values, place) == null || at(output.values, place).color == colourGiven(input.values, place))
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
@@ -36,6 +27,15 @@ ReqPre:
       input.key == 'status' || input.kind == 'member'
       || count(labelsKept(labelled(input.values))) >= 2
 ReqPost:
+  - (x) one of the organisation's own also has this name and these values: >-
+      output.system || (
+        output.name == substring(trim(input.name), 0, 60)
+        && output.kind == (if input.kind == 'member' then 'member' else 'choice')
+        && (output.kind == 'member' || labels(output.values) == labelsKept(input.values))
+      )
+  - (x) the pre-configured one has its values in the colours given, each at its place: >-
+      !output.system || all([0, 1, 2, 3], place ~>
+        colourGiven(input.values, place) == null || at(output.values, place).color == colourGiven(input.values, place))
   - '(x) "Stands in": whether its rule decides it is the organisation''s setting (automated mail set aside first)': >-
       input.key != 'status' || me.organization.skipAutomated == (output.decidedBy == 'elo')
   - (x) the pre-configured one keeps its name and its values, whatever is given: >-

@@ -6,12 +6,11 @@ description: >-
   accepted yet.
 output: Invitations
 
-DomPost:
-  - ( ) the pending invitations of the requester's organisation are told
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
 ReqPost:
+  - ( ) the pending invitations of the requester's organisation are told
   - (x) the most recent first: ids(output) == reverse(sort(ids(output)))
   - ( ) nothing of a link is told - it was told once, when the invitation was made
   - ( ) an expired one says so until it is revoked

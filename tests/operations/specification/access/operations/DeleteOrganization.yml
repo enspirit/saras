@@ -6,10 +6,20 @@ description: >-
 input: OrganizationLeft
 output: Done
 
+DomPre:
+  - ( ) the requester's organisation exists
 DomPost:
   - (+) the organisation is gone: >-
       count(db.organizations) == count(old.db.organizations) - 1
       && among(db.organizations, old.db.organizations)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester is an administrator
+  - ( ) the origin is not locked out
+  - (x) the member gives their current password: input.password == world.requester.password
+  - (x) the member gives the organisation's name, as it is - spaces around and letter case aside: >-
+      lower(trim(input.name | '')) == lower(trim(me.organization.name))
+ReqPost:
   - (x) with its members and their sessions: >-
       me == null && seenBy.coadmin.me == null && seenBy.member.me == null
   - (+) no account is left for their addresses, and no session of theirs, on any browser: >-
@@ -23,14 +33,6 @@ DomPost:
       !any(db.emails, e ~> old.seesEmail(e.id))
       && !any(db.drafts, d ~> old.seesEmail(d.email_id))
       && !any(db.replies, r ~> old.seesEmail(r.email_id))
-ReqPre:
-  - (x) the requester is signed in
-  - (x) the requester is an administrator
-  - ( ) the origin is not locked out
-  - (x) the member gives their current password: input.password == world.requester.password
-  - (x) the member gives the organisation's name, as it is - spaces around and letter case aside: >-
-      lower(trim(input.name | '')) == lower(trim(me.organization.name))
-ReqPost:
   - ( ) a wrong password counts as a wrong guess
   - ( ) nothing changes in the mailboxes themselves
   - ( ) the other members are not told - they find themselves signed out

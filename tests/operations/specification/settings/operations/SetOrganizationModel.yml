@@ -7,9 +7,10 @@ description: >-
 input: ModelGiven
 output: Done
 
+DomPre:
+  - ( ) the organisation's model is the one it had, or none
 DomPost:
   - (x) the organisation's model is this one, or none: me.organization.model == trim(input.model)
-  - (x) with none, the server's applies: "!isBlank(input.model) || me.model == seenBy.outsider.me.model"
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
@@ -19,6 +20,7 @@ ReqPre:
       || count(split(trim(input.model), '/')) == 2 && !contains(trim(input.model), ' ')
          && all(split(trim(input.model), '/'), part ~> !isBlank(part))
 ReqPost:
+  - (x) with none, the server's applies: "!isBlank(input.model) || me.model == seenBy.outsider.me.model"
   - (x) it is the model in force for every member of the organisation: >-
       isBlank(input.model)
       || me.model == trim(input.model) && seenBy.member.me.model == trim(input.model)

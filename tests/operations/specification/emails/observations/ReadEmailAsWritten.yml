@@ -12,14 +12,12 @@ output: EmailAsWritten
 # says so in a text under the type of the document, which cannot be read as a
 # Refusal: so these are examples answered 404, where they would be
 # counterexamples, and the two preconditions they violate are told only.
-DomPre:
-  - ( ) the email was kept with its HTML
-DomPost:
-  - ( ) its HTML is told, rebuilt as a document
 ReqPre:
   - (x) the requester is signed in
   - ( ) the requester may use the mailbox of the email
+  - ( ) the email was kept with its HTML
 ReqPost:
+  - ( ) its HTML is told, rebuilt as a document
   - ( ) the document may run nothing and ask nothing of any host, and only a page of ours may frame it
 
 examples:

@@ -6,6 +6,8 @@ description: >-
 input: SignatureGiven
 output: Done
 
+DomPre:
+  - ( ) the member has the signature they had
 DomPost:
   - (x) the member's signature is this one, trimmed and cut at 2000 characters: me.signature == substring(trim(input.signature), 0, 2000)
 ReqPre:

@@ -6,17 +6,16 @@ description: >-
 input: InvitationLink
 output: InvitationOpened
 
-DomPost:
-  - (x) the address and the organisation of the invitation are told: >-
-      output.email == world.invitation.email
-      && output.organization == old.seenBy.admin.me.organization.name
-  - (x) nothing changes - the invitation stays pending: nothingChanged
 ReqPre:
   - ( ) the origin is not locked out
   - (x) the link opens a pending, unexpired invitation: >-
       let pending = seenBy.admin.invitationTo(world.invitation.email)
       in input.token == world.invitation.token && pending != null && !pending.expired
 ReqPost:
+  - (x) the address and the organisation of the invitation are told: >-
+      output.email == world.invitation.email
+      && output.organization == old.seenBy.admin.me.organization.name
+  - (x) nothing changes - the invitation stays pending: nothingChanged
   - ( ) a link that opens nothing counts as a wrong guess
 
 examples:

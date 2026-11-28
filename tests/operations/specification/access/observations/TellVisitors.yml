@@ -7,10 +7,9 @@ description: >-
   replaced, and how long the content of emails is kept.
 output: WhatVisitorsAreTold
 
-DomPost:
+ReqPost:
   - (x) sign-up is said open when the operator allows it: output.allowSignup
   - (x) an account exists, and it says so: "!output.firstAccount && old.seenBy.admin.signedIn"
-ReqPost:
   - ( ) nothing of any organisation is told
 
 examples:

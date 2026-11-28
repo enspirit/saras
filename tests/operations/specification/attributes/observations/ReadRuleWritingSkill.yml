@@ -6,14 +6,12 @@ description: >-
   attribute: a skill that names it and its values, as an archive to download.
 input: AttributeNamed
 
-DomPre:
-  - (x) an attribute of the organisation
-DomPost:
-  - ( ) the skill is handed as an archive of one file, which names the attribute and the values a rule may give
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
+  - (x) an attribute of the organisation
 ReqPost:
+  - ( ) the skill is handed as an archive of one file, which names the attribute and the values a rule may give
   - "(x) what is answered is a file to download, not data": output == null
 
 examples:

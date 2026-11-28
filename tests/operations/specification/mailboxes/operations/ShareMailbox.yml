@@ -7,17 +7,19 @@ description: >-
 input: MailboxNamed
 output: Done
 
+DomPre:
+  - ( ) the mailbox is a member's own
 DomPost:
   - (x) the mailbox is shared: mailbox(input.id).shared
-  - (x) every member may use it: seenBy.member.sharedMailbox(input.id)
-  - (x) the administrators manage it, and no other member: >-
-      seenBy.coadmin.manages(input.id) && seenBy.admin.manages(input.id) && seenBy.member.onlyUses(input.id)
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester may use the mailbox
   - (x) the requester manages the mailbox
   - (x) only an administrator shares a mailbox: "!manages(input.id) || administrator"
 ReqPost:
+  - (x) every member may use it: seenBy.member.sharedMailbox(input.id)
+  - (x) the administrators manage it, and no other member: >-
+      seenBy.coadmin.manages(input.id) && seenBy.admin.manages(input.id) && seenBy.member.onlyUses(input.id)
   - ( ) its owner is unchanged
   # An email tells whether its mailbox is shared: that is what changes, and is set aside here.
   - (x) the folder it watches and what was kept from it are unchanged: >-

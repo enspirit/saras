@@ -7,6 +7,8 @@ description: >-
 input: WritingGiven
 output: Done
 
+DomPre:
+  - ( ) proposals are written as they were
 DomPost:
   - (x) proposals are written on demand, at fetch, or at fetch and filed in the mailbox's drafts: me.organization.writing == input.writing
 ReqPre:

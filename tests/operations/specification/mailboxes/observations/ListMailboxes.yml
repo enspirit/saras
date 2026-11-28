@@ -6,12 +6,11 @@ description: >-
   last fetch went and how many of its emails are to handle.
 output: Mailboxes
 
-DomPost:
-  - (x) each says how many of its emails are to handle: >-
-      all(output, m ~> m.todo == count(standing(old.emailsOf(m.email), 'needs_reply')))
 ReqPre:
   - (x) the requester is signed in
 ReqPost:
+  - (x) each says how many of its emails are to handle: >-
+      all(output, m ~> m.todo == count(standing(old.emailsOf(m.email), 'needs_reply')))
   - (x) only the mailboxes the member may use are told - those of their organisation, theirs or shared: all(output, m ~> m.shared || m.canManage)
   - ( ) the shared ones come first
   - ( ) nothing of its credentials is told

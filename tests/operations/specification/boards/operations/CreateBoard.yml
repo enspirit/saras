@@ -7,14 +7,17 @@ description: >-
 input: BoardGiven
 output: Board
 
+DomPre:
+  - ( ) the board is not made yet
 DomPost:
-  - (x) the member has one more board, with this name and this filter: >-
-      count(boards) == count(old.boards) + 1
-      && board(output.id).name == input.name && board(output.id).filter == input.filter
+  - (x) the board is made: board(output.id) != null
 ReqPre:
   - (x) the requester is signed in
   - (x) only an administrator makes it shared
 ReqPost:
+  - (x) it is one board more, with this name and this filter: >-
+      count(boards) == count(old.boards) + 1
+      && board(output.id).name == input.name && board(output.id).filter == input.filter
   - (x) the boards there were are as they were: among(old.boards, boards)
   - ( ) the filter is kept reduced to the attributes we know
   - ( ) a board shows each member only the emails of mailboxes they may use

@@ -7,10 +7,17 @@ description: >-
 input: MailboxNamed
 output: Done
 
+DomPre:
+  - ( ) the organisation has the mailbox
 DomPost:
   - (x) the organisation no longer has it: >-
       !seesMailbox(input.id) && !seenBy.member.seesMailbox(input.id)
       && !seenBy.coadmin.seesMailbox(input.id)
+ReqPre:
+  - (x) the requester is signed in
+  - (x) the requester may use the mailbox
+  - (x) the requester manages the mailbox
+ReqPost:
   - (+) nothing of the mailbox is kept, not its credentials: withId(db.accounts, input.id) == null
   - (x) its emails are gone with it: >-
       let address = old.mailbox(input.id).email
@@ -18,11 +25,6 @@ DomPost:
   # The Backgrounds have one mailbox: what was kept is what was kept from it.
   - (+) their proposals and the record of their replies are gone with it: >-
       count(db.emails) == 0 && count(db.drafts) == 0 && count(db.replies) == 0
-ReqPre:
-  - (x) the requester is signed in
-  - (x) the requester may use the mailbox
-  - (x) the requester manages the mailbox
-ReqPost:
   - ( ) nothing changes in the mailbox itself
   - (x) the members, the prompts, the attributes and the boards of the organisation stay: >-
       members == old.members && prompts == old.prompts && attributes == old.attributes

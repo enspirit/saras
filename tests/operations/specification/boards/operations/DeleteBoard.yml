@@ -11,11 +11,11 @@ DomPre:
   - (x) it is a board the member sees
 DomPost:
   - (x) the board is gone: "!seesBoard(input.id)"
-  - (+) and no other, whoever sees it: ids(db.boards) == ids(without(old.db.boards, input.id))
 ReqPre:
   - (x) the requester is signed in
   - (x) the member manages it, as its owner or, for a shared one, as an administrator
 ReqPost:
+  - (+) no other board is gone, whoever sees it: ids(db.boards) == ids(without(old.db.boards, input.id))
   - (x) the emails it showed are untouched: emails == old.emails
   - (+) no email is, of anybody: db.emails == old.db.emails
   - (x) the other boards are as they were, in the order they had: boards == without(old.boards, input.id)

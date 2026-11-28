@@ -7,11 +7,11 @@ description: >-
 input: MailboxServersGiven
 output: Done
 
+DomPre:
+  - ( ) the mailbox is reached as it was
 DomPost:
-  - (x) the same mailbox: count(mailboxes) == count(old.mailboxes)
   - (+) what is kept to reach it is no longer what it was: >-
       withId(db.accounts, input.id).config_enc != withId(old.db.accounts, input.id).config_enc
-  - (x) its last error is forgotten: mailbox(input.id).lastError == null
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester may use the mailbox
@@ -31,6 +31,8 @@ ReqPre:
           && (i.smtpHost == '127.0.0.1' || i.smtpHost == 'localhost') && i.smtpPort == 1025 && !(i.smtpSecure | false)
           && i.username == 'testuser' && (length(i.password | '') == 0 || i.password == 'testpass'))
 ReqPost:
+  - (x) the same mailbox: count(mailboxes) == count(old.mailboxes)
+  - (x) its last error is forgotten: mailbox(input.id).lastError == null
   - ( ) a password left empty keeps the one it has
   - (+) the credentials are kept sealed: >-
       !contains(withId(db.accounts, input.id).config_enc, input.password | 'testpass')

@@ -6,6 +6,8 @@ description: >-
 input: NameGiven
 output: Done
 
+DomPre:
+  - ( ) the member has the name they had
 DomPost:
   - (x) the member's name is this one, trimmed and cut at 120 characters: me.name == substring(trim(input.name), 0, 120)
 ReqPre:

@@ -7,6 +7,8 @@ description: >-
 input: KeyGiven
 output: Done
 
+DomPre:
+  - ( ) the organisation has the key it had, or none
 DomPost:
   - (x) the organisation has this key: me.organization.hasKey
 ReqPre:

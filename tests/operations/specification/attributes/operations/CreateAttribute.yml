@@ -7,16 +7,10 @@ description: >-
 input: AttributeGiven
 output: Attribute
 
+DomPre:
+  - ( ) the attribute is not made yet
 DomPost:
-  - (x) the organisation has one more attribute, with this name, these values and this way of being decided: >-
-      count(attributes) == count(old.attributes) + 1
-      && attribute(output.key) == output
-      && !old.hasAttribute(output.key)
-      && output.name == substring(trim(input.name), 0, 60)
-      && output.kind == (if input.kind == 'member' then 'member' else 'choice')
-      && (output.kind == 'member' || labels(output.values) == labelsKept(input.values))
-      && output.decidedBy == (input.decidedBy | 'nobody')
-      && output.elo == trim(input.elo | '')
+  - (x) the attribute is made: "!old.hasAttribute(output.key) && attribute(output.key) == output"
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
@@ -27,6 +21,13 @@ ReqPre:
   - (x) decided by a rule, it has one
   - ( ) its rule is one Elo can read
 ReqPost:
+  - (x) it is one attribute more, with this name, these values and this way of being decided: >-
+      count(attributes) == count(old.attributes) + 1
+      && output.name == substring(trim(input.name), 0, 60)
+      && output.kind == (if input.kind == 'member' then 'member' else 'choice')
+      && (output.kind == 'member' || labels(output.values) == labelsKept(input.values))
+      && output.decidedBy == (input.decidedBy | 'nobody')
+      && output.elo == trim(input.elo | '')
   - (x) it is one of the organisation's own, named by its number: "!output.system && output.key != 'status'"
   - (x) the values of a choice are numbered from 1, in the order given: >-
       output.kind == 'member' || keys(output.values) == numbered(output.values)

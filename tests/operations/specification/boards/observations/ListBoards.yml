@@ -7,11 +7,10 @@ description: >-
   shows them.
 output: Boards
 
-DomPost:
-  - (x) the boards the member sees are told, those of their organisation that are theirs or shared: output == old.boards
 ReqPre:
   - (x) the requester is signed in
 ReqPost:
+  - (x) the boards the member sees are told, those of their organisation that are theirs or shared: output == old.boards
   - (x) a shared board is managed by the administrators, a personal one by its owner, who alone sees it: >-
       all(output, b ~> b.canManage == (!b.shared || old.administrator))
   - (x) each says how many emails it shows the member, of the mailboxes they may use: >-
