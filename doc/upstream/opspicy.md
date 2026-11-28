@@ -40,7 +40,7 @@
 
 **Status**: fixed on a branch of opspicy, to release (0.3.1).
 
-**What saras needs.** After an example, 0.3.0 holds an operation to the states it controls, and names what changed under `seenBy.<actor>.` by its deepest part: `seenBy.member.me.language` is told as `me.language`, which is no state, and which no `controls:` can name. Every operation that changes `me` or `emails`, as another browser or another member sees them, fails: `"me.language" changed, which ChooseLanguage does not control`, though ChooseLanguage controls `me`. 31 of the 54 cases that failed when saras took 0.3.0.
+**What saras needs.** After an example, 0.3.0 holds an operation to the states it controls, and names what changed under `seenBy.<actor>.` by its deepest part: `seenBy.member.me.language` is told as `me.language`, which is no state, and which no `controls:` can name. Every operation that changes `me` or `emails`, as another browser or another member sees them, fails: `"me.language" changed, which ChooseLanguage does not control`, though ChooseLanguage controls `me`. Of the 54 cases that failed when saras took 0.3.0, 23 fail for this alone.
 
 **What is asked.** `changed()` (`src/judging.ts`) names a state seen by somebody as the state itself is named: `seenBy.member.me`, then `me`.
 
