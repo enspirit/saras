@@ -4,27 +4,28 @@
 #
 # Everything a case makes is numbered from 5001, in every table.
 
-- name: test/base
-  description: >-
-    Atelier Nord: `admin` (ada, 1001), `coadmin` (ines, 1002), `member` (milo,
-    1003); the mailbox of the stack, shared (1001), its inbox fetched: emails
-    1001 to 1020, to handle but for 1004, 1006, 1009, 1012, 1015 and 1019, which
-    a rule set aside, 1020, which milo ignored, 1018, which ada said needs no
-    reply, 1017, which ada replied to, and 1016, which milo replied to as a
-    draft; attributes Priority (`1001`), Topic (`1002`, by a rule: Billing for
-    1001, 1010 and 1018, Sales for 1008, 1016 and 1020), Who (`1003`, a member);
-    prompts 1001 and Quote (1002); boards Billing (1001, shared), From customers
-    (1002, ada's), To follow (1003, milo's: what is to handle); an invitation
-    pending for nora (1003); a link to a new password for milo. Bureau Sud:
-    `outsider` (otto, 1004), alone; prompt 1003, attribute 1004, board
-    Everything (1004).
+backgrounds:
+  - name: test/base
+    description: >-
+      Atelier Nord: `admin` (ada, 1001), `coadmin` (ines, 1002), `member` (milo,
+      1003); the mailbox of the stack, shared (1001), its inbox fetched: emails
+      1001 to 1020, to handle but for 1004, 1006, 1009, 1012, 1015 and 1019,
+      which a rule set aside, 1020, which milo ignored, 1018, which ada said
+      needs no reply, 1017, which ada replied to, and 1016, which milo replied
+      to as a draft; attributes Priority (`1001`), Topic (`1002`, by a rule:
+      Billing for 1001, 1010 and 1018, Sales for 1008, 1016 and 1020), Who
+      (`1003`, a member); prompts 1001 and Quote (1002); boards Billing (1001,
+      shared), From customers (1002, ada's), To follow (1003, milo's: what is to
+      handle); an invitation pending for nora (1003); a link to a new password
+      for milo. Bureau Sud: `outsider` (otto, 1004), alone; prompt 1003,
+      attribute 1004, board Everything (1004).
 
-- name: test/unfetched
-  description: >-
-    The same as `test/base`, with nothing fetched yet: no email, no reply.
+  - name: test/unfetched
+    description: >-
+      The same as `test/base`, with nothing fetched yet: no email, no reply.
 
-- name: test/unconnected
-  description: The same as `test/base`, with no mailbox.
+  - name: test/unconnected
+    description: The same as `test/base`, with no mailbox.
 
-- name: empty
-  description: Nobody. No case starts from it yet.
+  - name: empty
+    description: Nobody. No case starts from it yet.

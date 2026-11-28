@@ -57,8 +57,8 @@ counterexamples:
     input: { email: nobody@atelier.example, password: a-password-for-the-tests }
     then: 401 auth.invalidCredentials
 
-  - when: no password is given
+  - when: the password is empty
     for: the address and the password are those of a member
     given: test/base, as visitor
-    input: { email: ada@atelier.example }
+    input: { email: ada@atelier.example, password: "" }
     then: 401 auth.invalidCredentials

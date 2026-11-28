@@ -172,12 +172,6 @@ counterexamples:
     input: { selection: {}, status: ignored }
     then: 400 emails.selectionInvalid
 
-  - when: no selection is given
-    for: emails are named, those ticked, each by its number, or all of a view
-    given: test/base, as member
-    input: { status: ignored }
-    then: 400 emails.selectionInvalid
-
   - when: five hundred and one emails are ticked
     for: at most 500 emails are ticked
     given: test/base, as member

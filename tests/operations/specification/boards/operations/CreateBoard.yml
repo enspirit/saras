@@ -13,7 +13,6 @@ DomPost:
       && board(output.id).name == input.name && board(output.id).filter == input.filter
 ReqPre:
   - (x) the requester is signed in
-  - (x) it has a name
   - (x) only an administrator makes it shared
 ReqPost:
   - (x) the boards there were are as they were: among(old.boards, boards)
@@ -38,7 +37,7 @@ examples:
 
 counterexamples:
   - when: the name is blank
-    for: it has a name
+    for: BoardGiven
     given: test/base, as member
     input: { name: "  ", shared: false, filter: {} }
     then: 400 boards.nameRequired

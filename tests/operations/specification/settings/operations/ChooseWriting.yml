@@ -12,7 +12,6 @@ DomPost:
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester is an administrator
-  - (x) it is one of those three - nothing sends by itself: contains(['none', 'draft', 'mailbox'], input.writing | '')
 ReqPost:
   - (x) every member of the organisation is told: seenBy.member.me.organization.writing == input.writing
   - (x) nothing else of the organisation changes: >-
@@ -42,13 +41,13 @@ examples:
 
 counterexamples:
   - when: what is asked is to send by itself
-    for: it is one of those three - nothing sends by itself
+    for: WritingGiven
     given: test/base, as admin
     input: { writing: send }
     then: 400 organization.invalidWriting
 
   - when: what is given says nothing
-    for: it is one of those three - nothing sends by itself
+    for: WritingGiven
     given: test/base, as admin
     input: { writing: ~ }
     then: 400 organization.invalidWriting

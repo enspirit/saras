@@ -16,7 +16,6 @@ DomPost:
 ReqPre:
   - (x) the requester is signed in
   - (x) the member manages it, as its owner or, for a shared one, as an administrator
-  - (x) it has a name
   - (x) only an administrator makes it shared
 ReqPost:
   - (x) the member is listed the board as they are answered it, when they still see it: >-
@@ -130,7 +129,7 @@ counterexamples:
     then: 403 boards.notYours
 
   - when: the name is blank
-    for: it has a name
+    for: BoardChanged
     given: test/base, as member
     input: { id: 1003, name: "  ", shared: false, filter: {} }
     then: 400 boards.nameRequired

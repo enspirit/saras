@@ -126,9 +126,3 @@ counterexamples:
     given: test/base, as member
     input: { id: 9999 }
     then: 404 emails.notFound
-
-  - when: what is asked for is not a number
-    for: the requester may use its mailbox
-    given: test/base, as member
-    input: { id: first }
-    then: 404 emails.notFound

@@ -66,12 +66,6 @@ counterexamples:
     input: { id: 1001, username: testuser, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
     then: 404 mailboxes.notFound
 
-  - when: what is given as its number is not one
-    for: the requester may use the mailbox
-    given: test/unconnected, as coadmin
-    input: { id: not-a-number, username: testuser, imapHost: 127.0.0.1, imapPort: 1143, smtpHost: 127.0.0.1, smtpPort: 1025 }
-    then: 404 mailboxes.notFound
-
   - when: a member who is not an administrator asks, of a number no mailbox has
     for: the requester may use the mailbox
     given: test/unconnected, as member

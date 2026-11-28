@@ -60,9 +60,3 @@ counterexamples:
     given: test/base, as admin
     input: { id: 9999 }
     then: 404 prompts.notFound
-
-  - when: what is given is not a number
-    for: the prompt is one of the organisation's
-    given: test/base, as admin
-    input: { id: first }
-    then: 404 prompts.notFound

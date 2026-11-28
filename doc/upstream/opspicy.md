@@ -1,12 +1,12 @@
 # opspicy — what saras asks of it
 
-[opspicy](https://github.com/enspirit/opspicy), taken as the image `enspirit/opspicy:0.2.0` ([decision 0020](../decisions/0020-opspicy-is-a-project-of-its-own.md)). How an entry is written: [`README.md`](README.md).
+[opspicy](https://github.com/enspirit/opspicy), taken as the image `enspirit/opspicy:0.3.0` ([decision 0020](../decisions/0020-opspicy-is-a-project-of-its-own.md)). How an entry is written: [`README.md`](README.md).
 
 ## O1 — Counterexamples made from the input type, on demand
 
 **Status**: to file.
 
-**What saras needs.** That what is given is of the type of the operation's `input` is a precondition of every operation, said by `input:` alone: no specification states it as a clause, nor lists a counterexample for it ([decision 0021](../decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)). So no run sends an ill-typed input to the server, and the refusals are held by the server's own tests only. Gap 8 of decision 0021.
+**What saras needs.** That what is given is of the type of the operation's `input` is a precondition of every operation, said by `input:` alone: no specification states it as a clause ([decision 0021](../decisions/0021-an-input-is-refused-when-it-is-not-of-its-type.md)). Since 0.3.0 a counterexample may be `for: <the type>`, and saras writes one where a constraint the type labels with a code matters (a blank name); the rest of what the type refuses no run sends, and the refusals are held by the server's own tests only. Gap 8 of decision 0021.
 
 **What is asked.** That opspicy makes those counterexamples itself, as it makes the ones a condition gives, but only when asked (say `ROBUST=fuzzed`, or a flag of its own), never by default: they are many, and a run stays the size the suite says.
 

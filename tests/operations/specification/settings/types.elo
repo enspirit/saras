@@ -1,6 +1,7 @@
 # A member's own settings, their organisation's, and what a member is told of both.
 
 # When the AI writes a proposal: on demand, at fetch, or at fetch and filed in the mailbox's drafts.
+# Nothing sends by itself.
 Writing = String(w | w == 'none' || w == 'draft' || w == 'mailbox')
 
 # The organisation as one of its members sees it: its model and whether it has

@@ -2,57 +2,58 @@
 # The subjects of the inventory (doc/2-operations.md), and what several of them
 # say in the same words.
 
-- name: _shared
-  description: >-
-    What every area says: the predicates, the functions, the conditions and the
-    types of no subject in particular.
+areas:
+  - name: _shared
+    description: >-
+      What every area says: the predicates, the functions, the conditions and
+      the types of no subject in particular.
 
-- name: access
-  description: >-
-    Who gets in: an organisation is created, its members are invited, sign in
-    and out, choose a password, become administrators, and leave.
+  - name: access
+    description: >-
+      Who gets in: an organisation is created, its members are invited, sign in
+      and out, choose a password, become administrators, and leave.
 
-- name: attributes
-  description: >-
-    The attributes of the organisation: what an email is sorted by, each a
-    choice a member makes or a rule decides.
+  - name: attributes
+    description: >-
+      The attributes of the organisation: what an email is sorted by, each a
+      choice a member makes or a rule decides.
 
-- name: boards
-  description: >-
-    The boards: named views of emails, each defined by a filter, a member's own
-    or shared with the organisation.
+  - name: boards
+    description: >-
+      The boards: named views of emails, each defined by a filter, a member's
+      own or shared with the organisation.
 
-- name: emails
-  description: >-
-    The emails fetched, as a member reads them. Its words are those sorting and
-    replying say; of its own, it has observations only.
+  - name: emails
+    description: >-
+      The emails fetched, as a member reads them. Its words are those sorting
+      and replying say; of its own, it has observations only.
 
-- name: mailboxes
-  description: >-
-    The mailboxes: one is connected, named, shared, told which folder to watch,
-    fetched, and disconnected.
+  - name: mailboxes
+    description: >-
+      The mailboxes: one is connected, named, shared, told which folder to
+      watch, fetched, and disconnected.
 
-- name: members
-  description: >-
-    The members of the organisation: words that access says, and nothing of its
-    own.
+  - name: members
+    description: >-
+      The members of the organisation: words that access says, and nothing of
+      its own.
 
-- name: prompts
-  description: >-
-    The prompts of the organisation: what the AI is asked to write a reply
-    with, written here or taken ready-made.
+  - name: prompts
+    description: >-
+      The prompts of the organisation: what the AI is asked to write a reply
+      with, written here or taken ready-made.
 
-- name: replying
-  description: >-
-    Replying: the help asked of the AI, and a reply handed to the mailbox, sent
-    or filed as a draft.
+  - name: replying
+    description: >-
+      Replying: the help asked of the AI, and a reply handed to the mailbox,
+      sent or filed as a draft.
 
-- name: settings
-  description: >-
-    A member's own settings, their organisation's, and what a member is told of
-    both.
+  - name: settings
+    description: >-
+      A member's own settings, their organisation's, and what a member is told
+      of both.
 
-- name: sorting
-  description: >-
-    Sorting: where an email stands, to handle or set aside, as a member corrects
-    it.
+  - name: sorting
+    description: >-
+      Sorting: where an email stands, to handle or set aside, as a member
+      corrects it.

@@ -14,7 +14,6 @@ DomPost:
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester may use its mailbox
-  - (x) the status asked for is one of the three corrections
 ReqPost:
   - (x) the verdict is recorded as the member's
   - (x) nothing else of the email changes
@@ -72,7 +71,7 @@ counterexamples:
     then: 409 emails.alreadySent
 
   - when: no status is said
-    for: the status asked for is one of the three corrections
+    for: BackToHandle
     given: test/base, as member
     input: { id: 1012 }
     then: 400 emails.invalidStatus

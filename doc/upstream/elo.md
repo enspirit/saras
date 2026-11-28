@@ -25,7 +25,7 @@ A failing key would be told as a `schema` (or `constraint`) failure at `.attribu
 
 **What is asked.** A way to label what a missing attribute is refused with, so that `failure.label` says it. For instance a label on the attribute itself, `{ name: BoardName 'boards.nameRequired', … }`, or a `missing` failure that carries the first label of the attribute's type. The project knows best which reads well.
 
-**What saras changes once it is there.** A missing name is refused `boards.nameRequired`, as a blank one is; the specification can say "it has a name" of both.
+**What saras changes once it is there.** A missing name is refused `boards.nameRequired`, as a blank one is; the counterexample `for: BoardGiven` can be either.
 
 ## E3 — A constraint on a list type written in place
 

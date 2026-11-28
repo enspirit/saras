@@ -62,5 +62,5 @@ counterexamples:
   - when: what is given of a template lacks its instructions
     for: the prompt has a name and instructions
     given: test/base, as admin
-    input: { name: Polite refusal, description: "Declining a sales pitch, an invitation or a request." }
+    input: { name: Polite refusal, description: "Declining a sales pitch, an invitation or a request.", systemPrompt: "" }
     then: 400 prompts.incomplete

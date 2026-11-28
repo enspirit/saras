@@ -14,7 +14,6 @@ DomPost:
 ReqPre:
   - (x) the requester is signed in
   - (x) the requester may use its mailbox
-  - (x) the status asked for is one of the three corrections
 ReqPost:
   - (x) the verdict is recorded as the member's
   - (x) nothing else of the email changes
@@ -70,7 +69,7 @@ counterexamples:
     then: 404 emails.notFound
 
   - when: a member says of an email that it is replied
-    for: the status asked for is one of the three corrections
+    for: NoReplyNeeded
     given: test/base, as member
     input: { id: 1001, status: sent }
     then: 400 emails.invalidStatus
