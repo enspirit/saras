@@ -1,6 +1,6 @@
 /**
  * The HTTP API as the browser sees it: one typed call function. What the server can be asked
- * for is in ./api/, one file per area of doc/2-operations.md, each function named after its operation.
+ * for is in ./api/, one file per area of tests/operations, each function named after its operation.
  */
 
 import type { Problem } from '../shared/problem.ts';

@@ -1,5 +1,5 @@
 // Mailboxes: connecting one, renewing its access, choosing the folder to watch, fetching it,
-// disconnecting it. One function per operation of doc/2-operations.md.
+// disconnecting it. One function per operation of tests/operations.
 import type { FetchResult, MailFolder, MailHost, Mailbox, MailboxServers, WhatIsFetched } from '../../shared/mailbox.ts';
 import { api } from '../api.ts';
 

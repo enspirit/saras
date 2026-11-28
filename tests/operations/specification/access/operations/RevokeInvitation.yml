@@ -6,8 +6,8 @@ description: >-
 input: InvitationToRevoke
 output: Done
 
-# The inventory's DomPre, "a pending invitation of the organisation", is not
-# said: the server refuses nothing for it, as the last two examples show.
+# The DomPre, "a pending invitation of the organisation", is told and not
+# checked: the server refuses nothing for it, as the last two examples show.
 DomPre:
   - ( ) a pending invitation of the organisation
 DomPost:

@@ -4,7 +4,7 @@ import { brokenLinks, relativeLinks, resolve } from './links.ts';
 
 const CASES: [string, string, string[]][] = [
   ['a relative link', 'See [the design](doc/4-design.md).', ['doc/4-design.md']],
-  ['a link with a fragment leads to its file', '[deviations](doc/2-operations.md#deviations)', ['doc/2-operations.md']],
+  ['a link with a fragment leads to its file', '[deviations](doc/2-deviations.md#deviations)', ['doc/2-deviations.md']],
   ['a link whose text is code', '[`software/saras/`](software/saras/)', ['software/saras/']],
   ['two links on a line', '[a](x.md) and [b](y/z.md)', ['x.md', 'y/z.md']],
   ['an image', '![badge](img/badge.svg)', ['img/badge.svg']],
@@ -20,7 +20,7 @@ for (const [name, markdown, expected] of CASES) {
 
 test('a link is resolved from the file it is in', () => {
   assert.equal(resolve('README.md', 'doc/4-design.md'), 'doc/4-design.md');
-  assert.equal(resolve('software/saras/README.md', '../../doc/2-operations.md'), 'doc/2-operations.md');
+  assert.equal(resolve('software/saras/README.md', '../../doc/2-deviations.md'), 'doc/2-deviations.md');
   assert.equal(resolve('doc/1-user-stories.md', './4-design.md'), 'doc/4-design.md');
   assert.equal(resolve('software/saras/README.md', 'brands/example/'), 'software/saras/brands/example');
   assert.equal(resolve('doc/a.md', '/LICENSE'), 'LICENSE');

@@ -61,7 +61,7 @@ examples:
       - the boxes count them where they stand: >-
           emails.counts == {todo: 9, none: 6, sent: 2, ignored: 3}
 
-  # As deviation 5 of doc/2-operations.md: where an email stands is not checked.
+  # As deviation 5 of doc/2-deviations.md: where an email stands is not checked.
   - when: a member ticks an email twice, with a number no email has, and puts them back to handle
     given: test/base, as member
     input: { selection: { ids: [1001, 1001, 9999] }, status: needs_reply }

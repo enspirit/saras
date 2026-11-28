@@ -1,8 +1,8 @@
 # Deviation candidates — what specifying the operations found
 
-A report, not a decision. Writing the black-box specifications of [`tests/operations`](../tests/operations/) meant asking, of each clause of [the inventory](2-operations.md), whether the server does it. Where it does not, the specification says what the server does today, so that it passes, and the difference is listed here.
+A report, not a decision. Writing the black-box specifications of [`tests/operations`](../tests/operations/) meant asking, of each clause of the inventory of the operations, since replaced by the specifications, whether the server does it. Where it does not, the specification says what the server does today, so that it passes, and the difference is listed here.
 
-Each line is a question for the product's owner: is the rule right, and the server to change; or is the server right, and the inventory to follow? None was fixed, and none is in the inventory's own list of deviations yet. "File" is the specification that shows it: a file of `tests/operations/specification/`, in the `operations/` or the `observations/` of its area.
+Each line is a question for the product's owner: is the rule right, and the server to change; or is the server right, and the inventory to follow? None was fixed, and none is in [the list of deviations](2-deviations.md) yet. "File" is the specification that shows it: a file of `tests/operations/specification/`, in the `operations/` or the `observations/` of its area.
 
 Found by reading the source and not shown by a case, when said so: *read, not run*.
 

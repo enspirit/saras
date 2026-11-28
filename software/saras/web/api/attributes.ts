@@ -1,4 +1,4 @@
-// Attributes: what an organisation wants to know of each email. One function per operation of doc/2-operations.md.
+// Attributes: what an organisation wants to know of each email. One function per operation of tests/operations.
 import type { Attribute, AttributeGiven, RuleProblem, RuleTried, SortedAgain, ValueGiven } from '../../shared/attribute.ts';
 import { api } from '../api.ts';
 

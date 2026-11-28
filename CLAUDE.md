@@ -51,7 +51,7 @@ In `software/saras`: `npm test`, `npm run test:unit`, `npm run typecheck`, one f
 Each is held by a test, which will tell you:
 
 - No file over 200 lines, no function over 20 (`test/unit/size.test.ts`).
-- One file per operation, in `src/domain/<area>/`, named after it and headed by its clauses; pure decisions in `src/domain/computations/`, with a table of cases and no mock. A new operation is also a row in `doc/2-operations.md`.
+- One file per operation, in `src/domain/<area>/`, named after it and headed by its clauses; pure decisions in `src/domain/computations/`, with a table of cases and no mock. A new operation is also a specification in `tests/operations/specification/<area>/`.
 - The domain knows nothing of HTTP; the browser imports nothing of the server; `shared/` declares the domain objects once and imports nothing (`tests/harness`, `test/unit/shared-types.test.ts`).
 - Nothing is said with `console`: `log.info('what happened', { fields })` (`src/tooling/log.ts`), which redacts every line. Never a field holding an address, a folder, a body or anything of a mail: a mailbox, a member and an organisation are numbers in a log (`test/unit/logging.test.ts`, `test/integration/what-the-log-says.test.ts`, decision 0012).
 - No sentence in the code: the interface's words are in `public/i18n/`, in every language; the server sends codes (`src/tooling/messages.ts`).
@@ -72,7 +72,8 @@ Each is held by a test, which will tell you:
 | --- | --- |
 | Running the stack, the suites, the env files, translations, changing the schema | [`HACKING.md`](HACKING.md) |
 | What a feature is meant to do | [`doc/1-user-stories.md`](doc/1-user-stories.md) |
-| An operation, the state it changes, known deviations | [`doc/2-operations.md`](doc/2-operations.md) |
+| An operation, the state it changes | [`tests/operations/specification`](tests/operations/specification/): `system.yml`, `agents.yml`, `state.yml`, then the area |
+| Known deviations, the product owner's decisions | [`doc/2-deviations.md`](doc/2-deviations.md) |
 | Where a new thing goes; who may rely on whom | [`doc/3-architecture.md`](doc/3-architecture.md) |
 | The interface: tokens, components, screens, brands | [`doc/4-design.md`](doc/4-design.md) |
 | Working on the brand or the design system with Node.js alone: no `emb`, no Docker | [`DESIGN.md`](DESIGN.md) |

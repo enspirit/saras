@@ -35,7 +35,7 @@ None of this is a setting that loosens a guarantee: whatever `ROLES` and the num
 - The server still needs the right to change its schema, unless a process with `ROLES=migrate` and credentials of its own is the only one that has it.
 - The ledger and `scheduled_tasks` are in no seed: installing one leaves them as they are (`software/storage`).
 - A PostgreSQL server sees more connections from each saras: beside its pool, up to five that hold locks.
-- The brake on wrong guesses is still counted per server: with several, a visitor has as many times the guesses. Listed with the deviations in [`doc/2-operations.md`](../2-operations.md).
+- The brake on wrong guesses is still counted per server: with several, a visitor has as many times the guesses. Listed with the deviations in [`doc/2-deviations.md`](../2-deviations.md).
 - The development stack watches the sources: a migration is applied to the development database when its file is saved, and is not applied again once edited.
 - Nothing holds "leaves the version before it working" but whoever writes the migration.
 

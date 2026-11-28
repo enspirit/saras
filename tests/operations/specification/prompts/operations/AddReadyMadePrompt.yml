@@ -9,7 +9,7 @@ input: ReadyMadePrompt
 output: PromptAdded
 
 DomPre:
-  # Deviation 8 of the inventory: the server does not check it, as the last example shows.
+  # Deviation 8 of doc/2-deviations.md: the server does not check it, as the last example shows.
   - ( ) a template the organisation does not have
 DomPost:
   - (x) the organisation has the prompt: prompt(output.id) != null

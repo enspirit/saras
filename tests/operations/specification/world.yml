@@ -1,6 +1,11 @@
-# The world the suite runs in, as the runner knows it: who may call, and what
-# they hold that no route tells. A formaldef reads it as `world`: `world.actors`,
+# A formaldef reads this file as `world`: `world.actors`,
 # `world.invitation.token`, and `world.requester` for who calls in the case.
+
+description: |
+  Who may call in a case, and what they hold that no route tells: the people of Atelier Nord and
+  one of another organisation, each the agent they are and what they sign in with, and the links
+  the seed planted, an invitation and a new password. One password opens every account, and
+  nothing but a seed.
 
 # The people of the Background test/base (backgrounds/base.ts): who each is,
 # the agent they are, and what they sign in with. One password for all, and it

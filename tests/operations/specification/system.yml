@@ -1,0 +1,61 @@
+# What saras is, in its own words: the Overview of the explorer.
+
+name: saras
+description: |
+  A team answers its email with the help of AI, without handing the AI the keys.
+
+  Everything lives in an **organisation**, and nothing crosses from one to another. Its members
+  connect mailboxes, their own or shared, and watch one folder of each. Every email fetched is
+  to handle, unless a rule of the organisation, written in Elo and read by anyone, sets it aside:
+  no AI sorts the mail. A member writes the reply, in full or as notes, and may ask the AI to
+  check its typos, improve its style, or write it with a prompt an administrator prepared. Nothing
+  is sent without a member sending it.
+
+  ## How it goes
+
+  - **Getting started**: a visitor [creates the organisation](#op-CreateOrganization),
+    [connects a mailbox](#op-ConnectMailboxByServers) and
+    [chooses the folder it watches](#op-ChooseWatchedFolder), [fetches it](#op-FetchMailbox),
+    [prepares the prompts](#op-EditPrompt) and [chooses when proposals are written](#op-ChooseWriting).
+  - **A fetch**: the emails that arrived are kept, each is sorted by the rules of the
+    organisation's attributes, and, where the organisation chose it, a proposal is written for
+    each email to handle, and filed in the mailbox's drafts.
+  - **Answering**: a member [writes with a prompt](#op-WriteWithPrompt),
+    [checks the typos](#op-CheckTypos) or [improves the style](#op-ImproveStyle), as often as
+    they like, then [sends the reply](#op-SendReply) or [files it as a draft](#op-FileReplyAsDraft).
+
+  ## What it does on its own
+
+  No route asks for these, so no specification here says them: the server's own tests do
+  (`software/saras/test/integration/`). What must happen once is done by one server, however
+  many share the database.
+
+  - **Sorting by the rules**, at each fetch: an email just fetched has, for each attribute whose
+    rule speaks of it, that value, as the rule's. A rule that says nothing, fails or runs too long
+    leaves the attribute undecided; an email nobody sorted is to handle; a rule never marks an
+    email as replied.
+  - **Preparing proposals**, at each fetch, when the organisation's writing is at fetch: each email
+    to handle, with its content and no proposal, gets one, with the prompt that suits it best by
+    its attributes, else the organisation's first; at most ten per fetch, the most recent first.
+    It needs a key in force, as the mailbox's owner, and a prompt.
+  - **Filing a proposal as a draft**, when the writing is at fetch and filed in the mailbox: the
+    proposal just prepared is a draft in the mailbox, and the email is replied, as a draft, by the
+    mailbox's owner, the proposal not edited. Not when the email has nobody to reply to.
+  - **Expiring sessions**, every hour: a session past its date is gone.
+  - **Erasing what is past retention**, every hour, when the operator sets a retention period: of
+    an email older than it, its text and its HTML, its proposals and the texts of its replies are
+    erased; where it stood, and why a proposal was changed, are kept.
+
+  ## What no specification says yet
+
+  - **The second factor**, where the operator requires one: after the password, a visitor gives
+    the code of the moment, never one used before, or a recovery code, then spent; the first
+    time, they set the factor up and are told their recovery codes, once. No session is opened
+    on a password alone, and a wrong code counts as a wrong guess. An administrator resets a
+    member's second factor, which closes their sessions.
+  - **Connecting a mailbox by Google or Microsoft sign-in**: as by its servers, an address not
+    connected yet becomes a mailbox, watching no folder, shared only when an administrator asks.
+  - **Putting one's text back**: the interface keeps what a proposal replaced, until the member
+    takes it back. The server is not told.
+
+  What saras does that its documents say otherwise is in `doc/2-deviations.md`.

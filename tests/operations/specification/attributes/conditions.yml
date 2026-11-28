@@ -23,7 +23,7 @@
     || !hasAttribute(input.key)
     || contains(keys(attribute(input.key).values), input.value)
 
-# The inventory says: not "Stands in". Taking its value away is accepted, and changes nothing.
+# The rule is: not "Stands in". Taking its value away is accepted, and changes nothing.
 - description: not "Stands in", unless the value is taken away
   formaldef: input.key != 'status' || isBlank(input.value | '')
 

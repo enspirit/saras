@@ -41,7 +41,7 @@ examples:
       - (+) the rule had said why: "!isBlank(withId(db.emails, 1019).triage_reason)"
       - the boxes count it where it stands: emails.counts.none == 6 && emails.counts.ignored == 2
 
-  # Deviation 5 of doc/2-operations.md: where the email stands is not checked.
+  # Deviation 5 of doc/2-deviations.md: where the email stands is not checked.
   - when: an administrator ignores an email a member had already ignored
     given: test/base, as admin
     input: { id: 1020, status: ignored }

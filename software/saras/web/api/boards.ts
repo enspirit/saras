@@ -1,4 +1,4 @@
-// Boards: named views of emails. One function per operation of doc/2-operations.md, and what they show.
+// Boards: named views of emails. One function per operation of tests/operations, and what they show.
 import type { Board, BoardFilter, BoardGiven, EmailsOfBoard, FilterTried } from '../../shared/board.ts';
 import { api } from '../api.ts';
 

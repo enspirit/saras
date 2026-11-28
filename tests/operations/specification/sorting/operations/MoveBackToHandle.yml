@@ -48,7 +48,7 @@ examples:
     and:
       - it needed no reply, as a member's verdict: old.sorted(1018, 'no_reply', 'user')
 
-  # Deviation 5 of doc/2-operations.md: where the email stands is not checked.
+  # Deviation 5 of doc/2-deviations.md: where the email stands is not checked.
   - when: a member puts back an email that is to handle
     given: test/base, as member
     input: { id: 1001, status: needs_reply }

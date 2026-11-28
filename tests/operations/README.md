@@ -1,6 +1,6 @@
 # operations
 
-The **black-box specification** of saras's operations. One file per operation of [`doc/2-operations.md`](../../doc/2-operations.md), named after it, holding its clauses in sentences. A sentence is checked when it has a formaldef: an expression that is true or false of what was observed.
+The **black-box specification** of saras's operations. One file per operation, named after it, holding its clauses in sentences. A sentence is checked when it has a formaldef: an expression that is true or false of what was observed.
 
 One responsibility: *say what an operation is and what the rules demand of it, knowing nothing about what performs it.*
 
@@ -38,12 +38,13 @@ The fast run is the one a change inside the server must leave as it is: it knows
 
 | | |
 | --- | --- |
-| [`specification/`](specification/)…`/<area>/operations/<Operation>.yml` | The specifications of what changes the state, by area: [`boards/operations/CreateBoard.yml`](specification/boards/operations/CreateBoard.yml) specifies what `src/domain/boards/create-board.ts` performs. The areas are the subjects of [the inventory](../../doc/2-operations.md). |
+| [`specification/`](specification/)…`/<area>/operations/<Operation>.yml` | The specifications of what changes the state, by area: [`boards/operations/CreateBoard.yml`](specification/boards/operations/CreateBoard.yml) specifies what `src/domain/boards/create-board.ts` performs. |
 | `specification/<area>/observations/<Observation>.yml` | The specifications of what only reads it, beside the operations on the same subject: [`boards/observations/ListBoards.yml`](specification/boards/observations/ListBoards.yml). Filed there, a route is checked to change nothing. |
-| [`specification/areas.yml`](specification/areas.yml) | The areas, each described: the subjects of the inventory, `_shared`, and two that hold words only. |
-| [`specification/agents.yml`](specification/agents.yml) | Who performs the operations: the Visitor, the Member, the Administrator, in the inventory's words. An Administrator is a Member, and a Member may ask what a Visitor does. |
+| [`specification/system.yml`](specification/system.yml) | What saras is, how it goes, what it does on its own clock and what no specification says yet: the Overview of the explorer. Each file at the root says what its section is about as its `description`. |
+| [`specification/areas.yml`](specification/areas.yml) | The areas, each described: the subjects of saras, `_shared`, and two that hold words only. |
+| [`specification/agents.yml`](specification/agents.yml) | Who performs the operations: the Visitor, the Member, the Administrator; and, in its description, the agents that act without calling the front door. An Administrator is a Member, and a Member may ask what a Visitor does. |
 | [`specification/backgrounds.yml`](specification/backgrounds.yml) | [The Backgrounds](#the-backgrounds) a case starts from, each with what it holds. |
-| [`specification/state.yml`](specification/state.yml) | What is observed: the routes that read, and the tables read from behind them, each with what it shows. |
+| [`specification/state.yml`](specification/state.yml) | What saras keeps, in its description; what is observed: the routes that read, and the tables read from behind them, each with what it shows. |
 | [`specification/world.yml`](specification/world.yml) | What the runner knows of the world: the actors, each the agent they are and what they sign in with, and the tokens the seed's hook planted. |
 | `specification/<area>/predicates.yml`, `functions.yml`, `conditions.yml`, `types.elo` | What an area says: the predicates, true or false of the state (`seesBoard(id)`), and the functions, which read something of it (`board(id)`), each with its description and its formaldef; the conditions, which are the sentences several operations say in the same words, with their formaldef; and the data saras exchanges, in types that the suite and the server read alike, each described in a comment above it; their names are one namespace across the areas. A constraint labelled with a code of the server (`String(n | 'boards.nameRequired': !isBlank(n))`) is refused with that code. [`_shared/`](specification/_shared/) holds those of every area. [`emails/`](specification/emails/) holds words that sorting and replying say, and observations only; [`members/`](specification/members/) words that access says, and nothing of its own. |
 | [`config.ts`](config.ts) | How the suite meets saras: its front door, how somebody signs in, how a Background is set, what a refusal looks like, how to know the server is at rest. |
@@ -73,7 +74,7 @@ Nothing of saras is in its process: no source, no type.
 1. **Import anything of `software/saras`.** A suite that shares the product's types cannot say they are wrong. Held by [`tests/harness`](../harness/).
 2. **Read through `db` what the API tells.** A relation is behind the API, so it moves when the schema does: it is for what no route shows anybody of the Background (that only a hash is kept, that a link was spent, that nothing at all changed for anybody), and it names no column of who belongs to which organisation. A clause that reads one is marked `(+)`, which opspicy holds, and says in a sentence of its own what only the database shows: what a route tells is said by the clause before it, marked `(x)`.
 3. **Run where the database is somebody's.** Every case installs a seed, which empties it. [`config.ts`](config.ts) says the database may be emptied only where `OPERATIONS_MAY_EMPTY_THE_DATABASE` is set, which `docker-compose.test.yml` alone does: on the development stack nothing runs.
-4. **Be edited to make a mismatch pass.** When the specification and the server disagree, one is wrong, and the suite is how it was found. A behaviour that is the server's and not the inventory's is specified as it is, and told: [what was found so far](../../doc/deviation-candidates.md).
+4. **Be edited to make a mismatch pass.** When the specification and the server disagree, one is wrong, and the suite is how it was found. A behaviour that is the server's and not what the documents say is specified as it is, and told: [what was found so far](../../doc/deviation-candidates.md).
 5. **Hold a credential that opens anything real.** The passwords and tokens of `world.yml` open a seed.
 6. **Ship**: `publish: false`.
 

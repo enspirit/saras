@@ -2,7 +2,7 @@
 
 A plan, not yet a decision: nothing here is implemented. It says where the model must go, what can be done first without a member seeing any difference, and how the feature is built afterwards. Its purpose today is to tell which parts of the API are worth specifying now, and which will move.
 
-Vocabulary and the present state are in the [operations inventory](2-operations.md); the layout of the code in the [architecture](3-architecture.md).
+Vocabulary and the present state are in [the specification of the operations](../tests/operations/), its [state](../tests/operations/specification/state.yml) and its [agents](../tests/operations/specification/agents.yml); the layout of the code in the [architecture](3-architecture.md).
 
 ## The aim
 

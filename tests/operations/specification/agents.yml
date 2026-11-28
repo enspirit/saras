@@ -1,6 +1,23 @@
-# Who performs the operations: the agents of the inventory (doc/2-operations.md)
-# that call the front door. An agent may be another: whatever the other
-# performs, it performs too.
+# Who performs the operations: the agents that call the front door. An agent may
+# be another: whatever the other performs, it performs too.
+
+description: |
+  The people who use saras, who call its front door, are listed below: a visitor, a member, an
+  administrator. Others act on what saras keeps without calling it:
+
+  - **The operator** hosts the installation: its environment, its brand, whether sign-up is
+    open, the retention period, whether a second factor is required. They act in files, outside
+    the running system.
+  - **The server** performs every operation on behalf of a person, and some on its own clock
+    (see the Overview). It may be several servers on one database: what is done on its own, and
+    what must not be done twice, is done by one of them at a time.
+  - **The interface**, in the browser, controls what is being written before it is submitted,
+    and the language in use.
+  - **The mail provider** (an IMAP and SMTP server, Gmail, Microsoft 365) controls the mailbox
+    itself: its messages, its drafts, its flags.
+  - **The identity provider** (Google, Microsoft) grants access to a mailbox by sign-in.
+  - **The LLM**, through OpenRouter, returns proposed texts, under a clause of zero retention. It
+    sorts nothing.
 
 agents:
   - name: Visitor

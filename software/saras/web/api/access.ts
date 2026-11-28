@@ -1,5 +1,5 @@
 // Access: creating the organisation, signing in and out, invitations, members and their roles,
-// passwords, and leaving. One function per operation of doc/2-operations.md, and the lists they act on.
+// passwords, and leaving. One function per operation of tests/operations, and the lists they act on.
 import type { Admitted, PasswordResetLink } from '../../shared/access.ts';
 import type { Invitation, Member, NewInvitation, WhatVisitorsAreTold } from '../../shared/member.ts';
 import { api } from '../api.ts';

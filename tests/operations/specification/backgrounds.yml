@@ -1,8 +1,10 @@
-# The Backgrounds a case starts from: each a seed of software/storage, by its
-# name. `test/base` is arrived at through the API (backgrounds/base.ts), then
-# flushed; the two others inherit it.
-#
-# Everything a case makes is numbered from 5001, in every table.
+# Each a seed of software/storage, by its name. `test/base` is arrived at
+# through the API (backgrounds/base.ts), then flushed; the two others inherit it.
+
+description: |
+  The states a case starts from: Atelier Nord, an organisation of three members with a shared
+  mailbox, fetched, not fetched yet, or not connected; and Bureau Sud, another organisation,
+  which must learn nothing of it. Everything a case makes is numbered from 5001.
 
 backgrounds:
   - name: test/base

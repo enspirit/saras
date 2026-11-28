@@ -7,7 +7,7 @@ The black-box specification was a webspicy suite: one YAML file per URL, schemas
 Three things were wanted of it before the data model changes under the API ([the brief](../multi-organisation-brief.md)):
 
 - that it start each case from a named state, and say what state the operation reaches;
-- that a specification read as the operation it specifies: its clauses, in the words of [the inventory](../2-operations.md), and not as a URL with examples;
+- that a specification read as the operation it specifies: its clauses, in the words of the inventory of the operations (`doc/2-operations.md`, which the specifications have since replaced), and not as a URL with examples;
 - that giving a sentence a meaning cost a line, not a class with a regular expression, an `instrument` and a `check!`.
 
 ## Decision

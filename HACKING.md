@@ -15,7 +15,7 @@ The directory says what a thing is for; [`doc/3-architecture.md`](doc/3-architec
 | [`world/chart/`](world/chart/) | The Helm chart: saras on Kubernetes, for an operator. Nothing of the stack. |
 | [`tests/operations/`](tests/operations/) | The black-box specification of the operations, clause by clause, run through the front door of a stack. What reads and runs it is [opspicy](https://github.com/enspirit/opspicy), a project of its own, taken as the image [`.env.commons`](.env.commons) names. |
 | [`tests/harness/`](tests/harness/) | The checks on the repository itself: links, and who may import whom. |
-| [`doc/`](doc/) | The [user stories](doc/1-user-stories.md), the [operations and the state](doc/2-operations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), the [decisions](doc/decisions/). |
+| [`doc/`](doc/) | The [user stories](doc/1-user-stories.md), the [deviations](doc/2-deviations.md), the [architecture](doc/3-architecture.md), the [design](doc/4-design.md), the [decisions](doc/decisions/). |
 | [`bin/`](bin/) | The few commands of the repository itself. |
 
 Each component has a `README.md`, which is its contract (public interface, depends on, must not, harness, status), and an `Embfile.yml`, which holds its tasks.
@@ -129,7 +129,7 @@ mailbox ──► fetch the watched folder (IMAP / Gmail API / Graph)
               sent in your name, or filed as a draft (SMTP / IMAP / Gmail API / Graph)
 ```
 
-Every operation is one file under `software/saras/src/domain/<area>/`, named after it and headed by its clauses; [`doc/2-operations.md`](doc/2-operations.md) is the inventory. The paths below are in `software/saras/`.
+Every operation is one file under `software/saras/src/domain/<area>/`, named after it and headed by its clauses, and specified in [`tests/operations`](tests/operations/). The paths below are in `software/saras/`.
 
 **Sorting** is done when an email is fetched, by the rules of the organisation's attributes (`src/domain/sorting/sort-by-rules.ts`): each rule is an Elo expression given the email, which answers a value of its attribute or nothing. The rule of "Stands in" says where the email stands; when it says nothing the email is to handle. No LLM sorts ([decision 0011](doc/decisions/0011-the-ai-does-not-sort.md)), so nothing waits to be sorted and sorting cannot fail a fetch. Which prompt suits an email follows from its attributes and from what each prompt says it suits (`src/domain/computations/prompt-affinity.ts`).
 
@@ -153,7 +153,8 @@ The server never sends sentences of its own to the interface: errors, verdicts m
 | To know | Read |
 | --- | --- |
 | What saras is for, feature by feature | [`doc/1-user-stories.md`](doc/1-user-stories.md) |
-| What it does, as state and operations; where the code deviates | [`doc/2-operations.md`](doc/2-operations.md) |
+| What it does, as state and operations | [`tests/operations`](tests/operations/), whose explorer reads it best (`emb run explorer`) |
+| Where the code deviates, what the product's owner decided | [`doc/2-deviations.md`](doc/2-deviations.md) |
 | Who may rely on whom; the stacks; the test levels | [`doc/3-architecture.md`](doc/3-architecture.md) |
 | The design system, the screens, the brands | [`doc/4-design.md`](doc/4-design.md) |
 | How a designer works on them, with Node.js alone | [`DESIGN.md`](DESIGN.md) |

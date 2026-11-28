@@ -1,6 +1,6 @@
 # saras — architecture
 
-How the repository is laid out, what each part is responsible for, and who may rely on whom. What saras is for is in the [user stories](1-user-stories.md); what it does, as state and operations, in the [operations inventory](2-operations.md).
+How the repository is laid out, what each part is responsible for, and who may rely on whom. What saras is for is in the [user stories](1-user-stories.md); what it does, as state and operations, in [the specification of the operations](../tests/operations/), and where it does otherwise in [the deviations](2-deviations.md).
 
 ## The layout
 
@@ -112,4 +112,4 @@ The black-box suite starts each case from a seed, which empties the database: it
 
 ## Decisions
 
-A choice between real alternatives is a record in [`decisions/`](decisions/): context, decision, alternatives, and what would reverse it. The decisions about what saras *does* are in the [operations inventory](2-operations.md#decisions).
+A choice between real alternatives is a record in [`decisions/`](decisions/): context, decision, alternatives, and what would reverse it. The decisions about what saras *does* are with [the deviations](2-deviations.md#decisions).

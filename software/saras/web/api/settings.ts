@@ -1,5 +1,5 @@
 // Settings: who is signed in, their own settings, and those of their organisation. PUT /settings
-// and PUT /organization each carry several operations of doc/2-operations.md, one per field sent.
+// and PUT /organization each carry several operations of tests/operations, one per field sent.
 import type { Profile } from '../../shared/member.ts';
 import { api } from '../api.ts';
 

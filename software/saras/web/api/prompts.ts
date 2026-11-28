@@ -1,5 +1,5 @@
 // Prompts: the organisation's ways of replying, the ready-made ones, and what members corrected.
-// One function per operation of doc/2-operations.md.
+// One function per operation of tests/operations.
 import type { Correction, Prompt, PromptAffinity, ReadyMadePrompt } from '../../shared/prompt.ts';
 import { api } from '../api.ts';
 

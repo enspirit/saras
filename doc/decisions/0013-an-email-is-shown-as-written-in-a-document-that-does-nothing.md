@@ -37,7 +37,7 @@ Showing an email as its sender wrote it means putting a stranger's HTML on the s
 - Images an email refers to by `cid:` are files of the message, not part of its HTML: they are held back like hosted ones, and open from the header when the mailbox lists them.
 - The frame cannot be measured from the page, which may not read it: it takes the room the reading pane has and scrolls by itself.
 - Opening a file needs the mailbox to answer, and takes the time of fetching the whole message.
-- Not for every mailbox yet: no HTML is kept of one connected by Microsoft sign-in, and files open for those connected by their servers only. Listed with the deviations in [`doc/2-operations.md`](../2-operations.md).
+- Not for every mailbox yet: no HTML is kept of one connected by Microsoft sign-in, and files open for those connected by their servers only. Listed with the deviations in [`doc/2-deviations.md`](../2-deviations.md).
 - A new element or attribute an email should be shown with is a word added to a list, and a line of `test/unit/received-html.test.ts`.
 
 ## What would reverse this

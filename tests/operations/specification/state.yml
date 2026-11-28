@@ -4,6 +4,33 @@
 # How a formaldef reads all this (`boards`, `old.boards`, `seenBy.admin.boards`,
 # `db.users`) is in https://github.com/enspirit/opspicy/blob/main/doc/suite.md.
 
+description: |
+  What saras keeps, and another agent can observe.
+
+  - **An organisation**: its name; when a proposal is written for an email to handle (on demand,
+    at fetch, or at fetch and filed in the mailbox's drafts); whether plainly automated mail is
+    set aside first; its AI, a model and a key of its own, the same for every member.
+  - **Its members**: each an address, a name, a role, a password, a language, a signature, and,
+    where one is required, a second factor and recovery codes. A **session** says that a browser
+    is signed in as a member, until when; a **sign-in in progress** that a password was
+    accepted and a second factor is awaited, for ten minutes.
+  - **Invitations** and **links to choose a new password**: a pending right, until a date; of
+    each link only a hash is kept. Wrong guesses of a password or a link are counted by origin,
+    for fifteen minutes.
+  - **Mailboxes**: an address connected, personal or shared, who manages it, its sealed
+    credentials, the one folder it watches, when it was last fetched and what went wrong.
+  - **Emails**: a message as saras keeps it, who sent it, its subject, its text, its HTML and the
+    names of its files; where it stands (to handle, no reply needed, ignored, replied), and who
+    sorted it and why. Its content is erased past retention.
+  - **Proposals**, the texts the AI wrote for an email, and **replies**, what was handed to the
+    mailbox: sent or filed as a draft, to whom, by whom, whether the proposal was edited and why.
+  - **Prompts**, ways of replying; **attributes**, what the organisation wants to know of each
+    email, decided by nobody or by a rule, and the value of each email for each; **boards**,
+    named views of emails, personal or shared, in the order each member gives them.
+
+  What is being written in the reply area is the interface's, and lost on leaving the page; the
+  messages themselves are the mail provider's.
+
 # What a requester can observe, through the front door: the route that tells
 # it, and the type of what is told, so that a formaldef that misspells a member
 # of it is not read.

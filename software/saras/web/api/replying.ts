@@ -1,5 +1,5 @@
 // Replying: the three kinds of AI help, sending, and filing as a draft. One function per
-// operation of doc/2-operations.md.
+// operation of tests/operations.
 import type { Proposal } from '../../shared/reply.ts';
 import { api } from '../api.ts';
 

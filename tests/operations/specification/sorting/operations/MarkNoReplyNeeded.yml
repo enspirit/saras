@@ -40,7 +40,7 @@ examples:
       - it was ignored: old.stands(1020, 'ignored')
       - the boxes count it where it stands: emails.counts.ignored == 0 && emails.counts.none == 8
 
-  # Deviation 5 of doc/2-operations.md: where the email stands is not checked.
+  # Deviation 5 of doc/2-deviations.md: where the email stands is not checked.
   - when: a member says so of an email a rule had already set aside
     given: test/base, as member
     input: { id: 1004, status: no_reply }

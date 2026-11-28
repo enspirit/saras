@@ -1,6 +1,10 @@
 # The areas of the specification: a place to find things, one directory each.
-# The subjects of the inventory (doc/2-operations.md), and what several of them
-# say in the same words.
+
+description: |
+  What saras does, by subject: getting in, the organisation's settings, the mailboxes, the
+  emails and how they are sorted, replying, the prompts, the attributes and the boards. Each
+  operation is one specification, named after what it brings about; one that only reads is an
+  observation. Two areas hold words only: `_shared`, what every area says, and `members`.
 
 areas:
   - name: _shared
